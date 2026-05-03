@@ -1,5 +1,15 @@
 // ── HELPERS ─────────────────────────────────────
-const PA=()=>periodes.find(p=>p.status==='aktif')||periodes.at(-1)||{id:0,nama:'Maret 2026',start:'2026-02-25',end:'2026-03-24',bayar:'2026-03-25',status:'aktif',thr_aktif:false};
+const PA=()=>{
+  const aktif=periodes.find(p=>p.status==='aktif');
+  if(aktif)return aktif;
+  // Jika tidak ada yang aktif (mis. user set semua "tutup"), ambil periode paling baru berdasarkan tgl bayar/start
+  const sorted=(periodes||[]).slice().sort(function(a,b){
+    const ak=String(a.bayar||a.end||a.start||'');
+    const bk=String(b.bayar||b.end||b.start||'');
+    return ak.localeCompare(bk);
+  });
+  return sorted.at(-1)||{id:0,nama:'Maret 2026',start:'2026-02-25',end:'2026-03-24',bayar:'2026-03-25',status:'aktif',thr_aktif:false};
+};
 const isHL=d=>hariLibur.some(l=>l.tgl===d);
 const namaHL=d=>{const l=hariLibur.find(x=>x.tgl===d);return l?l.nama:'';};
 function isHariLiburKerja(dow){const hk=perusahaan.hariKerja||6;return hk===5?(dow===0||dow===6):(dow===0);}
@@ -548,10 +558,12 @@ function renderDash(){
   const thrTag=p.thr_aktif?`<span style="background:#5b21b6;color:#fff;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px">&#127873; THR ${p.thr_nama||''}</span>`:'';
   document.getElementById('pb-dash').innerHTML=`<div class="pb mb2"><div><div style="font-size:10px;opacity:.75">Periode Aktif</div><div style="font-size:18px;font-weight:800">${p.nama}${thrTag}</div><div style="font-size:11px;opacity:.8">${fmtDate(p.start)} &#8212; ${fmtDate(p.end)} | Bayar: ${fmtDate(p.bayar)}${p.thr_aktif?` | THR: ${fmtDate(p.thr_bayar||'-')}`:''}</div></div><div style="text-align:right"><div style="font-size:28px;font-weight:800">${hP}</div><div style="font-size:10px;opacity:.75">hari menuju penggajian</div></div></div>`;
   let tB=0,tP=0,tN=0,tT=0;const depts={};
-  karyawan.forEach(k=>{const g=hitungGaji(k);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;if(!depts[k.dept])depts[k.dept]={n:0,b:0,n2:0};depts[k.dept].n++;depts[k.dept].b+=g.grossPPh;depts[k.dept].n2+=g.neto;});
-  document.getElementById('d-kar').textContent=karyawan.length;document.getElementById('d-bruto').textContent=fmt(tB);document.getElementById('d-pph').textContent=fmt(tP);document.getElementById('d-neto').textContent=fmt(tN);
+  const list=karyawanListPeriode(p);
+  list.forEach(k=>{const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;if(!depts[k.dept])depts[k.dept]={n:0,b:0,n2:0};depts[k.dept].n++;depts[k.dept].b+=g.grossPPh;depts[k.dept].n2+=g.neto;});
+  document.getElementById('d-kar').textContent=list.length;document.getElementById('d-bruto').textContent=fmt(tB);document.getElementById('d-pph').textContent=fmt(tP);document.getElementById('d-neto').textContent=fmt(tN);
   document.getElementById('d-table').innerHTML=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
-  const pRet=karyawan.reduce((s,k)=>s+(k.pph_return?.nilai||0),0);const pAp=approvals.filter(a=>a.status==='pending').length;
+  const pRet=list.reduce((s,k)=>s+(k.pph_return?.nilai||0),0);
+  const pAp=approvals.filter(a=>a.status==='pending'&&a.period===p.nama).length;
   document.getElementById('d-alerts').innerHTML=`${p.thr_aktif?`<div style="padding:10px 14px;background:#f5f0ff;border-radius:7px;border-left:3px solid #5b21b6;font-size:12px;margin-bottom:5px">&#127873; <strong>Periode ini ada THR (${p.thr_nama||''})</strong> &#8212; Total THR Bruto: <strong>${fmt(tT)}</strong> | Bayar THR: <strong>${p.thr_bayar||'-'}</strong> | PPh THR digabung ke gaji akhir bulan.</div>`:''}${pAp>0?`<div style="padding:8px 12px;background:#fef3e2;border-radius:7px;border-left:3px solid #7d4800;font-size:12px;margin-bottom:5px"><strong>${pAp} Approval Tertunda</strong></div>`:''}${pRet>0?`<div style="padding:8px 12px;background:#e8f4de;border-radius:7px;border-left:3px solid #2d6a0a;font-size:12px;margin-bottom:5px"><strong>Pengembalian PPh 21:</strong> ${fmt(pRet)}</div>`:''}`;
 }
 // ── MASTER KARYAWAN ─────────────────────────────
