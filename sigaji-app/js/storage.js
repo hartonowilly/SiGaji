@@ -45,6 +45,37 @@ function migrateStorage(db){
     if(db.karSnapshot===undefined)db.karSnapshot={};
     v=5;
   }
+  if(v<6){
+    // Migrator legacy → payroll per periode (snapshot).
+    // Buat snapshot untuk periode/karyawan yang belum punya agar histori tidak hilang.
+    if(db.karSnapshot===undefined)db.karSnapshot={};
+    var ks=db.karSnapshot||{};
+    var kars=Array.isArray(db.karyawan)?db.karyawan:[];
+    var pers=Array.isArray(db.periodes)?db.periodes:[];
+    pers.forEach(function(p){
+      var pn=(p&&p.nama)||'';
+      var ps=(p&&p.start)||'';
+      if(!pn||!ps)return;
+      if(!ks[pn])ks[pn]={};
+      kars.forEach(function(k){
+        if(!k||!k.nik)return;
+        var t=String(k.tgl_berhenti||'').trim();
+        if(t&&t<ps)return; // sudah keluar sebelum periode mulai
+        if(ks[pn][k.nik]!==undefined)return; // sudah ada snapshot
+        ks[pn][k.nik]={
+          gapok:Math.round(k.gapok||0),
+          tunjangan:JSON.parse(JSON.stringify(k.tunjangan||[])),
+          potongan:JSON.parse(JSON.stringify(k.potongan||[])),
+          natura:JSON.parse(JSON.stringify(k.natura||[])),
+          bpjs_aktif:JSON.parse(JSON.stringify(k.bpjs_aktif||{})),
+          bpjs_manual:JSON.parse(JSON.stringify(k.bpjs_manual||{})),
+          pph_return:JSON.parse(JSON.stringify(k.pph_return||{nilai:0,ket:''})),
+        };
+      });
+    });
+    db.karSnapshot=ks;
+    v=6;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
@@ -60,7 +91,7 @@ function recoverDbFromUniversal(){
     if(!u)return false;
     const o=JSON.parse(u);
     const db={
-      schemaVersion:5,
+      schemaVersion:6,
       karyawan:o.karyawan||[],
       periodes:o.periodes||[],
       hariLibur:o.hariLibur||[],

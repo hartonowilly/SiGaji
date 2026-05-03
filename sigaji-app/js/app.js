@@ -708,7 +708,7 @@ function toggleSpPhkWrap(){
   w.style.display=on?'':'none';
   if(on&&(!document.getElementById('sp-phk-alasan')||!document.getElementById('sp-phk-alasan').options.length))populatePhkAlasanSelect();
 }
-function renderAll(){renderDash();renderKar();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();}
+function renderAll(){renderDash();renderKar();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();}
 // ── DASHBOARD ───────────────────────────────────
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
@@ -2384,6 +2384,36 @@ function buildExportData(){
 function exportBackup(){var data=buildExportData();var json=JSON.stringify(data,null,2);var blob=new Blob([json],{type:'application/json;charset=utf-8'});var a=document.createElement('a');var fn=((document.getElementById('backup-filename')&&document.getElementById('backup-filename').value)||'SiGaji_Backup').trim();var tgl=new Date().toISOString().split('T')[0];a.href=URL.createObjectURL(blob);a.download=fn+'_'+tgl+'.json';a.click();simpanRiwayatBackup(data._meta);var inf=document.getElementById('backup-info');if(inf)inf.textContent='Backup lengkap diunduh ('+DATA_KEYS.length+' jenis data, '+data._meta.totalKaryawan+' karyawan, snapshot '+(data._meta.snapshotPeriodeCount||0)+' periode / '+(data._meta.snapshotRowCount||0)+' baris): '+a.download;toast('Backup lengkap diunduh');}
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){}}
 function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:7px;border:1px solid var(--bd);margin-bottom:.35rem;font-size:12px;'+(i===0?'background:#e8f4de;border-color:#b3d98f':'')+'"><div><div style="font-weight:700">'+(x.tanggalDisplay||x.tanggal)+'</div><div style="font-size:10px;color:#6b7280">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}catch(e){}}
+function renderMigrationStatus(){
+  var el=document.getElementById('migration-status');
+  if(!el)return;
+  var pers=periodes||[];
+  var totalPer=pers.length;
+  var aktifPer=0;
+  var totalRows=0;
+  var totalExpected=0;
+  var snap=karSnapshot||{};
+  pers.forEach(function(p){
+    var pn=(p&&p.nama)||'';
+    var ps=(p&&p.start)||'';
+    if(!pn||!ps)return;
+    var list=karyawanListPeriode(p);
+    var exp=list.length;
+    var got=Object.keys((snap[pn]||{})).length;
+    totalExpected+=exp;
+    totalRows+=got;
+    if(exp>0&&got>=exp)aktifPer++;
+  });
+  var pct=totalExpected>0?Math.min(100,Math.round((totalRows/totalExpected)*100)):100;
+  el.innerHTML=
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">'
+    +'<span class="bdg b-info">Periode: '+totalPer+'</span>'
+    +'<span class="bdg '+(pct===100?'b-ok':'b-warn')+'">Progress: '+pct+'%</span>'
+    +'<span class="bdg b-pu">Snapshot rows: '+totalRows+'</span>'
+    +'<span class="bdg b-teal">Expected rows: '+totalExpected+'</span>'
+    +'</div>'
+    +'<div style="font-size:11px;color:#6b7280">Periode lengkap: '+aktifPer+'/'+totalPer+'. Periode dianggap lengkap jika seluruh karyawan aktif di periode tersebut punya snapshot payroll.</div>';
+}
 var importData=null;
 function readImportFile(input){var f=input.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var data=JSON.parse(e.target.result);importData=data;var meta=data._meta||{};var el=document.getElementById('import-info');if(el)el.innerHTML='<strong>File:</strong> '+(meta.versi||'SiGaji')+' - '+((data.karyawan||[]).length)+' karyawan'+(meta.snapshotPeriodeCount!=null?' | snapshot '+meta.snapshotPeriodeCount+' periode / '+(meta.snapshotRowCount||0)+' baris':'');var cl=document.getElementById('import-checklist');if(cl)cl.innerHTML=DATA_KEYS.map(function(k){var ada=data[k]!==undefined;return '<label style="display:flex;align-items:center;gap:.4rem;font-size:12px;cursor:'+(ada?'pointer':'default')+';opacity:'+(ada?1:.4)+'"><input type="checkbox" id="imp-'+k+'" '+(ada?'checked':'')+' '+(ada?'':'disabled')+' style="accent-color:#1a56a0"> '+(DATA_LABELS[k]||k)+'</label>';}).join('');document.getElementById('import-preview').style.display='block';toast('File dibaca');}catch(err){toast('Gagal baca file: '+err.message);}};r.readAsText(f);}
 /** Import: salin utuh tanpa membuang field (thr_ikut, tgl_berhenti, natura.kp, dll.). */
@@ -2435,7 +2465,7 @@ function showPg(pg){
   if(pg==='myslip')loadMySlip();
   if(pg==='pph')renderPPH();
   if(pg==='laporan')renderLaporan();
-  if(pg==='backup')renderBackupRiwayat();
+  if(pg==='backup'){renderBackupRiwayat();renderMigrationStatus();}
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
   if(pg==='pesangon')try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);toast('Modul Pesangon error — cek konsol (F12).');}
