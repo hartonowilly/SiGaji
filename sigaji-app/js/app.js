@@ -14,7 +14,11 @@ const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr);
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
 function hariHadirBulan(nik,yr,bln){const pfx=`${yr}-${String(bln).padStart(2,'0')}-`;return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='hadir').length;}
-function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=PA();const ed=new Date(p.end||'2026-03-24');const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirBulan(nik,ed.getFullYear(),ed.getMonth()+1);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
+/** Hari hadir (status hadir) dalam rentang periode gaji — selaras dengan hariKerjaRange(p.start,p.end). */
+function hariHadirRange(nik,s,e){const sStr=typeof s==='string'?s.split('T')[0]:new Date(s).toISOString().split('T')[0];const eStr=typeof e==='string'?e.split('T')[0]:new Date(e).toISOString().split('T')[0];return Object.entries(absensi[nik]||{}).filter(([d,st])=>d>=sStr&&d<=eStr&&st==='hadir').length;}
+/** Bagi total integer ke bobot proporsional (metode sisa terbesar) — untuk prorata satu kali bulat. */
+function allocateProportional(weights,total){const W=weights.reduce((a,b)=>a+b,0);if(W<=0||total<=0)return weights.map(()=>0);const exact=weights.map(w=>w*total/W);const base=exact.map(x=>Math.floor(x));let left=total-base.reduce((a,b)=>a+b,0);const order=exact.map((x,i)=>({i,r:x-Math.floor(x)})).sort((a,b)=>b.r-a.r);for(let k=0;k<left;k++)base[order[k].i]++;return base;}
+function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=periodes.find(x=>x.nama===pN)||PA();const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirRange(nik,p.start,p.end);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
 function setPREnabled(nik,pN,v){getPR(nik,pN).enabled=v;saveAll();renderPenggajian();}
 function setPRField(nik,pN,f,v){const pr=getPR(nik,pN);pr[f]=v;pr.manual=true;saveAll();renderPenggajian();}
 // ── BPJS ─────────────────────────────────────────
@@ -126,17 +130,36 @@ function hitungGaji(k,pNama){
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
   const hkP=hariKerjaRange(p.start,p.end);
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
-  const prF=isPR?pr.hh/pr.hk:1;const gapokEff=Math.round(k.gapok*prF);
-  let tBPJS=0,tGross=0,tTH=0;const tItems=[];
-  var tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
-  for(const t of tunjGabungan){
-    const eff=Math.round(t.nilai*prF);
-    switch(t.tipe){
-      case'tetap':tBPJS+=eff;tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-      case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-      case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-      case'harian_exclude':{const tot=Math.round(t.nilai*prF);tGross+=tot;tItems.push({...t,eff:tot,inTH:false,isHarian:true});break;}
-      default:tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});
+  const tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
+  let gapokEff;let tBPJS=0,tGross=0,tTH=0;const tItems=[];
+  if(isPR){
+    const prWeights=[k.gapok||0];
+    for(const t of tunjGabungan)if(t.prorata_ikut!==false)prWeights.push(t.nilai||0);
+    const W=prWeights.reduce((s,w)=>s+w,0);
+    const totalPR=W>0?Math.round((W/pr.hk)*pr.hh):0;
+    const alloc=W>0?allocateProportional(prWeights,totalPR):prWeights.map(()=>0);
+    let wi=0;gapokEff=alloc[wi++];
+    for(const t of tunjGabungan){
+      const eff=t.prorata_ikut===false?Math.round(t.nilai||0):alloc[wi++];
+      switch(t.tipe){
+        case'tetap':tBPJS+=eff;tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+        case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+        case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+        case'harian_exclude':{tGross+=eff;tItems.push({...t,eff,inTH:false,isHarian:true});break;}
+        default:tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});
+      }
+    }
+  }else{
+    gapokEff=Math.round(k.gapok);
+    for(const t of tunjGabungan){
+      const eff=Math.round(t.nilai||0);
+      switch(t.tipe){
+        case'tetap':tBPJS+=eff;tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+        case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+        case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+        case'harian_exclude':{tGross+=eff;tItems.push({...t,eff,inTH:false,isHarian:true});break;}
+        default:tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});
+      }
     }
   }
   const natKP=(k.natura||[]).filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);
@@ -529,14 +552,19 @@ function renderTunjPanel(k){
   document.getElementById('tunj-list').innerHTML=list.length?list.map(function(t,i){
     const showThr=t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';
     const thrIkut=showThr&&t.thr_ikut!==false;
+    const prIkut=t.prorata_ikut!==false;
     const sel1=Object.entries(TUNJ_TYPES).map(function(e){return'<option value="'+e[0]+'" '+(t.tipe===e[0]?'selected':'')+'>'+e[1]+'</option>';}).join('');
-    return '<div class="tr-row" style="grid-template-columns:1.4fr 1fr 1.1fr 0.7fr auto">'
+    return '<div class="tr-row" style="grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto">'
       +'<input value="'+t.nama+'" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="nama" onchange="updTunjEl(this)">'
       +'<input type="number" value="'+t.nilai+'" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-num="1" onchange="updTunjEl(this)">'
       +'<select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="tipe" onchange="updTunjEl(this);refreshTunjPanel(this.dataset.nik)">'+sel1+'</select>'
       +'<select title="Ikut THR?" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:10px;font-family:inherit;outline:none;'+(showThr?'':'opacity:.35;pointer-events:none')+'" data-nik="'+nik+'" data-i="'+i+'" data-f="thr_ikut" onchange="updTunjEl(this)">'
         +'<option value="ya" '+(thrIkut?'selected':'')+'>&#127873;THR</option>'
         +'<option value="tidak" '+(!thrIkut?'selected':'')+'>Excl</option>'
+      +'</select>'
+      +'<select title="Ikut Pro-Rata gaji?" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:10px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="prorata_ikut" onchange="updTunjEl(this)">'
+        +'<option value="ya" '+(prIkut?'selected':'')+'>Ikat</option>'
+        +'<option value="tidak" '+(!prIkut?'selected':'')+'>Penuh</option>'
       +'</select>'
       +'<button class="btn btn-xs btn-r" data-nik="'+nik+'" data-i="'+i+'" onclick="delTunjEl(this)">&#10007;</button>'
     +'</div>';
@@ -547,12 +575,12 @@ function updTunjEl(el){
   const nik=el.dataset.nik;const i=parseInt(el.dataset.i);const f=el.dataset.f;
   let v=el.value;
   if(el.dataset.num)v=parseFloat(v)||0;
-  if(f==='thr_ikut')v=v==='ya';
+  if(f==='thr_ikut'||f==='prorata_ikut')v=v==='ya';
   updTunj(nik,i,f,v);
 }
 function delTunjEl(el){delTunj(el.dataset.nik,parseInt(el.dataset.i));}
 function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.4rem;align-items:center;padding:.5rem .6rem;background:#fdeaea;border-radius:7px;border:1px solid #f5a3a3;margin-bottom:.4rem"><input value="${p.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'nama',this.value)"><input type="number" value="${p.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><input value="${p.ket||''}" placeholder="Ket." style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'ket',this.value)"><button class="btn btn-xs btn-r" onclick="delPot('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}
-function addTunj(){if(!canAccessSubTab('karyawan','gaji'))return;const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;if(!k.tunjangan)k.tunjangan=[];k.tunjangan.push({nama:'Komponen Baru',nilai:0,tipe:'tetap'});renderTunjPanel(k);updateGajiSummary();}
+function addTunj(){if(!canAccessSubTab('karyawan','gaji'))return;const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;if(!k.tunjangan)k.tunjangan=[];k.tunjangan.push({nama:'Komponen Baru',nilai:0,tipe:'tetap',thr_ikut:true,prorata_ikut:true});renderTunjPanel(k);updateGajiSummary();}
 function addPot(){if(!canAccessSubTab('karyawan','gaji'))return;const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;if(!k.potongan)k.potongan=[];k.potongan.push({nama:'Potongan Baru',nilai:0,ket:''});renderPotPanel(k);updateGajiSummary();}
 function updTunj(nik,i,f,v){const k=karyawan.find(x=>x.nik===nik);if(!k)return;k.tunjangan[i][f]=v;updateGajiSummary();}
 function updPot(nik,i,f,v){const k=karyawan.find(x=>x.nik===nik);if(!k)return;k.potongan[i][f]=v;updateGajiSummary();}
@@ -729,7 +757,7 @@ function renderPenggajian(skipTunjVar){
     const st=ap?ap.status:'draft';
     const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:'<span class="bdg b-gray">Draft</span>'}[st];
     const pr=getPR(k.nik,p.nama);
-    if(!pr.manual){pr.hk=hk;const ed=new Date(p.end);pr.hh=hariHadirBulan(k.nik,ed.getFullYear(),ed.getMonth()+1);}
+    if(!pr.manual){pr.hk=hk;pr.hh=hariHadirRange(k.nik,p.start,p.end);}
     if(pr.enabled)prAktif++;
     const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'" onclick="setPREnabled(\''+k.nik+'\',\''+p.nama+'\','+(!pr.enabled)+')">'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
     const prInputs=pr.enabled?'<div style="margin-top:4px;display:flex;gap:5px;align-items:center"><span style="font-size:10px;color:#6b7280">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span style="font-size:10px;color:#6b7280">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
