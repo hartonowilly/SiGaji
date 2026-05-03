@@ -149,12 +149,17 @@ function hitungGaji(k,pNama){
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
   const prF=isPR?pr.hh/pr.hk:1;const gapokEff=Math.round(k.gapok*prF);
   let tBPJS=0,tGross=0,tTH=0;const tItems=[];
+  let tBPJSFull=0; // basis tunjangan BPJS 1 bulan penuh (untuk bulan resign/berhenti)
   var tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
   for(const t of tunjGabungan){
     const prMul=isPR&&t.prorata_ikut===false?1:prF;
     const eff=Math.round(t.nilai*prMul);
     switch(t.tipe){
-      case'tetap':tBPJS+=eff;tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+      case'tetap':
+        tBPJS+=eff;
+        // BPJS basis full-month hanya dari tunjangan tetap (bukan variabel)
+        tBPJSFull+=Math.round(t.nilai||0);
+        tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'harian_exclude':{const tot=Math.round(t.nilai*prMul);tGross+=tot;tItems.push({...t,eff:tot,inTH:false,isHarian:true});break;}
@@ -206,7 +211,12 @@ function hitungGaji(k,pNama){
       }
     }
   }
-  const bpjs=calcBPJS(k,gapokEff,tBPJS);
+  // BPJS pada bulan resign/berhenti: basis hanya GAPOK FULL (tanpa tunjangan),
+  // walaupun take home prorata.
+  const isBpjsFullMonth=!!(tglStopIso&&(isStopInPeriode||isPeriodeResign));
+  const gapokBpjs=isBpjsFullMonth?Math.round(k.gapok||0):gapokEff;
+  const tunjBpjs=isBpjsFullMonth?0:tBPJS;
+  const bpjs=calcBPJS(k,gapokBpjs,tunjBpjs);
   // BPJS Perusahaan (JKK+JKM+Kes) = natura kena pajak per PMK 168/2023
   const bpjsPrsNatKP=bpjs.jkk_prs+bpjs.jkm_prs+bpjs.kes_prs;
   const grossPPhRegular=gapokEff+tGross+natKP+lb+bpjsPrsNatKP;
