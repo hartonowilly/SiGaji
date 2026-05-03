@@ -10,9 +10,17 @@
     ? window.SIGAJI_TENANT_KEY.trim()
     : 'main';
   var DEBOUNCE_MS = 1600;
+  /** Setelah coba pertama: 'tenant' (kolom tenant_key ada) atau 'legacy' (DB lama hanya user_id). */
+  var cloudPayloadMode = null;
 
   var cloudTimer = null;
   var clientReady = false;
+
+  function isMissingTenantKeyColumn(err) {
+    if (!err) return false;
+    var blob = String(err.message || '') + String(err.details || '') + String(err.hint || '') + String(err.code || '');
+    return /tenant_key|does not exist|42703|undefined_column/i.test(blob);
+  }
 
   function toastSafe(msg) {
     if (typeof toast === 'function') toast(msg);
@@ -136,13 +144,25 @@
 
   async function loadCloudPayloadIntoApp(uid) {
     var sb = window.sigajiSupabase;
-    var res = await sb.from(CLOUD_TABLE).select('payload').eq('tenant_key', TENANT_KEY).maybeSingle();
+    var res;
+
+    if (cloudPayloadMode === 'legacy') {
+      res = await sb.from(CLOUD_TABLE).select('payload').eq('user_id', uid).maybeSingle();
+    } else if (cloudPayloadMode === 'tenant') {
+      res = await sb.from(CLOUD_TABLE).select('payload').eq('tenant_key', TENANT_KEY).maybeSingle();
+    } else {
+      res = await sb.from(CLOUD_TABLE).select('payload').eq('tenant_key', TENANT_KEY).maybeSingle();
+      if (res.error && isMissingTenantKeyColumn(res.error)) {
+        cloudPayloadMode = 'legacy';
+        res = await sb.from(CLOUD_TABLE).select('payload').eq('user_id', uid).maybeSingle();
+      } else if (!res.error) {
+        cloudPayloadMode = 'tenant';
+      }
+    }
+
     if (res.error) {
       console.error(res.error);
-      toastSafe(
-        (res.error.message || 'Gagal membaca cloud') +
-          ' — jika baru migrate, jalankan sql/supabase_migrate_to_shared_payload.sql di Supabase.'
-      );
+      toastSafe(res.error.message || 'Gagal membaca cloud');
       return;
     }
     if (res.data && res.data.payload && typeof window.applyDbFromCloudPayload === 'function') {
@@ -167,13 +187,32 @@
     var uid = sess.data.session.user.id;
     if (typeof window.getPayloadForCloud !== 'function') return;
     var payload = window.getPayloadForCloud();
-    var row = {
-      tenant_key: TENANT_KEY,
-      user_id: uid,
-      payload: payload,
-      updated_at: new Date().toISOString(),
-    };
-    var r = await sb.from(CLOUD_TABLE).upsert(row, { onConflict: 'tenant_key' });
+    var ts = new Date().toISOString();
+
+    var r;
+    if (cloudPayloadMode === 'legacy') {
+      r = await sb
+        .from(CLOUD_TABLE)
+        .upsert({ user_id: uid, payload: payload, updated_at: ts }, { onConflict: 'user_id' });
+    } else if (cloudPayloadMode === 'tenant') {
+      r = await sb.from(CLOUD_TABLE).upsert(
+        { tenant_key: TENANT_KEY, user_id: uid, payload: payload, updated_at: ts },
+        { onConflict: 'tenant_key' }
+      );
+    } else {
+      r = await sb.from(CLOUD_TABLE).upsert(
+        { tenant_key: TENANT_KEY, user_id: uid, payload: payload, updated_at: ts },
+        { onConflict: 'tenant_key' }
+      );
+      if (r.error && isMissingTenantKeyColumn(r.error)) {
+        cloudPayloadMode = 'legacy';
+        r = await sb
+          .from(CLOUD_TABLE)
+          .upsert({ user_id: uid, payload: payload, updated_at: ts }, { onConflict: 'user_id' });
+      } else if (!r.error) {
+        cloudPayloadMode = 'tenant';
+      }
+    }
     if (r.error) console.error('Sigaji cloud save:', r.error);
   }
 
