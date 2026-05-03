@@ -1,5 +1,9 @@
 -- Jalankan di Supabase → SQL Editor → New query → Paste → Run
--- Menyimpan satu "snapshot" database SiGaji per akun login (auth.users).
+-- Model awal: satu snapshot per user_id.
+--
+-- Untuk banyak orang (Admin + HRD) dengan SATU data perusahaan, aplikasi terbaru
+-- membaca/menulis baris dengan tenant_key = main. Setelah tabel ini ada,
+-- jalankan juga: sql/supabase_migrate_to_shared_payload.sql
 
 create table if not exists public.sigaji_cloud (
   id uuid primary key default gen_random_uuid (),
