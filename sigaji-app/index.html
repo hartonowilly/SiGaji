@@ -11,16 +11,16 @@
 <div id="login">
 <div class="lbox">
   <div class="llogo"><img class="llogo-img" id="login-logo"><h1 id="login-nama">&#9670; SiGaji</h1><p>Sistem Informasi Penggajian v9</p></div>
-  <div class="fg"><label>Username</label><input id="lu" value="admin" onkeydown="if(event.key==='Enter')doLogin()"></div>
-  <div class="fg"><label>Password</label><input type="text" id="lp" value="admin123" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="fg"><label id="lu-lbl">Username</label><input id="lu" value="admin" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="fg"><label id="lp-lbl">Password</label><input type="text" id="lp" value="admin123" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <button class="btn btn-p btn-full" onclick="doLogin()">Masuk ke Sistem</button>
   <p id="cloud-login-hint" style="display:none;margin-top:.75rem;font-size:11px;line-height:1.5;color:#64748b">&#9729; <strong>Database awan:</strong> isi kolom Username dengan <strong>email Supabase</strong> Anda + sandi dari Authentication. Tanpa @ tetap pakai login lokal (admin/hrd).</p>
   <div id="file-protocol-hint" style="display:none;margin-top:.85rem;padding:.65rem .85rem;background:#fff8e6;border:1px solid #f6d088;border-radius:8px;font-size:11px;line-height:1.55;color:#713f12">
     <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.
   </div>
   <button onclick="if(confirm('Reset cache? Data lokal akan dihapus.')){localStorage.clear();location.reload();}" style="width:100%;margin-top:.5rem;padding:.4rem;background:none;border:1px dashed #e5e7eb;border-radius:8px;color:#9b2121;font-size:11px;cursor:pointer;font-family:inherit">&#9888; Reset Cache (pakai jika error)</button>
-  <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #eee">
-    <p style="font-size:11px;color:#9ca3af;margin-bottom:6px">Login cepat:</p>
+  <div id="login-quick-local" style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #eee">
+    <p style="font-size:11px;color:#9ca3af;margin-bottom:6px">Login cepat (hanya mode lokal, tanpa Supabase):</p>
     <button class="chip-login" onclick="ql('admin','admin123')">Admin</button>
     <button class="chip-login" onclick="ql('hrd','hrd123')">HRD</button>
     <button class="chip-login" onclick="ql('karyawan','kar123')">Karyawan</button>
@@ -526,7 +526,7 @@
     <div class="card">
       <div class="ct">Daftar User <button class="btn btn-sm btn-p" onclick="openUserModal()">+ Tambah User</button></div>
       <div style="overflow-x:auto">
-      <table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>NIK Karyawan</th><th>Status</th><th>Aksi</th></tr></thead>
+      <table><thead><tr><th>Username</th><th>Email Supabase</th><th>Nama</th><th>Role</th><th>NIK Karyawan</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody id="tb-users"></tbody></table>
       </div>
     </div>
@@ -764,8 +764,10 @@
     <button class="mclose" onclick="closeModal('m-user')">&times;</button>
     <div class="mtit" id="m-user-tit">User</div>
     <input type="hidden" id="u-idx" value="-1">
-    <div class="fg"><label>Username</label><input id="u-username" placeholder="username login"></div>
-    <div class="fg"><label>Password</label><input id="u-password" placeholder="password"></div>
+    <div class="fg"><label>Username</label><input id="u-username" placeholder="untuk login lokal (tanpa @)"></div>
+    <div class="fg"><label>Email Supabase (login awan)</label><input id="u-email" type="email" placeholder="sama persis dengan email di Authentication"></div>
+    <div class="info-box info-blue" style="font-size:10px;margin:-4px 0 6px">Isi email ini agar login pakai email + sandi Supabase memakai <strong>role &amp; nama</strong> user ini. Kosongkan jika hanya login lokal.</div>
+    <div class="fg"><label>Password</label><input id="u-password" placeholder="untuk login lokal"></div>
     <div class="fg"><label>Nama Lengkap</label><input id="u-nama"></div>
     <div class="fg"><label>Role</label><select id="u-role"></select></div>
     <div class="fg"><label>Tautkan ke NIK Karyawan (opsional)</label><select id="u-nik"><option value="">-- Tidak tertaut --</option></select></div>
@@ -827,6 +829,7 @@
 <script src="js/ptkp.js"></script>
 <script src="js/app.js"></script>
 <script src="js/config.js"></script>
+<script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="js/cloud-sync.js"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
