@@ -720,6 +720,15 @@ function doLogin(){
   const rawU=document.getElementById('lu').value.trim();
   const u=rawU.toLowerCase();
   const pw=document.getElementById('lp').value;
+  // Persist remember-username choice early (before async cloud login)
+  try{
+    var cb=document.getElementById('remember-username');
+    if(cb){
+      localStorage.setItem('sigaji_remember_username',cb.checked?'1':'0');
+      if(cb.checked)localStorage.setItem('sigaji_last_username',rawU);
+      else localStorage.removeItem('sigaji_last_username');
+    }
+  }catch(e){}
   const cloudOn=sigajiIsCloudConfigured();
   if(cloudOn||window.sigajiCloudOnlyMode){
     if(!cloudOn){
@@ -2799,4 +2808,7 @@ function resetTERCustom(){
 // ── INIT ─────────────────────────────────────────
 setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_autobackup',JSON.stringify(Object.assign({},d,{_meta:Object.assign({},d._meta,{catatan:'Auto backup'})})));}catch(e){}},30*60*1000);
 initLibnasYearSelect();
-initRememberUsername();
+if(typeof document!=='undefined'){
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initRememberUsername);
+  else initRememberUsername();
+}
