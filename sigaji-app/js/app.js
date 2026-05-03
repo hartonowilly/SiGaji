@@ -931,7 +931,10 @@ function renderTunjPanel(k){
     +'</div>';
   }).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada tunjangan.</div>';
 }
-function refreshTunjPanel(nik){const k=karyawan.find(function(x){return x.nik===nik;});if(k)renderTunjPanel(k);}
+function refreshTunjPanel(nik){
+  const k=getPayrollTargetByNik(nik,true);
+  if(k)renderTunjPanel(k);
+}
 function updTunjEl(el){
   if(el.dataset.f==='nilai'&&!isPayrollSnapshotMode()){toast('Nominal tunjangan diubah pada mode Snapshot Periode');el.blur();return;}
   if(!guardPayrollEditUnlocked())return;
