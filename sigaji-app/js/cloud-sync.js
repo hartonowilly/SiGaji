@@ -5,6 +5,10 @@
  */
 (function () {
   var CLOUD_TABLE = 'sigaji_cloud';
+  /** Satu payload untuk semua orang di perusahaan (wajib pakai sql/supabase_migrate_to_shared_payload.sql). */
+  var TENANT_KEY = (typeof window.SIGAJI_TENANT_KEY === 'string' && window.SIGAJI_TENANT_KEY.trim())
+    ? window.SIGAJI_TENANT_KEY.trim()
+    : 'main';
   var DEBOUNCE_MS = 1600;
 
   var cloudTimer = null;
@@ -82,87 +86,49 @@
       });
   }
 
-  function displayNameFromAuth(authUser, emailLower) {
-    var md = authUser && authUser.user_metadata;
-    if (md && md.full_name) return String(md.full_name);
-    if (md && md.name) return String(md.name);
-    var em = emailLower || '';
-    var at = em.indexOf('@');
-    if (at > 0) return em.slice(0, at);
-    return em || 'Pengguna';
-  }
-
-  /** Satu sumber kebenaran: user SiGaji dengan field email = email Supabase. */
-  function pickCuAfterCloudLoad(email, authUser) {
+  /** Hanya baris user SiGaji yang punya email sama dengan Auth — tidak ada fallback ke Admin (itu yang bikin HRD terlihat seperti Admin). */
+  function pickCuAfterCloudLoad(email) {
     var em = (email || '').toLowerCase();
-    var localPart = em.split('@')[0] || '';
-    var matchedEmail = users.find(function (x) {
-      return x.email && String(x.email).toLowerCase() === em;
+    var matched = users.find(function (x) {
+      return x.email && String(x.email).toLowerCase() === em && x.aktif !== false;
     });
-    var u =
-      matchedEmail ||
-      users.find(function (x) {
-        return x.role === 'Admin' && x.aktif !== false;
-      }) ||
-      users[0];
-
-    if (!u) {
-      return {
-        username: localPart || 'admin',
-        password: '',
-        role: 'Admin',
-        nama: displayNameFromAuth(authUser, em),
-        nik: null,
-        aktif: true,
-        email: em,
-      };
-    }
-    var cu = Object.assign({}, u);
-    if (!matchedEmail) {
-      cu.nama = displayNameFromAuth(authUser, em);
-      if (localPart) cu.username = localPart;
-    }
-    return cu;
+    return matched ? Object.assign({}, matched) : null;
   }
 
-  /** Pertama kali login cloud: isi email di user Admin yang masih kosong, atau buat baris user baru — supaya tidak bergantung username lokal. */
-  function ensureSiGajiUserLinkedToSession(authUser) {
+  /**
+   * Sekali saja: jika belum ada satu pun user dengan email di database, dan Anda mengisi SIGAJI_BOOTSTRAP_ADMIN_EMAIL = email Admin di config.js,
+   * maka login dengan email itu akan mengisi kolom Email pada user Admin bawaan (username admin).
+   */
+  function bootstrapAdminEmailIfNeeded(authUser) {
     if (!authUser || !authUser.email) return;
     var em = String(authUser.email).toLowerCase();
+    var boot = (window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL || '').trim().toLowerCase();
+    if (!boot || boot !== em) return;
     if (
       users.some(function (u) {
-        return u.email && String(u.email).toLowerCase() === em;
+        return u.email && String(u.email).trim();
       })
     )
       return;
-    var adminBare = users.find(function (u) {
-      return u.role === 'Admin' && u.aktif !== false && !u.email;
+    var adm = users.find(function (u) {
+      return u.username === 'admin' && u.role === 'Admin' && u.aktif !== false;
     });
-    if (adminBare) {
-      adminBare.email = em;
-      if (typeof saveAll === 'function') saveAll();
-      return;
-    }
-    var localPart = em.split('@')[0].replace(/[^a-z0-9_]/gi, '') || 'user';
-    var uname = localPart;
-    for (var n = 2; users.some(function (u) { return u.username === uname; }); n++)
-      uname = localPart + String(n);
-    users.push({
-      username: uname,
-      password: '\u2014cloud\u2014',
-      nama: displayNameFromAuth(authUser, em),
-      role: 'Admin',
-      nik: null,
-      aktif: true,
-      email: em,
-    });
+    if (!adm || adm.email) return;
+    adm.email = em;
     if (typeof saveAll === 'function') saveAll();
   }
 
   async function enterFromSession(session) {
     await loadCloudPayloadIntoApp(session.user.id);
-    ensureSiGajiUserLinkedToSession(session.user);
-    var cu = pickCuAfterCloudLoad(session.user.email, session.user);
+    bootstrapAdminEmailIfNeeded(session.user);
+    var cu = pickCuAfterCloudLoad(session.user.email);
+    if (!cu) {
+      toastSafe(
+        'Email ini belum terdaftar di SiGaji atau tidak aktif. Minta Admin buka Manajemen User → Edit user Anda → isi Email Supabase persis seperti email login (role HRD/Admin mengikuti pengaturan di situ).'
+      );
+      if (window.sigajiSupabase) await window.sigajiSupabase.auth.signOut();
+      return;
+    }
     if (typeof window.enterAppWithUser === 'function') {
       window.enterAppWithUser(cu);
     }
@@ -170,10 +136,13 @@
 
   async function loadCloudPayloadIntoApp(uid) {
     var sb = window.sigajiSupabase;
-    var res = await sb.from(CLOUD_TABLE).select('payload').eq('user_id', uid).maybeSingle();
+    var res = await sb.from(CLOUD_TABLE).select('payload').eq('tenant_key', TENANT_KEY).maybeSingle();
     if (res.error) {
       console.error(res.error);
-      toastSafe(res.error.message || 'Gagal membaca data dari Supabase');
+      toastSafe(
+        (res.error.message || 'Gagal membaca cloud') +
+          ' — jika baru migrate, jalankan sql/supabase_migrate_to_shared_payload.sql di Supabase.'
+      );
       return;
     }
     if (res.data && res.data.payload && typeof window.applyDbFromCloudPayload === 'function') {
@@ -199,11 +168,12 @@
     if (typeof window.getPayloadForCloud !== 'function') return;
     var payload = window.getPayloadForCloud();
     var row = {
+      tenant_key: TENANT_KEY,
       user_id: uid,
       payload: payload,
       updated_at: new Date().toISOString(),
     };
-    var r = await sb.from(CLOUD_TABLE).upsert(row, { onConflict: 'user_id' });
+    var r = await sb.from(CLOUD_TABLE).upsert(row, { onConflict: 'tenant_key' });
     if (r.error) console.error('Sigaji cloud save:', r.error);
   }
 

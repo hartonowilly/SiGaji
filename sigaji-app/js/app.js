@@ -243,12 +243,15 @@ function escapeHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function openUserModal(idx=-1){
+  var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
+  var pwWrap=document.getElementById('u-password-wrap');
+  if(pwWrap)pwWrap.style.display=cloud?'none':'';
   document.getElementById('u-idx').value=idx;
   const u=idx>=0?users[idx]:{username:'',password:'',nama:'',role:'HRD',nik:null,aktif:true,email:''};
   document.getElementById('m-user-tit').textContent=idx>=0?'Edit User':'Tambah User';
   document.getElementById('u-username').value=u.username||'';
   document.getElementById('u-email').value=u.email||'';
-  document.getElementById('u-password').value=u.password||'';
+  document.getElementById('u-password').value=cloud?'':(u.password||'');
   document.getElementById('u-nama').value=u.nama||'';
   document.getElementById('u-aktif').checked=u.aktif!==false;
   const rs=document.getElementById('u-role');rs.innerHTML=Object.keys(roles).map(r=>`<option value="${r}">${r}</option>`).join('');rs.value=u.role||'HRD';
@@ -259,13 +262,26 @@ function simpanUser(){
   const idx=parseInt(document.getElementById('u-idx').value);
   const uname=document.getElementById('u-username').value.trim().toLowerCase();
   const emailRaw=document.getElementById('u-email').value.trim().toLowerCase();
-  const pass=document.getElementById('u-password').value;const nama=document.getElementById('u-nama').value.trim();
+  const passRaw=document.getElementById('u-password').value;
+  const nama=document.getElementById('u-nama').value.trim();
   const role=document.getElementById('u-role').value;const nik=document.getElementById('u-nik').value||null;
   const aktif=document.getElementById('u-aktif').checked;
-  if(!uname||!pass||!nama){toast('Username, password, nama wajib');return;}
+  const cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
+  if(!uname||!nama){toast('Username dan nama lengkap wajib');return;}
+  if(cloud){
+    if(!emailRaw){toast('Mode cloud: isi Email Supabase untuk tiap user yang boleh login.');return;}
+  }else if(!passRaw){toast('Password wajib untuk login lokal');return;}
   if(emailRaw){
     const clash=users.find(function(u,i){return i!==idx&&u.email&&String(u.email).toLowerCase()===emailRaw;});
     if(clash){toast('Email Supabase ini sudah dipakai user: '+clash.username);return;}
+  }
+  var pass=passRaw;
+  if(cloud){
+    if(idx>=0&&users[idx]){
+      pass=passRaw||(users[idx].password||'')||'\u2014cloud\u2014';
+    }else{
+      pass=passRaw||'\u2014cloud\u2014';
+    }
   }
   if(idx<0){
     if(users.find(u=>u.username===uname)){toast('Username sudah dipakai');return;}
