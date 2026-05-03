@@ -238,6 +238,7 @@ function upsertKarSnapshotForPeriode(nik,pNama){
   karSnapshot[pNama][nik]=snapshotKarFromMaster(k);
 }
 let spPayrollView='periode'; // 'periode' | 'master'
+function isPayrollSnapshotMode(){return spPayrollView==='periode';}
 function getPayrollTargetByNik(nik,createIfMissing,sourceMode){
   var mode=sourceMode||spPayrollView||'periode';
   const p=PA();
@@ -293,10 +294,17 @@ function setSpPayrollView(mode){
       bdg.style.border='1px solid #d1d5db';
     }
   }
+  var hint=document.getElementById('sp-saved-lbl');
+  if(hint){
+    hint.textContent=spPayrollView==='periode'
+      ?'Mode Snapshot: nominal payroll yang diedit hanya berlaku untuk periode aktif.'
+      :'Mode Master: kelola struktur/jenis komponen; nominal payroll dikelola di Snapshot Periode.';
+  }
   if(!cpNik)return;
   var src=getPayrollTargetByNik(cpNik,true,spPayrollView);
   if(!src)return;
   var gap=document.getElementById('sp-gapok-f');if(gap)gap.value=src.gapok||0;
+  if(gap)gap.readOnly=!isPayrollSnapshotMode();
   var rv=document.getElementById('sp-pphret-val');if(rv)rv.value=(src.pph_return&&src.pph_return.nilai)||0;
   var rk=document.getElementById('sp-pphret-ket');if(rk)rk.value=(src.pph_return&&src.pph_return.ket)||'';
   if(document.getElementById('sp-gaji').style.display!=='none'){renderTunjPanel(src);renderPotPanel(src);}
@@ -829,6 +837,8 @@ function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k||!con
 function renderTunjPanel(k){
   const list=k.tunjangan||[];
   const nik=k.nik;
+  const snapMode=isPayrollSnapshotMode();
+  const nilaiStyle=snapMode?'':'background:#f3f4f6;color:#6b7280;cursor:not-allowed';
   document.getElementById('tunj-list').innerHTML=list.length?list.map(function(t,i){
     const showThr=t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';
     const thrIkut=showThr&&t.thr_ikut!==false;
@@ -836,7 +846,7 @@ function renderTunjPanel(k){
     const sel1=Object.entries(TUNJ_TYPES).map(function(e){return'<option value="'+e[0]+'" '+(t.tipe===e[0]?'selected':'')+'>'+e[1]+'</option>';}).join('');
     return '<div class="tr-row" style="grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto">'
       +'<input value="'+t.nama+'" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="nama" onchange="updTunjEl(this)">'
-      +'<input type="number" value="'+t.nilai+'" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-num="1" onchange="updTunjEl(this)">'
+      +'<input type="number" value="'+t.nilai+'" '+(snapMode?'':'readonly title="Nominal tunjangan diisi pada mode Snapshot Periode"')+' style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none;'+nilaiStyle+'" data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-num="1" onchange="updTunjEl(this)">'
       +'<select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="tipe" onchange="updTunjEl(this);refreshTunjPanel(this.dataset.nik)">'+sel1+'</select>'
       +'<select title="Ikut THR?" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:10px;font-family:inherit;outline:none;'+(showThr?'':'opacity:.35;pointer-events:none')+'" data-nik="'+nik+'" data-i="'+i+'" data-f="thr_ikut" onchange="updTunjEl(this)">'
         +'<option value="ya" '+(thrIkut?'selected':'')+'>&#127873;THR</option>'
@@ -852,6 +862,7 @@ function renderTunjPanel(k){
 }
 function refreshTunjPanel(nik){const k=karyawan.find(function(x){return x.nik===nik;});if(k)renderTunjPanel(k);}
 function updTunjEl(el){
+  if(el.dataset.f==='nilai'&&!isPayrollSnapshotMode()){toast('Nominal tunjangan diubah pada mode Snapshot Periode');el.blur();return;}
   if(!guardPayrollEditUnlocked())return;
   const nik=el.dataset.nik;const i=parseInt(el.dataset.i);const f=el.dataset.f;
   let v=el.value;
@@ -957,7 +968,7 @@ function renderPPhRetPanel(k){const val=k.pph_return?.nilai||0;const el=document
 function updateGajiSummary(){
   const km=karyawan.find(x=>x.nik===cpNik);if(!km)return;
   const k=getPayrollTargetByNik(cpNik,true)||km;
-  const gpEl=document.getElementById('sp-gapok-f');if(gpEl)k.gapok=parseFloat(gpEl.value)||k.gapok;
+  const gpEl=document.getElementById('sp-gapok-f');if(gpEl&&isPayrollSnapshotMode())k.gapok=parseFloat(gpEl.value)||k.gapok;
   const prv=parseFloat(document.getElementById('sp-pphret-val')?.value)||0;k.pph_return={nilai:prv,ket:document.getElementById('sp-pphret-ket')?.value||''};
   renderPPhRetPanel(k);const g=hitungGaji(km,PA().nama);const el=document.getElementById('gaji-summary-panel');if(!el)return;
   el.innerHTML=`<div class="gs"><div class="stit" style="margin-top:0">Gross Income (Dasar PPh 21)</div><div class="gs-row"><span>Gaji Pokok</span><span>${fmt(k.gapok)}</span></div>${g.tItems.map(t=>`<div class="gs-row"><span>${t.nama}${t.isHarian?' [Lump Sum]':''}</span><span>${fmt(t.eff)}</span></div>`).join('')}${g.natKP>0?`<div class="gs-row"><span>Natura Kena Pajak</span><span>${fmt(g.natKP)}</span></div>`:''}${g.lb>0?`<div class="gs-row"><span>Uang Lembur</span><span>${fmt(g.lb)}</span></div>`:''}${g.thrBruto>0?`<div class="gs-row" style="color:#5b21b6;font-weight:700"><span>THR Bruto (digabung ke Gross PPh)</span><span>${fmt(g.thrBruto)}</span></div>`:''}
