@@ -687,12 +687,13 @@
       <div class="stit" style="display:flex;justify-content:space-between;align-items:center">
         <span>Komponen Tunjangan</span><button class="btn btn-xs btn-p" onclick="addTunj()">+ Tambah</button>
       </div>
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1.2fr auto;gap:.3rem;padding:.25rem .5rem;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase">
-        <div>Nama</div><div>Nilai (Rp)</div><div>Tipe</div><div></div>
+      <div style="display:grid;grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto;gap:.3rem;padding:.25rem .5rem;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase">
+        <div>Nama</div><div>Nilai (Rp)</div><div>Tipe</div><div>THR</div><div title="Pro-Rata gaji">PR</div><div></div>
       </div>
       <div id="tunj-list"></div>
       <div class="info-box info-blue mt1" style="font-size:10px;line-height:1.6">
-        <strong>Tipe:</strong> Tetap (BPJS+THR+PPh+TH) | Tetap-Excl.BPJS (THR+PPh+TH) | Tidak Tetap (PPh+TH) | Harian-Excl.TH (PPh saja)
+        <strong>Tipe:</strong> Tetap (BPJS+THR+PPh+TH) | Tetap-Excl.BPJS (THR+PPh+TH) | Tidak Tetap (PPh+TH) | Harian-Excl.TH (PPh saja)<br>
+        <strong>Kolom PR:</strong> <em>Ikat Prorata</em> = bagian dari total <code>(gaji pokok + tunjangan ikut PR) ÷ HK × HH</code> (HK = hari kerja periode slip, HH = hari hadir dalam rentang tanggal periode); <em>Penuh</em> = nilai tetap utuh walau prorata.
       </div>
       <div class="stit" style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem">
         <span>Potongan Tetap</span><button class="btn btn-xs btn-p" onclick="addPot()">+ Tambah</button>
