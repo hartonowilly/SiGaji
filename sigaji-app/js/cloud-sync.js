@@ -36,8 +36,7 @@
       return;
     }
 
-    var hint = document.getElementById('cloud-login-hint');
-    if (hint) hint.style.display = 'block';
+    if (typeof window.sigajiApplyCloudLoginUi === 'function') window.sigajiApplyCloudLoginUi();
 
     window.sigajiTryCloudLogin = function (email, pw) {
       if (!clientReady || !window.sigajiSupabase) {
@@ -93,20 +92,15 @@
     return em || 'Pengguna';
   }
 
-  /** Pilih CU SiGaji: cocokkan email/username di data; kalau tidak ada, tetap pakai hak Admin tapi nama tampilan dari akun Supabase (bukan label default "Administrator"). */
+  /** Satu sumber kebenaran: user SiGaji dengan field email = email Supabase. */
   function pickCuAfterCloudLoad(email, authUser) {
     var em = (email || '').toLowerCase();
     var localPart = em.split('@')[0] || '';
     var matchedEmail = users.find(function (x) {
       return x.email && String(x.email).toLowerCase() === em;
     });
-    var matchedUsername = users.find(function (x) {
-      return String(x.username || '')
-        .toLowerCase() === localPart;
-    });
     var u =
       matchedEmail ||
-      matchedUsername ||
       users.find(function (x) {
         return x.role === 'Admin' && x.aktif !== false;
       }) ||
@@ -120,18 +114,54 @@
         nama: displayNameFromAuth(authUser, em),
         nik: null,
         aktif: true,
+        email: em,
       };
     }
     var cu = Object.assign({}, u);
-    if (!matchedEmail && !matchedUsername) {
+    if (!matchedEmail) {
       cu.nama = displayNameFromAuth(authUser, em);
       if (localPart) cu.username = localPart;
     }
     return cu;
   }
 
+  /** Pertama kali login cloud: isi email di user Admin yang masih kosong, atau buat baris user baru — supaya tidak bergantung username lokal. */
+  function ensureSiGajiUserLinkedToSession(authUser) {
+    if (!authUser || !authUser.email) return;
+    var em = String(authUser.email).toLowerCase();
+    if (
+      users.some(function (u) {
+        return u.email && String(u.email).toLowerCase() === em;
+      })
+    )
+      return;
+    var adminBare = users.find(function (u) {
+      return u.role === 'Admin' && u.aktif !== false && !u.email;
+    });
+    if (adminBare) {
+      adminBare.email = em;
+      if (typeof saveAll === 'function') saveAll();
+      return;
+    }
+    var localPart = em.split('@')[0].replace(/[^a-z0-9_]/gi, '') || 'user';
+    var uname = localPart;
+    for (var n = 2; users.some(function (u) { return u.username === uname; }); n++)
+      uname = localPart + String(n);
+    users.push({
+      username: uname,
+      password: '\u2014cloud\u2014',
+      nama: displayNameFromAuth(authUser, em),
+      role: 'Admin',
+      nik: null,
+      aktif: true,
+      email: em,
+    });
+    if (typeof saveAll === 'function') saveAll();
+  }
+
   async function enterFromSession(session) {
     await loadCloudPayloadIntoApp(session.user.id);
+    ensureSiGajiUserLinkedToSession(session.user);
     var cu = pickCuAfterCloudLoad(session.user.email, session.user);
     if (typeof window.enterAppWithUser === 'function') {
       window.enterAppWithUser(cu);

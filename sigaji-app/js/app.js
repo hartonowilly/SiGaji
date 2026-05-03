@@ -237,13 +237,17 @@ function renderSidebar(){
 // ── USER MANAGEMENT ──────────────────────────────
 function renderUsers(){
   const tb=document.getElementById('tb-users');if(!tb)return;
-  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${u.username}</strong></td><td>${u.nama}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${u.role}</span></td><td>${u.nik?`<span class="bdg b-info">${u.nik}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
+  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${u.username}</strong></td><td style="font-size:11px;max-width:140px;word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${u.nama}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${u.role}</span></td><td>${u.nik?`<span class="bdg b-info">${u.nik}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
+}
+function escapeHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function openUserModal(idx=-1){
   document.getElementById('u-idx').value=idx;
-  const u=idx>=0?users[idx]:{username:'',password:'',nama:'',role:'HRD',nik:null,aktif:true};
+  const u=idx>=0?users[idx]:{username:'',password:'',nama:'',role:'HRD',nik:null,aktif:true,email:''};
   document.getElementById('m-user-tit').textContent=idx>=0?'Edit User':'Tambah User';
   document.getElementById('u-username').value=u.username||'';
+  document.getElementById('u-email').value=u.email||'';
   document.getElementById('u-password').value=u.password||'';
   document.getElementById('u-nama').value=u.nama||'';
   document.getElementById('u-aktif').checked=u.aktif!==false;
@@ -254,12 +258,24 @@ function openUserModal(idx=-1){
 function simpanUser(){
   const idx=parseInt(document.getElementById('u-idx').value);
   const uname=document.getElementById('u-username').value.trim().toLowerCase();
+  const emailRaw=document.getElementById('u-email').value.trim().toLowerCase();
   const pass=document.getElementById('u-password').value;const nama=document.getElementById('u-nama').value.trim();
   const role=document.getElementById('u-role').value;const nik=document.getElementById('u-nik').value||null;
   const aktif=document.getElementById('u-aktif').checked;
   if(!uname||!pass||!nama){toast('Username, password, nama wajib');return;}
-  if(idx<0){if(users.find(u=>u.username===uname)){toast('Username sudah dipakai');return;}users.push({username:uname,password:pass,nama,role,nik,aktif});}
-  else{users[idx]={...users[idx],username:uname,password:pass,nama,role,nik,aktif};}
+  if(emailRaw){
+    const clash=users.find(function(u,i){return i!==idx&&u.email&&String(u.email).toLowerCase()===emailRaw;});
+    if(clash){toast('Email Supabase ini sudah dipakai user: '+clash.username);return;}
+  }
+  if(idx<0){
+    if(users.find(u=>u.username===uname)){toast('Username sudah dipakai');return;}
+    const o={username:uname,password:pass,nama,role,nik,aktif};
+    if(emailRaw)o.email=emailRaw;
+    users.push(o);
+  }else{
+    users[idx]={...users[idx],username:uname,password:pass,nama,role,nik,aktif};
+    if(emailRaw)users[idx].email=emailRaw;else delete users[idx].email;
+  }
   saveAll();renderUsers();closeModal('m-user');toast('User disimpan');
 }
 function hapusUser(i){if(!confirm('Hapus user '+users[i].username+'?'))return;users.splice(i,1);saveAll();renderUsers();toast('User dihapus');}
@@ -331,6 +347,28 @@ function applyBranding(){
 }
 // ── LOGIN ────────────────────────────────────────
 function ql(u,p){document.getElementById('lu').value=u;document.getElementById('lp').value=p;}
+function sigajiIsCloudConfigured(){
+  return !!(window.SIGAJI_SUPABASE_URL||'').trim() && !!(window.SIGAJI_SUPABASE_ANON_KEY||'').trim();
+}
+/** Dipanggil setelah config.js: sembunyikan login lokal, wajibkan email Supabase. */
+function sigajiApplyCloudLoginUi(){
+  if(!sigajiIsCloudConfigured())return;
+  window.sigajiCloudOnlyMode=true;
+  var lu=document.getElementById('lu');
+  var lp=document.getElementById('lp');
+  if(lu){lu.value='';lu.removeAttribute('value');lu.placeholder='nama@perusahaan.com';}
+  if(lp){lp.value='';lp.removeAttribute('value');lp.type='password';lp.placeholder='Sandi Supabase';}
+  var l1=document.getElementById('lu-lbl');if(l1)l1.textContent='Email';
+  var l2=document.getElementById('lp-lbl');if(l2)l2.textContent='Sandi';
+  var q=document.getElementById('login-quick-local');
+  if(q)q.style.display='none';
+  var h=document.getElementById('cloud-login-hint');
+  if(h){h.innerHTML='&#9729; <strong>Mode cloud aktif:</strong> pakai <strong>email + sandi</strong> yang sama dengan <strong>Supabase → Authentication</strong>. Login admin/hrd tanpa email dinonaktifkan di halaman ini.';h.style.display='block';}
+}
+if(typeof window!=='undefined'){
+  window.sigajiApplyCloudLoginUi=sigajiApplyCloudLoginUi;
+  window.sigajiIsCloudConfigured=sigajiIsCloudConfigured;
+}
 /** Dipakai login lokal + login Supabase (cloud-sync.js). */
 function enterAppWithUser(user){
   if(!user)return;
@@ -345,12 +383,23 @@ function enterAppWithUser(user){
 }
 function doLogin(){
   const rawU=document.getElementById('lu').value.trim();
-  const u=rawU.toLowerCase();const pw=document.getElementById('lp').value;
-  if(rawU.indexOf('@')>=0&&(window.SIGAJI_SUPABASE_URL||'').trim()){
-    if(typeof window.sigajiTryCloudLogin!=='function'){
-      toast('Menyiapkan koneksi awan… tunggu sebentar lalu coba lagi.');
+  const u=rawU.toLowerCase();
+  const pw=document.getElementById('lp').value;
+  const cloudOn=sigajiIsCloudConfigured();
+  if(cloudOn||window.sigajiCloudOnlyMode){
+    if(!cloudOn){
+      toast('Isi js/config.js (URL + anon key Supabase) lalu deploy ulang.');
       return;
     }
+    if(rawU.indexOf('@')<0){
+      toast('Gunakan email lengkap untuk masuk (contoh: anda@gmail.com). Mode ini terhubung ke Supabase, bukan username admin/hrd lokal.');
+      return;
+    }
+    if(typeof window.sigajiTryCloudLogin!=='function'){
+      toast('Menyiapkan koneksi awan… tunggu beberapa detik lalu coba lagi.');
+      return;
+    }
+    if(!pw){toast('Isi sandi akun Supabase Anda.');return;}
     window.sigajiTryCloudLogin(rawU,pw);
     return;
   }
