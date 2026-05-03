@@ -1,0 +1,85 @@
+const fmtDate=d=>{if(!d||d==='-')return'-';const p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;};
+const fmt=n=>{const v=Math.round(n);if(isNaN(v))return'Rp 0';const abs=Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(v<0?'-Rp ':'Rp ')+abs;};
+/** Nilai rupiah ke kata Indonesia (untuk terbilang slip) */
+function terbilangRupiah(n){
+  const num=Math.floor(Math.abs(Number(n)||0));
+  if(num===0)return 'nol rupiah';
+  const a=['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan'];
+  function puluhan(x){
+    if(x<10)return a[x];
+    if(x===10)return 'sepuluh';
+    if(x===11)return 'sebelas';
+    if(x<20)return a[x-10]+' belas';
+    const p=Math.floor(x/10),b=x%10;
+    return a[p]+' puluh'+(b?' '+a[b]:'');
+  }
+  function ratusan(x){
+    if(x===0)return '';
+    if(x<10)return a[x];
+    if(x<100)return puluhan(x);
+    const r=Math.floor(x/100),b=x%100;
+    const head=r===1?'seratus':a[r]+' ratus';
+    return head+(b?' '+ratusan(b):'');
+  }
+  function rek(x){
+    if(x<1000)return ratusan(x);
+    if(x<1000000){
+      const ribu=Math.floor(x/1000),sisa=x%1000;
+      const d=ribu===1?'seribu':ratusan(ribu)+' ribu';
+      return d+(sisa?' '+rek(sisa):'');
+    }
+    if(x<1000000000){
+      const jt=Math.floor(x/1000000),sisa=x%1000000;
+      return ratusan(jt)+' juta'+(sisa?' '+rek(sisa):'');
+    }
+    const m=Math.floor(x/1000000000),sisa=x%1000000000;
+    return ratusan(m)+' milyar'+(sisa?' '+rek(sisa):'');
+  }
+  return rek(num)+' rupiah';
+}
+const DEFAULT_PTKP={TK0:54e6,TK1:58.5e6,TK2:63e6,TK3:67.5e6,K0:58.5e6,K1:63e6,K2:67.5e6,K3:72e6};
+const PTKP_KEYS=['TK0','TK1','TK2','TK3','K0','K1','K2','K3'];
+const PTKP_LBL={TK0:'TK/0',TK1:'TK/1',TK2:'TK/2',TK3:'TK/3',K0:'K/0',K1:'K/1',K2:'K/2',K3:'K/3'};
+const BPJS_DEF={'kes-prs':{pct:4,basis:12e6,lbl:'BPJS Kes Perusahaan (4%)'},'kes-kar':{pct:1,basis:12e6,lbl:'BPJS Kes Karyawan (1%)'},'jht-prs':{pct:3.7,basis:null,lbl:'JHT Perusahaan (3,7%)'},'jht-kar':{pct:2,basis:null,lbl:'JHT Karyawan (2%)'},'jp-prs':{pct:2,basis:9559600,lbl:'JP Perusahaan (2%)'},'jp-kar':{pct:1,basis:9559600,lbl:'JP Karyawan (1%)'},'jkk-prs':{pct:0.24,basis:null,lbl:'JKK Perusahaan (0,24%)'},'jkm-prs':{pct:0.3,basis:null,lbl:'JKM Perusahaan (0,3%)'}};
+const TUNJ_TYPES={tetap:'Tetap (BPJS+THR+PPh+TH)',tetap_no_bpjs:'Tetap Excl.BPJS',tidak_tetap:'Tidak Tetap',harian_exclude:'Harian Excl.TH'};
+// Sub-tab permissions: moduleId.subtabId
+// Contoh: 'karyawan.gaji' = akses tab Gaji & Tunjangan di modul karyawan
+const SUBTABS={
+  karyawan:['info','gaji','bpjs','natura','pphret','ring'],
+  absensi:['kalender','cuti','lembur','libur'],
+  master:['prs','periode','libur','potongan','ter'],
+  approval:['pend','hist'],
+};
+const SUBTAB_LBL={
+  'karyawan.info':'Info & Jabatan','karyawan.gaji':'Gaji & Tunjangan',
+  'karyawan.bpjs':'BPJS','karyawan.natura':'Natura',
+  'karyawan.pphret':'PPh Return','karyawan.ring':'Ringkasan',
+  'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
+  'absensi.lembur':'Lembur','absensi.libur':'Hari Libur',
+  'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR',
+  'master.libur':'Hari Libur (Master)','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
+  'approval.pend':'Menunggu','approval.hist':'Riwayat',
+};
+const MODULES=[
+  {id:'dashboard',lbl:'Dashboard',icon:'&#9632;',sec:'Utama'},
+  {id:'notifikasi',lbl:'Notifikasi',icon:'&#128276;',sec:'Utama'},
+  {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info','gaji','bpjs','natura','pphret','ring']},
+  {id:'absensi',lbl:'Absensi, Cuti & Lembur',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti','lembur','libur']},
+  {id:'thr',lbl:'THR',icon:'&#127873;',sec:'SDM'},
+  {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
+  {id:'approval',lbl:'Approval',icon:'&#10003;',sec:'Penggajian',subtabs:['pend','hist']},
+  {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
+  {id:'pph',lbl:'PPh 21',icon:'&#128200;',sec:'Laporan'},
+  {id:'laporan',lbl:'Rekap',icon:'&#128196;',sec:'Laporan'},
+  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','libur','potongan','ter']},
+  {id:'backup',lbl:'Backup & Import',icon:'&#128190;',sec:'Pengaturan'},
+  {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
+  {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
+  {id:'mycuti',lbl:'Cuti Saya',icon:'&#127774;',sec:'Saya'},
+];
+const TER_A=[[5400000,0],[5650000,.0025],[5950000,.005],[6300000,.0075],[6750000,.01],[7500000,.0125],[8550000,.015],[9650000,.0175],[10050000,.02],[10350000,.0225],[10700000,.025],[11050000,.03],[11600000,.035],[12500000,.04],[13750000,.05],[15100000,.06],[16950000,.07],[19750000,.08],[24150000,.09],[26450000,.10],[28000000,.11],[30050000,.12],[32400000,.13],[35400000,.14],[39100000,.15],[43850000,.16],[47800000,.17],[51400000,.18],[56300000,.19],[62200000,.20],[68600000,.21],[77500000,.22],[89000000,.23],[103000000,.24],[125000000,.25],[157000000,.26],[206000000,.27],[337000000,.28],[454000000,.29],[550000000,.30],[695000000,.31],[910000000,.32],[1400000000,.33],[Infinity,.34]];
+// Lampiran B: TK/2 & K/1 (63jt); TK/3 & K/2 (67,5jt)
+const TER_B=[[6200000,0],[6500000,.0025],[6850000,.005],[7300000,.0075],[9200000,.01],[10750000,.015],[11250000,.02],[11600000,.025],[12600000,.03],[13600000,.04],[14950000,.05],[16400000,.06],[18450000,.07],[21850000,.08],[26000000,.09],[27700000,.10],[29350000,.11],[31450000,.12],[33950000,.13],[37100000,.14],[41100000,.15],[45800000,.16],[49500000,.17],[53800000,.18],[58500000,.19],[64000000,.20],[71000000,.21],[80000000,.22],[93000000,.23],[109000000,.24],[129000000,.25],[163000000,.26],[211000000,.27],[374000000,.28],[459000000,.29],[555000000,.30],[704000000,.31],[957000000,.32],[1405000000,.33],[Infinity,.34]];
+// Lampiran C: K/3 (72jt)
+const TER_C=[[6600000,0],[6950000,.0025],[7350000,.005],[7800000,.0075],[8850000,.01],[9800000,.0125],[10950000,.015],[11200000,.0175],[12050000,.02],[12950000,.03],[14150000,.04],[15550000,.05],[17050000,.06],[19500000,.07],[22700000,.08],[26600000,.09],[28100000,.10],[30100000,.11],[32600000,.12],[35400000,.13],[38900000,.14],[43000000,.15],[47400000,.16],[51200000,.17],[55800000,.18],[60400000,.19],[66700000,.20],[74500000,.21],[83200000,.22],[95600000,.23],[110000000,.24],[134000000,.25],[169000000,.26],[221000000,.27],[390000000,.28],[463000000,.29],[561000000,.30],[709000000,.31],[965000000,.32],[1419000000,.33],[Infinity,.34]];
+const SCHEMA_VERSION=3;
