@@ -66,7 +66,13 @@
       .signInWithPassword({ email: email.trim(), password: pw })
       .then(function (r) {
         if (r.error) {
-          toastSafe(r.error.message || 'Login Supabase gagal');
+          var msg = r.error.message || 'Login gagal';
+          if (/invalid login credentials|invalid_credentials/i.test(msg))
+            msg = 'Email atau sandi salah — pastikan user ada di Supabase → Authentication → Users (Password yang sama yang Anda ketik di sini).';
+          else if (/email not confirmed/i.test(msg))
+            msg =
+              'Email belum dikonfirmasi. Supabase → Authentication → Providers → Email → nonaktifkan Confirm email untuk uji coba, atau konfirmasi lewat email.';
+          toastSafe(msg);
           return;
         }
         return enterFromSession(r.data.session);
@@ -77,17 +83,30 @@
       });
   }
 
-  function pickCuAfterCloudLoad(email) {
+  function displayNameFromAuth(authUser, emailLower) {
+    var md = authUser && authUser.user_metadata;
+    if (md && md.full_name) return String(md.full_name);
+    if (md && md.name) return String(md.name);
+    var em = emailLower || '';
+    var at = em.indexOf('@');
+    if (at > 0) return em.slice(0, at);
+    return em || 'Pengguna';
+  }
+
+  /** Pilih CU SiGaji: cocokkan email/username di data; kalau tidak ada, tetap pakai hak Admin tapi nama tampilan dari akun Supabase (bukan label default "Administrator"). */
+  function pickCuAfterCloudLoad(email, authUser) {
     var em = (email || '').toLowerCase();
     var localPart = em.split('@')[0] || '';
+    var matchedEmail = users.find(function (x) {
+      return x.email && String(x.email).toLowerCase() === em;
+    });
+    var matchedUsername = users.find(function (x) {
+      return String(x.username || '')
+        .toLowerCase() === localPart;
+    });
     var u =
-      users.find(function (x) {
-        return x.email && String(x.email).toLowerCase() === em;
-      }) ||
-      users.find(function (x) {
-        return String(x.username || '')
-          .toLowerCase() === localPart;
-      }) ||
+      matchedEmail ||
+      matchedUsername ||
       users.find(function (x) {
         return x.role === 'Admin' && x.aktif !== false;
       }) ||
@@ -98,17 +117,22 @@
         username: localPart || 'admin',
         password: '',
         role: 'Admin',
-        nama: email || 'Administrator',
+        nama: displayNameFromAuth(authUser, em),
         nik: null,
         aktif: true,
       };
     }
-    return Object.assign({}, u);
+    var cu = Object.assign({}, u);
+    if (!matchedEmail && !matchedUsername) {
+      cu.nama = displayNameFromAuth(authUser, em);
+      if (localPart) cu.username = localPart;
+    }
+    return cu;
   }
 
   async function enterFromSession(session) {
     await loadCloudPayloadIntoApp(session.user.id);
-    var cu = pickCuAfterCloudLoad(session.user.email);
+    var cu = pickCuAfterCloudLoad(session.user.email, session.user);
     if (typeof window.enterAppWithUser === 'function') {
       window.enterAppWithUser(cu);
     }
