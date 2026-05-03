@@ -87,6 +87,27 @@ function hitungPPhProgresif(bruto,ptkpKey){
   return Math.round(hitungPPhTahunanProgresif(bruto*12,ptkpKey)/12);
 }
 
+// PPh 21 FINAL untuk pesangon/THT/JHT dibayar sekaligus (tarif berlapis PP 68/2009)
+function hitungPPhFinalPesangon(bruto){
+  const x=Math.max(0,Math.round(bruto||0));
+  let pph=0;
+  const lap=[
+    {cap:50e6,rate:0},
+    {cap:100e6,rate:.05},
+    {cap:500e6,rate:.15},
+    {cap:Infinity,rate:.25},
+  ];
+  let prev=0;
+  for(const l of lap){
+    const upTo=Math.min(x,l.cap);
+    const base=Math.max(0,upTo-prev);
+    if(base>0)pph+=base*l.rate;
+    prev=upTo;
+    if(x<=l.cap)break;
+  }
+  return Math.round(pph);
+}
+
 // Hitung total bruto karyawan dari periodes sebelumnya dalam tahun yg sama
 function getBrutoYTD(k,pNama){
   const p=periodes.find(x=>x.nama===pNama)||PA();
@@ -148,6 +169,43 @@ function hitungGaji(k,pNama){
   const periodeAdaTHR=!!p.thr_aktif;
   const thrObj=periodeAdaTHR?hitungTHRBruto(k,pNama):null;
   const thrBruto=(thrObj&&thrObj.eligible)?thrObj.nilai:0;
+
+  // ── PEMBAYARAN BERHENTI (UPH / PHK) ────────────
+  // Sumber data: k.tgl_berhenti + k.phk + hitungPesangon() (pesangon.js)
+  const tglStopIso=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
+  const isStopInPeriode=!!(tglStopIso&&p.start&&p.end&&tglStopIso>=p.start&&tglStopIso<=p.end);
+  const isPeriodeResign=p.tipe_periode==='resign';
+  const alasan=(k.phk&&k.phk.alasan)?String(k.phk.alasan):'';
+  const isResign=alasan.indexOf('resign')===0;
+  let phkCtx=null;
+  if(tglStopIso&&(isStopInPeriode||isPeriodeResign)&&typeof hitungPesangon==='function'){
+    const r=hitungPesangon(k);
+    if(r&&r.ok){
+      const items=[
+        {nama:'Uang Pesangon',nilai:Math.round(r.up||0)},
+        {nama:'Uang Penghargaan Masa Kerja',nilai:Math.round(r.upmk||0)},
+        {nama:'Uang Penggantian Hak',nilai:Math.round(r.uph||0)},
+        {nama:'Uang pisah',nilai:Math.round(r.pisah||0)},
+      ].filter(it=>it.nilai>0);
+      const bruto=items.reduce((s,it)=>s+it.nilai,0);
+      if(bruto>0){
+        if(isResign){
+          // Resign: UPH ikut PPh 21 biasa (non-final) → masuk grossPPh & take home
+          const uphOnly=(items.find(it=>it.nama==='Uang Penggantian Hak')||{}).nilai||0;
+          if(uphOnly>0){
+            tGross+=uphOnly;
+            tTH+=uphOnly;
+            tItems.push({nama:'Uang Penggantian Hak (Resign)',nilai:uphOnly,tipe:'tidak_tetap',eff:uphOnly,inTH:true,isHarian:false});
+          }
+          phkCtx={mode:'resign',tgl:tglStopIso,items:items,bruto:bruto,pphFinal:0,pphFinalBase:0};
+        }else{
+          // PHK: dipisah, PPh 21 final pesangon dihitung sendiri
+          const pphFinal=hitungPPhFinalPesangon(bruto);
+          phkCtx={mode:'phk',tgl:tglStopIso,items:items,bruto:bruto,pphFinal:pphFinal,pphFinalBase:bruto};
+        }
+      }
+    }
+  }
   const bpjs=calcBPJS(k,gapokEff,tBPJS);
   // BPJS Perusahaan (JKK+JKM+Kes) = natura kena pajak per PMK 168/2023
   const bpjsPrsNatKP=bpjs.jkk_prs+bpjs.jkm_prs+bpjs.kes_prs;
@@ -184,9 +242,11 @@ function hitungGaji(k,pNama){
   const potKehadiran=hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
   const pphRet=k.pph_return?.nilai||0;
   const totalPot=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+potT+pph+potKehadiran.total;
-  const neto=brutoTH-totalPot+pphRet;
+  const netoRegular=brutoTH-totalPot+pphRet;
+  const phkNet=(phkCtx&&phkCtx.mode==='phk')?(phkCtx.bruto-phkCtx.pphFinal):0;
+  const neto=netoRegular+phkNet;
   const bebanPrs=bpjs.kes_prs+bpjs.jht_prs+bpjs.jp_prs+bpjs.jkk_prs+bpjs.jkm_prs;
-  return{gapokEff,gapokFull:k.gapok,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,pphRet,totalPot,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir};
+  return{gapokEff,gapokFull:k.gapok,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,pphRet,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx};
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;
@@ -906,6 +966,13 @@ function makeSlip(k,pNama){
   h+='<div class="sr"><span>BPJS Kes Prs (4%)</span><span>'+fmt(g.bpjs.kes_prs)+'</span></div>';
   h+='<div class="sr"><span>BPJS JHT+JP Prs</span><span>'+fmt(g.bpjs.jht_prs+g.bpjs.jp_prs)+'</span></div>';
   h+='<div class="sr"><span>JKK+JKM Prs</span><span>'+fmt(g.bpjs.jkk_prs+g.bpjs.jkm_prs)+'</span></div>';
+  if(g.phk&&g.phk.mode==='phk'){
+    h+='<div class="ssec" style="margin-top:10px">Pembayaran PHK (PPh 21 Final)</div>';
+    (g.phk.items||[]).forEach(function(it){h+='<div class="sr"><span>'+it.nama+'</span><span>+ '+fmt(it.nilai)+'</span></div>';});
+    h+='<div class="sr bold"><span>Total PHK</span><span>+ '+fmt(g.phk.bruto)+'</span></div>';
+    h+='<div class="sr" style="color:#9b2121"><span>PPh 21 Final Pesangon</span><span>- '+fmt(g.phk.pphFinal)+'</span></div>';
+    h+='<div class="sr bold" style="color:#1a56a0"><span>PHK Diterima (Netto)</span><span>+ '+fmt(g.phk.bruto-g.phk.pphFinal)+'</span></div>';
+  }
   h+='<div class="stotal"><span>TAKE HOME PAY</span><span>'+fmt(g.neto)+'</span></div>';
   h+='<div style="margin-top:8px;font-size:10px;line-height:1.55;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:8px 10px"><strong>Terbilang</strong> <span style="color:#6b7280;font-style:italic">'+terbilangRupiah(g.neto)+'</span></div>';
   if(g.thrBruto>0)h+='<div style="background:#f5f0ff;border:1px solid #c4b5fd;border-radius:7px;padding:8px 12px;margin-top:6px;font-size:10px;color:#5b21b6;text-align:center;font-weight:700">&#127873; THR '+fmt(g.thrBruto)+' sudah dibayar terpisah pada '+fmtDate(p.thr_bayar||'-')+' (full netto)</div>';
@@ -1095,6 +1162,14 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   rowL('BPJS Kes Prs (4%)',fmt(g.bpjs.kes_prs));
   rowL('BPJS JHT+JP Prs',fmt(g.bpjs.jht_prs+g.bpjs.jp_prs));
   rowL('JKK+JKM Prs',fmt(g.bpjs.jkk_prs+g.bpjs.jkm_prs));
+  if(g.phk&&g.phk.mode==='phk'){
+    y+=2;
+    sec('Pembayaran PHK (PPh 21 Final)');
+    (g.phk.items||[]).forEach(function(it){rowL(it.nama,fmt(it.nilai));});
+    rowL('Total PHK',fmt(g.phk.bruto),true);
+    rowM('PPh 21 Final Pesangon',g.phk.pphFinal);
+    rowL('PHK Diterima (Netto)',fmt(g.phk.bruto-g.phk.pphFinal),true);
+  }
   y+=4;
 
   chk();
