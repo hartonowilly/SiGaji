@@ -210,6 +210,14 @@ function resolveKarForPeriode(k,pNama){
   if(snap.pph_return!==undefined)out.pph_return=deepCloneLite(snap.pph_return);
   return out;
 }
+function upsertKarSnapshotForPeriode(nik,pNama){
+  if(!nik||!pNama)return;
+  var k=karyawan.find(function(x){return x.nik===nik;});
+  if(!k)return;
+  if(!karSnapshot)karSnapshot={};
+  if(!karSnapshot[pNama])karSnapshot[pNama]={};
+  karSnapshot[pNama][nik]=snapshotKarFromMaster(k);
+}
 // ── HITUNG GAJI (dengan integrasi THR v9) ────────
 function hitungGaji(k,pNama){
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
@@ -712,6 +720,10 @@ function simpanKarPanel(){
   if(canAccessSubTab('karyawan','gaji'))Object.assign(k,{gapok:parseFloat(gv('sp-gapok-f'))||0});
   if(canAccessSubTab('karyawan','pphret'))k.pph_return={nilai:parseFloat(gv('sp-pphret-val'))||0,ket:gv('sp-pphret-ket')};
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
+  // Jika mode snapshot per periode aktif, update snapshot untuk periode aktif agar perubahan (termasuk PPh Return)
+  // langsung tercermin di hitung gaji periode yang sedang dikerjakan.
+  var pAktif=PA();
+  if(pAktif&&pAktif.nama)upsertKarSnapshotForPeriode(k.nik,pAktif.nama);
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;
   renderKar();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();updateGajiSummary();toast('Data '+k.nama+' disimpan');
 }
