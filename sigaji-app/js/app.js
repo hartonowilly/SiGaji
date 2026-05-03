@@ -172,6 +172,28 @@ function deepCloneLite(o){
   try{return JSON.parse(JSON.stringify(o));}catch(e){return o;}
 }
 
+function nowIso(){return new Date().toISOString();}
+function auditPush(entry){
+  if(!auditLog)auditLog=[];
+  auditLog.unshift(entry);
+  // batasi ukuran agar tidak membengkak
+  if(auditLog.length>3000)auditLog=auditLog.slice(0,3000);
+}
+function logPayrollAudit(nik,action,detail){
+  try{
+    var p=PA();
+    auditPush({
+      ts:nowIso(),
+      periode:(p&&p.nama)||'',
+      nik:nik||'',
+      by:(CU&&CU.nama)||'',
+      role:(CU&&CU.role)||'',
+      action:action||'',
+      detail:detail||''
+    });
+  }catch(e){}
+}
+
 // Snapshot master karyawan per periode agar revisi bulan lain tidak mengubah periode yang sudah dikerjakan.
 function snapshotKarFromMaster(k){
   return{
@@ -307,6 +329,8 @@ function setSpPayrollView(mode){
   if(gap)gap.readOnly=!isPayrollSnapshotMode();
   var rv=document.getElementById('sp-pphret-val');if(rv)rv.value=(src.pph_return&&src.pph_return.nilai)||0;
   var rk=document.getElementById('sp-pphret-ket');if(rk)rk.value=(src.pph_return&&src.pph_return.ket)||'';
+  if(rv)rv.readOnly=!isPayrollSnapshotMode();
+  if(rk)rk.readOnly=!isPayrollSnapshotMode();
   if(document.getElementById('sp-gaji').style.display!=='none'){renderTunjPanel(src);renderPotPanel(src);}
   if(document.getElementById('sp-bpjs').style.display!=='none')loadBPJSPanel(src);
   if(document.getElementById('sp-natura').style.display!=='none')renderNaturaPanel(src);
@@ -823,10 +847,12 @@ function simpanKarPanel(){
   Object.assign(k,{nik:newNik,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   var pAktif=PA();
   var locked=!!(pAktif&&pAktif.nama&&isPeriodeLocked(pAktif.nama));
-  var tgt=(pAktif&&pAktif.nama)?getPayrollTargetByNik(k.nik,true):k;
+  var tgt=(pAktif&&pAktif.nama)?getPayrollTargetByNik(k.nik,true,'periode'):k;
   if(!locked){
     if(canAccessSubTab('karyawan','gaji'))tgt.gapok=parseFloat(gv('sp-gapok-f'))||0;
+    // PPh Return adalah komponen payroll-periode → hanya disimpan ke snapshot periode aktif
     if(canAccessSubTab('karyawan','pphret'))tgt.pph_return={nilai:parseFloat(gv('sp-pphret-val'))||0,ket:gv('sp-pphret-ket')};
+    logPayrollAudit(k.nik,'Simpan Payroll Panel',`gapok=${tgt.gapok} pph_return=${(tgt.pph_return&&tgt.pph_return.nilai)||0}`);
   }
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
   if(locked&&typeof toast==='function')toast('Periode '+pAktif.nama+' terkunci: snapshot tidak diubah.');
@@ -872,12 +898,62 @@ function updTunjEl(el){
 }
 function delTunjEl(el){delTunj(el.dataset.nik,parseInt(el.dataset.i));}
 function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.4rem;align-items:center;padding:.5rem .6rem;background:#fdeaea;border-radius:7px;border:1px solid #f5a3a3;margin-bottom:.4rem"><input value="${p.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'nama',this.value)"><input type="number" value="${p.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><input value="${p.ket||''}" placeholder="Ket." style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'ket',this.value)"><button class="btn btn-xs btn-r" onclick="delPot('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}
-function addTunj(){if(!canAccessSubTab('karyawan','gaji'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.tunjangan)k.tunjangan=[];k.tunjangan.push({nama:'Komponen Baru',nilai:0,tipe:'tetap',thr_ikut:true,prorata_ikut:true});renderTunjPanel(k);updateGajiSummary();}
-function addPot(){if(!canAccessSubTab('karyawan','gaji'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.potongan)k.potongan=[];k.potongan.push({nama:'Potongan Baru',nilai:0,ket:''});renderPotPanel(k);updateGajiSummary();}
-function updTunj(nik,i,f,v){if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(nik,true);if(!k)return;k.tunjangan[i][f]=v;updateGajiSummary();}
-function updPot(nik,i,f,v){if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(nik,true);if(!k)return;k.potongan[i][f]=v;updateGajiSummary();}
-function delTunj(nik,i){if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(nik,true);if(!k)return;k.tunjangan.splice(i,1);renderTunjPanel(k);updateGajiSummary();}
-function delPot(nik,i){if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(nik,true);if(!k)return;k.potongan.splice(i,1);renderPotPanel(k);updateGajiSummary();}
+function addTunj(){
+  if(!canAccessSubTab('karyawan','gaji'))return;
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(cpNik,true);if(!k)return;
+  if(!k.tunjangan)k.tunjangan=[];
+  k.tunjangan.push({nama:'Komponen Baru',nilai:0,tipe:'tetap',thr_ikut:true,prorata_ikut:true});
+  logPayrollAudit(cpNik,'Tambah Tunjangan','Komponen Baru');
+  saveAll();
+  renderTunjPanel(k);updateGajiSummary();
+}
+function addPot(){
+  if(!canAccessSubTab('karyawan','gaji'))return;
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(cpNik,true);if(!k)return;
+  if(!k.potongan)k.potongan=[];
+  k.potongan.push({nama:'Potongan Baru',nilai:0,ket:''});
+  logPayrollAudit(cpNik,'Tambah Potongan','Potongan Baru');
+  saveAll();
+  renderPotPanel(k);updateGajiSummary();
+}
+function updTunj(nik,i,f,v){
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(nik,true);if(!k)return;
+  const before=deepCloneLite(k.tunjangan&&k.tunjangan[i]?k.tunjangan[i][f]:undefined);
+  k.tunjangan[i][f]=v;
+  logPayrollAudit(nik,'Update Tunjangan',`idx=${i} field=${f} ${String(before)} → ${String(v)}`);
+  saveAll();
+  updateGajiSummary();
+}
+function updPot(nik,i,f,v){
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(nik,true);if(!k)return;
+  const before=deepCloneLite(k.potongan&&k.potongan[i]?k.potongan[i][f]:undefined);
+  k.potongan[i][f]=v;
+  logPayrollAudit(nik,'Update Potongan',`idx=${i} field=${f} ${String(before)} → ${String(v)}`);
+  saveAll();
+  updateGajiSummary();
+}
+function delTunj(nik,i){
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(nik,true);if(!k)return;
+  const before=deepCloneLite((k.tunjangan||[])[i]||{});
+  k.tunjangan.splice(i,1);
+  logPayrollAudit(nik,'Hapus Tunjangan',`idx=${i} ${before&&before.nama?before.nama:''}`);
+  saveAll();
+  renderTunjPanel(k);updateGajiSummary();
+}
+function delPot(nik,i){
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(nik,true);if(!k)return;
+  const before=deepCloneLite((k.potongan||[])[i]||{});
+  k.potongan.splice(i,1);
+  logPayrollAudit(nik,'Hapus Potongan',`idx=${i} ${before&&before.nama?before.nama:''}`);
+  saveAll();
+  renderPotPanel(k);updateGajiSummary();
+}
 function updatePTKPVal(){const e=document.getElementById('sp-ptkp-f');const v=document.getElementById('sp-ptkp-val-f');if(!e||!v)return;v.value=fmtPTKPVal(nilaiPTKP(e.value));}
 function onNamaChange(){const n=document.getElementById('sp-nama-f')?.value||'';const r=document.getElementById('sp-reknam-f');if(r&&!r.dataset.manualEdit)r.value=n;}
 function onReknamEdit(){const e=document.getElementById('sp-reknam-f');if(e)e.dataset.manualEdit='1';}
@@ -917,9 +993,11 @@ function onBPJSKompChange(el){
   }
   const nik=el.dataset.nik;const key=el.dataset.key;
   const k=getPayrollTargetByNik(nik,true);if(!k)return;
+  const before=!!(k.bpjs_aktif&&k.bpjs_aktif[key]===true);
   if(!k.bpjs_aktif)k.bpjs_aktif={};
   k.bpjs_aktif[key]=el.checked;
   if(!el.checked&&k.bpjs_manual)delete k.bpjs_manual[key];
+  logPayrollAudit(nik,'Update BPJS Aktif',`${key} ${before?'on':'off'} → ${el.checked?'on':'off'}`);
   saveAll();loadBPJSPanel(k);updateGajiSummary();
 }
 function onBMChange2(el){
@@ -947,7 +1025,17 @@ function bpjsSetPreset(preset){
   saveAll();loadBPJSPanel(k);updateGajiSummary();toast('Preset diterapkan');
 }
 function onBPJSAktifChange(){const k=karyawan.find(function(x){return x.nik===cpNik;});if(k){loadBPJSPanel(k);updateGajiSummary();}}
-function onBMChange(nik,key,val){if(!canAccessSubTab('karyawan','bpjs'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(nik,true);if(!k||!bmState[key])return;if(!k.bpjs_manual)k.bpjs_manual={};k.bpjs_manual[key]=parseInt(val)||0;updateGajiSummary();}
+function onBMChange(nik,key,val){
+  if(!canAccessSubTab('karyawan','bpjs'))return;
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(nik,true);if(!k||!bmState[key])return;
+  if(!k.bpjs_manual)k.bpjs_manual={};
+  const before=k.bpjs_manual[key];
+  k.bpjs_manual[key]=parseInt(val)||0;
+  logPayrollAudit(nik,'Update BPJS Manual',`${key} ${String(before)} → ${String(k.bpjs_manual[key])}`);
+  saveAll();
+  updateGajiSummary();
+}
 function toggleManual(key){
   if(!canAccessSubTab('karyawan','bpjs'))return;
   if(!guardPayrollEditUnlocked())return;
@@ -955,21 +1043,42 @@ function toggleManual(key){
   const isNow=!bmState[key];bmState[key]=isNow;const ve=document.getElementById('b-'+key+'-v');const te=document.getElementById('tm-'+key);
   if(isNow){ve.readOnly=false;ve.className='bi manual';te.textContent='Manual';te.className='tm manual';k.bpjs_manual[key]=parseInt(ve.value)||0;ve.oninput=()=>{k.bpjs_manual[key]=parseInt(ve.value)||0;updateGajiSummary();};}
   else{delete k.bpjs_manual[key];ve.readOnly=true;ve.className='bi';ve.oninput=null;te.textContent='Auto';te.className='tm auto';const ok=bpjsKompAktif(k,key);if(!ok){ve.value=0;}else{const tB2=(k.tunjangan||[]).filter(t=>t.tipe==='tetap').reduce((s,t)=>s+t.nilai,0);const b2=k.gapok+tB2;const def=BPJS_DEF[key];const bas=def.basis?Math.min(b2,def.basis):b2;ve.value=Math.round(bas*def.pct/100);}}
+  logPayrollAudit(cpNik,'Toggle BPJS Manual',`${key} → ${isNow?'manual':'auto'}`);
+  saveAll();
   updateGajiSummary();
 }
 // ── NATURA PANEL ─────────────────────────────────
 function renderNaturaPanel(k){const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input value="${n.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="number" value="${n.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r" onclick="delNat('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span style="color:#2d6a0a;font-weight:700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span style="color:#9b2121;font-weight:700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';}
 function addNatura(){if(!canAccessSubTab('karyawan','natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama:'Natura Baru',nilai:0,kp:false});renderNaturaPanel(k);updateGajiSummary();}
 function addNatTmpl(nama,nilai,kp){if(!canAccessSubTab('karyawan','natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama,nilai,kp});renderNaturaPanel(k);updateGajiSummary();toast(nama+' ditambahkan');}
-function updNat(nik,i,f,v){if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(nik,true);if(!k)return;k.natura[i][f]=v;renderNaturaPanel(k);updateGajiSummary();}
-function delNat(nik,i){if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(nik,true);if(!k)return;k.natura.splice(i,1);renderNaturaPanel(k);updateGajiSummary();}
+function updNat(nik,i,f,v){
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(nik,true);if(!k)return;
+  const before=deepCloneLite(k.natura&&k.natura[i]?k.natura[i][f]:undefined);
+  k.natura[i][f]=v;
+  logPayrollAudit(nik,'Update Natura',`idx=${i} field=${f} ${String(before)} → ${String(v)}`);
+  saveAll();
+  renderNaturaPanel(k);updateGajiSummary();
+}
+function delNat(nik,i){
+  if(!guardPayrollEditUnlocked())return;
+  const k=getPayrollTargetByNik(nik,true);if(!k)return;
+  const before=deepCloneLite((k.natura||[])[i]||{});
+  k.natura.splice(i,1);
+  logPayrollAudit(nik,'Hapus Natura',`idx=${i} ${before&&before.nama?before.nama:''}`);
+  saveAll();
+  renderNaturaPanel(k);updateGajiSummary();
+}
 function renderPPhRetPanel(k){const val=k.pph_return?.nilai||0;const el=document.getElementById('pphret-preview');if(!el)return;el.innerHTML=val>0?`<div class="pr-row-info mt1"><span>Pengembalian ke Take Home</span><span style="color:#2d6a0a;font-weight:700">${fmt(val)}</span></div>`:'';}
 // ── GAJI SUMMARY PANEL ──────────────────────────
 function updateGajiSummary(){
   const km=karyawan.find(x=>x.nik===cpNik);if(!km)return;
   const k=getPayrollTargetByNik(cpNik,true)||km;
   const gpEl=document.getElementById('sp-gapok-f');if(gpEl&&isPayrollSnapshotMode())k.gapok=parseFloat(gpEl.value)||k.gapok;
-  const prv=parseFloat(document.getElementById('sp-pphret-val')?.value)||0;k.pph_return={nilai:prv,ket:document.getElementById('sp-pphret-ket')?.value||''};
+  if(isPayrollSnapshotMode()){
+    const prv=parseFloat(document.getElementById('sp-pphret-val')?.value)||0;
+    k.pph_return={nilai:prv,ket:document.getElementById('sp-pphret-ket')?.value||''};
+  }
   renderPPhRetPanel(k);const g=hitungGaji(km,PA().nama);const el=document.getElementById('gaji-summary-panel');if(!el)return;
   el.innerHTML=`<div class="gs"><div class="stit" style="margin-top:0">Gross Income (Dasar PPh 21)</div><div class="gs-row"><span>Gaji Pokok</span><span>${fmt(k.gapok)}</span></div>${g.tItems.map(t=>`<div class="gs-row"><span>${t.nama}${t.isHarian?' [Lump Sum]':''}</span><span>${fmt(t.eff)}</span></div>`).join('')}${g.natKP>0?`<div class="gs-row"><span>Natura Kena Pajak</span><span>${fmt(g.natKP)}</span></div>`:''}${g.lb>0?`<div class="gs-row"><span>Uang Lembur</span><span>${fmt(g.lb)}</span></div>`:''}${g.thrBruto>0?`<div class="gs-row" style="color:#5b21b6;font-weight:700"><span>THR Bruto (digabung ke Gross PPh)</span><span>${fmt(g.thrBruto)}</span></div>`:''}
 <div class="gs-row" style="font-weight:700;border-top:1px solid #c5d9f5;margin-top:3px;padding-top:3px"><span>Total Gross PPh 21</span><span>${fmt(g.grossPPh)}</span></div>${g.thrBruto>0?`<div style="font-size:10px;color:#5b21b6;margin-top:2px;background:#f5f0ff;padding:4px 6px;border-radius:4px">THR sudah digabung ke Gross PPh. Take Home akhir bulan = gaji saja (THR dibayar full netto terpisah).</div>`:''}
@@ -2384,6 +2493,38 @@ function buildExportData(){
 function exportBackup(){var data=buildExportData();var json=JSON.stringify(data,null,2);var blob=new Blob([json],{type:'application/json;charset=utf-8'});var a=document.createElement('a');var fn=((document.getElementById('backup-filename')&&document.getElementById('backup-filename').value)||'SiGaji_Backup').trim();var tgl=new Date().toISOString().split('T')[0];a.href=URL.createObjectURL(blob);a.download=fn+'_'+tgl+'.json';a.click();simpanRiwayatBackup(data._meta);var inf=document.getElementById('backup-info');if(inf)inf.textContent='Backup lengkap diunduh ('+DATA_KEYS.length+' jenis data, '+data._meta.totalKaryawan+' karyawan, snapshot '+(data._meta.snapshotPeriodeCount||0)+' periode / '+(data._meta.snapshotRowCount||0)+' baris): '+a.download;toast('Backup lengkap diunduh');}
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){}}
 function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:7px;border:1px solid var(--bd);margin-bottom:.35rem;font-size:12px;'+(i===0?'background:#e8f4de;border-color:#b3d98f':'')+'"><div><div style="font-weight:700">'+(x.tanggalDisplay||x.tanggal)+'</div><div style="font-size:10px;color:#6b7280">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}catch(e){}}
+function renderAuditLog(){
+  var wrap=document.getElementById('audit-log');
+  var sel=document.getElementById('audit-periode');
+  if(!wrap||!sel)return;
+  var q=(document.getElementById('audit-q')&&document.getElementById('audit-q').value||'').toLowerCase();
+  // isi opsi periode
+  var perList=['(Semua)'].concat((periodes||[]).map(function(p){return p.nama;}).sort());
+  if(!sel.options.length){
+    sel.innerHTML=perList.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('');
+    sel.value='(Semua)';
+  }
+  var pPick=sel.value||'(Semua)';
+  var list=(auditLog||[]).filter(function(e){
+    if(pPick!=='(Semua)'&&e.periode!==pPick)return false;
+    if(!q)return true;
+    var s=(e.ts+' '+e.periode+' '+e.nik+' '+e.by+' '+e.action+' '+e.detail).toLowerCase();
+    return s.indexOf(q)>=0;
+  }).slice(0,200);
+  if(!list.length){wrap.innerHTML='<div style="padding:12px;color:#6b7280;font-size:12px">Belum ada audit log.</div>';return;}
+  wrap.innerHTML=list.map(function(e){
+    var t=String(e.ts||'').replace('T',' ').replace('Z','');
+    return '<div style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-size:12px">'
+      +'<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">'
+      +'<div><strong>'+escapeHtml(e.action||'-')+'</strong> <span style="color:#6b7280">('+escapeHtml(e.periode||'')+')</span></div>'
+      +'<div style="color:#6b7280;font-size:11px">'+escapeHtml(t)+'</div>'
+      +'</div>'
+      +'<div style="margin-top:4px;color:#374151"><span class="bdg b-info" style="margin-right:6px">'+escapeHtml(e.nik||'-')+'</span>'
+      +'<span style="color:#6b7280">oleh</span> <strong>'+escapeHtml(e.by||'-')+'</strong> <span style="color:#6b7280">('+escapeHtml(e.role||'')+')</span></div>'
+      +'<div style="margin-top:4px;color:#6b7280;font-size:11px">'+escapeHtml(e.detail||'')+'</div>'
+      +'</div>';
+  }).join('');
+}
 function renderMigrationStatus(){
   var el=document.getElementById('migration-status');
   if(!el)return;
@@ -2465,7 +2606,7 @@ function showPg(pg){
   if(pg==='myslip')loadMySlip();
   if(pg==='pph')renderPPH();
   if(pg==='laporan')renderLaporan();
-  if(pg==='backup'){renderBackupRiwayat();renderMigrationStatus();}
+  if(pg==='backup'){renderBackupRiwayat();renderMigrationStatus();renderAuditLog();}
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
   if(pg==='pesangon')try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);toast('Modul Pesangon error — cek konsol (F12).');}

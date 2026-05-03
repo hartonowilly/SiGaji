@@ -76,10 +76,15 @@ function migrateStorage(db){
     db.karSnapshot=ks;
     v=6;
   }
+  if(v<7){
+    if(db.auditLog===undefined)db.auditLog=[];
+    v=7;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
   if(db.karSnapshot===undefined)db.karSnapshot={};
+  if(db.auditLog===undefined)db.auditLog=[];
   return db;
 }
 const DB_KEY='sigaji_db';
@@ -91,7 +96,7 @@ function recoverDbFromUniversal(){
     if(!u)return false;
     const o=JSON.parse(u);
     const db={
-      schemaVersion:6,
+      schemaVersion:7,
       karyawan:o.karyawan||[],
       periodes:o.periodes||[],
       hariLibur:o.hariLibur||[],
@@ -107,7 +112,8 @@ function recoverDbFromUniversal(){
       thrManual:o.thrManual||{},
       tunjVarBulan:o.tunjVarBulan||{},
       tunjVarLabels:o.tunjVarLabels||{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'},
-      karSnapshot:o.karSnapshot||{}
+      karSnapshot:o.karSnapshot||{},
+      auditLog:o.auditLog||[]
     };
     localStorage.setItem(DB_KEY,JSON.stringify(migrateStorage(db)));
     return true;
@@ -164,14 +170,15 @@ let thrManual=LS('thrManual',{});
 let tunjVarBulan=LS('tunjVarBulan',{});
 let tunjVarLabels=LS('tunjVarLabels',{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'});
 let karSnapshot=LS('karSnapshot',{});
+let auditLog=LS('auditLog',[]);
 let CU=null,cpNik=null;
 const bmState={};
 function saveAll(){
   try{
-    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot});
+    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog});
   }catch(e){console.error('saveAll error:',e);}
   try{
-    localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot}));
+    localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog}));
   }catch(e){}
   try{
     if(window.sigajiApplyingCloud)return;
@@ -200,9 +207,10 @@ function applyDbFromCloudPayload(payload){
     if(o.tunjVarBulan!==undefined)tunjVarBulan=o.tunjVarBulan;
     if(o.tunjVarLabels!==undefined)tunjVarLabels=o.tunjVarLabels;
     if(o.karSnapshot!==undefined)karSnapshot=o.karSnapshot;
-    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot});
+    if(o.auditLog!==undefined)auditLog=o.auditLog;
+    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog});
     try{
-      localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot}));
+      localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog}));
     }catch(e2){}
     showSI();
   }finally{
@@ -226,7 +234,8 @@ function getPayloadForCloud(){
     thrManual:thrManual,
     tunjVarBulan:tunjVarBulan,
     tunjVarLabels:tunjVarLabels,
-    karSnapshot:karSnapshot
+    karSnapshot:karSnapshot,
+    auditLog:auditLog
   }));
 }
 if(typeof window!=='undefined'){
