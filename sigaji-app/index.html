@@ -217,6 +217,21 @@
   <div class="card" style="background:#e8f4de;border-color:#b3d98f"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
 </div>
 
+<!-- PESANGON / PHK -->
+<div class="pg" id="pg-pesangon">
+  <div class="ph"><div><div class="pt">Pesangon &amp; PHK</div><div class="pst">Estimasi hak sesuai UU Cipta Kerja / PP 35 Tahun 2021 — bukan pengganti konsultasi hukum</div></div>
+    <button class="btn btn-sm btn-out" onclick="renderPesangon()">&#8635; Refresh</button></div>
+  <div class="info-box info-amber" style="font-size:11px;line-height:1.65;margin-bottom:.75rem">
+    <strong>Ketentuan ringkas:</strong> Peletakan <strong>mengundurkan diri</strong> dengan pemberitahuan <strong>minimal 30 hari</strong> umumnya hanya berhak <strong>Uang Penggantian Hak (UPH)</strong> (termasuk pengganti cuti belum diambil, dll.) — tanpa UP/UPMK. Pensiun, meninggal, dan PHK perusahaan memakai <strong>faktor pengali</strong> berbeda terhadap UP &amp; UPMK. Dasar upah di sini = <strong>gaji pokok + tunjangan tetap yang ikut THR</strong>. UPH cuti: <strong>(dasar ÷ 25) × sisa cuti</strong> (hari), atau isi manual. Sesuaikan dengan PK/PKWP perusahaan Anda.
+  </div>
+  <div class="card"><div class="ct">Karyawan dengan tanggal berhenti</div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>Karyawan</th><th>Tgl. berhenti</th><th>Alasan</th><th>Total estimasi</th><th>Data</th><th></th></tr></thead>
+    <tbody id="tb-pesangon"></tbody></table></div>
+  </div>
+  <div class="card"><div class="ct">Rincian &amp; penyesuaian</div><div id="psg-detail"></div></div>
+</div>
+
 <!-- PENGGAJIAN -->
 <div class="pg" id="pg-penggajian">
   <div class="ph"><div><div class="pt">Proses Penggajian</div><div class="pst" id="pg-periode-lbl">-</div></div>
@@ -654,7 +669,11 @@
         <div class="fg"><label>Jabatan</label><input id="sp-jabatan-f"></div>
         <div class="fg"><label>Status Karyawan</label><select id="sp-status-f"><option>Tetap</option><option>Kontrak</option><option>Probasi</option><option>PKWT</option></select></div>
         <div class="fg"><label>Tanggal Masuk</label><input type="date" id="sp-masuk-f"></div>
-        <div class="fg"><label>Tgl. berhenti (opsional, untuk 1721-A1)</label><input type="date" id="sp-berhenti-f" title="Jika diisi: bukti potong A1 hanya memuat periode gaji sampai tanggal ini (mis. resign Februari)"></div>
+        <div class="fg"><label>Tgl. berhenti (opsional, untuk 1721-A1)</label><input type="date" id="sp-berhenti-f" title="Jika diisi: bukti potong A1 hanya memuat periode gaji sampai tanggal ini (mis. resign Februari)" onchange="toggleSpPhkWrap()" oninput="toggleSpPhkWrap()"></div>
+        <div class="fg ff" id="sp-phk-wrap" style="display:none">
+          <label>Alasan PHK / berhenti <span style="color:#9b2121;font-weight:700">*</span> <span style="font-size:10px;color:#6b7280;font-weight:600">(wajib jika ada tanggal berhenti — UU Cipta Kerja)</span></label>
+          <select id="sp-phk-alasan"></select>
+        </div>
         <div class="fg"><label>Status PTKP</label>
           <select id="sp-ptkp-f" onchange="updatePTKPVal()">
             <option value="TK0">TK/0 — Rp 54.000.000</option><option value="TK1">TK/1 — Rp 58.500.000</option>
@@ -693,7 +712,7 @@
       <div id="tunj-list"></div>
       <div class="info-box info-blue mt1" style="font-size:10px;line-height:1.6">
         <strong>Tipe:</strong> Tetap (BPJS+THR+PPh+TH) | Tetap-Excl.BPJS (THR+PPh+TH) | Tidak Tetap (PPh+TH) | Harian-Excl.TH (PPh saja)<br>
-        <strong>Kolom PR:</strong> <em>Ikat Prorata</em> = bagian dari total <code>(gaji pokok + tunjangan ikut PR) ÷ HK × HH</code> (HK = hari kerja periode slip, HH = hari hadir dalam rentang tanggal periode); <em>Penuh</em> = nilai tetap utuh walau prorata.
+        <strong>Kolom PR:</strong> <em>Ikat Prorata</em> = nilai dikali (hari hadir ÷ hari kerja) saat Pro-Rata aktif di Proses Gaji; <em>Penuh</em> = nilai tetap utuh walau prorata.
       </div>
       <div class="stit" style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem">
         <span>Potongan Tetap</span><button class="btn btn-xs btn-p" onclick="addPot()">+ Tambah</button>
@@ -829,6 +848,7 @@
 <script src="js/storage.js"></script>
 <script src="js/ptkp.js"></script>
 <script src="js/app.js"></script>
+<script src="js/pesangon.js"></script>
 <script src="js/config.js"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="js/cloud-sync.js"></script>
