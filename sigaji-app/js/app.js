@@ -14,11 +14,7 @@ const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr);
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
 function hariHadirBulan(nik,yr,bln){const pfx=`${yr}-${String(bln).padStart(2,'0')}-`;return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='hadir').length;}
-/** Hari hadir (status hadir) dalam rentang periode gaji — selaras dengan hariKerjaRange(p.start,p.end). */
-function hariHadirRange(nik,s,e){const sStr=typeof s==='string'?s.split('T')[0]:new Date(s).toISOString().split('T')[0];const eStr=typeof e==='string'?e.split('T')[0]:new Date(e).toISOString().split('T')[0];return Object.entries(absensi[nik]||{}).filter(([d,st])=>d>=sStr&&d<=eStr&&st==='hadir').length;}
-/** Bagi total integer ke bobot proporsional (metode sisa terbesar) — untuk prorata satu kali bulat. */
-function allocateProportional(weights,total){const W=weights.reduce((a,b)=>a+b,0);if(W<=0||total<=0)return weights.map(()=>0);const exact=weights.map(w=>w*total/W);const base=exact.map(x=>Math.floor(x));let left=total-base.reduce((a,b)=>a+b,0);const order=exact.map((x,i)=>({i,r:x-Math.floor(x)})).sort((a,b)=>b.r-a.r);for(let k=0;k<left;k++)base[order[k].i]++;return base;}
-function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=periodes.find(x=>x.nama===pN)||PA();const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirRange(nik,p.start,p.end);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
+function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=PA();const ed=new Date(p.end||'2026-03-24');const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirBulan(nik,ed.getFullYear(),ed.getMonth()+1);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
 function setPREnabled(nik,pN,v){getPR(nik,pN).enabled=v;saveAll();renderPenggajian();}
 function setPRField(nik,pN,f,v){const pr=getPR(nik,pN);pr[f]=v;pr.manual=true;saveAll();renderPenggajian();}
 // ── BPJS ─────────────────────────────────────────
@@ -130,36 +126,18 @@ function hitungGaji(k,pNama){
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
   const hkP=hariKerjaRange(p.start,p.end);
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
-  const tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
-  let gapokEff;let tBPJS=0,tGross=0,tTH=0;const tItems=[];
-  if(isPR){
-    const prWeights=[k.gapok||0];
-    for(const t of tunjGabungan)if(t.prorata_ikut!==false)prWeights.push(t.nilai||0);
-    const W=prWeights.reduce((s,w)=>s+w,0);
-    const totalPR=W>0?Math.round((W/pr.hk)*pr.hh):0;
-    const alloc=W>0?allocateProportional(prWeights,totalPR):prWeights.map(()=>0);
-    let wi=0;gapokEff=alloc[wi++];
-    for(const t of tunjGabungan){
-      const eff=t.prorata_ikut===false?Math.round(t.nilai||0):alloc[wi++];
-      switch(t.tipe){
-        case'tetap':tBPJS+=eff;tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-        case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-        case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-        case'harian_exclude':{tGross+=eff;tItems.push({...t,eff,inTH:false,isHarian:true});break;}
-        default:tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});
-      }
-    }
-  }else{
-    gapokEff=Math.round(k.gapok);
-    for(const t of tunjGabungan){
-      const eff=Math.round(t.nilai||0);
-      switch(t.tipe){
-        case'tetap':tBPJS+=eff;tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-        case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-        case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-        case'harian_exclude':{tGross+=eff;tItems.push({...t,eff,inTH:false,isHarian:true});break;}
-        default:tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});
-      }
+  const prF=isPR?pr.hh/pr.hk:1;const gapokEff=Math.round(k.gapok*prF);
+  let tBPJS=0,tGross=0,tTH=0;const tItems=[];
+  var tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
+  for(const t of tunjGabungan){
+    const prMul=isPR&&t.prorata_ikut===false?1:prF;
+    const eff=Math.round(t.nilai*prMul);
+    switch(t.tipe){
+      case'tetap':tBPJS+=eff;tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+      case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+      case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
+      case'harian_exclude':{const tot=Math.round(t.nilai*prMul);tGross+=tot;tItems.push({...t,eff:tot,inTH:false,isHarian:true});break;}
+      default:tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});
     }
   }
   const natKP=(k.natura||[]).filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);
@@ -453,7 +431,19 @@ function doLogout(){
 if(typeof window!=='undefined')window.enterAppWithUser=enterAppWithUser;
 function uploadLogo(inp){const f=inp.files[0];if(!f)return;if(f.size>2097152){toast('Maks 2MB');return;}const r=new FileReader();r.onload=e=>{perusahaan.logo=e.target.result;saveAll();applyBranding();toast('Logo diupload');};r.readAsDataURL(f);}
 function hapusLogo(){perusahaan.logo='';saveAll();applyBranding();toast('Logo dihapus');}
-function renderAll(){renderDash();renderKar();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();}
+function populatePhkAlasanSelect(){
+  var el=document.getElementById('sp-phk-alasan');if(!el||typeof PHK_ALASAN_OPTS==='undefined')return;
+  el.innerHTML=PHK_ALASAN_OPTS.map(function(o){return '<option value="'+o.id+'">'+(o.lbl||'')+'</option>';}).join('');
+}
+function toggleSpPhkWrap(){
+  var ber=document.getElementById('sp-berhenti-f');
+  var w=document.getElementById('sp-phk-wrap');
+  if(!w)return;
+  var on=ber&&String(ber.value||'').trim();
+  w.style.display=on?'':'none';
+  if(on&&(!document.getElementById('sp-phk-alasan')||!document.getElementById('sp-phk-alasan').options.length))populatePhkAlasanSelect();
+}
+function renderAll(){renderDash();renderKar();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();if(typeof renderPesangon==='function')renderPesangon();populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();}
 // ── DASHBOARD ───────────────────────────────────
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
@@ -515,6 +505,9 @@ function openPanel(nik){
   sv('sp-nik-f',k.nik);sv('sp-nama-f',isNew?'':k.nama);sv('sp-jk-f',k.jk);sv('sp-agama-f',k.agama);
   sv('sp-ktp-f',isNew?'':k.ktp);sv('sp-npwp-f',isNew?'':k.npwp);sv('sp-hp-f',isNew?'':k.hp);sv('sp-email-f',isNew?'':k.email);sv('sp-alamat-f',isNew?'':k.alamat);
   sv('sp-dept-f',k.dept);sv('sp-jabatan-f',isNew?'':k.jabatan);sv('sp-status-f',k.status);sv('sp-masuk-f',isNew?'':k.masuk);sv('sp-berhenti-f',k.tgl_berhenti||'');
+  populatePhkAlasanSelect();
+  var spa=document.getElementById('sp-phk-alasan');if(spa)spa.value=(k.phk&&k.phk.alasan)?k.phk.alasan:'';
+  toggleSpPhkWrap();
   sv('sp-ptkp-f',k.ptkp);sv('sp-atasan-f',isNew?'':k.atasan);sv('sp-lokasi-f',isNew?'':k.lokasi);
   sv('sp-bank-f',k.bank||'BCA');sv('sp-norek-f',isNew?'':k.norek||'');
   sv('sp-reknam-f',k.reknam||k.nama||'');
@@ -538,12 +531,21 @@ function simpanKarPanel(){
   const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
   const oldNik=k.nik,newNik=gv('sp-nik-f').trim()||k.nik;
   var tbh=gv('sp-berhenti-f').trim();
+  var phkAl=document.getElementById('sp-phk-alasan');
+  if(tbh){
+    if(!phkAl||!String(phkAl.value||'').trim()){toast('Jika tanggal berhenti diisi, wajib pilih alasan PHK (sesuai UU Cipta Kerja).');return;}
+    if(!k.phk)k.phk={};
+    k.phk.alasan=phkAl.value;
+  }else{
+    delete k.tgl_berhenti;
+    delete k.phk;
+  }
   Object.assign(k,{nik:newNik,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   if(canAccessSubTab('karyawan','gaji'))Object.assign(k,{gapok:parseFloat(gv('sp-gapok-f'))||0});
   if(canAccessSubTab('karyawan','pphret'))k.pph_return={nilai:parseFloat(gv('sp-pphret-val'))||0,ket:gv('sp-pphret-ket')};
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;
-  renderKar();renderDash();renderPenggajian();renderPPH();populateSelects();updateGajiSummary();toast('Data '+k.nama+' disimpan');
+  renderKar();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();updateGajiSummary();toast('Data '+k.nama+' disimpan');
 }
 function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
 function renderTunjPanel(k){
@@ -757,7 +759,7 @@ function renderPenggajian(skipTunjVar){
     const st=ap?ap.status:'draft';
     const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:'<span class="bdg b-gray">Draft</span>'}[st];
     const pr=getPR(k.nik,p.nama);
-    if(!pr.manual){pr.hk=hk;pr.hh=hariHadirRange(k.nik,p.start,p.end);}
+    if(!pr.manual){pr.hk=hk;const ed=new Date(p.end);pr.hh=hariHadirBulan(k.nik,ed.getFullYear(),ed.getMonth()+1);}
     if(pr.enabled)prAktif++;
     const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'" onclick="setPREnabled(\''+k.nik+'\',\''+p.nama+'\','+(!pr.enabled)+')">'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
     const prInputs=pr.enabled?'<div style="margin-top:4px;display:flex;gap:5px;align-items:center"><span style="font-size:10px;color:#6b7280">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span style="font-size:10px;color:#6b7280">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
@@ -2042,6 +2044,7 @@ function showPg(pg){
   if(pg==='backup')renderBackupRiwayat();
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
+  if(pg==='pesangon'&&typeof renderPesangon==='function')renderPesangon();
 }
 function applyMasterSubtabVisibility(){
   var tabs=document.querySelectorAll('#pg-master .tabs .tab');
