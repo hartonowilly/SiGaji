@@ -563,16 +563,25 @@ function karRowHtml(k){
   return`<tr><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${s<=0?'b-err':s<=3?'b-warn':'b-teal'}">${s}/${masterCuti.kuota}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button><button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
-  const el=document.getElementById('kar-count');if(el)el.textContent=karyawan.length+' karyawan';
+  const p=PA();
+  const list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan';
   const th=document.getElementById('kar-thead-row');
   if(th){
     const showGaji=CU&&(CU.role==='Admin'||canAccessSubTab('karyawan','gaji'));
     th.innerHTML='<th>Karyawan</th><th>Dept</th><th>Jabatan</th><th>Status</th>'+(showGaji?'<th>Gaji Pokok</th>':'')+'<th>PTKP</th><th>BPJS</th><th>Saldo Cuti</th><th>Aksi</th>';
   }
   const tb=document.getElementById('tb-kar');if(!tb)return;
-  tb.innerHTML=karyawan.map(k=>karRowHtml(k)).join('');
+  tb.innerHTML=list.map(k=>karRowHtml(k)).join('');
 }
-function filterKar(q){const r=karyawan.filter(k=>(k.nama+k.nik+k.jabatan+k.dept).toLowerCase().includes(q.toLowerCase()));document.getElementById('kar-count').textContent=r.length+' ditampilkan';document.getElementById('tb-kar').innerHTML=r.map(k=>karRowHtml(k)).join('');}
+function filterKar(q){
+  const p=PA();
+  const r=karyawan
+    .filter(function(k){return karyawanInPeriode(k,p);})
+    .filter(function(k){return (k.nama+k.nik+k.jabatan+k.dept).toLowerCase().includes(q.toLowerCase());});
+  document.getElementById('kar-count').textContent=r.length+' ditampilkan';
+  document.getElementById('tb-kar').innerHTML=r.map(k=>karRowHtml(k)).join('');
+}
 function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
 function openNewKar(){if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}const nik='K'+String(karyawan.length+1).padStart(4,'0');karyawan.push({nik,nama:'Karyawan Baru',dept:'Operasional',jabatan:'Staff',status:'Tetap',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',jk:'L',agama:'Islam',ktp:'',npwp:'',hp:'',email:'',alamat:'',atasan:'',lokasi:'',bank:'BCA',norek:'',reknam:'',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{'kes-prs':true,'kes-kar':true,'jht-prs':true,'jht-kar':true,'jp-prs':true,'jp-kar':true,'jkk-prs':true,'jkm-prs':true},bpjs_manual:{},natura:[],pph_return:{nilai:0,ket:''}});saveAll();renderKar();populateSelects();openPanel(nik);toast('Karyawan baru dibuat');}
 // ── SLIDE PANEL ──────────────────────────────────
@@ -1072,6 +1081,7 @@ function onSlipPeriodeChange(){
     if(btnAll)btnAll.style.display='none';
     if(banner)banner.innerHTML='';
   }
+  populateSelects();
   previewSlip();
 }
 function previewSlip(){
@@ -2080,7 +2090,17 @@ function renderMyCuti(){
   document.getElementById('my-cuti-content').innerHTML='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><div><strong style="font-size:14px;color:#5b21b6">Saldo Cuti '+yr+' - '+k.nama+'</strong></div><div class="fl gap2"><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+masterCuti.kuota+'</div><div style="font-size:10px;color:#6b7280">Kuota</div></div><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#7d4800">'+manual+'</div><div style="font-size:10px;color:#6b7280">Cuti Manual</div></div>'+(cb>0?'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+cb+'</div><div style="font-size:10px;color:#6b7280">Cuti Bersama</div></div>':'')+'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:'+(sisa<=0?'#9b2121':sisa<=3?'#7d4800':'#2d6a0a')+'">'+sisa+'</div><div style="font-size:10px;color:#6b7280">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+yr+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+e[0]+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div style="color:#6b7280;font-size:12px">Belum ada cuti.</div>')+'</div>';
 }
 // ── SELECTS & BACKUP ─────────────────────────────
-function populateSelects(){var opts=karyawan.map(function(k){return '<option value="'+k.nik+'">'+k.nama+'</option>';}).join('');var sc=document.getElementById('slip-kar');if(sc)sc.innerHTML='<option value="">-- Pilih Karyawan --</option>'+opts;}
+function populateSelects(){
+  var sc=document.getElementById('slip-kar');
+  if(!sc)return;
+  var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
+  var p=periodes.find(function(x){return x.id==pid;})||PA();
+  var list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  var opts=list.map(function(k){return '<option value="'+k.nik+'">'+k.nama+'</option>';}).join('');
+  sc.innerHTML='<option value="">-- Pilih Karyawan --</option>'+opts;
+  // Jika pilihan sebelumnya sudah tidak valid utk periode ini, kosongkan agar tidak "nyangkut"
+  if(sc.value&&!list.find(function(k){return k.nik===sc.value;}))sc.value='';
+}
 function renderPeriodeSelects(){var aktif=PA().id;var opts=periodes.map(function(p){return '<option value="'+p.id+'">'+p.nama+'</option>';}).join('');['slip-per','my-period'].forEach(function(id){var el=document.getElementById(id);if(!el)return;el.innerHTML=opts;el.value=aktif;});}
 var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels'];
 var DATA_LABELS={karyawan:'Karyawan',periodes:'Periode',hariLibur:'Hari Libur',masterCuti:'Setting Cuti',absensi:'Absensi',lembur:'Lembur',prorata:'Pro-Rata',approvals:'Approval',notifikasi:'Notifikasi',perusahaan:'Perusahaan',users:'Users',roles:'Roles',thrManual:'THR Manual',tunjVarBulan:'Tunjangan variabel per periode',tunjVarLabels:'Label kolom tunj. variabel'};
