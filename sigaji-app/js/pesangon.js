@@ -132,10 +132,19 @@
   window.renderPesangon=function(){
     try{
     var tb=document.getElementById('tb-pesangon');if(!tb)return;
-    var list=karyawan.filter(function(k){return k.tgl_berhenti&&String(k.tgl_berhenti).trim();});
+    // Tampilkan hanya karyawan yang berhenti pada periode aktif (agar pegawai resign bulan lalu tidak "nyangkut")
+    var p=typeof PA==='function'?PA():null;
+    var cutoff=p?String(p.bayar||p.end||p.start||''):''; // cutoff sampai tanggal bayar
+    var start=p?String(p.start||''):'';
+    var list=karyawan.filter(function(k){
+      var t=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
+      if(!t)return false;
+      if(!start||!cutoff)return true; // fallback: jika periode tidak tersedia, tampilkan seperti sebelumnya
+      return t>=start&&t<=cutoff;
+    });
     list.sort(function(a,b){return String(b.tgl_berhenti).localeCompare(String(a.tgl_berhenti));});
     if(!list.length){
-      tb.innerHTML='<tr><td colspan="6" style="padding:1rem;color:#6b7280;font-size:12px">Belum ada karyawan dengan tanggal berhenti. Isi di profil (Info & Jabatan).</td></tr>';
+      tb.innerHTML='<tr><td colspan="6" style="padding:1rem;color:#6b7280;font-size:12px">Tidak ada karyawan berhenti pada periode aktif. (Cek Periode Aktif di Master → Periode Gaji & THR)</td></tr>';
       selNik=null;renderDetail();return;
     }
     tb.innerHTML=list.map(function(k){

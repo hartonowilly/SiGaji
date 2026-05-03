@@ -165,9 +165,57 @@ function karyawanInPeriode(k,p){
 function karyawanListPeriode(p){
   return karyawan.filter(function(k){return karyawanInPeriode(k,p);});
 }
+
+function deepCloneLite(o){
+  if(o===undefined)return undefined;
+  if(o===null)return null;
+  try{return JSON.parse(JSON.stringify(o));}catch(e){return o;}
+}
+
+// Snapshot master karyawan per periode agar revisi bulan lain tidak mengubah periode yang sudah dikerjakan.
+function snapshotKarFromMaster(k){
+  return{
+    gapok:Math.round(k.gapok||0),
+    tunjangan:deepCloneLite(k.tunjangan||[]),
+    natura:deepCloneLite(k.natura||[]),
+    bpjs_aktif:deepCloneLite(k.bpjs_aktif||{}),
+    bpjs_manual:deepCloneLite(k.bpjs_manual||{}),
+    pph_return:deepCloneLite(k.pph_return||{nilai:0,ket:''}),
+  };
+}
+function ensureKarSnapshotPeriode(pNama,list){
+  if(!pNama)return;
+  if(!karSnapshot)karSnapshot={};
+  if(!karSnapshot[pNama])karSnapshot[pNama]={};
+  let changed=false;
+  (list||[]).forEach(function(k){
+    if(!k||!k.nik)return;
+    if(karSnapshot[pNama][k.nik]===undefined){
+      karSnapshot[pNama][k.nik]=snapshotKarFromMaster(k);
+      changed=true;
+    }
+  });
+  if(changed)saveAll();
+}
+function resolveKarForPeriode(k,pNama){
+  if(!k||!pNama)return k;
+  const snap=karSnapshot&&karSnapshot[pNama]&&karSnapshot[pNama][k.nik];
+  if(!snap)return k;
+  const out=Object.assign({},k);
+  if(snap.gapok!==undefined)out.gapok=snap.gapok;
+  if(snap.tunjangan!==undefined)out.tunjangan=deepCloneLite(snap.tunjangan);
+  if(snap.natura!==undefined)out.natura=deepCloneLite(snap.natura);
+  if(snap.bpjs_aktif!==undefined)out.bpjs_aktif=deepCloneLite(snap.bpjs_aktif);
+  if(snap.bpjs_manual!==undefined)out.bpjs_manual=deepCloneLite(snap.bpjs_manual);
+  if(snap.pph_return!==undefined)out.pph_return=deepCloneLite(snap.pph_return);
+  return out;
+}
 // ── HITUNG GAJI (dengan integrasi THR v9) ────────
 function hitungGaji(k,pNama){
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
+  // Pastikan snapshot periode ada sebelum hitung (sekali saja per periode/karyawan)
+  ensureKarSnapshotPeriode(pn,[k]);
+  k=resolveKarForPeriode(k,pn);
   const hkP=hariKerjaRange(p.start,p.end);
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
   const prF=isPR?pr.hh/pr.hk:1;const gapokEff=Math.round(k.gapok*prF);
@@ -559,6 +607,7 @@ function renderDash(){
   document.getElementById('pb-dash').innerHTML=`<div class="pb mb2"><div><div style="font-size:10px;opacity:.75">Periode Aktif</div><div style="font-size:18px;font-weight:800">${p.nama}${thrTag}</div><div style="font-size:11px;opacity:.8">${fmtDate(p.start)} &#8212; ${fmtDate(p.end)} | Bayar: ${fmtDate(p.bayar)}${p.thr_aktif?` | THR: ${fmtDate(p.thr_bayar||'-')}`:''}</div></div><div style="text-align:right"><div style="font-size:28px;font-weight:800">${hP}</div><div style="font-size:10px;opacity:.75">hari menuju penggajian</div></div></div>`;
   let tB=0,tP=0,tN=0,tT=0;const depts={};
   const list=karyawanListPeriode(p);
+  ensureKarSnapshotPeriode(p.nama,list);
   list.forEach(k=>{const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;if(!depts[k.dept])depts[k.dept]={n:0,b:0,n2:0};depts[k.dept].n++;depts[k.dept].b+=g.grossPPh;depts[k.dept].n2+=g.neto;});
   document.getElementById('d-kar').textContent=list.length;document.getElementById('d-bruto').textContent=fmt(tB);document.getElementById('d-pph').textContent=fmt(tP);document.getElementById('d-neto').textContent=fmt(tN);
   document.getElementById('d-table').innerHTML=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
@@ -860,6 +909,8 @@ function renderTunjVariabelBulan(){
 }
 function renderPenggajian(skipTunjVar){
   const p=PA();
+  // Buat snapshot master untuk periode aktif (agar periode yang sudah dikerjakan tidak berubah)
+  ensureKarSnapshotPeriode(p.nama,karyawanListPeriode(p));
   const el=document.getElementById('pg-periode-lbl');
   if(el)el.textContent='Periode: '+p.nama+' ('+p.start+' - '+p.end+')';
   const hk=hariKerjaRange(p.start,p.end);
@@ -2124,8 +2175,8 @@ function populateSelects(){
   if(sc.value&&!list.find(function(k){return k.nik===sc.value;}))sc.value='';
 }
 function renderPeriodeSelects(){var aktif=PA().id;var opts=periodes.map(function(p){return '<option value="'+p.id+'">'+p.nama+'</option>';}).join('');['slip-per','my-period'].forEach(function(id){var el=document.getElementById(id);if(!el)return;el.innerHTML=opts;el.value=aktif;});}
-var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels'];
-var DATA_LABELS={karyawan:'Karyawan',periodes:'Periode',hariLibur:'Hari Libur',masterCuti:'Setting Cuti',absensi:'Absensi',lembur:'Lembur',prorata:'Pro-Rata',approvals:'Approval',notifikasi:'Notifikasi',perusahaan:'Perusahaan',users:'Users',roles:'Roles',thrManual:'THR Manual',tunjVarBulan:'Tunjangan variabel per periode',tunjVarLabels:'Label kolom tunj. variabel'};
+var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels','karSnapshot'];
+var DATA_LABELS={karyawan:'Karyawan',periodes:'Periode',hariLibur:'Hari Libur',masterCuti:'Setting Cuti',absensi:'Absensi',lembur:'Lembur',prorata:'Pro-Rata',approvals:'Approval',notifikasi:'Notifikasi',perusahaan:'Perusahaan',users:'Users',roles:'Roles',thrManual:'THR Manual',tunjVarBulan:'Tunjangan variabel per periode',tunjVarLabels:'Label kolom tunj. variabel',karSnapshot:'Snapshot karyawan per periode'};
 /** Salinan dalam memori agar backup identik dengan data tersimpan & tidak ada field yang terpotong */
 function sigajiDeepClone(o){try{if(o===undefined)return undefined;return JSON.parse(JSON.stringify(o));}catch(e){console.warn('sigajiDeepClone',e);return o;}}
 function buildExportData(){
