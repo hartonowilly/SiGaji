@@ -188,7 +188,10 @@ function hitungGaji(k,pNama){
   // ── PEMBAYARAN BERHENTI (UPH / PHK) ────────────
   // Sumber data: k.tgl_berhenti + k.phk + hitungPesangon() (pesangon.js)
   const tglStopIso=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
-  const isStopInPeriode=!!(tglStopIso&&p.start&&p.end&&tglStopIso>=p.start&&tglStopIso<=p.end);
+  // Untuk resign/PHK di akhir bulan, tgl berhenti sering jatuh setelah p.end namun sebelum/di tgl bayar.
+  // Maka dianggap "di periode ini" jika berada di antara p.start s/d cutoff (bayar jika ada, else end).
+  const stopCutoff=String(p.bayar||p.end||p.start||'');
+  const isStopInPeriode=!!(tglStopIso&&p.start&&stopCutoff&&tglStopIso>=p.start&&tglStopIso<=stopCutoff);
   const isPeriodeResign=p.tipe_periode==='resign';
   const alasan=(k.phk&&k.phk.alasan)?String(k.phk.alasan):'';
   const isResign=alasan.indexOf('resign')===0;
