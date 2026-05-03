@@ -300,8 +300,11 @@ function getPayrollTargetByNik(nik,createIfMissing,sourceMode){
   if(tgt.bpjs_manual===undefined)tgt.bpjs_manual=deepCloneLite(k.bpjs_manual||{});
   if(tgt.pph_return===undefined)tgt.pph_return=deepCloneLite(k.pph_return||{nilai:0,ket:''});
   if(tgt.gapok===undefined)tgt.gapok=Math.round(k.gapok||0);
-  // Sertakan identitas minimum agar fungsi panel yang mengharapkan object karyawan tetap bekerja
-  return Object.assign({nik:k.nik,nama:k.nama},tgt);
+  // Penting: kembalikan REFERENCE snapshot asli (bukan copy),
+  // agar perubahan (mis. pph_return=0) benar-benar tersimpan ke karSnapshot.
+  tgt.nik=k.nik;
+  tgt.nama=k.nama;
+  return tgt;
 }
 function setSpPayrollView(mode){
   spPayrollView=mode==='master'?'master':'periode';
