@@ -97,7 +97,7 @@
     h+='<div class="fg"><label>Uang pisah PK (Rp)</label><input type="number" min="0" step="1" id="psg-pisah" value="'+(phk.pisah||0)+'" onchange="pesangonRefresh()"></div>';
     h+='<div class="fg ff"><label>Keterangan</label><input id="psg-ket" value="'+escapeHtml(phk.keterangan||'')+'" onchange="pesangonRefresh()"></div>';
     h+='</div>';
-    h+='<div class="fl gap1" style="margin:.75rem 0"><button class="btn btn-sm btn-p" onclick="pesangonSimpan()">&#128190; Simpan ke profil</button><button class="btn btn-sm btn-out" onclick="openPanel(\''+k.nik+'\')">Profil karyawan</button></div>';
+    h+='<div class="fl gap1" style="margin:.75rem 0"><button class="btn btn-sm btn-p" onclick="pesangonSimpan()">&#128190; Simpan ke profil</button><button class="btn btn-sm btn-out" onclick="openPanel(\''+escJsStr(k.nik)+'\')">Profil karyawan</button></div>';
     h+='<div id="psg-breakdown"></div>';
     wrap.innerHTML=h;
     var al2=document.getElementById('psg-alasan');if(al2)al2.value=phk.alasan||'';
@@ -126,7 +126,11 @@
   function escapeHtml(s){
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+  function escJsStr(s){
+    return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');
+  }
   window.renderPesangon=function(){
+    try{
     var tb=document.getElementById('tb-pesangon');if(!tb)return;
     var list=karyawan.filter(function(k){return k.tgl_berhenti&&String(k.tgl_berhenti).trim();});
     list.sort(function(a,b){return String(b.tgl_berhenti).localeCompare(String(a.tgl_berhenti));});
@@ -140,11 +144,12 @@
       var r=hitungPesangon(k);
       var al=opt.lbl||'—';
       var cls=selNik===k.nik?'style="background:#eff6ff"':'';
-      return '<tr '+cls+' class="psg-row" data-nik="'+escapeHtml(k.nik)+'" onclick="pesangonPilih(\''+k.nik+'\')"><td><strong>'+escapeHtml(k.nama)+'</strong><div style="font-size:10px;color:#6b7280">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td style="font-size:11px;max-width:180px">'+escapeHtml(al)+'</td><td style="text-align:right">'+(r.ok?fmt(r.total):'—')+'</td><td style="text-align:center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out" onclick="event.stopPropagation();openPanel(\''+k.nik+'\')">Profil</button></td></tr>';
+      return '<tr '+cls+' class="psg-row" data-nik="'+escapeHtml(k.nik)+'" onclick="pesangonPilih(\''+escJsStr(k.nik)+'\')"><td><strong>'+escapeHtml(k.nama)+'</strong><div style="font-size:10px;color:#6b7280">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td style="font-size:11px;max-width:180px">'+escapeHtml(al)+'</td><td style="text-align:right">'+(r.ok?fmt(r.total):'—')+'</td><td style="text-align:center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out" onclick="event.stopPropagation();openPanel(\''+escJsStr(k.nik)+'\')">Profil</button></td></tr>';
     }).join('');
     if(selNik&&!list.find(function(k){return k.nik===selNik;}))selNik=list[0].nik;
     if(!selNik&&list.length)selNik=list[0].nik;
     renderDetail();
+    }catch(e){console.error('renderPesangon',e);if(typeof toast==='function')toast('Error modul Pesangon — lihat konsol (F12).');}
   };
   window.pesangonPilih=function(nik){selNik=nik;renderPesangon();};
   window.pesangonRefresh=function(){

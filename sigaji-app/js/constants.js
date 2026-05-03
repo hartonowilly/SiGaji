@@ -86,7 +86,7 @@ const TER_C=[[6600000,0],[6950000,.0025],[7350000,.005],[7800000,.0075],[8850000
 /** Opsi alasan PHK — faktor pengali UP+UPMK (PP 35/2021 Pasal 50). Resign sukarela: 0 (tidak ada UP/UPMK). */
 const PHK_ALASAN_OPTS=[
   {id:'',lbl:'— Belum dipilih —',f:null,uphOnly:false,manual:false},
-  {id:'resign_30hr',lbl:'Mengundurkan diri — sudah pemberitahuan ≥30 hari',f:0,uphOnly:true,manual:false},
+  {id:'resign_30hr',lbl:'Mengundurkan diri — sudah pemberitahuan >=30 hari',f:0,uphOnly:true,manual:false},
   {id:'resign_belum30',lbl:'Mengundurkan diri — tanpa / belum 30 hari pemberitahuan',f:0,uphOnly:false,manual:false},
   {id:'pensiun',lbl:'Pensiun',f:1.75,uphOnly:false,manual:false},
   {id:'meninggal',lbl:'Meninggal dunia (dibayar kepada ahli waris)',f:2,uphOnly:false,manual:false},

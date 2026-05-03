@@ -42,6 +42,8 @@ function migrateStorage(db){
     v=4;
   }
   db.schemaVersion=v;
+  // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
+  if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
   return db;
 }
 const DB_KEY='sigaji_db';
