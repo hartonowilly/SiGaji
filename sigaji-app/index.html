@@ -11,8 +11,8 @@
 <div id="login">
 <div class="lbox">
   <div class="llogo"><img class="llogo-img" id="login-logo"><h1 id="login-nama">&#9670; SiGaji</h1><p>Sistem Informasi Penggajian v9</p></div>
-  <div class="fg"><label id="lu-lbl">Username</label><input id="lu" value="admin" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
-  <div class="fg"><label id="lp-lbl">Password</label><input type="text" id="lp" value="admin123" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="fg"><label id="lu-lbl">Username</label><input id="lu" value="" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="fg"><label id="lp-lbl">Password</label><input type="password" id="lp" value="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <button class="btn btn-p btn-full" onclick="doLogin()">Masuk ke Sistem</button>
   <p id="cloud-login-hint" style="display:none;margin-top:.75rem;font-size:11px;line-height:1.5;color:#64748b">&#9729; <strong>Database awan:</strong> isi kolom Username dengan <strong>email Supabase</strong> Anda + sandi dari Authentication. Tanpa @ tetap pakai login lokal (admin/hrd).</p>
   <div id="file-protocol-hint" style="display:none;margin-top:.85rem;padding:.65rem .85rem;background:#fff8e6;border:1px solid #f6d088;border-radius:8px;font-size:11px;line-height:1.55;color:#713f12">
