@@ -766,8 +766,8 @@
     <input type="hidden" id="u-idx" value="-1">
     <div class="fg"><label>Username</label><input id="u-username" placeholder="untuk login lokal (tanpa @)"></div>
     <div class="fg"><label>Email Supabase (login awan)</label><input id="u-email" type="email" placeholder="sama persis dengan email di Authentication"></div>
-    <div class="info-box info-blue" style="font-size:10px;margin:-4px 0 6px">Isi email ini agar login pakai email + sandi Supabase memakai <strong>role &amp; nama</strong> user ini. Kosongkan jika hanya login lokal.</div>
-    <div class="fg"><label>Password</label><input id="u-password" placeholder="untuk login lokal"></div>
+    <div class="info-box info-blue" style="font-size:10px;margin:-4px 0 6px">Login cloud: <strong>email harus sama</strong> dengan Authentication; <strong>role &amp; hak</strong> mengikuti baris ini (Admin / HRD / Karyawan).</div>
+    <div class="fg" id="u-password-wrap"><label>Password (login lokal)</label><input id="u-password" placeholder="hanya jika tidak pakai Supabase"></div>
     <div class="fg"><label>Nama Lengkap</label><input id="u-nama"></div>
     <div class="fg"><label>Role</label><select id="u-role"></select></div>
     <div class="fg"><label>Tautkan ke NIK Karyawan (opsional)</label><select id="u-nik"><option value="">-- Tidak tertaut --</option></select></div>
