@@ -698,6 +698,16 @@ if(typeof window!=='undefined'){
 function enterAppWithUser(user){
   if(!user)return;
   CU={...user};
+  // Remember username (localStorage)
+  try{
+    var cb=document.getElementById('remember-username');
+    var lu=document.getElementById('lu');
+    if(cb){
+      localStorage.setItem('sigaji_remember_username',cb.checked?'1':'0');
+      if(cb.checked&&lu&&lu.value!=null)localStorage.setItem('sigaji_last_username',String(lu.value||''));
+      if(!cb.checked)localStorage.removeItem('sigaji_last_username');
+    }
+  }catch(e){}
   document.getElementById('login').style.display='none';document.getElementById('app').style.display='flex';
   document.getElementById('uav').textContent=ini(CU.nama);document.getElementById('uname').textContent=CU.nama;document.getElementById('urbadge').textContent=CU.role;
   document.getElementById('top-periode').textContent=PA().nama;
@@ -731,6 +741,20 @@ function doLogin(){
   const user=users.find(x=>x.username.toLowerCase()===u&&x.password===pw&&x.aktif!==false);
   if(!user){toast('Username/password salah atau user tidak aktif');return;}
   enterAppWithUser(user);
+}
+
+function initRememberUsername(){
+  try{
+    var cb=document.getElementById('remember-username');
+    var lu=document.getElementById('lu');
+    if(!cb||!lu)return;
+    var on=localStorage.getItem('sigaji_remember_username')==='1';
+    cb.checked=on;
+    if(on){
+      var last=localStorage.getItem('sigaji_last_username')||'';
+      if(last)lu.value=last;
+    }
+  }catch(e){}
 }
 function doLogout(){
   try{if(typeof window.sigajiCloudLogout==='function')window.sigajiCloudLogout().catch(function(){});}catch(e){}
@@ -1096,8 +1120,9 @@ function updateGajiSummary(){
   const km=karyawan.find(x=>x.nik===cpNik);if(!km)return;
   const k=getPayrollTargetByNik(cpNik,true)||km;
   const gpEl=document.getElementById('sp-gapok-f');if(gpEl&&isPayrollSnapshotMode())k.gapok=parseFloat(gpEl.value)||k.gapok;
+  let prv=0;
   if(isPayrollSnapshotMode()){
-    const prv=parseFloat(document.getElementById('sp-pphret-val')?.value)||0;
+    prv=parseFloat(document.getElementById('sp-pphret-val')?.value)||0;
     k.pph_return={nilai:prv,ket:document.getElementById('sp-pphret-ket')?.value||''};
   }
   renderPPhRetPanel(k);const g=hitungGaji(km,PA().nama);const el=document.getElementById('gaji-summary-panel');if(!el)return;
@@ -2771,3 +2796,4 @@ function resetTERCustom(){
 // ── INIT ─────────────────────────────────────────
 setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_autobackup',JSON.stringify(Object.assign({},d,{_meta:Object.assign({},d._meta,{catatan:'Auto backup'})})));}catch(e){}},30*60*1000);
 initLibnasYearSelect();
+initRememberUsername();
