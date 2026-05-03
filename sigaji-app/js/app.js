@@ -152,6 +152,9 @@ function karyawanInPeriode(k,p){
   // ISO date string compare aman untuk format YYYY-MM-DD
   return t>=String(p.start);
 }
+function karyawanListPeriode(p){
+  return karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+}
 // ── HITUNG GAJI (dengan integrasi THR v9) ────────
 function hitungGaji(k,pNama){
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
@@ -1619,7 +1622,8 @@ function exportPDF1721A1(){
 }
 // ── PPH & LAPORAN ────────────────────────────────
 function renderPPH(){
-  document.getElementById('tb-pph').innerHTML=karyawan.map(function(k){
+  var list=karyawanListPeriode(PA());
+  document.getElementById('tb-pph').innerHTML=list.map(function(k){
     const g=hitungGaji(k);
     const tbl=getTERTable(k.ptkp);const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
     const bj=Math.min(g.grossPPh*12*.05,6e6);const pv=nilaiPTKP(k.ptkp);const pkp=Math.max(0,g.grossPPh*12-bj-pv);
@@ -1648,17 +1652,19 @@ function renderPPH(){
 function renderLaporan(){
   document.getElementById('tb-lap').innerHTML=periodes.map(function(p){
     let tB=0,tP=0,tN=0,tT=0;
-    karyawan.forEach(function(k){const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;});
+    var list=karyawanListPeriode(p);
+    list.forEach(function(k){const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;});
     return '<tr '+(p.status==='aktif'?'style="background:#e8f4de"':'')+'>'
       +'<td><strong>'+p.nama+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+'</td>'
-      +'<td>'+karyawan.length+'</td><td>'+fmt(tB)+'</td><td>'+(tT>0?fmt(tT):'&#8212;')+'</td>'
+      +'<td>'+list.length+'</td><td>'+fmt(tB)+'</td><td>'+(tT>0?fmt(tT):'&#8212;')+'</td>'
       +'<td>'+fmt(tP)+'</td><td>'+fmt(tN)+'</td>'
       +'<td><span class="bdg '+(p.status==='aktif'?'b-warn':'b-ok')+'">'+(p.status==='aktif'?'Proses':'Selesai')+'</span></td></tr>';
   }).join('');
 }
 function exportCSV(){
   const rows=[['Nama','Dept','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','PPh Return','Neto']];
-  karyawan.forEach(function(k){const g=hitungGaji(k);rows.push([k.nama,k.dept,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,g.pphRet,Math.round(g.neto)]);});
+  var list=karyawanListPeriode(PA());
+  list.forEach(function(k){const g=hitungGaji(k);rows.push([k.nama,k.dept,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,g.pphRet,Math.round(g.neto)]);});
   const csv=rows.map(function(r){return r.map(function(v){return '"'+v+'"';}).join(',');}).join('\n');
   const b=new Blob(['\uFEFF'+csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Rekap_SiGaji9.csv';a.click();toast('CSV diunduh');
 }
@@ -1687,10 +1693,12 @@ function xlsxSetNumFmtRange(ws,col,rowStart,rowEnd,fmt){
 }
 /** Excel: DAFTAR REKENING PENGGAJIAN — seperti form transfer bank */
 function exportExcelDaftarRekening(){
-  if(!karyawan.length){toast('Belum ada karyawan');return;}
+  var p=PA();
+  var list=karyawanListPeriode(p);
+  if(!list.length){toast('Belum ada karyawan aktif untuk periode ini');return;}
   ensureXLSX(function(){
     try{
-      var p=PA();var pNama=p.nama;
+      var pNama=p.nama;
       var pt=(perusahaan.nama||'PERUSAHAAN').toUpperCase();
       var wb=XLSX.utils.book_new();
       var rows=[];
@@ -1698,7 +1706,7 @@ function exportExcelDaftarRekening(){
       rows.push([]);
       rows.push(['NO','NAMA','NO REKENING','KET']);
       var totalNeto=0;
-      karyawan.forEach(function(k,i){
+      list.forEach(function(k,i){
         var g=hitungGaji(k,pNama);
         var net=Math.round(g.neto);
         totalNeto+=net;
@@ -1716,7 +1724,7 @@ function exportExcelDaftarRekening(){
       var ws=XLSX.utils.aoa_to_sheet(rows);
       ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:3}}];
       ws['!cols']=[{wch:6},{wch:28},{wch:22},{wch:18}];
-      var n=karyawan.length;
+      var n=list.length;
       xlsxSetNumFmtRange(ws,3,3,2+n,'#,##0');
       xlsxSetNumFmtRange(ws,3,4+n,4+n,'#,##0');
       XLSX.utils.book_append_sheet(wb,ws,'Daftar Rekening');
@@ -1728,10 +1736,12 @@ function exportExcelDaftarRekening(){
 }
 /** Excel: rekap iuran BPJS (kar + prs) per karyawan — periode aktif */
 function exportExcelBPJS(){
-  if(!karyawan.length){toast('Belum ada karyawan');return;}
+  var p=PA();
+  var list=karyawanListPeriode(p);
+  if(!list.length){toast('Belum ada karyawan aktif untuk periode ini');return;}
   ensureXLSX(function(){
     try{
-      var p=PA();var pNama=p.nama;
+      var pNama=p.nama;
       var pt=(perusahaan.nama||'PERUSAHAAN').toUpperCase();
       var hdr=['NO','NIK','NAMA','BPJS KES (KAR)','JHT (KAR)','JP (KAR)','JKK (PRS)','JKM (PRS)','BPJS KES (PRS)','JHT (PRS)','JP (PRS)','JUMLAH POT. KAR','JUMLAH BEBAN PRS'];
       var rows=[];
@@ -1740,7 +1750,7 @@ function exportExcelBPJS(){
       rows.push([]);
       rows.push(hdr);
       var sum=new Array(10).fill(0);
-      karyawan.forEach(function(k,i){
+      list.forEach(function(k,i){
         var g=hitungGaji(k,pNama);var b=g.bpjs;
         var potKar=Math.round(b.kes_kar+b.jht_kar+b.jp_kar);
         var bebanPrs=Math.round(b.jkk_prs+b.jkm_prs+b.kes_prs+b.jht_prs+b.jp_prs);
