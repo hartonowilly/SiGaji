@@ -689,6 +689,8 @@ function sigajiApplyCloudLoginUi(){
   if(q)q.style.display='none';
   var h=document.getElementById('cloud-login-hint');
   if(h){h.innerHTML='&#9729; <strong>Mode cloud aktif:</strong> pakai <strong>email + sandi</strong> yang sama dengan <strong>Supabase → Authentication</strong>. Login admin/hrd tanpa email dinonaktifkan di halaman ini.';h.style.display='block';}
+  // Jika fitur "ingat username" aktif, aplikasikan lagi setelah UI cloud membersihkan input
+  try{if(typeof initRememberUsername==='function')initRememberUsername();}catch(e){}
 }
 if(typeof window!=='undefined'){
   window.sigajiApplyCloudLoginUi=sigajiApplyCloudLoginUi;
@@ -763,6 +765,22 @@ function initRememberUsername(){
       var last=localStorage.getItem('sigaji_last_username')||'';
       if(last)lu.value=last;
     }
+    // Persist preference changes immediately
+    cb.onchange=function(){
+      try{
+        localStorage.setItem('sigaji_remember_username',cb.checked?'1':'0');
+        if(cb.checked)localStorage.setItem('sigaji_last_username',String(lu.value||''));
+        else localStorage.removeItem('sigaji_last_username');
+      }catch(e){}
+    };
+    // If enabled, keep saving latest username as user types
+    lu.oninput=function(){
+      try{
+        if(localStorage.getItem('sigaji_remember_username')==='1'){
+          localStorage.setItem('sigaji_last_username',String(lu.value||''));
+        }
+      }catch(e){}
+    };
   }catch(e){}
 }
 function doLogout(){
@@ -2811,4 +2829,7 @@ initLibnasYearSelect();
 if(typeof document!=='undefined'){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initRememberUsername);
   else initRememberUsername();
+}
+if(typeof window!=='undefined'){
+  try{window.addEventListener('load',initRememberUsername);}catch(e){}
 }
