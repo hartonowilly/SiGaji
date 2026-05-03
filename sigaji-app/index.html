@@ -634,6 +634,13 @@
       <div style="font-size:10px;opacity:.75" id="sp-nik">NIK</div>
       <div style="font-size:20px;font-weight:800;margin-top:2px" id="sp-name">Nama</div>
       <div style="font-size:12px;opacity:.8;margin-top:3px" id="sp-sub">Jabatan</div>
+    <div id="sp-payroll-mode-wrap" style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:10px;opacity:.85">Mode Payroll:</span>
+      <button class="btn btn-sm btn-out" id="sp-mode-periode" onclick="setSpPayrollView('periode')" style="padding:2px 8px;font-size:10px">Snapshot Periode</button>
+      <button class="btn btn-sm btn-out" id="sp-mode-master" onclick="setSpPayrollView('master')" style="padding:2px 8px;font-size:10px">Master Global</button>
+      <span id="sp-mode-lbl" style="font-size:10px;opacity:.85"></span>
+    </div>
+    <div id="sp-mode-badge" style="margin-top:6px;font-size:10px;font-weight:800;display:inline-block;padding:4px 8px;border-radius:999px"></div>
     </div>
     <div class="fl gap1">
       <button onclick="hapusKarFromPanel()" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Hapus</button>
