@@ -142,6 +142,16 @@ function prevPeriodeChrono(pnama){
   if(i<=0)return null;
   return sorted[i-1].nama;
 }
+
+// Karyawan tampil di periode jika masih aktif pada awal periode,
+// atau resign/PHK terjadi di dalam periode tsb (untuk gaji terakhir).
+function karyawanInPeriode(k,p){
+  var t=String((k&&k.tgl_berhenti)||'').trim();
+  if(!t)return true;
+  if(!p||!p.start)return true;
+  // ISO date string compare aman untuk format YYYY-MM-DD
+  return t>=String(p.start);
+}
 // ── HITUNG GAJI (dengan integrasi THR v9) ────────
 function hitungGaji(k,pNama){
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
@@ -222,8 +232,14 @@ function hitungGaji(k,pNama){
   const grossPPhRegular=gapokEff+tGross+natKP+lb+bpjsPrsNatKP;
   const grossPPh=grossPPhRegular+thrBruto; // PPh dihitung termasuk THR
   const brutoTH=gapokEff+tTH+natNKP+lb;   // Take Home TIDAK termasuk THR
-  // Deteksi masa pajak terakhir (Desember atau Resign)
-  const isMasaPajakTerakhir=p.tipe_periode==='desember'||p.tipe_periode==='resign';
+  // Deteksi masa pajak terakhir:
+  // - Desember (rekonsiliasi tahunan)
+  // - Periode bertipe 'resign'
+  // - Atau karyawan berhenti di dalam periode ini (rekonsiliasi saat pegawai keluar tengah tahun)
+  const isMasaPajakTerakhir=
+    p.tipe_periode==='desember'||
+    p.tipe_periode==='resign'||
+    (!!tglStopIso&&isStopInPeriode);
   let pph,reconciliation=null;
   if(isMasaPajakTerakhir){
     const ytd=getBrutoYTD(k,pn);
@@ -232,6 +248,8 @@ function hitungGaji(k,pNama){
     const pphBulanIni=pphTahunan-ytd.totalPPh;
     pph=Math.max(0,pphBulanIni);
     const selisih=pphBulanIni; // negatif = lebih bayar
+    const isStopReason=!!(tglStopIso&&isStopInPeriode);
+    const tipeLabel=(p.tipe_periode==='desember')?'desember':(p.tipe_periode==='resign'||isStopReason)?'resign':p.tipe_periode;
     reconciliation={
       brutoYTD:ytd.totalBruto,pphYTD:ytd.totalPPh,
       brutoTahunan,pphTahunan,
@@ -240,7 +258,9 @@ function hitungGaji(k,pNama){
       kurangBayar:selisih>0?selisih:0,
       opsiLebihBayar:p.opsi_lebih_bayar||'refund', // 'refund' | 'carryover'
       isPajakTerakhir:true,
-      tipePeriode:p.tipe_periode
+      tipePeriode:tipeLabel,
+      reason:isStopReason?'stop_in_period':(p.tipe_periode==='resign'?'periode_resign':(p.tipe_periode==='desember'?'desember':'other')),
+      tglBerhenti:isStopReason?tglStopIso:''
     };
     if(selisih<0&&p.opsi_lebih_bayar==='refund') pph=0; // lebih bayar → PPh bulan ini 0
   } else {
@@ -797,9 +817,10 @@ function renderTunjVariabelBulan(){
   var l1=document.getElementById('tunjvar-l1'),l2=document.getElementById('tunjvar-l2'),l3=document.getElementById('tunjvar-l3');
   if(l1){l1.value=L.v1||'Bonus';l2.value=L.v2||'Uang Makan';l3.value=L.v3||'Lain-lain';}
   var sub=document.getElementById('tunjvar-per-lbl');if(sub)sub.textContent=pn;
-  if(!karyawan.length){wrap.innerHTML='<div style="color:#6b7280;font-size:12px">Belum ada karyawan.</div>';if(foot)foot.textContent='';return;}
+  var listK=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  if(!listK.length){wrap.innerHTML='<div style="color:#6b7280;font-size:12px">Belum ada karyawan aktif untuk periode ini.</div>';if(foot)foot.textContent='';return;}
   if(!tunjVarBulan[pn])tunjVarBulan[pn]={};
-  var rows=karyawan.map(function(k){
+  var rows=listK.map(function(k){
     var r=tunjVarBulan[pn][k.nik]||{v1:0,v2:0,v3:0};
     return '<tr><td><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div><div><div style="font-weight:600;font-size:12px">'+k.nama+'</div><div style="font-size:10px;color:#6b7280">'+k.nik+'</div></div></div></td>'
       +'<td><input type="number" min="0" step="1" class="tunjvar-inp" value="'+(r.v1||0)+'" onchange="setTunjVarNilai(\''+k.nik+'\',\'v1\',this.value)"></td>'
@@ -825,7 +846,7 @@ function renderPenggajian(skipTunjVar){
       '';
   }
   let prAktif=0;
-  const rows=karyawan.map(function(k){
+  const rows=karyawan.filter(function(k){return karyawanInPeriode(k,p);}).map(function(k){
     const g=hitungGaji(k,p.nama);
     const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
     const st=ap?ap.status:'draft';
@@ -855,7 +876,7 @@ function renderPenggajian(skipTunjVar){
 }
 function kirimApproval(){
   const p=PA();let added=0;
-  karyawan.forEach(function(k){
+  karyawan.filter(function(k){return karyawanInPeriode(k,p);}).forEach(function(k){
     if(!approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;})){
       const g=hitungGaji(k,p.nama);
       approvals.push({id:Date.now()+Math.random(),nik:k.nik,nama:k.nama,period:p.nama,bruto:g.grossPPh,neto:g.neto,status:'pending',time:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})});
@@ -949,6 +970,13 @@ function makeSlip(k,pNama){
     h+='<div style="background:#f5f0ff;border:1.5px solid #c4b5fd;border-radius:8px;padding:10px 14px;margin-bottom:.75rem">';
     h+='<div style="font-weight:700;color:#5b21b6;font-size:12px;margin-bottom:4px">&#127873; THR '+(p.thr_nama||'Hari Raya')+' - Dibayar Terpisah</div>';
     h+='<div style="display:flex;justify-content:space-between;font-size:11px"><span>THR Bruto (full netto tgl '+fmtDate(p.thr_bayar||'-')+')</span><span><strong>'+fmt(g.thrBruto)+'</strong></span></div></div>';
+  }
+  // Note hanya muncul jika PPh betul-betul dihitung sebagai Masa Pajak Terakhir (pegawai berhenti di periode ini / periode resign)
+  if(g.reconciliation&&g.reconciliation.isPajakTerakhir&&(g.reconciliation.tipePeriode==='resign'||g.reconciliation.reason==='stop_in_period')){
+    const tStop=g.reconciliation.tglBerhenti?fmtDate(g.reconciliation.tglBerhenti):'';
+    h+='<div style="background:#eef2ff;border:1.5px solid #c7d2fe;border-radius:8px;padding:8px 12px;margin-bottom:.75rem;font-size:10px;color:#3730a3">';
+    h+='<strong>Catatan Masa Pajak Terakhir:</strong> PPh 21 bulan ini dihitung dengan rekonsiliasi tahunan (seperti Desember) karena pegawai berhenti'+(tStop?' per '+tStop:'')+'.';
+    h+='</div>';
   }
   h+='<div class="gross-sec"><div class="gross-tit">PENGHASILAN BRUTO (Dasar PPh 21)</div>';
   h+='<div class="cr"><span>Gaji Pokok'+(g.isPR?' (Pro-Rata)':'')+'</span><span>'+fmt(g.gapokEff)+'</span></div>';
@@ -1130,6 +1158,17 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
     doc.text('THR Bruto (full netto tgl '+fmtDate(p.thr_bayar||'-')+')',14,y+11);
     doc.text(fmt(g.thrBruto),pw-14,y+11,{align:'right'});
     doc.setTextColor(0,0,0);y+=20;
+  }
+  if(g.reconciliation&&g.reconciliation.isPajakTerakhir&&(g.reconciliation.tipePeriode==='resign'||g.reconciliation.reason==='stop_in_period')){
+    chk();
+    doc.setFillColor(238,242,255);doc.rect(10,y,pw-20,14,'F');
+    doc.setFontSize(8);doc.setFont(undefined,'bold');doc.setTextColor(55,48,163);
+    doc.text('Catatan Masa Pajak Terakhir',14,y+5);
+    doc.setFont(undefined,'normal');doc.setFontSize(7.5);doc.setTextColor(55,65,81);
+    var tStop=g.reconciliation.tglBerhenti?fmtDate(g.reconciliation.tglBerhenti):'';
+    var note='PPh 21 bulan ini dihitung dengan rekonsiliasi tahunan (seperti Desember) karena pegawai berhenti'+(tStop?' per '+tStop:'')+'.';
+    doc.splitTextToSize(note,pw-28).slice(0,2).forEach(function(ln,i){doc.text(ln,14,y+9+i*3.2);});
+    doc.setTextColor(0,0,0);y+=18;
   }
 
   sec('PENGHASILAN BRUTO (Dasar PPh 21)');
