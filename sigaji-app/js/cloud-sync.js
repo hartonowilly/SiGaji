@@ -58,7 +58,7 @@
     };
 
     var sess = await window.sigajiSupabase.auth.getSession();
-    if (sess.data && sess.data.session) {
+    if (sess.data && sess.data.session && window.SIGAJI_RESUME_SESSION_ON_LOAD === true) {
       await enterFromSession(sess.data.session);
     }
   }
