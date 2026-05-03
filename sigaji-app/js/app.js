@@ -218,6 +218,12 @@ function upsertKarSnapshotForPeriode(nik,pNama){
   if(!karSnapshot[pNama])karSnapshot[pNama]={};
   karSnapshot[pNama][nik]=snapshotKarFromMaster(k);
 }
+function getKarSnapshotProgress(pNama,list){
+  var total=(list||[]).length;
+  var snapMap=(karSnapshot&&karSnapshot[pNama])||{};
+  var done=(list||[]).filter(function(k){return !!(k&&k.nik&&snapMap[k.nik]);}).length;
+  return{done:done,total:total,ok:total>0&&done===total};
+}
 // ── HITUNG GAJI (dengan integrasi THR v9) ────────
 function hitungGaji(k,pNama){
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
@@ -922,9 +928,11 @@ function renderTunjVariabelBulan(){
 function renderPenggajian(skipTunjVar){
   const p=PA();
   // Buat snapshot master untuk periode aktif (agar periode yang sudah dikerjakan tidak berubah)
-  ensureKarSnapshotPeriode(p.nama,karyawanListPeriode(p));
+  const listPeriode=karyawanListPeriode(p);
+  ensureKarSnapshotPeriode(p.nama,listPeriode);
+  const snap=getKarSnapshotProgress(p.nama,listPeriode);
   const el=document.getElementById('pg-periode-lbl');
-  if(el)el.textContent='Periode: '+p.nama+' ('+p.start+' - '+p.end+')';
+  if(el)el.textContent='Periode: '+p.nama+' ('+p.start+' - '+p.end+') | Snapshot: '+snap.done+'/'+snap.total+(snap.ok?' ✓':'');
   const hk=hariKerjaRange(p.start,p.end);
   const hkEl=document.getElementById('hk-periode');if(hkEl)hkEl.textContent=hk+' hari';
   const thrInfo=document.getElementById('thr-period-info');
