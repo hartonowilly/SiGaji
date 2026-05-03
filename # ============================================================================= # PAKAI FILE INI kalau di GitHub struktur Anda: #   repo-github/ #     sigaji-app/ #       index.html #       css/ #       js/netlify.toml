@@ -1,0 +1,19 @@
+# =============================================================================
+# PAKAI FILE INI kalau di GitHub struktur Anda:
+#   repo-github/
+#     sigaji-app/
+#       index.html
+#       css/
+#       js/
+#
+# LANGKAH:
+# 1) Salin SELURUH isi file ini ke:  netlify.toml  (nama persis)
+# 2) Taruh netlify.toml itu di ROOT repo GitHub — sejajar dengan folder sigaji-app
+#    (BUKAN di dalam folder sigaji-app)
+# 3) Commit & push, lalu tunggu deploy Netlify selesai.
+#
+# Kalau nama folder di GitHub bukan "sigaji-app", ganti nilai publish di bawah.
+# =============================================================================
+
+[build]
+  publish = "sigaji-app"
