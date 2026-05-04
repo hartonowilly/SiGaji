@@ -17,9 +17,20 @@ const ini=n=>(n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCas
 // Cuti bersama mengurangi kuota (NEW v9)
 function countCutiBersama(yr){
   if(!masterCuti.cbPotong)return 0;
-  return hariLibur.filter(l=>l.tipe==='cuti-bersama'&&l.tgl.startsWith(String(yr))&&!isHariLiburKerja(new Date(l.tgl).getDay())).length;
+  return hariLibur.filter(l=>l.tipe==='cuti-bersama'&&l.tgl.startsWith(String(yr))&&!isHariLiburKerja(new Date(l.tgl+'T12:00:00').getDay())).length;
 }
-const cutiManual=(nik,yr)=>Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(String(yr))&&s==='cuti').length;
+/** Tanggal ini memotong kuota lewat master cuti bersama (sama aturan dengan countCutiBersama per hari). */
+function isCutiBersamaPotongKuotaTgl(tglIso){
+  if(!tglIso||!masterCuti.cbPotong)return false;
+  const l=hariLibur.find(x=>x.tgl===tglIso&&x.tipe==='cuti-bersama');
+  if(!l)return false;
+  return !isHariLiburKerja(new Date(String(tglIso).trim()+'T12:00:00').getDay());
+}
+/** Cuti dari absensi yang memakai kuota (hari cuti bersama di absen sebagai C tidak dihitung ganda). */
+function cutiManual(nik,yr){
+  const pfx=String(yr);
+  return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='cuti'&&!isCutiBersamaPotongKuotaTgl(d)).length;
+}
 const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr);
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
@@ -178,6 +189,18 @@ function karyawanInPeriode(k,p){
 function karyawanListPeriode(p){
   return karyawan.filter(function(k){return karyawanInPeriode(k,p);});
 }
+/** Batas atas (inklusif) tgl berhenti masuk periode untuk PHK / rekonsiliasi PPh.
+ *  Absensi & komponen gaji memakai start–end. Tgl bayar boleh **lebih awal** dari end (transfer bank hari kerja);
+ *  dalam kasus itu cutoff tetap **end**. Jika bayar **setelah** end (legacy), cutoff memakai **bayar**. */
+function periodeTglCutoffPhk(p){
+  if(!p)return '';
+  var e=String(p.end||'').trim();
+  var b=String(p.bayar||'').trim();
+  var s=String(p.start||'').trim();
+  if(!e&&!b)return s;
+  if(e&&b&&b>e)return b;
+  return e||b||s;
+}
 
 function deepCloneLite(o){
   if(o===undefined)return undefined;
@@ -252,6 +275,23 @@ function guardPayrollEditUnlocked(){
     return false;
   }
   return true;
+}
+/** Periode gaji dengan snapshot terkunci yang rentangnya mencakup tanggal ISO (inklusif). */
+function periodeSnapshotLockedUntukTanggal(tglIso){
+  if(!tglIso||String(tglIso).trim()===''||!periodes||!periodes.length)return null;
+  var t=String(tglIso).trim();
+  for(var i=0;i<periodes.length;i++){
+    var p=periodes[i];
+    if(!p||!p.snapshot_locked||!p.start||!p.end)continue;
+    if(t>=String(p.start)&&t<=String(p.end))return p;
+  }
+  return null;
+}
+/** Absensi/lembur per tanggal: Admin selalu boleh; role lain tidak jika tanggal di periode terkunci. */
+function canEditDataPadaTanggalIso(tglIso){
+  if(!CU)return false;
+  if(CU.role==='Admin')return true;
+  return !periodeSnapshotLockedUntukTanggal(tglIso);
 }
 function ensureKarSnapshotPeriode(pNama,list){
   if(!pNama)return;
@@ -416,9 +456,8 @@ function hitungGaji(k,pNama){
   // ── PEMBAYARAN BERHENTI (UPH / PHK) ────────────
   // Sumber data: k.tgl_berhenti + k.phk + hitungPesangon() (pesangon.js)
   const tglStopIso=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
-  // Untuk resign/PHK di akhir bulan, tgl berhenti sering jatuh setelah p.end namun sebelum/di tgl bayar.
-  // Maka dianggap "di periode ini" jika berada di antara p.start s/d cutoff (bayar jika ada, else end).
-  const stopCutoff=String(p.bayar||p.end||p.start||'');
+  // Cutoff: lihat periodeTglCutoffPhk — mendukung bayar lebih awal dari end (bank hari kerja).
+  const stopCutoff=periodeTglCutoffPhk(p);
   const isStopInPeriode=!!(tglStopIso&&p.start&&stopCutoff&&tglStopIso>=p.start&&tglStopIso<=stopCutoff);
   const isPeriodeResign=p.tipe_periode==='resign';
   const alasan=(k.phk&&k.phk.alasan)?String(k.phk.alasan):'';
@@ -836,13 +875,19 @@ function renderDash(){
 // ── MASTER KARYAWAN ─────────────────────────────
 function karRowHtml(k,no){
   const showGaji=CU&&(CU.role==='Admin'||canAccessSubTab('karyawan','gaji'));
-  const t=cutiTerpakai(k.nik,2026);const s=masterCuti.kuota-t;
+  const yrKar=new Date().getFullYear();
+  const mbCut=Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
+  const eligCut=mbCut>=(masterCuti.masaMin||0);
+  const t=cutiTerpakai(k.nik,yrKar);
+  const s=eligCut?masterCuti.kuota-t:null;
+  const sCls=s===null?'b-gray':s<=0?'b-err':s<=3?'b-warn':'b-teal';
+  const sLbl=s===null?'&#8212;':s+'/'+masterCuti.kuota;
   const bpjsKeys=['kes-prs','kes-kar','jht-prs','jht-kar','jp-prs','jp-kar','jkk-prs','jkm-prs'];
   const bpjsOn=bpjsKeys.filter(function(key){return bpjsKompAktif(k,key);}).length;
   const bst=bpjsOn===8?'b-ok':bpjsOn>0?'b-warn':'b-err';
   const bpjsLbl=bpjsOn===8?'Lengkap':bpjsOn===0?'Off':bpjsOn+'/8 aktif';
   const stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
-  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${s<=0?'b-err':s<=3?'b-warn':'b-teal'}">${s}/${masterCuti.kuota}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button><button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
+  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${sCls}" title="${eligCut?'Saldo cuti tahun '+yrKar:'Belum memenuhi masa kerja untuk kuota cuti'}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button><button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   const p=PA();
@@ -2382,6 +2427,8 @@ function renderAbsensi(){
     return;
   }
   var hdrSub=pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+days.length+' hari';
+  var adaSelTerkunci=CU&&CU.role!=='Admin'&&days.some(function(x){return !canEditDataPadaTanggalIso(x.date);});
+  var roBanner=adaSelTerkunci?'<div class="info-box info-amber" style="font-size:11px;margin-bottom:.65rem">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
   karyawan.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
   var AB_NO=44;
   var prevMY='';
@@ -2412,12 +2459,13 @@ function renderAbsensi(){
       var st=absensi[k.nik][x.date]||(isLN?'libnas':isLK?'libur':'hadir');
       var bg=ST_BG[st]||'#f3f4f6';var tx=ST_TX[st]||'#6b7280';var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
-      html+='<td style="background:'+bg+';color:'+tx+';padding:0;text-align:center;border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid #f3f4f6;'+(cc?'cursor:pointer;':'')+'font-weight:700;font-size:10px" '+(cc?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':'')+'>'+lbl+'</td>';
+      var canCell=cc&&canEditDataPadaTanggalIso(x.date);
+      html+='<td style="background:'+bg+';color:'+tx+';padding:0;text-align:center;border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid #f3f4f6;opacity:'+(canCell?'1':cc?'0.88':'1')+';'+(canCell?'cursor:pointer;':cc?'cursor:not-allowed;':'')+'font-weight:700;font-size:10px" '+(canCell?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':cc?'title="Periode terkunci — hubungi Admin"':'')+'>'+lbl+'</td>';
     });
     html+='<td style="text-align:center;font-weight:800;color:#2d6a0a;border-left:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;background:#e8f4de">'+(cH||'')+'</td><td style="text-align:center;font-weight:800;color:#5b21b6;border-bottom:1px solid #f3f4f6;background:#ede9fe">'+(cC||'')+'</td><td style="text-align:center;font-weight:800;color:#7d4800;border-bottom:1px solid #f3f4f6;background:#fef3e2">'+(cS||'')+'</td><td style="text-align:center;font-weight:800;color:#1a56a0;border-bottom:1px solid #f3f4f6;background:#e8f0fb">'+(cI||'')+'</td><td style="text-align:center;font-weight:800;color:#9b2121;border-bottom:1px solid #f3f4f6;background:#fdeaea">'+(cA||'')+'</td></tr>';
   });
   html+='</tbody></table>';
-  document.getElementById('ab-grid-wrap').innerHTML=html;
+  document.getElementById('ab-grid-wrap').innerHTML=roBanner+html;
   var hkP=hariKerjaRange(pAbs.start,pAbs.end);
   var cbB=0;
   if(masterCuti.cbPotong){
@@ -2428,6 +2476,7 @@ function renderAbsensi(){
   document.getElementById('ab-rekap-wrap').innerHTML='<div class="card" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center"><span style="font-size:11px;font-weight:700;color:#6b7280">'+escapeHtml(pAbs.nama)+':</span><span style="background:#e8f4de;color:#2d6a0a;padding:3px 12px;border-radius:20px;font-weight:700">Hari Kerja (dalam rentang): '+hkP+'</span>'+(cbB>0?'<span style="background:#ede9fe;color:#5b21b6;padding:3px 12px;border-radius:20px;font-weight:700">Cuti Bersama (dalam rentang): '+cbB+' hari</span>':'')+'<span style="font-size:10px;color:#9ca3af;margin-left:auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+'</span></div>';
 }
 function toggleAb(nik,date,el){
+  if(!canEditDataPadaTanggalIso(date)){toast('Tanggal ini di periode yang snapshot-nya terkunci. Hanya Admin yang dapat mengubah absensi.');return;}
   if(!absensi[nik])absensi[nik]={};
   const S=['hadir','cuti','izin','sakit','setengah_sakit','setengah_ijin','alpha'];
   const SL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A'};
@@ -2456,16 +2505,19 @@ function renderCutiRekap(){
   }
   tb.innerHTML=list.map(function(k,idx){
     const mb=masaKerjaBulan(k);const manual=cutiManual(k.nik,yr);const total=manual+cb;
-    const eligible=mb>=masterCuti.masaMin;const kuota=eligible?masterCuti.kuota:0;const sisa=kuota-total;
-    const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
+    const eligible=mb>=masterCuti.masaMin;const kuota=eligible?masterCuti.kuota:0;
+    const sisa=eligible?kuota-total:null;
+    const pct=eligible&&kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
+    const sisaCls=sisa===null?'b-gray':sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
+    const sisaTxt=sisa===null?'&#8212;':String(sisa);
     return '<tr><td style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></td>'
       +'<td>'+Math.floor(mb/12)+'thn '+mb%12+'bln</td>'
       +'<td><span class="bdg '+(eligible?'b-ok':'b-gray')+'">'+(eligible?'Ya':'Belum')+'</span></td>'
-      +'<td>'+kuota+'</td><td><span class="bdg '+(manual>0?'b-warn':'b-gray')+'">'+manual+'</span></td>'
+      +'<td>'+(eligible?kuota:'&#8212;')+'</td><td><span class="bdg '+(manual>0?'b-warn':'b-gray')+'">'+manual+'</span></td>'
       +'<td>'+(cb>0?'<span class="bdg b-pu">'+cb+'</span>':'<span style="color:#9ca3af">0</span>')+'</td>'
-      +'<td><span class="bdg '+(total>kuota?'b-err':total>0?'b-warn':'b-gray')+'">'+total+'</span></td>'
-      +'<td><span class="bdg '+(sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal')+'">'+sisa+'</span></td>'
-      +'<td><div class="cuti-bar" style="width:120px;display:inline-block"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
+      +'<td><span class="bdg '+(eligible&&(total>kuota)?'b-err':total>0?'b-warn':'b-gray')+'">'+total+'</span></td>'
+      +'<td><span class="bdg '+sisaCls+'">'+sisaTxt+'</span></td>'
+      +'<td><div class="cuti-bar" style="width:120px;display:inline-block"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+(eligible?pct+'%':'&#8212;')+'</td></tr>';
   }).join('');
 }
 function simpanMasterCuti(){
@@ -2485,19 +2537,42 @@ function renderLemburList(){
     num++;
     return '<div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:12px;margin-bottom:.4rem;color:#1a56a0">'+num+'. '+k.nama+'</div>'
       +ld.map(function(r,i){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);
+        var lr=r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal);
+        var lemRo=CU&&CU.role!=='Admin'&&lr;
         return '<div class="fl gap1 mb1" style="align-items:center;flex-wrap:wrap">'
-          +'<input type="date" value="'+(r.tanggal||'')+'" style="width:135px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updLembur(\''+k.nik+'\','+i+',\'tanggal\',this.value)">'
-          +'<input type="number" placeholder="Jam" value="'+(r.jam||'')+'" style="width:65px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" min="1" max="12" onchange="updLembur(\''+k.nik+'\','+i+',\'jam\',this.value)">'
+          +'<input type="date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'style="width:135px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updLembur(\''+k.nik+'\','+i+',\'tanggal\',this.value)">'
+          +'<input type="number" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'style="width:65px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" min="1" max="12" onchange="updLembur(\''+k.nik+'\','+i+',\'jam\',this.value)">'
           +'<span style="font-size:11px;color:#6b7280;min-width:90px">'+(j>0?fmt(Math.round(h)):'')+'</span>'
-          +'<button class="btn btn-sm btn-r" onclick="delLembur(\''+k.nik+'\','+i+')">&#10007;</button></div>';
+          +(lemRo?'':'<button class="btn btn-sm btn-r" onclick="delLembur(\''+k.nik+'\','+i+')">&#10007;</button>')+'</div>';
       }).join('')+'</div>';
   }).join('')||'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>';
   let tot=0;karyawan.forEach(function(k){const upj=k.gapok/173;(lembur[k.nik]||[]).forEach(function(r){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);tot+=Math.round(h);});});
   const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>';
 }
-function updLembur(nik,i,f,v){if(!lembur[nik])lembur[nik]=[];lembur[nik][i][f]=v;saveAll();renderLemburList();}
-function delLembur(nik,i){lembur[nik].splice(i,1);saveAll();renderLemburList();}
-function hapusLemburBulan(){if(!confirm('Hapus semua lembur?'))return;karyawan.forEach(function(k){lembur[k.nik]=[];});saveAll();renderLemburList();toast('Semua dihapus');}
+function updLembur(nik,i,f,v){
+  if(!lembur[nik])lembur[nik]=[];
+  var row=lembur[nik][i]||{};
+  var tglLama=String(row.tanggal||'').trim();
+  var tglBaru=f==='tanggal'?String(v||'').trim():tglLama;
+  if(CU&&CU.role!=='Admin'){
+    if(tglLama&&!canEditDataPadaTanggalIso(tglLama)){toast('Lembur di periode terkunci tidak dapat diubah.');renderLemburList();return;}
+    if(tglBaru&&!canEditDataPadaTanggalIso(tglBaru)){toast('Tanggal lembur termasuk periode yang snapshot-nya terkunci.');renderLemburList();return;}
+  }
+  lembur[nik][i][f]=v;saveAll();renderLemburList();
+}
+function delLembur(nik,i){
+  var row=(lembur[nik]||[])[i];
+  if(row&&row.tanggal&&!canEditDataPadaTanggalIso(row.tanggal)){toast('Lembur di periode terkunci tidak dapat dihapus.');return;}
+  lembur[nik].splice(i,1);saveAll();renderLemburList();
+}
+function hapusLemburBulan(){
+  if(CU&&CU.role!=='Admin'){
+    var ada=false;
+    karyawan.forEach(function(k){(lembur[k.nik]||[]).forEach(function(r){if(r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal))ada=true;});});
+    if(ada){toast('Ada lembur di periode terkunci. Hanya Admin yang dapat menghapus semua.');return;}
+  }
+  if(!confirm('Hapus semua lembur?'))return;karyawan.forEach(function(k){lembur[k.nik]=[];});saveAll();renderLemburList();toast('Semua dihapus');
+}
 // ── HARI LIBUR ───────────────────────────────────
 function initLibnasYearSelect(){var el=document.getElementById('libnas-yr');if(!el)return;var thn=new Date().getFullYear();el.innerHTML='';for(var y=thn+1;y>=2017;y--){var opt=document.createElement('option');opt.value=y;opt.textContent=y;if(y===thn)opt.selected=true;el.appendChild(opt);}}
 function renderHariLibur(){
@@ -2657,9 +2732,15 @@ function updateNotifBadge(){var u=notifikasi.filter(function(n){return !n.read;}
 // ── MY CUTI ──────────────────────────────────────
 function renderMyCuti(){
   if(!CU||!CU.nik)return;var k=karyawan.find(function(x){return x.nik===CU.nik;});if(!k)return;
-  var yr=2026;var manual=cutiManual(k.nik,yr);var cb=countCutiBersama(yr);var total=manual+cb;var sisa=masterCuti.kuota-total;
+  var yr=new Date().getFullYear();
+  var mb=masaKerjaBulan(k);var eligible=mb>=(masterCuti.masaMin||0);
+  var manual=cutiManual(k.nik,yr);var cb=countCutiBersama(yr);var total=manual+cb;
+  var sisa=eligible?masterCuti.kuota-total:null;
+  var sisaCol=sisa===null?'#6b7280':sisa<=0?'#9b2121':sisa<=3?'#7d4800':'#2d6a0a';
+  var sisaTxt=sisa===null?'&#8212;':String(sisa);
+  var kuotaTxt=eligible?String(masterCuti.kuota):'&#8212;';
   var cutiDays=Object.entries(absensi[k.nik]||{}).filter(function(e){return e[1]==='cuti'&&e[0].startsWith(String(yr));}).sort();
-  document.getElementById('my-cuti-content').innerHTML='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><div><strong style="font-size:14px;color:#5b21b6">Saldo Cuti '+yr+' - '+k.nama+'</strong></div><div class="fl gap2"><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+masterCuti.kuota+'</div><div style="font-size:10px;color:#6b7280">Kuota</div></div><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#7d4800">'+manual+'</div><div style="font-size:10px;color:#6b7280">Cuti Manual</div></div>'+(cb>0?'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+cb+'</div><div style="font-size:10px;color:#6b7280">Cuti Bersama</div></div>':'')+'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:'+(sisa<=0?'#9b2121':sisa<=3?'#7d4800':'#2d6a0a')+'">'+sisa+'</div><div style="font-size:10px;color:#6b7280">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+yr+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+e[0]+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div style="color:#6b7280;font-size:12px">Belum ada cuti.</div>')+'</div>';
+  document.getElementById('my-cuti-content').innerHTML='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><div><strong style="font-size:14px;color:#5b21b6">Saldo Cuti '+yr+' - '+k.nama+'</strong>'+(eligible?'':'<div style="font-size:11px;color:#6b7280;margin-top:4px">Belum memenuhi syarat kuota cuti tahunan (masa kerja &lt; '+masterCuti.masaMin+' bln).</div>')+'</div><div class="fl gap2"><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+kuotaTxt+'</div><div style="font-size:10px;color:#6b7280">Kuota</div></div><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#7d4800">'+manual+'</div><div style="font-size:10px;color:#6b7280">Cuti Manual</div></div>'+(cb>0?'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+cb+'</div><div style="font-size:10px;color:#6b7280">Cuti Bersama</div></div>':'')+'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:'+sisaCol+'">'+sisaTxt+'</div><div style="font-size:10px;color:#6b7280">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+yr+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+e[0]+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div style="color:#6b7280;font-size:12px">Belum ada cuti.</div>')+'</div>';
 }
 // ── SELECTS & BACKUP ─────────────────────────────
 function populateSelects(){
