@@ -15,6 +15,8 @@
 
   var cloudTimer = null;
   var clientReady = false;
+  /** Promise selesai saat klien Supabase siap (atau gagal). */
+  var bootPromise;
 
   function isMissingTenantKeyColumn(err) {
     if (!err) return false;
@@ -27,10 +29,32 @@
     else console.warn(msg);
   }
 
+  /** Dipanggil segera — login menunggu boot Supabase (tidak lagi bergantung pada fungsi yang baru ada setelah import). */
+  function tryCloudLoginWhenReady(email, pw) {
+    (bootPromise || Promise.resolve())
+      .then(function () {
+        if (!clientReady || !window.sigajiSupabase) {
+          toastSafe(
+            'Koneksi awan tidak tersedia. Periksa URL dan anon key di js/config.js, jaringan, atau buka konsol (F12) bila pustaka Supabase gagal dimuat.'
+          );
+          return;
+        }
+        tryCloudLogin(email, pw);
+      })
+      .catch(function (e) {
+        console.error('Sigaji cloud boot:', e);
+        toastSafe(
+          'Gagal memuat Supabase (sering karena jaringan / esm.sh diblokir). Coba refresh, matikan pemblokir iklan, atau koneksi lain. Buka F12 → Console untuk detail.'
+        );
+      });
+  }
+
   async function boot() {
     var url = (window.SIGAJI_SUPABASE_URL || '').trim();
     var key = (window.SIGAJI_SUPABASE_ANON_KEY || '').trim();
-    if (!url || !key) return;
+    if (!url || !key) {
+      return;
+    }
 
     try {
       var mod = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -45,18 +69,10 @@
     } catch (e) {
       console.error('Sigaji cloud:', e);
       toastSafe('Gagal memuat pustaka Supabase');
-      return;
+      throw e;
     }
 
     if (typeof window.sigajiApplyCloudLoginUi === 'function') window.sigajiApplyCloudLoginUi();
-
-    window.sigajiTryCloudLogin = function (email, pw) {
-      if (!clientReady || !window.sigajiSupabase) {
-        toastSafe('Koneksi awan belum siap. Tunggu sebentar lalu coba lagi.');
-        return;
-      }
-      tryCloudLogin(email, pw);
-    };
 
     window.sigajiQueueCloudSave = scheduleUpsert;
 
@@ -216,5 +232,11 @@
     if (r.error) console.error('Sigaji cloud save:', r.error);
   }
 
-  boot();
+  window.sigajiTryCloudLogin = tryCloudLoginWhenReady;
+  window.sigajiQueueCloudSave = function () {};
+  window.sigajiCloudLogout = function () {
+    return Promise.resolve();
+  };
+
+  bootPromise = boot();
 })();

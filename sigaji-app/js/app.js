@@ -755,7 +755,7 @@ function doLogin(){
       return;
     }
     if(typeof window.sigajiTryCloudLogin!=='function'){
-      toast('Menyiapkan koneksi awan… tunggu beberapa detik lalu coba lagi.');
+      toast('File js/cloud-sync.js tidak termuat. Periksa deploy / urutan script di index.html.');
       return;
     }
     if(!pw){toast('Isi sandi akun Supabase Anda.');return;}
@@ -2328,32 +2328,89 @@ function renderTHR(){
     +(periodeAdaTHR?'<div class="info-box info-pu" style="margin-top:.5rem;margin-bottom:0;font-size:11px">&#10003; Periode aktif ada THR. PPh THR digabung ke gaji akhir bulan.</div>':'<div class="info-box info-amber" style="margin-top:.5rem;margin-bottom:0;font-size:11px">Aktifkan THR di Master Periode untuk menggabungkan PPh THR ke gaji.</div>');
 }
 // ── ABSENSI ──────────────────────────────────────
+/** Daftar tanggal ISO (YYYY-MM-DD) dari p.start s.d. p.end untuk grid kalender */
+function absensiDaysFromPeriode(p){
+  if(!p||!p.start||!p.end)return[];
+  var days=[];
+  var cur=new Date(String(p.start).trim()+'T12:00:00');
+  var end=new Date(String(p.end).trim()+'T12:00:00');
+  if(isNaN(cur.getTime())||isNaN(end.getTime()))return[];
+  while(cur<=end){
+    var y=cur.getFullYear();
+    var m=cur.getMonth()+1;
+    var da=cur.getDate();
+    var dt=y+'-'+String(m).padStart(2,'0')+'-'+String(da).padStart(2,'0');
+    days.push({date:dt,dow:cur.getDay(),d:da,m:m});
+    cur.setDate(cur.getDate()+1);
+  }
+  return days;
+}
+function populateAbsensiPeriodeSelect(){
+  var sel=document.getElementById('ab-periode-sel');
+  if(!sel)return;
+  var prev=sel.value;
+  var sorted=(periodes||[]).slice().sort(function(a,b){return new Date(a.start||0)-new Date(b.start||0);});
+  sel.innerHTML=sorted.map(function(p){
+    var label=(p.nama||'')+' · '+fmtDate(p.start)+' – '+fmtDate(p.end);
+    return '<option value="'+p.id+'">'+escapeHtml(label)+'</option>';
+  }).join('');
+  if(prev&&sorted.some(function(p){return String(p.id)===String(prev);}))sel.value=prev;
+  else{
+    var aktif=PA();
+    if(aktif&&sorted.some(function(p){return p.id===aktif.id;}))sel.value=String(aktif.id);
+    else if(sorted.length)sel.value=String(sorted[sorted.length-1].id);
+  }
+}
 function renderAbsensi(){
-  const bln=parseInt((document.getElementById('ab-bln')&&document.getElementById('ab-bln').value)||new Date().getMonth()+1);
-  const yr=parseInt((document.getElementById('ab-yr')&&document.getElementById('ab-yr').value)||new Date().getFullYear());
+  populateAbsensiPeriodeSelect();
+  var pid=document.getElementById('ab-periode-sel')&&document.getElementById('ab-periode-sel').value;
+  var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
   if(!karyawan.length){document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada karyawan.</div>';document.getElementById('ab-rekap-wrap').innerHTML='';return;}
-  const dim=new Date(yr,bln,0).getDate();
-  const bNama=['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][bln];
+  if(!pAbs||!pAbs.start||!pAbs.end){
+    document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
+    document.getElementById('ab-rekap-wrap').innerHTML='';
+    return;
+  }
   const ST_LBL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A',libur:'L',libnas:'LN'};
   const ST_BG={hadir:'#e8f4de',cuti:'#ede9fe',izin:'#e8f0fb',sakit:'#fef3e2',setengah_sakit:'#fff0e0',setengah_ijin:'#e0f0ff',alpha:'#fdeaea',libur:'#f3f4f6',libnas:'#fef9c3'};
   const ST_TX={hadir:'#2d6a0a',cuti:'#5b21b6',izin:'#1a56a0',sakit:'#7d4800',setengah_sakit:'#b45309',setengah_ijin:'#0369a1',alpha:'#9b2121',libur:'#9ca3af',libnas:'#713f12'};
-  const days=[];
-  for(var dd=1;dd<=dim;dd++){var dt=yr+'-'+String(bln).padStart(2,'0')+'-'+String(dd).padStart(2,'0');var dw=new Date(yr,bln-1,dd).getDay();days.push({d:dd,date:dt,dow:dw,isLibNas:isHL(dt),isLibKerja:isHariLiburKerja(dw)});}
+  const bulanSingkat=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const days=absensiDaysFromPeriode(pAbs);
+  if(!days.length){
+    document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Rentang periode tidak valid.</div>';
+    document.getElementById('ab-rekap-wrap').innerHTML='';
+    return;
+  }
+  var hdrSub=pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+days.length+' hari';
   karyawan.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
   var AB_NO=44;
+  var prevMY='';
   var html='<table style="border-collapse:collapse;font-size:11px;min-width:max-content;width:100%"><thead><tr style="background:#1e2330;color:#fff">'
     +'<th style="position:sticky;left:0;z-index:3;background:#1e2330;padding:6px 6px;text-align:center;width:'+AB_NO+'px;min-width:'+AB_NO+'px;border-right:1px solid #374151">No</th>'
-    +'<th style="position:sticky;left:'+AB_NO+'px;z-index:3;background:#1e2330;padding:6px 12px;text-align:left;white-space:nowrap;border-right:2px solid #374151;min-width:180px">Nama <span style="font-weight:400;font-size:10px;color:#9ca3af">'+bNama+' '+yr+'</span></th>'
+    +'<th style="position:sticky;left:'+AB_NO+'px;z-index:3;background:#1e2330;padding:6px 12px;text-align:left;white-space:nowrap;border-right:2px solid #374151;min-width:180px">Nama <span style="font-weight:400;font-size:10px;color:#9ca3af">'+escapeHtml(hdrSub)+'</span></th>'
     +'<th style="position:sticky;left:'+(AB_NO+182)+'px;z-index:3;background:#1e2330;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap;border-right:2px solid #374151;min-width:100px">Jabatan</th>';
-  days.forEach(function(x){var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];var bg=x.isLibNas?'#fef9c3':x.isLibKerja?'#374151':'#1e2330';var co=x.isLibNas?'#713f12':x.isLibKerja?'#9ca3af':'#d1d5db';html+='<th style="background:'+bg+';color:'+co+';padding:4px 3px;text-align:center;min-width:32px;border-right:1px solid #374151"><div style="font-size:9px">'+dowN+'</div><div style="font-size:12px;font-weight:700">'+x.d+'</div></th>';});
+  days.forEach(function(x){
+    var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
+    var myKey=x.date.substring(0,7);
+    var tglParts=x.date.split('-');
+    var showMon=myKey!==prevMY;
+    prevMY=myKey;
+    var bg=isHL(x.date)?'#fef9c3':isHariLiburKerja(x.dow)?'#374151':'#1e2330';
+    var co=isHL(x.date)?'#713f12':isHariLiburKerja(x.dow)?'#9ca3af':'#d1d5db';
+    var dd=parseInt(tglParts[2],10);
+    html+='<th style="background:'+bg+';color:'+co+';padding:4px 3px;text-align:center;min-width:36px;border-right:1px solid #374151"><div style="font-size:9px">'+dowN+'</div><div style="font-size:12px;font-weight:700">'+dd+'</div>'
+      +(showMon?'<div style="font-size:8px;opacity:.85">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
+  });
   html+='<th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px;border-left:2px solid #374151">H</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">C</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">S</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">I</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">A</th></tr></thead><tbody>';
   karyawan.forEach(function(k,ki){
     var rb=ki%2===0?'#fff':'#f8f9fc';
     html+='<tr style="background:'+rb+'"><td style="position:sticky;left:0;z-index:2;background:'+rb+';padding:5px 6px;text-align:center;font-weight:800;color:#9ca3af;border-right:1px solid #e5e7eb;border-bottom:1px solid #f3f4f6">'+(ki+1)+'</td><td style="position:sticky;left:'+AB_NO+'px;z-index:2;background:'+rb+';padding:5px 12px;font-weight:700;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6"><div style="display:flex;align-items:center;gap:6px"><div style="width:24px;height:24px;border-radius:50%;background:#e8f0fb;color:#1a56a0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">'+ini(k.nama)+'</div><div><div style="font-size:12px;font-weight:700">'+k.nama+'</div><div style="font-size:10px;color:#9ca3af">'+k.nik+'</div></div></div></td><td style="position:sticky;left:'+(AB_NO+182)+'px;z-index:2;background:'+rb+';padding:5px 8px;font-size:11px;color:#6b7280;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6">'+(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
-      var st=absensi[k.nik][x.date]||(x.isLibNas?'libnas':x.isLibKerja?'libur':'hadir');
-      var bg=ST_BG[st]||'#f3f4f6';var tx=ST_TX[st]||'#6b7280';var lbl=ST_LBL[st]||'-';var cc=!x.isLibKerja&&!x.isLibNas;
+      var isLN=isHL(x.date);
+      var isLK=isHariLiburKerja(x.dow);
+      var st=absensi[k.nik][x.date]||(isLN?'libnas':isLK?'libur':'hadir');
+      var bg=ST_BG[st]||'#f3f4f6';var tx=ST_TX[st]||'#6b7280';var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
       html+='<td style="background:'+bg+';color:'+tx+';padding:0;text-align:center;border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid #f3f4f6;'+(cc?'cursor:pointer;':'')+'font-weight:700;font-size:10px" '+(cc?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':'')+'>'+lbl+'</td>';
     });
@@ -2361,9 +2418,14 @@ function renderAbsensi(){
   });
   html+='</tbody></table>';
   document.getElementById('ab-grid-wrap').innerHTML=html;
-  var hkP=hariKerjaRange(yr+'-'+String(bln).padStart(2,'0')+'-01',yr+'-'+String(bln).padStart(2,'0')+'-'+String(dim).padStart(2,'0'));
-  var cbB=masterCuti.cbPotong?hariLibur.filter(function(l){return l.tipe==='cuti-bersama'&&l.tgl.startsWith(yr+'-'+String(bln).padStart(2,'0'))&&!isHariLiburKerja(new Date(l.tgl).getDay());}).length:0;
-  document.getElementById('ab-rekap-wrap').innerHTML='<div class="card" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center"><span style="font-size:11px;font-weight:700;color:#6b7280">'+bNama+' '+yr+':</span><span style="background:#e8f4de;color:#2d6a0a;padding:3px 12px;border-radius:20px;font-weight:700">Hari Kerja: '+hkP+'</span>'+(cbB>0?'<span style="background:#ede9fe;color:#5b21b6;padding:3px 12px;border-radius:20px;font-weight:700">Cuti Bersama: '+cbB+' hari</span>':'')+'<span style="font-size:10px;color:#9ca3af;margin-left:auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+'</span></div>';
+  var hkP=hariKerjaRange(pAbs.start,pAbs.end);
+  var cbB=0;
+  if(masterCuti.cbPotong){
+    hariLibur.forEach(function(l){
+      if(l.tipe==='cuti-bersama'&&l.tgl>=pAbs.start&&l.tgl<=pAbs.end&&!isHariLiburKerja(new Date(l.tgl+'T12:00:00').getDay()))cbB++;
+    });
+  }
+  document.getElementById('ab-rekap-wrap').innerHTML='<div class="card" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center"><span style="font-size:11px;font-weight:700;color:#6b7280">'+escapeHtml(pAbs.nama)+':</span><span style="background:#e8f4de;color:#2d6a0a;padding:3px 12px;border-radius:20px;font-weight:700">Hari Kerja (dalam rentang): '+hkP+'</span>'+(cbB>0?'<span style="background:#ede9fe;color:#5b21b6;padding:3px 12px;border-radius:20px;font-weight:700">Cuti Bersama (dalam rentang): '+cbB+' hari</span>':'')+'<span style="font-size:10px;color:#9ca3af;margin-left:auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+'</span></div>';
 }
 function toggleAb(nik,date,el){
   if(!absensi[nik])absensi[nik]={};
