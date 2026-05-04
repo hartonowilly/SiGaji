@@ -17,9 +17,11 @@
     <input type="checkbox" id="remember-username" style="width:16px;height:16px;accent-color:#1a56a0">
     Ingat username
   </label>
+  <div id="cloud-login-hint" style="display:none;font-size:11px;color:#5b4d3a;margin:0 0 .5rem;padding:.5rem .65rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;line-height:1.5"></div>
   <button class="btn btn-p btn-full" onclick="doLogin()">Masuk ke Sistem</button>
   <div id="file-protocol-hint" style="display:none;margin-top:.85rem;padding:.65rem .85rem;background:#fff8e6;border:1px solid #f6d088;border-radius:8px;font-size:11px;line-height:1.55;color:#713f12">
-    <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.
+    <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.<br><br>
+    <strong>Cadangan lokal (login awan / Supabase):</strong> tekan F12 → Application (Chrome) / Storage → Local Storage → situs Anda → salin nilai <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_db</code> atau <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_universal</code> ke file teks sebagai backup.
   </div>
   <div id="login-quick-local" style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #eee">
     <p style="font-size:11px;color:#9ca3af;margin-bottom:6px">Login cepat (hanya mode lokal, tanpa Supabase):</p>
