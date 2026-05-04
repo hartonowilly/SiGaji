@@ -169,6 +169,10 @@ function dbLoad(){
 }
 function dbSave(o){
   try{
+    try{
+      var prevRaw=localStorage.getItem(DB_KEY);
+      if(prevRaw)localStorage.setItem('sigaji_db_prev',prevRaw);
+    }catch(e0){}
     const payload=Object.assign({schemaVersion:SCHEMA_VERSION},o);
     localStorage.setItem(DB_KEY,JSON.stringify(payload));
     showSI();
@@ -199,11 +203,24 @@ let karSnapshot=LS('karSnapshot',{});
 let auditLog=LS('auditLog',[]);
 let CU=null,cpNik=null;
 const bmState={};
+function currentPayloadLite(){
+  return {karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog};
+}
+function markRecoveryBackup(tag){
+  try{
+    var p=Object.assign({_tag:tag||'manual',_ts:new Date().toISOString(),schemaVersion:SCHEMA_VERSION},currentPayloadLite());
+    localStorage.setItem('sigaji_recovery_last',JSON.stringify(p));
+  }catch(e){}
+}
 function saveAll(){
   try{
     dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog});
   }catch(e){console.error('saveAll error:',e);}
   try{
+    try{
+      var prevUni=localStorage.getItem('sigaji_universal');
+      if(prevUni)localStorage.setItem('sigaji_universal_prev',prevUni);
+    }catch(e0){}
     localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog}));
   }catch(e){}
   try{
@@ -224,6 +241,7 @@ function cloudPayloadWouldWipeMeaningfulLocal(o){
 /** Terapkan JSON dari kolom payload Supabase ke variabel memori + localStorage (tanpa memicu sync balik). */
 function applyDbFromCloudPayload(payload){
   if(!payload||typeof payload!=='object')return;
+  markRecoveryBackup('before_cloud_apply');
   var o=migrateStorage(Object.assign({schemaVersion:SCHEMA_VERSION},payload));
   if(cloudPayloadWouldWipeMeaningfulLocal(o)){
     var msg='Sinkron awan ditolak: data di cloud tampak kosong (0 karyawan/periode/user) sementara di perangkat ini masih ada data. Lokal tidak ditimpa. Periksa baris di Supabase atau unggah cadangan. Cadangan ringan: localStorage key sigaji_universal / sigaji_db.';
@@ -297,6 +315,20 @@ if(typeof window!=='undefined'){
   window.getPayloadForCloud=getPayloadForCloud;
   window.cloudPayloadWouldWipeMeaningfulLocal=cloudPayloadWouldWipeMeaningfulLocal;
   window.sigajiShouldSkipCloudUpload=shouldSkipCloudUpload;
+  window.sigajiRestoreEmergencyLocalBackup=function(){
+    try{
+      var raw=localStorage.getItem('sigaji_recovery_last')||localStorage.getItem('sigaji_db_prev');
+      if(!raw)return false;
+      var o=JSON.parse(raw);
+      applyDbFromCloudPayload(o);
+      if(typeof renderAll==='function')renderAll();
+      if(typeof toast==='function')toast('Backup lokal darurat dipulihkan');
+      return true;
+    }catch(e){
+      console.error('restore emergency backup',e);
+      return false;
+    }
+  };
 }
 let siT;
 function showSI(){const e=document.getElementById('save-ind');if(!e)return;e.textContent='✓ Tersimpan';clearTimeout(siT);siT=setTimeout(()=>e.textContent='',2000);}

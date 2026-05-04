@@ -19,6 +19,16 @@ function toIsoDate(v){
   if(v==null||v==='')return'';
   var t=String(v).trim();
   if(t.length>=10)t=t.substring(0,10);
+  // dd/mm/yyyy (sering dari copy-paste / input manual)
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(t)){
+    var p=t.split('/');
+    return p[2]+'-'+p[1]+'-'+p[0];
+  }
+  // yyyy/mm/dd
+  if(/^\d{4}\/\d{2}\/\d{2}$/.test(t)){
+    var p2=t.split('/');
+    return p2[0]+'-'+p2[1]+'-'+p2[2];
+  }
   if(/^\d{4}-\d{2}-\d{2}$/.test(t))return t;
   var d=new Date(t);
   if(isNaN(d.getTime()))return'';
