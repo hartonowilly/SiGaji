@@ -211,30 +211,46 @@ function saveAll(){
     if(typeof window.sigajiQueueCloudSave==='function')window.sigajiQueueCloudSave();
   }catch(e){}
 }
+/** True jika menerima payload ini akan mengosongkan data penting yang sudah ada di perangkat (cegah “hilang” setelah login awan). */
+function cloudPayloadWouldWipeMeaningfulLocal(o){
+  if(!o||typeof o!=='object')return false;
+  var locK=(karyawan||[]).length,locP=(periodes||[]).length,locU=(users||[]).length;
+  if(locK===0&&locP===0)return false;
+  if(Array.isArray(o.karyawan)&&o.karyawan.length===0&&locK>0)return true;
+  if(Array.isArray(o.periodes)&&o.periodes.length===0&&locP>0)return true;
+  if(Array.isArray(o.users)&&o.users.length===0&&locU>0)return true;
+  return false;
+}
 /** Terapkan JSON dari kolom payload Supabase ke variabel memori + localStorage (tanpa memicu sync balik). */
 function applyDbFromCloudPayload(payload){
   if(!payload||typeof payload!=='object')return;
+  var o=migrateStorage(Object.assign({schemaVersion:SCHEMA_VERSION},payload));
+  if(cloudPayloadWouldWipeMeaningfulLocal(o)){
+    var msg='Sinkron awan ditolak: data di cloud tampak kosong (0 karyawan/periode/user) sementara di perangkat ini masih ada data. Lokal tidak ditimpa. Periksa baris di Supabase atau unggah cadangan. Cadangan ringan: localStorage key sigaji_universal / sigaji_db.';
+    try{if(typeof toast==='function')toast(msg);}catch(e){}
+    console.warn('Sigaji:',msg);
+    return;
+  }
   window.sigajiApplyingCloud=true;
   try{
-    var o=migrateStorage(Object.assign({schemaVersion:SCHEMA_VERSION},payload));
-    if(o.karyawan!==undefined)karyawan=o.karyawan;
-    if(o.periodes!==undefined)periodes=o.periodes;
-    if(o.hariLibur!==undefined)hariLibur=o.hariLibur;
-    if(o.masterCuti!==undefined)masterCuti=o.masterCuti;
-    if(o.absensi!==undefined)absensi=o.absensi;
-    if(o.lembur!==undefined)lembur=o.lembur;
-    if(o.prorata!==undefined)prorata=o.prorata;
-    if(o.approvals!==undefined)approvals=o.approvals;
-    if(o.notifikasi!==undefined)notifikasi=o.notifikasi;
-    if(o.perusahaan!==undefined)perusahaan=o.perusahaan;
-    if(o.users!==undefined)users=o.users;
-    if(o.roles!==undefined)roles=o.roles;
-    if(o.thrManual!==undefined)thrManual=o.thrManual;
-    if(o.tunjVarBulan!==undefined)tunjVarBulan=o.tunjVarBulan;
-    if(o.tunjVarLabels!==undefined)tunjVarLabels=o.tunjVarLabels;
-    if(o.tunjVarColumns!==undefined)tunjVarColumns=o.tunjVarColumns;
-    if(o.karSnapshot!==undefined)karSnapshot=o.karSnapshot;
-    if(o.auditLog!==undefined)auditLog=o.auditLog;
+    if(Array.isArray(o.karyawan))karyawan=o.karyawan;
+    if(Array.isArray(o.periodes))periodes=o.periodes;
+    if(Array.isArray(o.hariLibur))hariLibur=o.hariLibur;
+    if(o.masterCuti&&typeof o.masterCuti==='object')masterCuti=o.masterCuti;
+    if(o.absensi&&typeof o.absensi==='object')absensi=o.absensi;
+    if(o.lembur&&typeof o.lembur==='object')lembur=o.lembur;
+    if(o.prorata&&typeof o.prorata==='object')prorata=o.prorata;
+    if(Array.isArray(o.approvals))approvals=o.approvals;
+    if(Array.isArray(o.notifikasi))notifikasi=o.notifikasi;
+    if(o.perusahaan&&typeof o.perusahaan==='object')perusahaan=o.perusahaan;
+    if(Array.isArray(o.users))users=o.users;
+    if(o.roles&&typeof o.roles==='object')roles=o.roles;
+    if(o.thrManual&&typeof o.thrManual==='object')thrManual=o.thrManual;
+    if(o.tunjVarBulan&&typeof o.tunjVarBulan==='object')tunjVarBulan=o.tunjVarBulan;
+    if(o.tunjVarLabels&&typeof o.tunjVarLabels==='object')tunjVarLabels=o.tunjVarLabels;
+    if(Array.isArray(o.tunjVarColumns))tunjVarColumns=o.tunjVarColumns;
+    if(o.karSnapshot&&typeof o.karSnapshot==='object')karSnapshot=o.karSnapshot;
+    if(Array.isArray(o.auditLog))auditLog=o.auditLog;
     dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog});
     try{
       localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog}));
@@ -243,6 +259,16 @@ function applyDbFromCloudPayload(payload){
   }finally{
     window.sigajiApplyingCloud=false;
   }
+}
+/** Jangan unggah ke Supabase jika isinya masih “template kosong” — bisa menimpa satu payload tenant penuh. */
+function shouldSkipCloudUpload(payload){
+  if(!payload||typeof payload!=='object')return true;
+  if((payload.karyawan||[]).length>0||(payload.periodes||[]).length>0)return false;
+  if(Object.keys(payload.absensi||{}).length>0)return false;
+  var u=payload.users||[];
+  if(u.length!==3)return false;
+  if(u.map(function(x){return String(x.username||'')}).sort().join(',')!=='admin,hrd,karyawan')return false;
+  return true;
 }
 function getPayloadForCloud(){
   return migrateStorage(Object.assign({schemaVersion:SCHEMA_VERSION},{
@@ -269,6 +295,8 @@ function getPayloadForCloud(){
 if(typeof window!=='undefined'){
   window.applyDbFromCloudPayload=applyDbFromCloudPayload;
   window.getPayloadForCloud=getPayloadForCloud;
+  window.cloudPayloadWouldWipeMeaningfulLocal=cloudPayloadWouldWipeMeaningfulLocal;
+  window.sigajiShouldSkipCloudUpload=shouldSkipCloudUpload;
 }
 let siT;
 function showSI(){const e=document.getElementById('save-ind');if(!e)return;e.textContent='✓ Tersimpan';clearTimeout(siT);siT=setTimeout(()=>e.textContent='',2000);}

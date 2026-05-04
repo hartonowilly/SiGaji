@@ -106,7 +106,12 @@
       })
       .catch(function (e) {
         console.error(e);
-        toastSafe('Login awan error');
+        var m = e && (e.message || e.toString()) ? String(e.message || e) : 'error';
+        toastSafe(
+          'Login awan gagal: ' +
+            m +
+            '. Cek jaringan, blokir iklan (esm.sh), dan konsol F12. Data lokal tidak diubah jika login tidak selesai.'
+        );
       });
   }
 
@@ -178,7 +183,11 @@
 
     if (res.error) {
       console.error(res.error);
-      toastSafe(res.error.message || 'Gagal membaca cloud');
+      var er = res.error.message || String(res.error.code || '') || 'Gagal membaca cloud';
+      if (/row-level security|RLS|42501|permission denied/i.test(String(res.error.message) + String(res.error.details || '')))
+        er +=
+          ' — cek kebijakan RLS tabel sigaji_cloud (baca/insert untuk user terautentikasi).';
+      toastSafe(er);
       return;
     }
     if (res.data && res.data.payload && typeof window.applyDbFromCloudPayload === 'function') {
@@ -203,6 +212,10 @@
     var uid = sess.data.session.user.id;
     if (typeof window.getPayloadForCloud !== 'function') return;
     var payload = window.getPayloadForCloud();
+    if (typeof window.sigajiShouldSkipCloudUpload === 'function' && window.sigajiShouldSkipCloudUpload(payload)) {
+      console.warn('Sigaji cloud: lewati unggah — payload masih template kosong (lindungi data tenant di Supabase).');
+      return;
+    }
     var ts = new Date().toISOString();
 
     var r;
@@ -233,10 +246,6 @@
   }
 
   window.sigajiTryCloudLogin = tryCloudLoginWhenReady;
-  window.sigajiQueueCloudSave = function () {};
-  window.sigajiCloudLogout = function () {
-    return Promise.resolve();
-  };
 
   bootPromise = boot();
 })();
