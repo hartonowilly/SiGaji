@@ -89,6 +89,60 @@ function cutiManual(nik,yr){
     return dn.startsWith(pfx)&&ent[1]==='cuti'&&!isCutiBersamaPotongKuotaTgl(dn);
   }).length;
 }
+/** Ambil daftar rentang tanggal "ekor tahun lalu" yang termasuk dalam periode gaji yang menyilang tahun `yr`. */
+function getCrossYearTailRanges(yr){
+  const y=String(yr);
+  const yearStart=y+'-01-01';
+  const tails=[];
+  // Hitung "tanggal sebelum 1 Jan" dengan aman pakai Date
+  const prevDay=(function(){
+    const d=new Date(yearStart+'T12:00:00');
+    d.setDate(d.getDate()-1);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  })();
+  (periodes||[]).forEach(function(p){
+    const s=toIsoDate(p&&p.start),e=toIsoDate(p&&p.end);
+    if(!s||!e)return;
+    if(!(s<yearStart&&e>=yearStart))return;
+    const tailStart=s;
+    const tailEnd=e<yearStart?e:prevDay;
+    if(tailStart<=tailEnd)tails.push({start:tailStart,end:tailEnd});
+  });
+  return tails;
+}
+/** Manual cuti untuk Tracking tahun `yr`: cuti di tahun `yr` + cuti di "ekor tahun lalu" yang masuk periode gaji silang tahun `yr`. */
+function cutiManualTrackingYear(nik,yr){
+  const y=String(yr);
+  let n=cutiManual(nik,yr);
+  const tails=getCrossYearTailRanges(yr);
+  if(!tails.length)return n;
+  const ab=absensi[nik]||{};
+  for(const raw of Object.keys(ab)){
+    if(ab[raw]!=='cuti')continue;
+    const d=toIsoDate(raw);
+    if(!d||d>=y+'-01-01')continue;
+    if(isCutiBersamaPotongKuotaTgl(d))continue;
+    for(const r of tails){
+      if(d>=r.start&&d<=r.end){n++;break;}
+    }
+  }
+  return n;
+}
+/** Cuti bersama untuk Tracking tahun `yr`: CB tahun `yr` + CB di ekor tahun lalu yang masuk periode silang tahun `yr`. */
+function countCutiBersamaTrackingYear(yr){
+  let n=countCutiBersama(yr);
+  const tails=getCrossYearTailRanges(yr);
+  if(!tails.length||!masterCuti.cbPotong)return n;
+  const y=String(yr);
+  const extra=hariLibur.filter(function(l){
+    if(l.tipe!=='cuti-bersama')return false;
+    const d=toIsoDate(l.tgl);
+    if(!d||d>=y+'-01-01')return false;
+    if(isHariLiburKerja(new Date(d+'T12:00:00').getDay()))return false;
+    return tails.some(function(r){return d>=r.start&&d<=r.end;});
+  }).length;
+  return n+extra;
+}
 /**
  * Cuti manual untuk tahun kuota `tahun`, plus hari cuti di tahun sebelumnya yang masih dalam
  * rentang periode gaji bila periode beririsan dengan kalender `tahun` (mis. 29 Des 2025–27 Jan 2026
@@ -2726,17 +2780,19 @@ function renderCutiRekap(){
   const coEl=document.getElementById('cuti-carryover');if(coEl)coEl.value=masterCuti.carryover;
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
   const tb=document.getElementById('tb-cuti-rekap');if(!tb)return;
-  populateAbsensiPeriodeSelect();
-  var pid=document.getElementById('ab-periode-sel')&&document.getElementById('ab-periode-sel').value;
-  var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
-  const cb=countCutiBersamaUntukTahunDanPeriode(yr,pAbs);
-  var list=karyawanListPeriode(pAbs);
+  const cb=countCutiBersamaTrackingYear(yr);
+  // Tracking cuti = rekap tahunan (tidak terpengaruh periode gaji). Filter: karyawan aktif / belum berhenti sebelum tahun tsb.
+  const yearStart=String(yr)+'-01-01';
+  var list=(karyawan||[]).filter(function(k){
+    var t=toIsoDate(k&&k.tgl_berhenti);
+    return !t||t>=yearStart;
+  });
   if(!list.length){
-    tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan untuk periode gaji ini (mis. semua sudah berhenti sebelum tanggal mulai periode).</td></tr>';
+    tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan aktif untuk tahun ini.</td></tr>';
     return;
   }
   tb.innerHTML=list.map(function(k,idx){
-    const mb=masaKerjaBulan(k);const manual=cutiManualUntukTahunDanPeriode(k.nik,yr,pAbs);const total=manual+cb;
+    const mb=masaKerjaBulan(k);const manual=cutiManualTrackingYear(k.nik,yr);const total=manual+cb;
     const kuota=masterCuti.kuota||12;
     const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
