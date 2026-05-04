@@ -20,6 +20,7 @@ function migrateRolePerms(r){
         if(!SUBTABS[mid]||!SUBTABS[mid].length)continue;
         if(x===mid)return false;
       }
+      if(x==='absensi.libur')return false;
       return true;
     });
   });
@@ -90,6 +91,10 @@ function migrateStorage(db){
       ];
     }
     v=8;
+  }
+  if(v<9){
+    if(db.roles)migrateRolePerms(db.roles);
+    v=9;
   }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
@@ -181,7 +186,7 @@ let approvals=LS('approvals',[]);
 let notifikasi=LS('notifikasi',[]);
 let perusahaan=LS('perusahaan',{nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,ptkp_nilai:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}});
 let users=LS('users',[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}]);
-let roles=LS('roles',{Admin:MODULES.map(m=>m.id),HRD:['dashboard','notifikasi','karyawan.info','karyawan.bpjs','karyawan.ring','absensi.kalender','absensi.cuti','absensi.lembur','absensi.libur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']});
+let roles=LS('roles',{Admin:MODULES.map(m=>m.id),HRD:['dashboard','notifikasi','karyawan.info','karyawan.bpjs','karyawan.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']});
 let thrManual=LS('thrManual',{});
 let tunjVarBulan=LS('tunjVarBulan',{});
 let tunjVarLabels=LS('tunjVarLabels',{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'});

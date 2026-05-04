@@ -46,7 +46,7 @@ const TUNJ_TYPES={tetap:'Tetap (BPJS+THR+PPh+TH)',tetap_no_bpjs:'Tetap Excl.BPJS
 // Contoh: 'karyawan.gaji' = akses tab Gaji & Tunjangan di modul karyawan
 const SUBTABS={
   karyawan:['info','gaji','bpjs','natura','pphret','ring'],
-  absensi:['kalender','cuti','lembur','libur'],
+  absensi:['kalender','cuti','lembur'],
   master:['prs','periode','libur','potongan','ter'],
   approval:['pend','hist'],
 };
@@ -55,16 +55,16 @@ const SUBTAB_LBL={
   'karyawan.bpjs':'BPJS','karyawan.natura':'Natura',
   'karyawan.pphret':'PPh Return','karyawan.ring':'Ringkasan',
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
-  'absensi.lembur':'Lembur','absensi.libur':'Hari Libur',
+  'absensi.lembur':'Lembur',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR',
-  'master.libur':'Hari Libur (Master)','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
+  'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
 };
 const MODULES=[
   {id:'dashboard',lbl:'Dashboard',icon:'&#9632;',sec:'Utama'},
   {id:'notifikasi',lbl:'Notifikasi',icon:'&#128276;',sec:'Utama'},
   {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info','gaji','bpjs','natura','pphret','ring']},
-  {id:'absensi',lbl:'Absensi, Cuti & Lembur',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti','lembur','libur']},
+  {id:'absensi',lbl:'Absensi, Cuti & Lembur',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti','lembur']},
   {id:'thr',lbl:'THR',icon:'&#127873;',sec:'SDM'},
   {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'SDM'},
   {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
@@ -115,4 +115,4 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=8;
+const SCHEMA_VERSION=9;

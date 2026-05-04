@@ -2446,7 +2446,15 @@ function renderCutiRekap(){
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
   const cb=countCutiBersama(yr);
   const tb=document.getElementById('tb-cuti-rekap');if(!tb)return;
-  tb.innerHTML=karyawan.map(function(k,idx){
+  populateAbsensiPeriodeSelect();
+  var pid=document.getElementById('ab-periode-sel')&&document.getElementById('ab-periode-sel').value;
+  var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
+  var list=karyawanListPeriode(pAbs);
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan untuk periode gaji ini (mis. semua sudah berhenti sebelum tanggal mulai periode).</td></tr>';
+    return;
+  }
+  tb.innerHTML=list.map(function(k,idx){
     const mb=masaKerjaBulan(k);const manual=cutiManual(k.nik,yr);const total=manual+cb;
     const eligible=mb>=masterCuti.masaMin;const kuota=eligible?masterCuti.kuota:0;const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
@@ -2465,7 +2473,7 @@ function simpanMasterCuti(){
   masterCuti.masaMin=parseInt(document.getElementById('cuti-masaMin').value)||12;
   masterCuti.carryover=document.getElementById('cuti-carryover').value;
   masterCuti.cbPotong=!!(document.getElementById('cuti-cb-potong')&&document.getElementById('cuti-cb-potong').checked);
-  saveAll();renderCutiRekap();renderKar();toast('Setting cuti disimpan');
+  saveAll();renderCutiRekap();renderKar();renderHariLibur();renderAbsensi();toast('Setting cuti disimpan');
 }
 // ── LEMBUR ───────────────────────────────────────
 function addLemburForKar(){const sel=document.getElementById('lembur-kar-sel');const nik=sel&&sel.value;if(!nik){toast('Pilih karyawan');return;}if(!lembur[nik])lembur[nik]=[];lembur[nik].push({tanggal:'',jam:''});saveAll();renderLemburList();}
@@ -2491,33 +2499,24 @@ function updLembur(nik,i,f,v){if(!lembur[nik])lembur[nik]=[];lembur[nik][i][f]=v
 function delLembur(nik,i){lembur[nik].splice(i,1);saveAll();renderLemburList();}
 function hapusLemburBulan(){if(!confirm('Hapus semua lembur?'))return;karyawan.forEach(function(k){lembur[k.nik]=[];});saveAll();renderLemburList();toast('Semua dihapus');}
 // ── HARI LIBUR ───────────────────────────────────
-function initLibnasAbYearSelect(){var el=document.getElementById('libnas-yr-ab');if(!el)return;var thn=new Date().getFullYear();el.innerHTML='';for(var y=thn+1;y>=2017;y--){var opt=document.createElement('option');opt.value=y;opt.textContent=y;if(y===thn)opt.selected=true;el.appendChild(opt);}}
 function initLibnasYearSelect(){var el=document.getElementById('libnas-yr');if(!el)return;var thn=new Date().getFullYear();el.innerHTML='';for(var y=thn+1;y>=2017;y--){var opt=document.createElement('option');opt.value=y;opt.textContent=y;if(y===thn)opt.selected=true;el.appendChild(opt);}}
-function loadLiburNasionalFromAb(){
-  var yr=parseInt((document.getElementById('libnas-yr-ab')&&document.getElementById('libnas-yr-ab').value)||new Date().getFullYear());
-  var lb=getLiburNasionalTahun(yr);var added=0;
-  lb.forEach(function(l){if(!hariLibur.find(function(x){return x.tgl===l.tgl;})){hariLibur.push(l);added++;}});
-  saveAll();renderLiburListAb();renderAbsensi();renderCutiRekap();
-  var el=document.getElementById('abt-libur-hasil');
-  if(el){el.style.display='block';el.textContent=(added>0?added+' hari libur '+yr+' dimuat':'Semua sudah ada');setTimeout(function(){el.style.display='none';},5000);}
-  toast(added>0?added+' hari libur dimuat':'Sudah ada');
-}
-function renderLiburListAb(){
+function renderHariLibur(){
+  var el=document.getElementById('libur-list');if(!el)return;
   var s=[].concat(hariLibur).sort(function(a,b){return a.tgl.localeCompare(b.tgl);});
   var tc={nasional:'b-err','cuti-bersama':'b-pu',perusahaan:'b-info'};var tn={nasional:'Nasional','cuti-bersama':'Cuti Bersama',perusahaan:'Perusahaan'};
-  var el=document.getElementById('abt-libur-list');if(!el)return;
+  if(!s.length){el.innerHTML='<div style="color:#6b7280;font-size:12px;padding:.5rem">Belum ada.</div>';return;}
   var grouped={};s.forEach(function(l){var yr=l.tgl.substring(0,4);if(!grouped[yr])grouped[yr]=[];grouped[yr].push(l);});
   el.innerHTML=Object.entries(grouped).sort(function(a,b){return b[0]-a[0];}).map(function(kv){
-    return '<div style="margin-bottom:.75rem"><div style="font-size:11px;font-weight:700;color:#6b7280;padding:4px 0;border-bottom:1px solid #e5e7eb;margin-bottom:.4rem">'+kv[0]+' - '+kv[1].length+' hari</div>'
-      +kv[1].map(function(l){return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span style="font-size:9px;color:#5b21b6;margin-left:4px">-1 kuota</span>':'')+'<br><span style="font-size:10px;color:#6b7280">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r" onclick="hapusLibur(\''+l.tgl+'\');renderLiburListAb();renderAbsensi();renderCutiRekap()">&#10007;</button></div></div>';}).join('')+'</div>';
-  }).join('')||'<div style="font-size:12px;color:#6b7280;padding:1rem;text-align:center">Belum ada hari libur.</div>';
+    return '<div style="margin-bottom:.75rem"><div style="font-size:11px;font-weight:700;color:#6b7280;padding:4px 0;border-bottom:1px solid #e5e7eb;margin-bottom:.4rem">'+kv[0]+' — '+kv[1].length+' hari</div>'
+      +kv[1].map(function(l){
+        return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span style="font-size:9px;color:#5b21b6;margin-left:4px">-1 kuota</span>':'')+'<br><span style="font-size:10px;color:#6b7280">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r" onclick="hapusLibur(\''+l.tgl+'\')">&#10007;</button></div></div>';
+      }).join('')+'</div>';
+  }).join('');
 }
-function tambahLiburDariAb(){var tgl=document.getElementById('lib-tgl2')&&document.getElementById('lib-tgl2').value;var nama=document.getElementById('lib-nama2')&&document.getElementById('lib-nama2').value.trim();var tipe=document.getElementById('lib-tipe2')&&document.getElementById('lib-tipe2').value;if(!tgl||!nama){toast('Tanggal dan nama wajib');return;}if(hariLibur.find(function(l){return l.tgl===tgl;})){toast('Tanggal sudah ada');return;}hariLibur.push({tgl:tgl,nama:nama,tipe:tipe});saveAll();renderLiburListAb();renderAbsensi();renderCutiRekap();document.getElementById('lib-tgl2').value='';document.getElementById('lib-nama2').value='';toast('Ditambahkan');}
-function hapusSemuaLibur(){if(!confirm('Hapus SEMUA hari libur?'))return;hariLibur=[];saveAll();renderLiburListAb();renderHariLibur();renderAbsensi();renderCutiRekap();toast('Semua dihapus');}
-function renderHariLibur(){var s=[].concat(hariLibur).sort(function(a,b){return a.tgl.localeCompare(b.tgl);});var tc={nasional:'b-err','cuti-bersama':'b-pu',perusahaan:'b-info'};var tn={nasional:'Nasional','cuti-bersama':'Cuti Bersama',perusahaan:'Perusahaan'};document.getElementById('libur-list').innerHTML=s.length?s.map(function(l){return '<div class="libur-item"><div><strong>'+l.nama+'</strong><br><span style="font-size:10px;color:#6b7280">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r" onclick="hapusLibur(\''+l.tgl+'\')">&#10007;</button></div></div>';}).join(''):'<div style="color:#6b7280;font-size:12px;padding:.5rem">Belum ada.</div>';}
-function tambahLibur(){var tgl=document.getElementById('lib-tgl').value;var nama=document.getElementById('lib-nama').value.trim();var tipe=document.getElementById('lib-tipe').value;if(!tgl||!nama){toast('Wajib diisi');return;}if(hariLibur.find(function(l){return l.tgl===tgl;})){toast('Tanggal sudah ada');return;}hariLibur.push({tgl:tgl,nama:nama,tipe:tipe});saveAll();renderHariLibur();toast('Ditambahkan');}
-function hapusLibur(tgl){hariLibur=hariLibur.filter(function(l){return l.tgl!==tgl;});saveAll();renderHariLibur();toast('Dihapus');}
-function loadLiburNasionalDinamis(){var yr=parseInt((document.getElementById('libnas-yr')&&document.getElementById('libnas-yr').value)||new Date().getFullYear());var lb=getLiburNasionalTahun(yr);var added=0;lb.forEach(function(l){if(!hariLibur.find(function(x){return x.tgl===l.tgl;})){hariLibur.push(l);added++;}});saveAll();renderHariLibur();renderCutiRekap();toast(added+' hari libur '+yr+' dimuat');}
+function tambahLibur(){var tgl=document.getElementById('lib-tgl').value;var nama=document.getElementById('lib-nama').value.trim();var tipe=document.getElementById('lib-tipe').value;if(!tgl||!nama){toast('Wajib diisi');return;}if(hariLibur.find(function(l){return l.tgl===tgl;})){toast('Tanggal sudah ada');return;}hariLibur.push({tgl:tgl,nama:nama,tipe:tipe});saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast('Ditambahkan');}
+function hapusLibur(tgl){hariLibur=hariLibur.filter(function(l){return l.tgl!==tgl;});saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast('Dihapus');}
+function hapusSemuaLibur(){if(!confirm('Hapus SEMUA hari libur?'))return;hariLibur=[];saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast('Semua dihapus');}
+function loadLiburNasionalDinamis(){var yr=parseInt((document.getElementById('libnas-yr')&&document.getElementById('libnas-yr').value)||new Date().getFullYear());var lb=getLiburNasionalTahun(yr);var added=0;lb.forEach(function(l){if(!hariLibur.find(function(x){return x.tgl===l.tgl;})){hariLibur.push(l);added++;}});saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast(added>0?added+' hari libur '+yr+' dimuat':'Semua tanggal '+yr+' sudah ada');}
 // ── PERIODE & MASTER ─────────────────────────────
 function toggleThrFields(){var aktif=document.getElementById('p-thr-aktif')&&document.getElementById('p-thr-aktif').checked;var f=document.getElementById('thr-fields');if(f)f.style.display=aktif?'block':'none';}
 function renderPeriodes(){
@@ -2880,7 +2879,7 @@ function applyAbsensiSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first=t;
   });
-  ['abt-kalender','abt-cuti','abt-lembur','abt-libur'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  ['abt-kalender','abt-cuti','abt-lembur'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
   if(first&&first.dataset.abpanel)switchAbTab(first,first.dataset.abpanel);
   else toast('Tidak ada sub-tab Absensi yang diizinkan untuk role ini.');
 }
@@ -2892,11 +2891,12 @@ function switchTab(el,tid){
   el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['m-prs','m-periode','m-libur','m-potongan','m-ter','ap-pend','ap-hist'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});
   if(tid==='m-potongan')loadAturanPotongan();
   if(tid==='m-ter'){renderPTKPForm();renderTERTable();}
+  if(tid==='m-libur'){initLibnasYearSelect();renderHariLibur();renderCutiRekap();}
 }
 function switchAbTab(el,tid){
-  var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti','abt-lembur':'lembur','abt-libur':'libur'};
+  var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti','abt-lembur':'lembur'};
   if(abSubs[tid]&&!canAccessSubTab('absensi',abSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
-  el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['abt-kalender','abt-cuti','abt-lembur','abt-libur'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});if(tid==='abt-cuti')renderCutiRekap();if(tid==='abt-lembur'){var ls=document.getElementById('lembur-kar-sel');if(ls)ls.innerHTML=karyawan.map(function(k){return'<option value="'+k.nik+'">'+k.nama+'</option>';}).join('');renderLemburList();}if(tid==='abt-libur'){initLibnasAbYearSelect();renderLiburListAb();}}
+  el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['abt-kalender','abt-cuti','abt-lembur'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});if(tid==='abt-cuti')renderCutiRekap();if(tid==='abt-lembur'){var ls=document.getElementById('lembur-kar-sel');if(ls)ls.innerHTML=karyawan.map(function(k){return'<option value="'+k.nik+'">'+k.nama+'</option>';}).join('');renderLemburList();}}
 function switchSpTab(el,tid){
   // Cek sub-tab permission
   const tabMap={'sp-info':'info','sp-gaji':'gaji','sp-bpjs':'bpjs','sp-natura':'natura','sp-pphret':'pphret','sp-ring':'ring'};
@@ -2918,7 +2918,7 @@ function execReset(){
   karyawan=[];periodes=[];hariLibur=[];masterCuti={kuota:12,masaMin:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
   perusahaan={nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}};
   users=[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}];
-  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','karyawan.bpjs','karyawan.ring','absensi.kalender','absensi.cuti','absensi.lembur','absensi.libur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']};
+  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','karyawan.bpjs','karyawan.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']};
   thrManual={};tunjVarBulan={};tunjVarLabels={v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'};tunjVarColumns=[{id:'v1',nama:'Bonus'},{id:'v2',nama:'Uang Makan'},{id:'v3',nama:'Lain-lain'}];localStorage.removeItem(DB_KEY);localStorage.removeItem('sigaji_universal');saveAll();closeModal('m-reset');renderSidebar();renderAll();updateNotifBadge();applyBranding();
   document.getElementById('reset-inp').value='';document.getElementById('btn-reset').disabled=true;toast('Reset selesai');
 }
