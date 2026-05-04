@@ -857,16 +857,84 @@
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/ptkp.js"></script>
-<script src="js/app.js"></script>
-<script src="js/pesangon.js"></script>
-<script src="js/config.js"></script>
+<script src="js/constants.js?v=9.0.1"></script>
+<script src="js/storage.js?v=9.0.1"></script>
+<script src="js/ptkp.js?v=9.0.1"></script>
+<script src="js/app.js?v=9.0.1"></script>
+<script src="js/pesangon.js?v=9.0.1"></script>
+<script src="js/config.js?v=9.0.1"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js"></script>
+<script src="js/cloud-sync.js?v=9.0.1"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
+</script>
+<script>
+(function(){
+  function tryParse(s){try{return JSON.parse(s);}catch(e){return null;}}
+  function rebuildDbFromUniversalRaw(raw){
+    var o=tryParse(raw);if(!o)return false;
+    var db={
+      schemaVersion:9,
+      karyawan:o.karyawan||[],
+      periodes:o.periodes||[],
+      hariLibur:o.hariLibur||[],
+      masterCuti:o.masterCuti||{kuota:12,carryover:'no',cbPotong:true},
+      absensi:o.absensi||{},
+      lembur:o.lembur||{},
+      prorata:o.prorata||{},
+      approvals:o.approvals||[],
+      notifikasi:o.notifikasi||[],
+      perusahaan:o.perusahaan||{},
+      users:o.users||[],
+      roles:o.roles||{},
+      thrManual:o.thrManual||{},
+      tunjVarBulan:o.tunjVarBulan||{},
+      tunjVarLabels:o.tunjVarLabels||{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'},
+      tunjVarColumns:o.tunjVarColumns||[],
+      karSnapshot:o.karSnapshot||{},
+      auditLog:o.auditLog||[]
+    };
+    localStorage.setItem('sigaji_db',JSON.stringify(db));
+    return true;
+  }
+  if(typeof window.sigajiRestoreEmergencyLocalBackup==='function')return;
+  window.sigajiRestoreEmergencyLocalBackup=function(){
+    try{
+      var rec=localStorage.getItem('sigaji_recovery_last');
+      if(rec){
+        var o=tryParse(rec);
+        if(o){
+          var c=JSON.parse(JSON.stringify(o));
+          delete c._tag;delete c._ts;
+          if(c.schemaVersion==null)c.schemaVersion=9;
+          localStorage.setItem('sigaji_db',JSON.stringify(c));
+          location.reload();
+          return true;
+        }
+      }
+      var prev=localStorage.getItem('sigaji_db_prev');
+      if(prev&&prev.length>40){
+        localStorage.setItem('sigaji_db',prev);
+        location.reload();
+        return true;
+      }
+      var uniPrev=localStorage.getItem('sigaji_universal_prev');
+      if(uniPrev&&rebuildDbFromUniversalRaw(uniPrev)){
+        location.reload();
+        return true;
+      }
+      var uni=localStorage.getItem('sigaji_universal');
+      if(uni&&uni.length>120&&rebuildDbFromUniversalRaw(uni)){
+        location.reload();
+        return true;
+      }
+      return false;
+    }catch(e){
+      console.error('sigajiRestoreEmergencyLocalBackup (fallback)',e);
+      return false;
+    }
+  };
+})();
 </script>
 </body>
 </html>
