@@ -18,11 +18,9 @@
     Ingat username
   </label>
   <button class="btn btn-p btn-full" onclick="doLogin()">Masuk ke Sistem</button>
-  <p id="cloud-login-hint" style="display:none;margin-top:.75rem;font-size:11px;line-height:1.5;color:#64748b">&#9729; <strong>Database awan:</strong> isi kolom Username dengan <strong>email Supabase</strong> Anda + sandi dari Authentication. Tanpa @ tetap pakai login lokal (admin/hrd).</p>
   <div id="file-protocol-hint" style="display:none;margin-top:.85rem;padding:.65rem .85rem;background:#fff8e6;border:1px solid #f6d088;border-radius:8px;font-size:11px;line-height:1.55;color:#713f12">
     <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.
   </div>
-  <button onclick="if(confirm('Reset cache? Data lokal akan dihapus.')){localStorage.clear();location.reload();}" style="width:100%;margin-top:.5rem;padding:.4rem;background:none;border:1px dashed #e5e7eb;border-radius:8px;color:#9b2121;font-size:11px;cursor:pointer;font-family:inherit">&#9888; Reset Cache (pakai jika error)</button>
   <div id="login-quick-local" style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #eee">
     <p style="font-size:11px;color:#9ca3af;margin-bottom:6px">Login cepat (hanya mode lokal, tanpa Supabase):</p>
     <button class="chip-login" onclick="ql('admin','admin123')">Admin</button>
@@ -90,7 +88,7 @@
       <span style="font-size:11px;color:#6b7280" id="kar-count"></span>
     </div>
     <div style="overflow-x:auto">
-    <table><thead><tr id="kar-thead-row"><th>Karyawan</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>Gaji Pokok</th><th>PTKP</th><th>BPJS</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
+    <table><thead><tr id="kar-thead-row"><th>No</th><th>Karyawan</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>Gaji Pokok</th><th>PTKP</th><th>BPJS</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
     <tbody id="tb-kar"></tbody></table></div>
   </div>
 </div>
@@ -149,7 +147,7 @@
     </div>
     <div class="card">
       <div class="ct">Tracking Cuti — <span id="cuti-yr-lbl">2026</span></div>
-      <table><thead><tr><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Eligible</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
+      <table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Eligible</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
       <tbody id="tb-cuti-rekap"></tbody></table>
     </div>
   </div>
@@ -215,7 +213,7 @@
   <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
     <div class="info-box info-blue"><strong>PP 36/2021:</strong> Masa kerja ≥12 bln = 1× gaji. 1–12 bln = (masa/12) × gaji. Dasar = Gaji Pokok + Tunjangan Tetap.</div>
     <div style="overflow-x:auto">
-    <table><thead><tr><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
+    <table><thead><tr><th>No</th><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
     <tbody id="tb-thr"></tbody></table></div>
   </div>
   <div class="card" style="background:#e8f4de;border-color:#b3d98f"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
@@ -230,7 +228,7 @@
   </div>
   <div class="card"><div class="ct">Karyawan dengan tanggal berhenti</div>
     <div style="overflow-x:auto">
-    <table><thead><tr><th>Karyawan</th><th>Tgl. berhenti</th><th>Alasan</th><th>Total estimasi</th><th>Data</th><th></th></tr></thead>
+    <table><thead><tr><th>No</th><th>Karyawan</th><th>Tgl. berhenti</th><th>Alasan</th><th>Total estimasi</th><th>Data</th><th></th></tr></thead>
     <tbody id="tb-pesangon"></tbody></table></div>
   </div>
   <div class="card"><div class="ct">Rincian &amp; penyesuaian</div><div id="psg-detail"></div></div>
@@ -245,23 +243,12 @@
     <button class="btn btn-sm btn-g" onclick="exportExcelDaftarRekening()" title="Format daftar transfer bank">&#128196; Excel Daftar Rekening</button>
     <button class="btn btn-sm btn-g" onclick="exportExcelBPJS()" title="Rekap iuran BPJS per karyawan">&#128196; Excel BPJS</button>
   </div></div>
-  <div id="thr-period-info"></div>
-  <div class="card" id="tunjvar-card" style="border-left:4px solid #2d6a0a;display:none">
-    <div class="ct" style="color:#2d6a0a">&#128176; Tunjangan variabel (per periode aktif)</div>
-    <div class="info-box info-blue" style="font-size:11px;line-height:1.65">
-      Isi bonus, uang makan, tunjangan lain yang <strong>beda tiap bulan</strong>. Nilai ini hanya untuk periode <strong id="tunjvar-per-lbl">-</strong>, masuk perhitungan sebagai tunjangan <strong>tidak tetap</strong> (ikut Gross PPh). Master karyawan tetap untuk gaji pokok &amp; tunjangan tetap.
-    </div>
-    <div class="fg3" style="margin-bottom:.65rem;align-items:flex-end">
-      <div class="fg"><label style="font-size:10px;font-weight:700;color:#6b7280">Nama kolom 1</label><input id="tunjvar-l1" placeholder="Bonus" style="font-size:13px" onchange="simpanTunjVarLabels()"></div>
-      <div class="fg"><label style="font-size:10px;font-weight:700;color:#6b7280">Nama kolom 2</label><input id="tunjvar-l2" placeholder="Uang Makan" style="font-size:13px" onchange="simpanTunjVarLabels()"></div>
-      <div class="fg"><label style="font-size:10px;font-weight:700;color:#6b7280">Nama kolom 3</label><input id="tunjvar-l3" placeholder="Lain-lain" style="font-size:13px" onchange="simpanTunjVarLabels()"></div>
-    </div>
-    <div class="fl gap1 mb1" style="flex-wrap:wrap">
-      <button type="button" class="btn btn-sm btn-out" onclick="salinTunjVarDariPeriodeLalu()">&#8635; Salin dari periode sebelumnya</button>
-    </div>
-    <div style="overflow-x:auto" id="tunjvar-tabel-wrap"></div>
-    <div class="mt1" style="font-size:11px;color:#6b7280" id="tunjvar-foot"></div>
+  <div class="tabs" style="margin:.75rem 0 .5rem">
+    <div class="tab active" data-pgtab="proses" onclick="switchPenggajianTab(this,'pg-gaji-proses')">&#128196; Ringkasan &amp; Pro-Rata</div>
+    <div class="tab" data-pgtab="tunjvar" onclick="switchPenggajianTab(this,'pg-gaji-tunjvar')">&#128176; Tunjangan Variabel</div>
   </div>
+  <div id="pg-gaji-proses">
+  <div id="thr-period-info"></div>
   <div class="card" style="background:#fffbf5;border-color:#f5a623">
     <div class="ct" style="color:#7d4800">&#9203; Pro-Rata Gaji</div>
     <div class="info-box info-amber" style="margin-bottom:.5rem">Rumus: Gaji × (Hari Hadir ÷ Hari Kerja Periode).</div>
@@ -271,8 +258,24 @@
     </div>
   </div>
   <div class="card"><div style="overflow-x:auto">
-  <table><thead><tr><th>Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th>THR</th><th>TH Bruto</th><th>BPJS Kar</th><th>PPh 21</th><th>PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
+  <table><thead><tr><th>No</th><th>Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th>THR</th><th>TH Bruto</th><th>BPJS Kar</th><th>PPh 21</th><th>PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
   <tbody id="tb-penggajian"></tbody></table></div></div>
+  </div>
+  <div id="pg-gaji-tunjvar" style="display:none">
+  <div class="card" id="tunjvar-card" style="border-left:4px solid #2d6a0a;display:none">
+    <div class="ct" style="color:#2d6a0a">&#128176; Tunjangan variabel (per periode aktif)</div>
+    <div class="info-box info-blue" style="font-size:11px;line-height:1.65">
+      Isi komponen yang <strong>beda tiap bulan</strong> (bonus, uang makan, insentif, dll.). Semua baris di sini diperlakukan sebagai tunjangan <strong>tidak tetap</strong>: ikut Gross PPh, <strong>tidak</strong> masuk dasar BPJS/THR, dan <strong>tidak</strong> ikut prorata gaji. Periode: <strong id="tunjvar-per-lbl">-</strong>.
+    </div>
+    <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
+      <button type="button" class="btn btn-sm btn-p" onclick="addTunjVarColumn()">+ Tambah kolom</button>
+      <button type="button" class="btn btn-sm btn-out" onclick="salinTunjVarDariPeriodeLalu()">&#8635; Salin dari periode sebelumnya</button>
+    </div>
+    <div id="tunjvar-col-editor" class="mb1" style="font-size:12px;color:#6b7280"></div>
+    <div style="overflow-x:auto" id="tunjvar-tabel-wrap"></div>
+    <div class="mt1" style="font-size:11px;color:#6b7280" id="tunjvar-foot"></div>
+  </div>
+  </div>
 </div>
 
 <!-- APPROVAL -->
@@ -317,7 +320,7 @@
   <div class="info-box info-blue">PPh 21 dihitung dengan metode <strong>TER (Tarif Efektif Rata-rata) PMK 168/2023</strong>. PPh = TER% × Bruto bulan ini. Gross PPh = Gaji + Tunjangan + Natura KP + Lembur + THR (jika periode ada THR).</div>
   <div class="card"><div class="ct">Rekap PPh 21</div>
     <div style="overflow-x:auto">
-    <table><thead><tr><th>Nama</th><th>PTKP</th><th>Gross/bln</th><th>THR</th><th>Biaya Jabatan</th><th>PKP/tahun</th><th>PPh/tahun</th><th>PPh/bulan</th><th>PPh Return</th></tr></thead>
+    <table><thead><tr><th>No</th><th>Nama</th><th>PTKP</th><th>Gross/bln</th><th>THR</th><th>Biaya Jabatan</th><th>PKP/tahun</th><th>PPh/tahun</th><th>PPh/bulan</th><th>PPh Return</th></tr></thead>
     <tbody id="tb-pph"></tbody></table></div>
   </div>
   <div class="card">
