@@ -612,14 +612,24 @@ function hitungGaji(k,pNama){
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;
   const abNik=absensi[nik]||{};
-  const pStart=toIsoDate(periode.start||'2026-01-01'),pEnd=toIsoDate(periode.end||'2026-12-31');
+  // Fallback: jika browser memuat app.js versi campur (cache), pastikan helper tanggal ada
+  const toIso=(typeof toIsoDate==='function')?toIsoDate:function(v){
+    if(v==null||v==='')return'';
+    var t=String(v).trim();if(t.length>=10)t=t.substring(0,10);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(t))return t;
+    var d=new Date(t);if(isNaN(d.getTime()))return'';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  };
+  const pStart=toIso((periode&&periode.start)||'2026-01-01'),pEnd=toIso((periode&&periode.end)||'2026-12-31');
   let nIzin=0,nSakit=0,n05S=0,n05I=0,nAlpha=0,nCuti=0;
   for(const[tglRaw,st]of Object.entries(abNik)){
-    const tgl=toIsoDate(tglRaw);
+    const tgl=toIso(tglRaw);
     if(!tgl||tgl<pStart||tgl>pEnd)continue;
     if(st==='izin')nIzin++;else if(st==='sakit')nSakit++;else if(st==='setengah_sakit')n05S++;else if(st==='setengah_ijin')n05I++;else if(st==='alpha')nAlpha++;else if(st==='cuti')nCuti++;
   }
-  const yr=end.getFullYear();const kuota=masterCuti.kuota||12;const cb=countCutiBersamaUntukTahunDanPeriode(yr,periode);
+  const end=new Date((periode&&periode.end?String(periode.end):'2026-12-31')+'T12:00:00');
+  const yr=end.getFullYear();const kuota=masterCuti.kuota||12;
+  const cb=(typeof countCutiBersamaUntukTahunDanPeriode==='function')?countCutiBersamaUntukTahunDanPeriode(yr,periode):countCutiBersama(yr);
   const totalSudahCuti=cutiManualUntukTahunDanPeriode(nik,yr,periode)+cb;
   const cutiDalamKuota=Math.min(nCuti,Math.max(0,kuota-(totalSudahCuti-nCuti)));const cutiLuarKuota=nCuti-cutiDalamKuota;
   function pot(mode,nilai,hari){if(hari<=0)return 0;switch(mode){case'tidak_dipotong':return 0;case'prorata':return Math.round(gajiHarian*hari);case'prorata_setengah':return Math.round(gajiHarian*hari*.5);case'nominal':return Math.round((nilai||0)*hari);case'persen':return Math.round(gajiHarian*(nilai||0)/100*hari);default:return 0;}}
