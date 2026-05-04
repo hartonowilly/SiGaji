@@ -14,22 +14,60 @@ const isHL=d=>hariLibur.some(l=>l.tgl===d);
 const namaHL=d=>{const l=hariLibur.find(x=>x.tgl===d);return l?l.nama:'';};
 function isHariLiburKerja(dow){const hk=perusahaan.hariKerja||6;return hk===5?(dow===0||dow===6):(dow===0);}
 const ini=n=>(n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+/** Normalisasi ke YYYY-MM-DD untuk bandingkan kunci absensi / periode (hindari gagal karena sufiks T/Z). */
+function toIsoDate(v){
+  if(v==null||v==='')return'';
+  var t=String(v).trim();
+  if(t.length>=10)t=t.substring(0,10);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(t))return t;
+  var d=new Date(t);
+  if(isNaN(d.getTime()))return'';
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 // Cuti bersama mengurangi kuota (NEW v9)
 function countCutiBersama(yr){
   if(!masterCuti.cbPotong)return 0;
-  return hariLibur.filter(l=>l.tipe==='cuti-bersama'&&l.tgl.startsWith(String(yr))&&!isHariLiburKerja(new Date(l.tgl+'T12:00:00').getDay())).length;
+  const y=String(yr);
+  return hariLibur.filter(function(l){
+    if(l.tipe!=='cuti-bersama')return false;
+    const t=toIsoDate(l.tgl);
+    if(!t||!t.startsWith(y))return false;
+    return !isHariLiburKerja(new Date(t+'T12:00:00').getDay());
+  }).length;
+}
+/** Cuti bersama di tahun `yr` plus hari libur cuti-bersama di tahun sebelumnya yang jatuh dalam periode gaji (penyilang tahun). */
+function countCutiBersamaUntukTahunDanPeriode(yr,periode){
+  var n=countCutiBersama(yr);
+  if(!periode||!periode.start||!periode.end||!masterCuti.cbPotong)return n;
+  var y=String(yr);
+  var s=toIsoDate(periode.start),e=toIsoDate(periode.end);
+  if(!s||!e||!(e>=y+'-01-01'&&s<=y+'-12-31'))return n;
+  var extra=hariLibur.filter(function(l){
+    if(l.tipe!=='cuti-bersama')return false;
+    var t=toIsoDate(l.tgl);
+    if(!t||t<s||t>e)return false;
+    if(t.startsWith(y))return false;
+    if(!(t<y+'-01-01'))return false;
+    return !isHariLiburKerja(new Date(t+'T12:00:00').getDay());
+  }).length;
+  return n+extra;
 }
 /** Tanggal ini memotong kuota lewat master cuti bersama (sama aturan dengan countCutiBersama per hari). */
 function isCutiBersamaPotongKuotaTgl(tglIso){
   if(!tglIso||!masterCuti.cbPotong)return false;
-  const l=hariLibur.find(x=>x.tgl===tglIso&&x.tipe==='cuti-bersama');
+  var d=toIsoDate(tglIso);
+  if(!d)return false;
+  var l=hariLibur.find(function(x){return toIsoDate(x.tgl)===d&&x.tipe==='cuti-bersama';});
   if(!l)return false;
-  return !isHariLiburKerja(new Date(String(tglIso).trim()+'T12:00:00').getDay());
+  return !isHariLiburKerja(new Date(d+'T12:00:00').getDay());
 }
 /** Cuti dari absensi yang memakai kuota (hari cuti bersama di absen sebagai C tidak dihitung ganda). */
 function cutiManual(nik,yr){
   const pfx=String(yr);
-  return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='cuti'&&!isCutiBersamaPotongKuotaTgl(d)).length;
+  return Object.entries(absensi[nik]||{}).filter(function(ent){
+    var dn=toIsoDate(ent[0]);
+    return dn.startsWith(pfx)&&ent[1]==='cuti'&&!isCutiBersamaPotongKuotaTgl(dn);
+  }).length;
 }
 /**
  * Cuti manual untuk tahun kuota `tahun`, plus hari cuti di tahun sebelumnya yang masih dalam
@@ -40,11 +78,13 @@ function cutiManualUntukTahunDanPeriode(nik,tahun,periode){
   const y=String(tahun);
   let n=cutiManual(nik,tahun);
   if(!periode||!periode.start||!periode.end)return n;
-  const s=String(periode.start),e=String(periode.end);
-  if(!(e>=y+'-01-01'&&s<=y+'-12-31'))return n;
+  const s=toIsoDate(periode.start),e=toIsoDate(periode.end);
+  if(!s||!e||!(e>=y+'-01-01'&&s<=y+'-12-31'))return n;
   const ab=absensi[nik]||{};
-  for(const d of Object.keys(ab)){
-    if(ab[d]!=='cuti')continue;
+  for(const raw of Object.keys(ab)){
+    if(ab[raw]!=='cuti')continue;
+    const d=toIsoDate(raw);
+    if(!d)continue;
     if(isCutiBersamaPotongKuotaTgl(d))continue;
     if(d<s||d>e)continue;
     if(d.startsWith(y))continue;
@@ -571,10 +611,15 @@ function hitungGaji(k,pNama){
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;
-  const abNik=absensi[nik]||{};const start=new Date(periode.start||'2026-01-01');const end=new Date(periode.end||'2026-12-31');
+  const abNik=absensi[nik]||{};
+  const pStart=toIsoDate(periode.start||'2026-01-01'),pEnd=toIsoDate(periode.end||'2026-12-31');
   let nIzin=0,nSakit=0,n05S=0,n05I=0,nAlpha=0,nCuti=0;
-  for(const[tgl,st]of Object.entries(abNik)){const d=new Date(tgl);if(d<start||d>end)continue;if(st==='izin')nIzin++;else if(st==='sakit')nSakit++;else if(st==='setengah_sakit')n05S++;else if(st==='setengah_ijin')n05I++;else if(st==='alpha')nAlpha++;else if(st==='cuti')nCuti++;}
-  const yr=end.getFullYear();const kuota=masterCuti.kuota||12;const cb=countCutiBersama(yr);
+  for(const[tglRaw,st]of Object.entries(abNik)){
+    const tgl=toIsoDate(tglRaw);
+    if(!tgl||tgl<pStart||tgl>pEnd)continue;
+    if(st==='izin')nIzin++;else if(st==='sakit')nSakit++;else if(st==='setengah_sakit')n05S++;else if(st==='setengah_ijin')n05I++;else if(st==='alpha')nAlpha++;else if(st==='cuti')nCuti++;
+  }
+  const yr=end.getFullYear();const kuota=masterCuti.kuota||12;const cb=countCutiBersamaUntukTahunDanPeriode(yr,periode);
   const totalSudahCuti=cutiManualUntukTahunDanPeriode(nik,yr,periode)+cb;
   const cutiDalamKuota=Math.min(nCuti,Math.max(0,kuota-(totalSudahCuti-nCuti)));const cutiLuarKuota=nCuti-cutiDalamKuota;
   function pot(mode,nilai,hari){if(hari<=0)return 0;switch(mode){case'tidak_dipotong':return 0;case'prorata':return Math.round(gajiHarian*hari);case'prorata_setengah':return Math.round(gajiHarian*hari*.5);case'nominal':return Math.round((nilai||0)*hari);case'persen':return Math.round(gajiHarian*(nilai||0)/100*hari);default:return 0;}}
@@ -2647,11 +2692,11 @@ function renderCutiRekap(){
   const kuotaEl=document.getElementById('cuti-kuota');if(kuotaEl)kuotaEl.value=masterCuti.kuota;
   const coEl=document.getElementById('cuti-carryover');if(coEl)coEl.value=masterCuti.carryover;
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
-  const cb=countCutiBersama(yr);
   const tb=document.getElementById('tb-cuti-rekap');if(!tb)return;
   populateAbsensiPeriodeSelect();
   var pid=document.getElementById('ab-periode-sel')&&document.getElementById('ab-periode-sel').value;
   var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
+  const cb=countCutiBersamaUntukTahunDanPeriode(yr,pAbs);
   var list=karyawanListPeriode(pAbs);
   if(!list.length){
     tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan untuk periode gaji ini (mis. semua sudah berhenti sebelum tanggal mulai periode).</td></tr>';
