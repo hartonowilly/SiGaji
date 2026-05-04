@@ -31,6 +31,27 @@ function cutiManual(nik,yr){
   const pfx=String(yr);
   return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='cuti'&&!isCutiBersamaPotongKuotaTgl(d)).length;
 }
+/**
+ * Cuti manual untuk tahun kuota `tahun`, plus hari cuti di tahun sebelumnya yang masih dalam
+ * rentang periode gaji bila periode beririsan dengan kalender `tahun` (mis. 29 Des 2025–27 Jan 2026
+ * untuk tampilan kuota 2026: hari Des 2025 di dalam rentang ikut terhitung).
+ */
+function cutiManualUntukTahunDanPeriode(nik,tahun,periode){
+  const y=String(tahun);
+  let n=cutiManual(nik,tahun);
+  if(!periode||!periode.start||!periode.end)return n;
+  const s=String(periode.start),e=String(periode.end);
+  if(!(e>=y+'-01-01'&&s<=y+'-12-31'))return n;
+  const ab=absensi[nik]||{};
+  for(const d of Object.keys(ab)){
+    if(ab[d]!=='cuti')continue;
+    if(isCutiBersamaPotongKuotaTgl(d))continue;
+    if(d<s||d>e)continue;
+    if(d.startsWith(y))continue;
+    if(d<y+'-01-01')n++;
+  }
+  return n;
+}
 const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr);
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
@@ -554,7 +575,7 @@ function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   let nIzin=0,nSakit=0,n05S=0,n05I=0,nAlpha=0,nCuti=0;
   for(const[tgl,st]of Object.entries(abNik)){const d=new Date(tgl);if(d<start||d>end)continue;if(st==='izin')nIzin++;else if(st==='sakit')nSakit++;else if(st==='setengah_sakit')n05S++;else if(st==='setengah_ijin')n05I++;else if(st==='alpha')nAlpha++;else if(st==='cuti')nCuti++;}
   const yr=end.getFullYear();const kuota=masterCuti.kuota||12;const cb=countCutiBersama(yr);
-  const totalSudahCuti=cutiManual(nik,yr)+cb;
+  const totalSudahCuti=cutiManualUntukTahunDanPeriode(nik,yr,periode)+cb;
   const cutiDalamKuota=Math.min(nCuti,Math.max(0,kuota-(totalSudahCuti-nCuti)));const cutiLuarKuota=nCuti-cutiDalamKuota;
   function pot(mode,nilai,hari){if(hari<=0)return 0;switch(mode){case'tidak_dipotong':return 0;case'prorata':return Math.round(gajiHarian*hari);case'prorata_setengah':return Math.round(gajiHarian*hari*.5);case'nominal':return Math.round((nilai||0)*hari);case'persen':return Math.round(gajiHarian*(nilai||0)/100*hari);default:return 0;}}
   const pCDK=pot(ap.cuti_dalam_kuota?.mode||'tidak_dipotong',ap.cuti_dalam_kuota?.nilai||0,cutiDalamKuota);
@@ -2303,6 +2324,136 @@ function exportExcelBPJS(){
     }catch(e){toast('Gagal: '+e.message);}
   });
 }
+/** Rincian potongan kehadiran per jenis (label dari hitungPotonganKehadiran.details) */
+function potKhDetailCols(details){
+  var z={dk:0,lk:0,izin:0,sakit:0,s05:0,i05:0,alpha:0};
+  (details||[]).forEach(function(d){
+    var L=String(d.label||'');
+    if(L.indexOf('luar kuota')>=0)z.lk=Math.round(d.nilai||0);
+    else if(L.indexOf('dlm kuota')>=0||L.indexOf('dalam kuota')>=0)z.dk=Math.round(d.nilai||0);
+    else if(L.indexOf('1/2 Sakit')>=0)z.s05=Math.round(d.nilai||0);
+    else if(L.indexOf('1/2 Izin')>=0)z.i05=Math.round(d.nilai||0);
+    else if(L.indexOf('Alpha (')===0)z.alpha=Math.round(d.nilai||0);
+    else if(L.indexOf('Izin (')===0)z.izin=Math.round(d.nilai||0);
+    else if(L.indexOf('Sakit (')===0)z.sakit=Math.round(d.nilai||0);
+  });
+  return z;
+}
+function terInfoForExport(ptkpKey,grossPPh){
+  var tbl=getTERTable(ptkpKey);
+  var idx=tbl.findIndex(function(r){return grossPPh<=r[0];});
+  var found=idx>=0?tbl[idx]:tbl[tbl.length-1];
+  var lmpKey=ptkpKey==='TK0'||ptkpKey==='TK1'||ptkpKey==='K0'?'A':ptkpKey==='K3'?'C':'B';
+  var customRate=perusahaan&&perusahaan.ter_custom&&perusahaan.ter_custom[lmpKey]&&perusahaan.ter_custom[lmpKey][idx>=0?idx:tbl.length-1];
+  var rate=customRate!==undefined?customRate:found[1];
+  return{lampiran:'Lampiran '+lmpKey,ratePct:Math.round(rate*10000)/100,batasBrutoTer:found[0]};
+}
+/** Excel: kertas kerja PPh 21 & THP — per karyawan, periode aktif */
+function exportExcelKertasKerjaPPh(){
+  var p=PA();
+  var list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  if(!list.length){toast('Belum ada karyawan untuk periode aktif');return;}
+  ensureXLSX(function(){
+    try{
+      var pNama=p.nama;
+      var pt=(perusahaan.nama||'PERUSAHAAN');
+      var tunjNames={};
+      var potNames={};
+      list.forEach(function(k){
+        var g=hitungGaji(k,pNama);
+        (g.tItems||[]).forEach(function(t){if(t.nama)tunjNames[t.nama]=true;});
+        (k.potongan||[]).forEach(function(x){if(x.nama)potNames[x.nama]=true;});
+      });
+      var tunjCols=Object.keys(tunjNames).sort();
+      var potCols=Object.keys(potNames).sort();
+      var baseHdr=['No','NIK','Nama','Dept','Jabatan','Status','PTKP','NPWP','Pro-rata aktif','HK prorata','HH prorata','Gaji pokok efektif'];
+      var tunjHdr=tunjCols.map(function(n){return 'Tunj: '+n;});
+      var midHdr=[
+        'Natura KP (Gross PPh)','Natura NKP (TH saja)','Lembur','BPJS Prs JKK+JKM+Kes (natura KP)',
+        'Gross PPh regular (tanpa THR)','THR Bruto','Gross PPh 21 total','TER (lampiran PMK 168)','TER tarif %','Batas bruto kategori TER',
+        'PPh 21 bulan ini','PPh tanpa THR','PPh atas THR',
+        'BPJS Kes (Kar)','BPJS JHT (Kar)','BPJS JP (Kar)','Jumlah potongan tunjangan (master)'
+      ];
+      var potHdr=potCols.map(function(n){return 'Pot: '+n;});
+      var pkHdr=[
+        'Pot keh: Cuti dlm kuota','Pot keh: Cuti luar kuota','Pot keh: Izin','Pot keh: Sakit','Pot keh: 1/2 Sakit','Pot keh: 1/2 Izin','Pot keh: Alpha','Total pot kehadiran'
+      ];
+      var tailHdr=[
+        'PPh return (penambah THP)','Total potongan','Bruto Take Home','PHK bruto','PPh final PHK','PHK netto',
+        'Rekons PPh (tipe)','Lebih bayar PPh','Kurang bayar PPh','Take Home Pay (THP)'
+      ];
+      var hdr=baseHdr.concat(tunjHdr).concat(midHdr).concat(potHdr).concat(pkHdr).concat(tailHdr);
+      var rows=[];
+      rows.push(['KERTAS KERJA PPh 21 & THP — '+pt]);
+      rows.push(['Periode: '+pNama+' | Mulai-Selesai: '+(p.start||'')+' s.d. '+(p.end||'')+' | Bayar: '+(p.bayar||'')]);
+      rows.push(['Dicetak: '+new Date().toISOString().split('T')[0]]);
+      rows.push([]);
+      rows.push(hdr);
+      list.forEach(function(k,idx){
+        var g=hitungGaji(k,pNama);
+        var pr=getPR(k.nik,pNama);
+        var terI=terInfoForExport(k.ptkp,g.grossPPh);
+        var pk=potKhDetailCols(g.potKehadiran.details);
+        var r=new Array(hdr.length).fill('');
+        var j=0;
+        r[j++]=idx+1;r[j++]=k.nik;r[j++]=k.nama||'';r[j++]=k.dept||'';r[j++]=k.jabatan||'';r[j++]=k.status||'';
+        r[j++]=k.ptkp||'';r[j++]=k.npwp||'';r[j++]=g.isPR?'Ya':'Tidak';
+        r[j++]=g.isPR&&g.pr?g.pr.hk:'';r[j++]=g.isPR&&g.pr?g.pr.hh:'';
+        r[j++]=Math.round(g.gapokEff);
+        tunjCols.forEach(function(nm){
+          var t=(g.tItems||[]).find(function(x){return x.nama===nm;});
+          r[j++]=t?Math.round(t.eff):0;
+        });
+        r[j++]=Math.round(g.natKP);r[j++]=Math.round(g.natNKP);r[j++]=Math.round(g.lb);r[j++]=Math.round(g.bpjsPrsNatKP);
+        r[j++]=Math.round(g.grossPPhRegular);r[j++]=Math.round(g.thrBruto);r[j++]=Math.round(g.grossPPh);
+        r[j++]=terI.lampiran;r[j++]=terI.ratePct;r[j++]=terI.batasBrutoTer===Infinity?'>':Math.round(terI.batasBrutoTer);
+        r[j++]=Math.round(g.pph);r[j++]=Math.round(g.pphTanpaThr);r[j++]=Math.round(g.pphAtasThr);
+        r[j++]=Math.round(g.bpjs.kes_kar);r[j++]=Math.round(g.bpjs.jht_kar);r[j++]=Math.round(g.bpjs.jp_kar);
+        r[j++]=Math.round(g.potT);
+        potCols.forEach(function(nm){
+          var t=(k.potongan||[]).find(function(x){return x.nama===nm;});
+          r[j++]=t?Math.round(t.nilai):0;
+        });
+        r[j++]=pk.dk;r[j++]=pk.lk;r[j++]=pk.izin;r[j++]=pk.sakit;r[j++]=pk.s05;r[j++]=pk.i05;r[j++]=pk.alpha;
+        r[j++]=Math.round(g.potKehadiran.total||0);
+        r[j++]=Math.round(g.pphRet);
+        r[j++]=Math.round(g.totalPot);
+        r[j++]=Math.round(g.brutoTH);
+        if(g.phk&&g.phk.mode==='phk'){
+          r[j++]=Math.round(g.phk.bruto||0);r[j++]=Math.round(g.phk.pphFinal||0);r[j++]=Math.round((g.phk.bruto||0)-(g.phk.pphFinal||0));
+        }else{r[j++]='';r[j++]='';r[j++]='';}
+        if(g.reconciliation){
+          r[j++]=String(g.reconciliation.tipePeriode||'');
+          r[j++]=g.reconciliation.lebihBayar>0?Math.round(g.reconciliation.lebihBayar):'';
+          r[j++]=g.reconciliation.kurangBayar>0?Math.round(g.reconciliation.kurangBayar):'';
+        }else{r[j++]='';r[j++]='';r[j++]='';}
+        r[j++]=Math.round(g.neto);
+        rows.push(r);
+      });
+      var ws=XLSX.utils.aoa_to_sheet(rows);
+      var wb=XLSX.utils.book_new();
+      var ncol=hdr.length;
+      ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:ncol-1}},{s:{r:1,c:0},e:{r:1,c:ncol-1}},{s:{r:2,c:0},e:{r:2,c:ncol-1}}];
+      var cols=[{wch:4},{wch:12},{wch:26},{wch:12},{wch:18},{wch:10},{wch:8},{wch:18},{wch:10},{wch:8},{wch:8},{wch:14}];
+      for(var t=0;t<tunjHdr.length;t++)cols.push({wch:16});
+      for(var m=0;m<midHdr.length;m++)cols.push({wch:14});
+      for(var p0=0;p0<potHdr.length;p0++)cols.push({wch:14});
+      for(var q=0;q<pkHdr.length;q++)cols.push({wch:12});
+      for(var u=0;u<tailHdr.length;u++)cols.push({wch:16});
+      while(cols.length<ncol)cols.push({wch:12});
+      ws['!cols']=cols.slice(0,ncol);
+      var firstDataRow=5;
+      var lastDataRow=firstDataRow+list.length-1;
+      for(var c=11;c<ncol;c++){
+        xlsxSetNumFmtRange(ws,c,firstDataRow,lastDataRow,'#,##0');
+      }
+      XLSX.utils.book_append_sheet(wb,ws,'Kertas Kerja PPh');
+      var fn='Kertas_Kerja_PPh_'+pNama.replace(/[^\w\d]+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
+      XLSX.writeFile(wb,fn);
+      toast('Excel kertas kerja diunduh');
+    }catch(e){toast('Gagal: '+e.message);}
+  });
+}
 // ── THR RENDER ───────────────────────────────────
 function setTHRManual(el){
   var nik=el.dataset.nik;var pNama=el.dataset.pnama;var aktif=el.dataset.aktif==='1';
@@ -2406,11 +2557,14 @@ function populateAbsensiPeriodeSelect(){
   }
 }
 function renderAbsensi(){
+  var infoEl=document.getElementById('ab-kal-periode-info');
+  function hideKalBanner(){if(infoEl){infoEl.style.display='none';infoEl.textContent='';}}
   populateAbsensiPeriodeSelect();
   var pid=document.getElementById('ab-periode-sel')&&document.getElementById('ab-periode-sel').value;
   var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
-  if(!karyawan.length){document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada karyawan.</div>';document.getElementById('ab-rekap-wrap').innerHTML='';return;}
+  if(!karyawan.length){hideKalBanner();document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada karyawan.</div>';document.getElementById('ab-rekap-wrap').innerHTML='';return;}
   if(!pAbs||!pAbs.start||!pAbs.end){
+    hideKalBanner();
     document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
@@ -2421,20 +2575,22 @@ function renderAbsensi(){
   const bulanSingkat=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const days=absensiDaysFromPeriode(pAbs);
   if(!days.length){
+    hideKalBanner();
     document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Rentang periode tidak valid.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
-  var hdrSub=pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+days.length+' hari';
+  var hdrSub='Kalender absensi — '+pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+days.length+' hari';
+  if(infoEl){infoEl.style.display='block';infoEl.textContent=hdrSub;}
   var adaSelTerkunci=CU&&CU.role!=='Admin'&&days.some(function(x){return !canEditDataPadaTanggalIso(x.date);});
   var roBanner=adaSelTerkunci?'<div class="info-box info-amber" style="font-size:11px;margin-bottom:.65rem">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
   karyawan.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
-  var AB_NO=44;
+  var AB_NO=44,AB_NAME=272,AB_JAB_L=AB_NO+AB_NAME;
   var prevMY='';
   var html='<table style="border-collapse:collapse;font-size:11px;min-width:max-content;width:100%"><thead><tr style="background:#1e2330;color:#fff">'
-    +'<th style="position:sticky;left:0;z-index:3;background:#1e2330;padding:6px 6px;text-align:center;width:'+AB_NO+'px;min-width:'+AB_NO+'px;border-right:1px solid #374151">No</th>'
-    +'<th style="position:sticky;left:'+AB_NO+'px;z-index:3;background:#1e2330;padding:6px 12px;text-align:left;white-space:nowrap;border-right:2px solid #374151;min-width:180px">Nama <span style="font-weight:400;font-size:10px;color:#9ca3af">'+escapeHtml(hdrSub)+'</span></th>'
-    +'<th style="position:sticky;left:'+(AB_NO+182)+'px;z-index:3;background:#1e2330;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap;border-right:2px solid #374151;min-width:100px">Jabatan</th>';
+    +'<th style="position:sticky;left:0;top:0;z-index:8;background:#1e2330;padding:6px 6px;text-align:center;width:'+AB_NO+'px;min-width:'+AB_NO+'px;border-right:1px solid #374151;box-shadow:1px 0 0 #374151">No</th>'
+    +'<th style="position:sticky;left:'+AB_NO+'px;top:0;z-index:8;background:#1e2330;padding:6px 10px;text-align:left;border-right:2px solid #374151;min-width:'+AB_NAME+'px;width:'+AB_NAME+'px;max-width:320px;box-shadow:1px 0 0 #374151;vertical-align:bottom">Nama</th>'
+    +'<th style="position:sticky;left:'+AB_JAB_L+'px;top:0;z-index:8;background:#1e2330;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap;border-right:2px solid #374151;min-width:112px;box-shadow:1px 0 0 #374151;vertical-align:bottom">Jabatan</th>';
   days.forEach(function(x){
     var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
     var myKey=x.date.substring(0,7);
@@ -2444,13 +2600,13 @@ function renderAbsensi(){
     var bg=isHL(x.date)?'#fef9c3':isHariLiburKerja(x.dow)?'#374151':'#1e2330';
     var co=isHL(x.date)?'#713f12':isHariLiburKerja(x.dow)?'#9ca3af':'#d1d5db';
     var dd=parseInt(tglParts[2],10);
-    html+='<th style="background:'+bg+';color:'+co+';padding:4px 3px;text-align:center;min-width:36px;border-right:1px solid #374151"><div style="font-size:9px">'+dowN+'</div><div style="font-size:12px;font-weight:700">'+dd+'</div>'
+    html+='<th style="position:sticky;top:0;z-index:6;background:'+bg+';color:'+co+';padding:4px 3px;text-align:center;min-width:36px;border-right:1px solid #374151"><div style="font-size:9px">'+dowN+'</div><div style="font-size:12px;font-weight:700">'+dd+'</div>'
       +(showMon?'<div style="font-size:8px;opacity:.85">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
   });
-  html+='<th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px;border-left:2px solid #374151">H</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">C</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">S</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">I</th><th style="background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">A</th></tr></thead><tbody>';
+  html+='<th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px;border-left:2px solid #374151">H</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">C</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">S</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">I</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">A</th></tr></thead><tbody>';
   karyawan.forEach(function(k,ki){
     var rb=ki%2===0?'#fff':'#f8f9fc';
-    html+='<tr style="background:'+rb+'"><td style="position:sticky;left:0;z-index:2;background:'+rb+';padding:5px 6px;text-align:center;font-weight:800;color:#9ca3af;border-right:1px solid #e5e7eb;border-bottom:1px solid #f3f4f6">'+(ki+1)+'</td><td style="position:sticky;left:'+AB_NO+'px;z-index:2;background:'+rb+';padding:5px 12px;font-weight:700;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6"><div style="display:flex;align-items:center;gap:6px"><div style="width:24px;height:24px;border-radius:50%;background:#e8f0fb;color:#1a56a0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">'+ini(k.nama)+'</div><div><div style="font-size:12px;font-weight:700">'+k.nama+'</div><div style="font-size:10px;color:#9ca3af">'+k.nik+'</div></div></div></td><td style="position:sticky;left:'+(AB_NO+182)+'px;z-index:2;background:'+rb+';padding:5px 8px;font-size:11px;color:#6b7280;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6">'+(k.jabatan||'')+'</td>';
+    html+='<tr style="background:'+rb+'"><td style="position:sticky;left:0;z-index:3;background:'+rb+';padding:5px 6px;text-align:center;font-weight:800;color:#9ca3af;border-right:1px solid #e5e7eb;border-bottom:1px solid #f3f4f6;box-shadow:1px 0 0 #e5e7eb">'+(ki+1)+'</td><td style="position:sticky;left:'+AB_NO+'px;z-index:3;background:'+rb+';padding:5px 10px;font-weight:700;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:'+AB_NAME+'px;width:'+AB_NAME+'px;max-width:320px;box-shadow:1px 0 0 #e5e7eb;vertical-align:middle"><div style="display:flex;align-items:flex-start;gap:6px"><div style="width:24px;height:24px;border-radius:50%;background:#e8f0fb;color:#1a56a0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;margin-top:2px">'+ini(k.nama)+'</div><div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:700;line-height:1.25;word-break:break-word;white-space:normal">'+escapeHtml(k.nama)+'</div><div style="font-size:10px;color:#9ca3af;word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td style="position:sticky;left:'+AB_JAB_L+'px;z-index:3;background:'+rb+';padding:5px 8px;font-size:11px;color:#6b7280;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:112px;box-shadow:1px 0 0 #e5e7eb">'+(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
       var isLN=isHL(x.date);
@@ -2502,7 +2658,7 @@ function renderCutiRekap(){
     return;
   }
   tb.innerHTML=list.map(function(k,idx){
-    const mb=masaKerjaBulan(k);const manual=cutiManual(k.nik,yr);const total=manual+cb;
+    const mb=masaKerjaBulan(k);const manual=cutiManualUntukTahunDanPeriode(k.nik,yr,pAbs);const total=manual+cb;
     const kuota=masterCuti.kuota||12;
     const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
