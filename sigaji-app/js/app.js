@@ -1287,6 +1287,9 @@ function onBPJSKompChange(el){
   if(!el.checked&&k.bpjs_manual)delete k.bpjs_manual[key];
   logPayrollAudit(nik,'Update BPJS Aktif',`${key} ${before?'on':'off'} → ${el.checked?'on':'off'}`);
   saveAll();loadBPJSPanel(k);updateGajiSummary();
+  // Sinkronkan badge BPJS di tabel Master Karyawan & dashboard ringkas
+  try{renderKar();}catch(e){}
+  try{renderDash();}catch(e){}
 }
 function onBMChange2(el){
   const nik=el.dataset.nik;const key=el.dataset.key;
@@ -1299,6 +1302,7 @@ function bpjsSetAll(aktif){
   if(!k.bpjs_aktif)k.bpjs_aktif={};
   ['kes-prs','kes-kar','jht-prs','jht-kar','jp-prs','jp-kar','jkk-prs','jkm-prs'].forEach(function(key){k.bpjs_aktif[key]=aktif;});
   saveAll();loadBPJSPanel(k);updateGajiSummary();toast(aktif?'Semua BPJS diaktifkan':'Semua BPJS dinonaktifkan');
+  try{renderKar();}catch(e){};try{renderDash();}catch(e){}
 }
 function bpjsSetPreset(preset){
   if(!canAccessSubTab('karyawan','bpjs'))return;
@@ -1311,6 +1315,7 @@ function bpjsSetPreset(preset){
     });
   }
   saveAll();loadBPJSPanel(k);updateGajiSummary();toast('Preset diterapkan');
+  try{renderKar();}catch(e){};try{renderDash();}catch(e){}
 }
 function onBPJSAktifChange(){const k=karyawan.find(function(x){return x.nik===cpNik;});if(k){loadBPJSPanel(k);updateGajiSummary();}}
 function onBMChange(nik,key,val){
@@ -1334,6 +1339,7 @@ function toggleManual(key){
   logPayrollAudit(cpNik,'Toggle BPJS Manual',`${key} → ${isNow?'manual':'auto'}`);
   saveAll();
   updateGajiSummary();
+  try{renderKar();}catch(e){};try{renderDash();}catch(e){}
 }
 // ── NATURA PANEL ─────────────────────────────────
 function renderNaturaPanel(k){const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input value="${n.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="number" value="${n.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r" onclick="delNat('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span style="color:#2d6a0a;font-weight:700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span style="color:#9b2121;font-weight:700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';}
