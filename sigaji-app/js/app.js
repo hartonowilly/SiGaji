@@ -1028,6 +1028,9 @@ function renderDash(){
 // ── MASTER KARYAWAN ─────────────────────────────
 function karRowHtml(k,no){
   const showGaji=CU&&(CU.role==='Admin'||canAccessSubTab('karyawan','gaji'));
+  // Badge BPJS di tabel master mengikuti periode aktif (agar perubahan snapshot periode terlihat).
+  // Jika tidak ada periode aktif, fallback ke master global.
+  const p=PA();const kPer=(p&&p.nama)?resolveKarForPeriode(k,p.nama):k;
   const yrKar=new Date().getFullYear();
   const t=cutiTerpakai(k.nik,yrKar);
   const kuotaCut=masterCuti.kuota||12;
@@ -1035,7 +1038,7 @@ function karRowHtml(k,no){
   const sCls=s<=0?'b-err':s<=3?'b-warn':'b-teal';
   const sLbl=s+'/'+kuotaCut;
   const bpjsKeys=['kes-prs','kes-kar','jht-prs','jht-kar','jp-prs','jp-kar','jkk-prs','jkm-prs'];
-  const bpjsOn=bpjsKeys.filter(function(key){return bpjsKompAktif(k,key);}).length;
+  const bpjsOn=bpjsKeys.filter(function(key){return bpjsKompAktif(kPer,key);}).length;
   const bst=bpjsOn===8?'b-ok':bpjsOn>0?'b-warn':'b-err';
   const bpjsLbl=bpjsOn===8?'Lengkap':bpjsOn===0?'Off':bpjsOn+'/8 aktif';
   const stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
