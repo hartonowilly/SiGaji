@@ -120,7 +120,8 @@
       <span style="background:#fdeaea;color:#9b2121;padding:2px 8px;border-radius:4px">A Alpha</span>
       <span style="background:#fef9c3;color:#713f12;padding:2px 8px;border-radius:4px">LN Libnas</span>
     </div>
-    <div style="overflow-x:auto;background:#fff;border-radius:10px;border:1px solid var(--bd)"><div id="ab-grid-wrap"></div></div>
+    <div id="ab-kal-periode-info" style="display:none;font-size:12px;font-weight:600;color:#374151;margin-bottom:.5rem;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--bd);line-height:1.45"></div>
+    <div id="ab-scroll-host" style="max-height:min(72vh,calc(100vh - 260px));overflow:auto;background:#fff;border-radius:10px;border:1px solid var(--bd);-webkit-overflow-scrolling:touch"><div id="ab-grid-wrap"></div></div>
     <div id="ab-rekap-wrap" style="margin-top:.75rem"></div>
   </div>
   <div id="abt-cuti" style="display:none">
@@ -197,6 +198,7 @@
     <button class="btn btn-sm btn-a" onclick="kirimApproval()">&#8594; Kirim Approval</button>
     <button class="btn btn-sm btn-g" onclick="exportExcelDaftarRekening()" title="Format daftar transfer bank">&#128196; Excel Daftar Rekening</button>
     <button class="btn btn-sm btn-g" onclick="exportExcelBPJS()" title="Rekap iuran BPJS per karyawan">&#128196; Excel BPJS</button>
+    <button class="btn btn-sm btn-g" onclick="exportExcelKertasKerjaPPh()" title="Kertas kerja PPh 21 &amp; THP per karyawan">&#128196; Excel Kertas Kerja PPh</button>
   </div></div>
   <div class="tabs" style="margin:.75rem 0 .5rem">
     <div class="tab active" data-pgtab="proses" onclick="switchPenggajianTab(this,'pg-gaji-proses')">&#128196; Ringkasan &amp; Pro-Rata</div>
