@@ -96,14 +96,11 @@
 <!-- ABSENSI & CUTI -->
 <div class="pg" id="pg-absensi">
   <div class="ph"><div><div class="pt">Absensi, Cuti & Lembur</div></div>
-  <div class="fl gap1">
-    <select style="width:auto" id="ab-yr" onchange="renderAbsensi()"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
-    <select style="width:auto" id="ab-bln" onchange="renderAbsensi()">
-      <option value="1">Januari</option><option value="2">Februari</option><option value="3" selected>Maret</option>
-      <option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option>
-      <option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option>
-      <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-    </select>
+  <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
+    <span style="font-size:11px;color:#6b7280;font-weight:700">Periode gaji (kalender):</span>
+    <select id="ab-periode-sel" style="width:auto;min-width:260px;max-width:100%" onchange="renderAbsensi()"></select>
+    <span style="font-size:11px;color:#6b7280;font-weight:700">Tahun cuti:</span>
+    <select style="width:auto" id="ab-yr" onchange="renderAbsensi();renderCutiRekap();"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
     <button class="btn btn-sm btn-out" onclick="renderAbsensi()">&#8635; Refresh</button>
   </div></div>
   <div class="tabs">
