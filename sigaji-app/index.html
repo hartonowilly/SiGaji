@@ -98,7 +98,7 @@
   <div class="ph"><div><div class="pt">Absensi, Cuti & Lembur</div></div>
   <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
     <span style="font-size:11px;color:#6b7280;font-weight:700">Periode gaji (kalender):</span>
-    <select id="ab-periode-sel" style="width:auto;min-width:260px;max-width:100%" onchange="renderAbsensi()"></select>
+    <select id="ab-periode-sel" style="width:auto;min-width:260px;max-width:100%" onchange="renderAbsensi();renderCutiRekap();"></select>
     <span style="font-size:11px;color:#6b7280;font-weight:700">Tahun cuti:</span>
     <select style="width:auto" id="ab-yr" onchange="renderAbsensi();renderCutiRekap();"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
     <button class="btn btn-sm btn-out" onclick="renderAbsensi()">&#8635; Refresh</button>
@@ -107,7 +107,6 @@
     <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender" onclick="switchAbTab(this,'abt-kalender')">&#128197; Kalender Absensi</div>
     <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti" onclick="switchAbTab(this,'abt-cuti')">&#127774; Tracking Cuti</div>
     <div class="tab" data-abtab="lembur" data-abpanel="abt-lembur" onclick="switchAbTab(this,'abt-lembur')">&#9203; Lembur</div>
-    <div class="tab" data-abtab="libur" data-abpanel="abt-libur" onclick="switchAbTab(this,'abt-libur')">&#127968; Hari Libur</div>
   </div>
   <div id="abt-kalender">
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem;font-size:11px;font-weight:700">
@@ -125,23 +124,7 @@
     <div id="ab-rekap-wrap" style="margin-top:.75rem"></div>
   </div>
   <div id="abt-cuti" style="display:none">
-    <div class="card" style="background:#f0f0fd;border-color:#c4b5fd">
-      <div class="ct" style="color:#5b21b6">&#127774; Pengaturan Kuota Cuti Tahunan</div>
-      <div class="fg3">
-        <div class="fg"><label>Kuota Cuti (hari/tahun)</label><input type="number" id="cuti-kuota" value="12" min="1" max="30" onchange="simpanMasterCuti()"></div>
-        <div class="fg"><label>Min. Masa Kerja Eligible (bulan)</label><input type="number" id="cuti-masaMin" value="12" min="0" onchange="simpanMasterCuti()"></div>
-        <div class="fg"><label>Carry Over</label>
-          <select id="cuti-carryover" onchange="simpanMasterCuti()">
-            <option value="no">Tidak — Hangus akhir tahun</option><option value="yes">Ya — Semua dibawa</option><option value="max5">Ya — Maks 5 hari</option>
-          </select>
-        </div>
-      </div>
-      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:8px;background:#fff;border-radius:7px;border:1px solid #c4b5fd;font-size:12px;font-weight:600">
-        <input type="checkbox" id="cuti-cb-potong" style="width:16px;height:16px;accent-color:#5b21b6" onchange="simpanMasterCuti()">
-        Cuti Bersama (dari hari libur nasional) mengurangi kuota cuti tahunan karyawan
-      </label>
-      <div class="info-box info-blue" style="margin-top:.5rem;margin-bottom:0;font-size:10px">UU 13/2003 Ps.79: Cuti min. 12 hari setelah 12 bulan bekerja. Cuti bersama mengurangi kuota sesuai Kepmenaker.</div>
-    </div>
+    <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem">Pengaturan kuota cuti &amp; hari libur nasional: <strong>Master Perusahaan → Hari Libur &amp; Cuti</strong>.</div>
     <div class="card">
       <div class="ct">Tracking Cuti — <span id="cuti-yr-lbl">2026</span></div>
       <table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Eligible</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
@@ -161,31 +144,6 @@
       <div id="lembur-list"></div>
     </div>
     <div class="card"><div class="ct">Rekap Total Lembur</div><div id="lembur-result"></div></div>
-  </div>
-  <div id="abt-libur" style="display:none">
-    <div class="card" style="border-left:4px solid #9b2121">
-      <div class="ct" style="color:#9b2121">&#127968; Muat Hari Libur Nasional</div>
-      <div class="info-box info-blue" style="font-size:11px">Database mencakup <strong>2017–2030</strong>. Cuti Bersama otomatis memotong kuota cuti jika opsi diaktifkan di tab Tracking Cuti.</div>
-      <div class="fl gap1" style="margin-bottom:1rem;flex-wrap:wrap;align-items:center">
-        <select id="libnas-yr-ab" style="padding:8px 12px;border:1.5px solid #dde1e9;border-radius:8px;font-size:13px;font-family:inherit;outline:none;font-weight:700"></select>
-        <button class="btn btn-p" onclick="loadLiburNasionalFromAb()">&#128229; Muat Hari Libur Nasional</button>
-        <button class="btn btn-out btn-sm" onclick="hapusSemuaLibur()">&#9888; Hapus Semua</button>
-      </div>
-      <div id="abt-libur-hasil" class="info-box info-green" style="display:none"></div>
-    </div>
-    <div class="card">
-      <div class="ct">Daftar Hari Libur Tersimpan
-        <div class="fl gap1">
-          <input type="date" id="lib-tgl2" style="padding:5px 10px;border:1.5px solid #dde1e9;border-radius:7px;font-size:12px;font-family:inherit;outline:none">
-          <input id="lib-nama2" placeholder="Nama libur..." style="padding:5px 10px;border:1.5px solid #dde1e9;border-radius:7px;font-size:12px;font-family:inherit;outline:none;width:180px">
-          <select id="lib-tipe2" style="padding:5px 10px;border:1.5px solid #dde1e9;border-radius:7px;font-size:12px;font-family:inherit;outline:none">
-            <option value="nasional">Nasional</option><option value="cuti-bersama">Cuti Bersama</option><option value="perusahaan">Perusahaan</option>
-          </select>
-          <button class="btn btn-sm btn-p" onclick="tambahLiburDariAb()">+ Tambah Manual</button>
-        </div>
-      </div>
-      <div id="abt-libur-list"></div>
-    </div>
   </div>
 </div>
 
@@ -348,7 +306,7 @@
   <div class="tabs">
     <div class="tab active" data-mstab="prs" data-panel="m-prs" onclick="switchTab(this,'m-prs')">&#127970; Profil Perusahaan</div>
     <div class="tab" data-mstab="periode" data-panel="m-periode" onclick="switchTab(this,'m-periode')">&#128197; Periode Gaji & THR</div>
-    <div class="tab" data-mstab="libur" data-panel="m-libur" onclick="switchTab(this,'m-libur')">&#127976; Hari Libur</div>
+    <div class="tab" data-mstab="libur" data-panel="m-libur" onclick="switchTab(this,'m-libur')">&#127976; Hari Libur &amp; Cuti</div>
     <div class="tab" data-mstab="potongan" data-panel="m-potongan" onclick="switchTab(this,'m-potongan')">&#9998; Aturan Potongan</div>
     <div class="tab" data-mstab="ter" data-panel="m-ter" onclick="switchTab(this,'m-ter')">&#9878; Tabel PTKP dan TER PPh 21</div>
   </div>
@@ -468,17 +426,40 @@
     </div>
   </div>
   <div id="m-libur" style="display:none">
-    <div class="card"><div class="ct">Tambah Hari Libur</div>
+    <div class="card" style="background:#f0f0fd;border-color:#c4b5fd">
+      <div class="ct" style="color:#5b21b6">&#127774; Pengaturan Kuota Cuti Tahunan</div>
+      <div class="fg3">
+        <div class="fg"><label>Kuota Cuti (hari/tahun)</label><input type="number" id="cuti-kuota" value="12" min="1" max="30" onchange="simpanMasterCuti()"></div>
+        <div class="fg"><label>Min. Masa Kerja Eligible (bulan)</label><input type="number" id="cuti-masaMin" value="12" min="0" onchange="simpanMasterCuti()"></div>
+        <div class="fg"><label>Carry Over</label>
+          <select id="cuti-carryover" onchange="simpanMasterCuti()">
+            <option value="no">Tidak — Hangus akhir tahun</option><option value="yes">Ya — Semua dibawa</option><option value="max5">Ya — Maks 5 hari</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:8px;background:#fff;border-radius:7px;border:1px solid #c4b5fd;font-size:12px;font-weight:600">
+        <input type="checkbox" id="cuti-cb-potong" style="width:16px;height:16px;accent-color:#5b21b6" onchange="simpanMasterCuti()">
+        Cuti Bersama (dari hari libur nasional) mengurangi kuota cuti tahunan karyawan
+      </label>
+      <div class="info-box info-blue" style="margin-top:.5rem;margin-bottom:0;font-size:10px">UU 13/2003 Ps.79: Cuti min. 12 hari setelah 12 bulan bekerja. Cuti bersama mengurangi kuota sesuai Kepmenaker.</div>
+    </div>
+    <div class="card" style="border-left:4px solid #9b2121">
+      <div class="ct" style="color:#9b2121">&#128229; Muat Hari Libur Nasional</div>
+      <div class="info-box info-blue" style="font-size:11px">Database mencakup <strong>2017–2030</strong>. Cuti bersama memotong kuota jika opsi di atas diaktifkan.</div>
+      <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
+        <select id="libnas-yr" style="padding:8px 12px;border:1.5px solid #dde1e9;border-radius:8px;font-size:13px;font-family:inherit;outline:none;font-weight:700"></select>
+        <button class="btn btn-p" onclick="loadLiburNasionalDinamis()">&#128229; Muat Hari Libur Nasional</button>
+        <button class="btn btn-out btn-sm" onclick="hapusSemuaLibur()">&#9888; Hapus Semua</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Tambah Hari Libur Manual</div>
       <div class="fg3">
         <div class="fg"><label>Tanggal</label><input type="date" id="lib-tgl"></div>
         <div class="fg"><label>Nama Libur</label><input id="lib-nama" placeholder="Idul Fitri 1447 H"></div>
         <div class="fg"><label>Tipe</label><select id="lib-tipe"><option value="nasional">Nasional</option><option value="cuti-bersama">Cuti Bersama</option><option value="perusahaan">Perusahaan</option></select></div>
       </div>
-      <div class="fl gap1">
-        <button class="btn btn-sm btn-p" onclick="tambahLibur()">+ Tambah</button>
-        <select id="libnas-yr" style="width:90px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none"></select>
-        <button class="btn btn-sm btn-out" onclick="loadLiburNasionalDinamis()">&#128229; Muat Libur Nasional</button>
-      </div>
+      <div class="fl gap1"><button class="btn btn-sm btn-p" onclick="tambahLibur()">+ Tambah</button></div>
     </div>
     <div class="card"><div class="ct">Daftar Hari Libur</div><div id="libur-list"></div></div>
   </div>
