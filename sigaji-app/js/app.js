@@ -29,6 +29,16 @@ function toIsoDate(v){
     var p2=t.split('/');
     return p2[0]+'-'+p2[1]+'-'+p2[2];
   }
+  // dd-mm-yyyy
+  if(/^\d{2}-\d{2}-\d{4}$/.test(t)){
+    var p3=t.split('-');
+    return p3[2]+'-'+p3[1]+'-'+p3[0];
+  }
+  // dd.mm.yyyy
+  if(/^\d{2}\.\d{2}\.\d{4}$/.test(t)){
+    var p4=t.split('.');
+    return p4[2]+'-'+p4[1]+'-'+p4[0];
+  }
   if(/^\d{4}-\d{2}-\d{2}$/.test(t))return t;
   var d=new Date(t);
   if(isNaN(d.getTime()))return'';
