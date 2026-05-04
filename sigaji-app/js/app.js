@@ -876,18 +876,17 @@ function renderDash(){
 function karRowHtml(k,no){
   const showGaji=CU&&(CU.role==='Admin'||canAccessSubTab('karyawan','gaji'));
   const yrKar=new Date().getFullYear();
-  const mbCut=Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
-  const eligCut=mbCut>=(masterCuti.masaMin||0);
   const t=cutiTerpakai(k.nik,yrKar);
-  const s=eligCut?masterCuti.kuota-t:null;
-  const sCls=s===null?'b-gray':s<=0?'b-err':s<=3?'b-warn':'b-teal';
-  const sLbl=s===null?'&#8212;':s+'/'+masterCuti.kuota;
+  const kuotaCut=masterCuti.kuota||12;
+  const s=kuotaCut-t;
+  const sCls=s<=0?'b-err':s<=3?'b-warn':'b-teal';
+  const sLbl=s+'/'+kuotaCut;
   const bpjsKeys=['kes-prs','kes-kar','jht-prs','jht-kar','jp-prs','jp-kar','jkk-prs','jkm-prs'];
   const bpjsOn=bpjsKeys.filter(function(key){return bpjsKompAktif(k,key);}).length;
   const bst=bpjsOn===8?'b-ok':bpjsOn>0?'b-warn':'b-err';
   const bpjsLbl=bpjsOn===8?'Lengkap':bpjsOn===0?'Off':bpjsOn+'/8 aktif';
   const stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
-  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${sCls}" title="${eligCut?'Saldo cuti tahun '+yrKar:'Belum memenuhi masa kerja untuk kuota cuti'}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button><button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
+  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button><button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   const p=PA();
@@ -2490,7 +2489,6 @@ function renderCutiRekap(){
   const yr=parseInt((document.getElementById('ab-yr')&&document.getElementById('ab-yr').value)||2026);
   const el=document.getElementById('cuti-yr-lbl');if(el)el.textContent=yr;
   const kuotaEl=document.getElementById('cuti-kuota');if(kuotaEl)kuotaEl.value=masterCuti.kuota;
-  const masaEl=document.getElementById('cuti-masaMin');if(masaEl)masaEl.value=masterCuti.masaMin;
   const coEl=document.getElementById('cuti-carryover');if(coEl)coEl.value=masterCuti.carryover;
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
   const cb=countCutiBersama(yr);
@@ -2500,29 +2498,26 @@ function renderCutiRekap(){
   var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
   var list=karyawanListPeriode(pAbs);
   if(!list.length){
-    tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan untuk periode gaji ini (mis. semua sudah berhenti sebelum tanggal mulai periode).</td></tr>';
+    tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan untuk periode gaji ini (mis. semua sudah berhenti sebelum tanggal mulai periode).</td></tr>';
     return;
   }
   tb.innerHTML=list.map(function(k,idx){
     const mb=masaKerjaBulan(k);const manual=cutiManual(k.nik,yr);const total=manual+cb;
-    const eligible=mb>=masterCuti.masaMin;const kuota=eligible?masterCuti.kuota:0;
-    const sisa=eligible?kuota-total:null;
-    const pct=eligible&&kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
-    const sisaCls=sisa===null?'b-gray':sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
-    const sisaTxt=sisa===null?'&#8212;':String(sisa);
+    const kuota=masterCuti.kuota||12;
+    const sisa=kuota-total;
+    const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
+    const sisaCls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
     return '<tr><td style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></td>'
       +'<td>'+Math.floor(mb/12)+'thn '+mb%12+'bln</td>'
-      +'<td><span class="bdg '+(eligible?'b-ok':'b-gray')+'">'+(eligible?'Ya':'Belum')+'</span></td>'
-      +'<td>'+(eligible?kuota:'&#8212;')+'</td><td><span class="bdg '+(manual>0?'b-warn':'b-gray')+'">'+manual+'</span></td>'
+      +'<td>'+kuota+'</td><td><span class="bdg '+(manual>0?'b-warn':'b-gray')+'">'+manual+'</span></td>'
       +'<td>'+(cb>0?'<span class="bdg b-pu">'+cb+'</span>':'<span style="color:#9ca3af">0</span>')+'</td>'
-      +'<td><span class="bdg '+(eligible&&(total>kuota)?'b-err':total>0?'b-warn':'b-gray')+'">'+total+'</span></td>'
-      +'<td><span class="bdg '+sisaCls+'">'+sisaTxt+'</span></td>'
-      +'<td><div class="cuti-bar" style="width:120px;display:inline-block"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+(eligible?pct+'%':'&#8212;')+'</td></tr>';
+      +'<td><span class="bdg '+(total>kuota?'b-err':total>0?'b-warn':'b-gray')+'">'+total+'</span></td>'
+      +'<td><span class="bdg '+sisaCls+'">'+sisa+'</span></td>'
+      +'<td><div class="cuti-bar" style="width:120px;display:inline-block"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
   }).join('');
 }
 function simpanMasterCuti(){
   masterCuti.kuota=parseInt(document.getElementById('cuti-kuota').value)||12;
-  masterCuti.masaMin=parseInt(document.getElementById('cuti-masaMin').value)||12;
   masterCuti.carryover=document.getElementById('cuti-carryover').value;
   masterCuti.cbPotong=!!(document.getElementById('cuti-cb-potong')&&document.getElementById('cuti-cb-potong').checked);
   saveAll();renderCutiRekap();renderKar();renderHariLibur();renderAbsensi();toast('Setting cuti disimpan');
@@ -2733,14 +2728,12 @@ function updateNotifBadge(){var u=notifikasi.filter(function(n){return !n.read;}
 function renderMyCuti(){
   if(!CU||!CU.nik)return;var k=karyawan.find(function(x){return x.nik===CU.nik;});if(!k)return;
   var yr=new Date().getFullYear();
-  var mb=masaKerjaBulan(k);var eligible=mb>=(masterCuti.masaMin||0);
+  var kuota=masterCuti.kuota||12;
   var manual=cutiManual(k.nik,yr);var cb=countCutiBersama(yr);var total=manual+cb;
-  var sisa=eligible?masterCuti.kuota-total:null;
-  var sisaCol=sisa===null?'#6b7280':sisa<=0?'#9b2121':sisa<=3?'#7d4800':'#2d6a0a';
-  var sisaTxt=sisa===null?'&#8212;':String(sisa);
-  var kuotaTxt=eligible?String(masterCuti.kuota):'&#8212;';
+  var sisa=kuota-total;
+  var sisaCol=sisa<=0?'#9b2121':sisa<=3?'#7d4800':'#2d6a0a';
   var cutiDays=Object.entries(absensi[k.nik]||{}).filter(function(e){return e[1]==='cuti'&&e[0].startsWith(String(yr));}).sort();
-  document.getElementById('my-cuti-content').innerHTML='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><div><strong style="font-size:14px;color:#5b21b6">Saldo Cuti '+yr+' - '+k.nama+'</strong>'+(eligible?'':'<div style="font-size:11px;color:#6b7280;margin-top:4px">Belum memenuhi syarat kuota cuti tahunan (masa kerja &lt; '+masterCuti.masaMin+' bln).</div>')+'</div><div class="fl gap2"><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+kuotaTxt+'</div><div style="font-size:10px;color:#6b7280">Kuota</div></div><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#7d4800">'+manual+'</div><div style="font-size:10px;color:#6b7280">Cuti Manual</div></div>'+(cb>0?'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+cb+'</div><div style="font-size:10px;color:#6b7280">Cuti Bersama</div></div>':'')+'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:'+sisaCol+'">'+sisaTxt+'</div><div style="font-size:10px;color:#6b7280">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+yr+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+e[0]+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div style="color:#6b7280;font-size:12px">Belum ada cuti.</div>')+'</div>';
+  document.getElementById('my-cuti-content').innerHTML='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><div><strong style="font-size:14px;color:#5b21b6">Saldo Cuti '+yr+' - '+k.nama+'</strong></div><div class="fl gap2"><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+kuota+'</div><div style="font-size:10px;color:#6b7280">Kuota</div></div><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#7d4800">'+manual+'</div><div style="font-size:10px;color:#6b7280">Cuti Manual</div></div>'+(cb>0?'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+cb+'</div><div style="font-size:10px;color:#6b7280">Cuti Bersama</div></div>':'')+'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:'+sisaCol+'">'+sisa+'</div><div style="font-size:10px;color:#6b7280">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+yr+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+e[0]+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div style="color:#6b7280;font-size:12px">Belum ada cuti.</div>')+'</div>';
 }
 // ── SELECTS & BACKUP ─────────────────────────────
 function populateSelects(){
@@ -2996,7 +2989,7 @@ function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 var tT;function toast(msg){var t=document.getElementById('toast9');if(!t){try{console.warn(msg);}catch(e){}return;}t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show');},3200);}
 function execReset(){
-  karyawan=[];periodes=[];hariLibur=[];masterCuti={kuota:12,masaMin:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
+  karyawan=[];periodes=[];hariLibur=[];masterCuti={kuota:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
   perusahaan={nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}};
   users=[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}];
   roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','karyawan.bpjs','karyawan.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']};

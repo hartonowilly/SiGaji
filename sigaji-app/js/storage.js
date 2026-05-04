@@ -116,7 +116,7 @@ function recoverDbFromUniversal(){
       karyawan:o.karyawan||[],
       periodes:o.periodes||[],
       hariLibur:o.hariLibur||[],
-      masterCuti:o.masterCuti||{kuota:12,masaMin:12,carryover:'no',cbPotong:true},
+      masterCuti:o.masterCuti||{kuota:12,carryover:'no',cbPotong:true},
       absensi:o.absensi||{},
       lembur:o.lembur||{},
       prorata:o.prorata||{},
@@ -178,7 +178,7 @@ function LS(k,d){const db=dbLoad();return db&&db[k]!==undefined?db[k]:d;}
 let karyawan=LS('karyawan',[]);
 let periodes=LS('periodes',[]);
 let hariLibur=LS('hariLibur',[]);
-let masterCuti=LS('masterCuti',{kuota:12,masaMin:12,carryover:'no',cbPotong:true});
+let masterCuti=LS('masterCuti',{kuota:12,carryover:'no',cbPotong:true});
 let absensi=LS('absensi',{});
 let lembur=LS('lembur',{});
 let prorata=LS('prorata',{});
