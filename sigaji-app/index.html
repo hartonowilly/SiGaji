@@ -127,7 +127,7 @@
     <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem">Pengaturan kuota cuti &amp; hari libur nasional: <strong>Master Perusahaan → Hari Libur &amp; Cuti</strong>.</div>
     <div class="card">
       <div class="ct">Tracking Cuti — <span id="cuti-yr-lbl">2026</span></div>
-      <table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Eligible</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
+      <table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
       <tbody id="tb-cuti-rekap"></tbody></table>
     </div>
   </div>
@@ -379,7 +379,9 @@
         </div>
         <div class="fg"><label>Mulai</label><input type="date" id="p-start" value="2026-02-25"></div>
         <div class="fg"><label>Selesai</label><input type="date" id="p-end" value="2026-03-24"></div>
-        <div class="fg"><label>Tgl Bayar Gaji</label><input type="date" id="p-bayar" value="2026-03-25"></div>
+        <div class="fg ff"><label>Tgl Bayar Gaji</label><input type="date" id="p-bayar" value="2026-03-25">
+          <div style="font-size:10px;color:#6b7280;margin-top:4px;line-height:1.45">Boleh <strong>lebih awal</strong> dari tanggal selesai (mis. transfer bank di hari kerja terakhir; periode kerja &amp; absensi tetap sampai tanggal selesai).</div>
+        </div>
         <div class="fg"><label>Status</label><select id="p-status"><option value="aktif">Aktif</option><option value="tutup">Tutup</option></select></div>
         <div class="fg"><label>Tipe Masa Pajak</label>
           <select id="p-tipe-periode" onchange="toggleOpsiLebihBayar()">
@@ -428,9 +430,8 @@
   <div id="m-libur" style="display:none">
     <div class="card" style="background:#f0f0fd;border-color:#c4b5fd">
       <div class="ct" style="color:#5b21b6">&#127774; Pengaturan Kuota Cuti Tahunan</div>
-      <div class="fg3">
+      <div class="fg2">
         <div class="fg"><label>Kuota Cuti (hari/tahun)</label><input type="number" id="cuti-kuota" value="12" min="1" max="30" onchange="simpanMasterCuti()"></div>
-        <div class="fg"><label>Min. Masa Kerja Eligible (bulan)</label><input type="number" id="cuti-masaMin" value="12" min="0" onchange="simpanMasterCuti()"></div>
         <div class="fg"><label>Carry Over</label>
           <select id="cuti-carryover" onchange="simpanMasterCuti()">
             <option value="no">Tidak — Hangus akhir tahun</option><option value="yes">Ya — Semua dibawa</option><option value="max5">Ya — Maks 5 hari</option>
