@@ -144,16 +144,16 @@
     });
     list.sort(function(a,b){return String(b.tgl_berhenti).localeCompare(String(a.tgl_berhenti));});
     if(!list.length){
-      tb.innerHTML='<tr><td colspan="6" style="padding:1rem;color:#6b7280;font-size:12px">Tidak ada karyawan berhenti pada periode aktif. (Cek Periode Aktif di Master → Periode Gaji & THR)</td></tr>';
+      tb.innerHTML='<tr><td colspan="7" style="padding:1rem;color:#6b7280;font-size:12px">Tidak ada karyawan berhenti pada periode aktif. (Cek Periode Aktif di Master → Periode Gaji & THR)</td></tr>';
       selNik=null;renderDetail();return;
     }
-    tb.innerHTML=list.map(function(k){
+    tb.innerHTML=list.map(function(k,i){
       var phk=k.phk||{};
       var opt=phkOpt(phk.alasan||'');
       var r=hitungPesangon(k);
       var al=opt.lbl||'—';
       var cls=selNik===k.nik?'style="background:#eff6ff"':'';
-      return '<tr '+cls+' class="psg-row" data-nik="'+escapeHtml(k.nik)+'" onclick="pesangonPilih(\''+escJsStr(k.nik)+'\')"><td><strong>'+escapeHtml(k.nama)+'</strong><div style="font-size:10px;color:#6b7280">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td style="font-size:11px;max-width:180px">'+escapeHtml(al)+'</td><td style="text-align:right">'+(r.ok?fmt(r.total):'—')+'</td><td style="text-align:center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out" onclick="event.stopPropagation();openPanel(\''+escJsStr(k.nik)+'\')">Profil</button></td></tr>';
+      return '<tr '+cls+' class="psg-row" data-nik="'+escapeHtml(k.nik)+'" onclick="pesangonPilih(\''+escJsStr(k.nik)+'\')"><td style="text-align:center;font-weight:700;color:#6b7280">'+(i+1)+'</td><td><strong>'+escapeHtml(k.nama)+'</strong><div style="font-size:10px;color:#6b7280">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td style="font-size:11px;max-width:180px">'+escapeHtml(al)+'</td><td style="text-align:right">'+(r.ok?fmt(r.total):'—')+'</td><td style="text-align:center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out" onclick="event.stopPropagation();openPanel(\''+escJsStr(k.nik)+'\')">Profil</button></td></tr>';
     }).join('');
     if(selNik&&!list.find(function(k){return k.nik===selNik;}))selNik=list[0].nik;
     if(!selNik&&list.length)selNik=list[0].nik;

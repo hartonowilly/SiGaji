@@ -80,6 +80,17 @@ function migrateStorage(db){
     if(db.auditLog===undefined)db.auditLog=[];
     v=7;
   }
+  if(v<8){
+    if(!db.tunjVarColumns||!Array.isArray(db.tunjVarColumns)||!db.tunjVarColumns.length){
+      var L8=db.tunjVarLabels||{};
+      db.tunjVarColumns=[
+        {id:'v1',nama:(L8.v1!==undefined&&L8.v1!=='')?L8.v1:'Bonus'},
+        {id:'v2',nama:(L8.v2!==undefined&&L8.v2!=='')?L8.v2:'Uang Makan'},
+        {id:'v3',nama:(L8.v3!==undefined&&L8.v3!=='')?L8.v3:'Lain-lain'}
+      ];
+    }
+    v=8;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
@@ -96,7 +107,7 @@ function recoverDbFromUniversal(){
     if(!u)return false;
     const o=JSON.parse(u);
     const db={
-      schemaVersion:7,
+      schemaVersion:8,
       karyawan:o.karyawan||[],
       periodes:o.periodes||[],
       hariLibur:o.hariLibur||[],
@@ -112,6 +123,11 @@ function recoverDbFromUniversal(){
       thrManual:o.thrManual||{},
       tunjVarBulan:o.tunjVarBulan||{},
       tunjVarLabels:o.tunjVarLabels||{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'},
+      tunjVarColumns:o.tunjVarColumns||[
+        {id:'v1',nama:(o.tunjVarLabels&&o.tunjVarLabels.v1)||'Bonus'},
+        {id:'v2',nama:(o.tunjVarLabels&&o.tunjVarLabels.v2)||'Uang Makan'},
+        {id:'v3',nama:(o.tunjVarLabels&&o.tunjVarLabels.v3)||'Lain-lain'}
+      ],
       karSnapshot:o.karSnapshot||{},
       auditLog:o.auditLog||[]
     };
@@ -169,16 +185,21 @@ let roles=LS('roles',{Admin:MODULES.map(m=>m.id),HRD:['dashboard','notifikasi','
 let thrManual=LS('thrManual',{});
 let tunjVarBulan=LS('tunjVarBulan',{});
 let tunjVarLabels=LS('tunjVarLabels',{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'});
+let tunjVarColumns=LS('tunjVarColumns',[
+  {id:'v1',nama:'Bonus'},
+  {id:'v2',nama:'Uang Makan'},
+  {id:'v3',nama:'Lain-lain'}
+]);
 let karSnapshot=LS('karSnapshot',{});
 let auditLog=LS('auditLog',[]);
 let CU=null,cpNik=null;
 const bmState={};
 function saveAll(){
   try{
-    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog});
+    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog});
   }catch(e){console.error('saveAll error:',e);}
   try{
-    localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog}));
+    localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog}));
   }catch(e){}
   try{
     if(window.sigajiApplyingCloud)return;
@@ -206,11 +227,12 @@ function applyDbFromCloudPayload(payload){
     if(o.thrManual!==undefined)thrManual=o.thrManual;
     if(o.tunjVarBulan!==undefined)tunjVarBulan=o.tunjVarBulan;
     if(o.tunjVarLabels!==undefined)tunjVarLabels=o.tunjVarLabels;
+    if(o.tunjVarColumns!==undefined)tunjVarColumns=o.tunjVarColumns;
     if(o.karSnapshot!==undefined)karSnapshot=o.karSnapshot;
     if(o.auditLog!==undefined)auditLog=o.auditLog;
-    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog});
+    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog});
     try{
-      localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,karSnapshot,auditLog}));
+      localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:'SiGaji v9',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog}));
     }catch(e2){}
     showSI();
   }finally{
@@ -234,6 +256,7 @@ function getPayloadForCloud(){
     thrManual:thrManual,
     tunjVarBulan:tunjVarBulan,
     tunjVarLabels:tunjVarLabels,
+    tunjVarColumns:tunjVarColumns,
     karSnapshot:karSnapshot,
     auditLog:auditLog
   }));
