@@ -1,0 +1,11 @@
+{
+  "name": "sigaji-app",
+  "private": true,
+  "version": "9.0.2",
+  "description": "SiGaji v9 (Netlify functions for Telegram + Supabase)",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.0"
+  }
+}
+
