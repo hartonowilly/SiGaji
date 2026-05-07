@@ -19,6 +19,9 @@
   </label>
   <div id="cloud-login-hint" style="display:none;font-size:11px;color:#5b4d3a;margin:0 0 .5rem;padding:.5rem .65rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;line-height:1.5"></div>
   <button class="btn btn-p btn-full" onclick="doLogin()">Masuk ke Sistem</button>
+  <div id="forgot-pw-wrap" style="display:none;text-align:center;margin-top:.4rem">
+    <button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1a56a0;cursor:pointer;font-size:11px;text-decoration:underline;padding:0">Lupa password?</button>
+  </div>
   <div id="file-protocol-hint" style="display:none;margin-top:.85rem;padding:.65rem .85rem;background:#fff8e6;border:1px solid #f6d088;border-radius:8px;font-size:11px;line-height:1.55;color:#713f12">
     <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.<br><br>
     <strong>Cadangan lokal (login awan / Supabase):</strong> tekan F12 → Application (Chrome) / Storage → Local Storage → situs Anda → salin nilai <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_db</code> atau <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_universal</code> ke file teks sebagai backup.
@@ -265,6 +268,7 @@
       <div style="font-size:10px;font-weight:700;color:#1a56a0;margin-bottom:.45rem">Slip PDF (mengacu pada slip gaji di bawah — unduh lalu lampirkan atau bagikan file di HP)</div>
       <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
         <button class="btn btn-sm btn-g" type="button" onclick="shareSlipNativePDF()" title="Chrome/Android: bagikan file PDF langsung">&#128229; Bagikan PDF</button>
+        <button class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToTelegram()">Telegram</button>
         <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700" onclick="shareSlipWhatsAppWithPDF()">&#128242; WA + unduh PDF</button>
         <button class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:700" onclick="shareSlipEmailWithPDF()">&#9993; Email + unduh PDF</button>
       </div>
@@ -828,6 +832,20 @@
   </div>
 </div>
 
+<!-- MODAL RESET PASSWORD (dari link email Supabase) -->
+<div class="mbd" id="m-pw-reset">
+  <div class="modal modal-sm" style="border-top:4px solid #1a56a0">
+    <div class="mtit" style="color:#1a56a0">&#128273; Buat Password Baru</div>
+    <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem">Anda membuka link dari email reset password. Masukkan password baru untuk akun Supabase Anda.</div>
+    <div class="fg"><label>Password Baru</label><input type="password" id="pw-reset-new" placeholder="min. 6 karakter"></div>
+    <div class="fg"><label>Konfirmasi Password</label><input type="password" id="pw-reset-confirm" placeholder="ulangi password baru" onkeydown="if(event.key==='Enter')doUpdatePassword()"></div>
+    <div class="mfoot">
+      <button class="btn btn-sm btn-out" onclick="closeModal('m-pw-reset')">Batal</button>
+      <button class="btn btn-sm btn-p" onclick="doUpdatePassword()">&#10003; Simpan Password</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RESET -->
 <div class="mbd" id="m-reset">
   <div class="modal modal-sm" style="border-top:4px solid #9b2121">
@@ -851,6 +869,31 @@
     <div class="mtit" id="m-gaji-t">Detail Gaji</div>
     <div id="m-gaji-c"></div>
     <div class="mfoot"><button class="btn btn-sm btn-out" onclick="closeModal('m-gaji')">Tutup</button></div>
+  </div>
+</div>
+
+<!-- MODAL TELEGRAM -->
+<div class="mbd" id="m-tg">
+  <div class="modal modal-sm">
+    <button class="mclose" onclick="closeModal('m-tg')">&times;</button>
+    <div class="mtit">Telegram Slip Gaji</div>
+    <div class="info-box info-blue" style="font-size:11px;line-height:1.6">
+      1) HRD/Admin buat <strong>kode link</strong> untuk karyawan.<br>
+      2) Karyawan chat bot lalu kirim: <code>/start KODE</code>.<br>
+      3) Setelah tertaut, slip bisa dikirim sebagai PDF.
+    </div>
+    <div class="fg"><label>NIK</label><input id="tg-nik" readonly></div>
+    <div class="fg"><label>Nama</label><input id="tg-nama" readonly></div>
+    <div class="fg"><label>Kode link (30 menit)</label>
+      <div class="fl gap1">
+        <input id="tg-code" readonly placeholder="Klik 'Buat kode'">
+        <button class="btn btn-sm btn-p" onclick="tgBuatKode()">Buat kode</button>
+      </div>
+      <div style="font-size:10px;color:#6b7280;margin-top:6px">Bagikan kode ini ke karyawan (jangan umumkan di grup).</div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sm btn-out" onclick="closeModal('m-tg')">Tutup</button>
+    </div>
   </div>
 </div>
 
