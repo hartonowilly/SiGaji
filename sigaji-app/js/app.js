@@ -894,12 +894,126 @@ function sigajiApplyCloudLoginUi(){
     h.style.display='block';
     h.innerHTML='Login memakai <strong>email + sandi Supabase</strong> (Authentication). Setelah sukses, data di perangkat digabung dengan salinan di awan. <strong>Cadangan:</strong> F12 → Application → Local Storage → salin <code style="background:#e5e7eb;padding:1px 4px;border-radius:4px">sigaji_db</code> atau <code style="background:#e5e7eb;padding:1px 4px;border-radius:4px">sigaji_universal</code>.';
   }
+  var fp = document.getElementById('forgot-pw-wrap');
+  if (fp) fp.style.display = 'block';
   // Jika fitur "ingat username" aktif, aplikasikan lagi setelah UI cloud membersihkan input
   try{if(typeof initRememberUsername==='function')initRememberUsername();}catch(e){}
+}
+
+function doForgotPassword(){
+  var email=(document.getElementById('lu').value||'').trim();
+  if(!email||email.indexOf('@')<0){
+    toast('Isi email Anda di kolom di atas, lalu klik Lupa password.');
+    return;
+  }
+  if(typeof window.sigajiForgotPassword!=='function'){
+    toast('Fitur ini hanya tersedia saat terhubung ke Supabase.');
+    return;
+  }
+  window.sigajiForgotPassword(email);
+}
+
+function doUpdatePassword(){
+  var np=(document.getElementById('pw-reset-new').value||'');
+  var nc=(document.getElementById('pw-reset-confirm').value||'');
+  if(!np||np.length<6){toast('Password minimal 6 karakter.');return;}
+  if(np!==nc){toast('Konfirmasi password tidak cocok.');return;}
+  if(typeof window.sigajiUpdatePassword!=='function'){
+    toast('Koneksi awan tidak tersedia.');
+    return;
+  }
+  window.sigajiUpdatePassword(np).then(function(r){
+    if(r.error){
+      toast('Gagal: '+(r.error.message||String(r.error)));
+    }else{
+      closeModal('m-pw-reset');
+      toast('Password berhasil diperbarui. Silakan login dengan password baru.');
+      if(window.sigajiSupabase)window.sigajiSupabase.auth.signOut();
+    }
+  });
 }
 if(typeof window!=='undefined'){
   window.sigajiApplyCloudLoginUi=sigajiApplyCloudLoginUi;
   window.sigajiIsCloudConfigured=sigajiIsCloudConfigured;
+}
+
+async function getCloudAccessToken(){
+  try{
+    if(!window.sigajiSupabase||!window.sigajiSupabase.auth)return'';
+    const sess=await window.sigajiSupabase.auth.getSession();
+    return (sess&&sess.data&&sess.data.session&&sess.data.session.access_token)||'';
+  }catch(e){return'';}
+}
+
+/** Buat kode link Telegram untuk NIK (HRD/Admin). */
+async function telegramCreateLinkCode(nik){
+  const t=await getCloudAccessToken();
+  if(!t){toast('Belum login awan / sesi tidak ada');return null;}
+  const r=await fetch('/.netlify/functions/telegram-create-link',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,ttlMin:30})});
+  const j=await r.json().catch(()=>null);
+  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal buat kode Telegram');return null;}
+  return j;
+}
+
+/** Kirim slip PDF (base64) ke Telegram untuk NIK (HRD/Admin). */
+async function telegramSendSlipPdf(nik,filename,caption,pdfBase64){
+  const t=await getCloudAccessToken();
+  if(!t){toast('Belum login awan / sesi tidak ada');return false;}
+  const r=await fetch('/.netlify/functions/telegram-send-slip',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,filename,caption,pdfBase64})});
+  const j=await r.json().catch(()=>null);
+  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal kirim slip Telegram');return false;}
+  return true;
+}
+
+function arrayBufferToBase64(buf){
+  try{
+    var bytes=new Uint8Array(buf);
+    var chunk=0x8000;
+    var bin='';
+    for(var i=0;i<bytes.length;i+=chunk){
+      bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));
+    }
+    return btoa(bin);
+  }catch(e){
+    return '';
+  }
+}
+
+function jsPdfToBase64(doc){
+  try{
+    var ab=doc.output('arraybuffer');
+    return arrayBufferToBase64(ab);
+  }catch(e){
+    return '';
+  }
+}
+
+async function sendCurrentSlipToTelegram(){
+  try{
+    if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
+    const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
+    const k=nik?karyawan.find(function(x){return x.nik===nik;}):null;
+    if(!k){toast('Pilih karyawan');return;}
+    const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
+    const p=periodes.find(function(x){return x.id==pid;})||PA();
+    const type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
+
+    var o=null;
+    if(type==='thr'&&p.thr_aktif)o=buildTHRSlipPDF(k,p);
+    else o=buildGajiSlipPDF(k,p.nama,p.bayar);
+    if(!o||!o.doc){toast('Gagal menyiapkan PDF');return;}
+
+    var pdfBase64=jsPdfToBase64(o.doc);
+    if(!pdfBase64){toast('Gagal encode PDF');return;}
+
+    var caption=(type==='thr'?'Slip THR ':'Slip Gaji ')+(p.nama||'')+' — '+(k.nama||k.nik);
+    toast('Mengirim ke Telegram...');
+    var ok=await telegramSendSlipPdf(k.nik,o.fileName||('Slip_'+k.nik+'.pdf'),caption,pdfBase64);
+    if(ok)toast('Terkirim ke Telegram');
+  }catch(e){
+    console.error('sendCurrentSlipToTelegram',e);
+    toast(e.message||'Gagal kirim Telegram');
+  }
 }
 /** Dipakai login lokal + login Supabase (cloud-sync.js). */
 function enterAppWithUser(user){
@@ -1042,7 +1156,8 @@ function karRowHtml(k,no){
   const bst=bpjsOn===8?'b-ok':bpjsOn>0?'b-warn':'b-err';
   const bpjsLbl=bpjsOn===8?'Lengkap':bpjsOn===0?'Off':bpjsOn+'/8 aktif';
   const stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
-  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button><button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
+  const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out" onclick="openTelegramModalForNik('${k.nik}')">Telegram</button>`:'';
+  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   const p=PA();
@@ -1113,6 +1228,26 @@ function openPanel(nik){
   if(!applyKarSlideTabsVisibility()){closePanel();return;}
   setSpPayrollView('periode');
   updateGajiSummary();
+}
+
+function openTelegramModalForNik(nik){
+  try{
+    var k=karyawan.find(function(x){return x.nik===nik;});
+    if(!k){toast('Karyawan tidak ditemukan');return;}
+    document.getElementById('tg-nik').value=nik;
+    document.getElementById('tg-nama').value=k.nama||'';
+    document.getElementById('tg-code').value='';
+    openModal('m-tg');
+  }catch(e){console.error(e);toast('Gagal membuka Telegram');}
+}
+
+async function tgBuatKode(){
+  const nik=(document.getElementById('tg-nik')&&document.getElementById('tg-nik').value)||'';
+  if(!nik){toast('NIK kosong');return;}
+  const r=await telegramCreateLinkCode(nik);
+  if(!r)return;
+  document.getElementById('tg-code').value=r.code;
+  toast('Kode dibuat (berlaku 30 menit)');
 }
 function closePanel(){document.getElementById('slide-panel').classList.remove('show');document.getElementById('panel-overlay').classList.remove('show');cpNik=null;}
 function simpanKarPanel(){

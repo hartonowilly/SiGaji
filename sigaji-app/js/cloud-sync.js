@@ -72,6 +72,35 @@
       throw e;
     }
 
+    // Supabase email reset link (mode baru/PKCE) bisa berupa ?code=...&type=recovery
+    // Agar modal reset benar-benar muncul di Netlify, kita tukar code -> session secara eksplisit.
+    try {
+      var qs = new URLSearchParams(window.location.search || '');
+      var code = (qs.get('code') || '').trim();
+      var type = (qs.get('type') || '').trim();
+      if (code && /recovery/i.test(type)) {
+        await window.sigajiSupabase.auth.exchangeCodeForSession(code);
+        if (typeof openModal === 'function') openModal('m-pw-reset');
+        // bersihkan URL (jaga privasi & hindari re-run)
+        try {
+          window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+        } catch (e2) {}
+      }
+    } catch (e) {
+      console.warn('Sigaji cloud recovery parse:', e);
+    }
+
+    // Tangkap event PASSWORD_RECOVERY saat user klik link dari email reset
+    window.sigajiSupabase.auth.onAuthStateChange(function (event) {
+      if (event === 'PASSWORD_RECOVERY') {
+        if (typeof openModal === 'function') openModal('m-pw-reset');
+        else {
+          var m = document.getElementById('m-pw-reset');
+          if (m) m.classList.add('show');
+        }
+      }
+    });
+
     if (typeof window.sigajiApplyCloudLoginUi === 'function') window.sigajiApplyCloudLoginUi();
 
     window.sigajiQueueCloudSave = scheduleUpsert;
@@ -246,6 +275,36 @@
   }
 
   window.sigajiTryCloudLogin = tryCloudLoginWhenReady;
+
+  window.sigajiForgotPassword = function (email) {
+    (bootPromise || Promise.resolve()).then(function () {
+      if (!clientReady || !window.sigajiSupabase) {
+        toastSafe('Koneksi awan tidak tersedia.');
+        return;
+      }
+      var redirectUrl = window.location.origin + window.location.pathname;
+      window.sigajiSupabase.auth
+        .resetPasswordForEmail(email.trim(), { redirectTo: redirectUrl })
+        .then(function (r) {
+          if (r.error) {
+            toastSafe('Gagal mengirim email: ' + (r.error.message || r.error));
+          } else {
+            toastSafe(
+              'Email reset password telah dikirim ke ' +
+                email +
+                '. Buka link dari email (akan kembali ke halaman ini), lalu masukkan password baru.'
+            );
+          }
+        });
+    });
+  };
+
+  window.sigajiUpdatePassword = function (newPassword) {
+    if (!window.sigajiSupabase) {
+      return Promise.resolve({ error: { message: 'Koneksi awan tidak tersedia' } });
+    }
+    return window.sigajiSupabase.auth.updateUser({ password: newPassword });
+  };
 
   bootPromise = boot();
 })();
