@@ -901,16 +901,35 @@ function sigajiApplyCloudLoginUi(){
 }
 
 function doForgotPassword(){
-  var email=(document.getElementById('lu').value||'').trim();
-  if(!email||email.indexOf('@')<0){
-    toast('Isi email Anda di kolom di atas, lalu klik Lupa password.');
-    return;
-  }
   if(typeof window.sigajiForgotPassword!=='function'){
     toast('Fitur ini hanya tersedia saat terhubung ke Supabase.');
     return;
   }
+  try{
+    var inp=document.getElementById('forgot-email');
+    var lu=document.getElementById('lu');
+    if(inp){
+      inp.value=(lu&&lu.value?String(lu.value).trim():'');
+      setTimeout(function(){try{inp.focus();}catch(e){}},0);
+    }
+    openModal('m-forgot');
+  }catch(e){
+    toast('Gagal membuka form lupa password.');
+  }
+}
+
+function submitForgotPassword(){
+  var email=(document.getElementById('forgot-email')&&document.getElementById('forgot-email').value||'').trim();
+  if(!email||email.indexOf('@')<0){
+    toast('Isi email yang valid.');
+    return;
+  }
+  if(typeof window.sigajiForgotPassword!=='function'){
+    toast('Koneksi awan tidak tersedia.');
+    return;
+  }
   window.sigajiForgotPassword(email);
+  closeModal('m-forgot');
 }
 
 function doUpdatePassword(){
