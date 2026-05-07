@@ -863,7 +863,75 @@ function togglePerm(role,moduleId,val){
 }
 function openRoleModal(){openModal('m-role');document.getElementById('r-nama').value='';}
 function simpanRole(){const nama=document.getElementById('r-nama').value.trim();if(!nama){toast('Nama wajib');return;}if(roles[nama]){toast('Role sudah ada');return;}roles[nama]=[];saveAll();renderPermMatrix();closeModal('m-role');toast('Role "'+nama+'" ditambahkan');}
-function switchUsrTab(el,tid){el.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['um-daftar','um-roles'].forEach(id=>{const d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});if(tid==='um-roles')renderPermMatrix();}
+function switchUsrTab(el,tid){
+  el.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['um-daftar','um-reg','um-roles'].forEach(function(id){
+    var d=document.getElementById(id);
+    if(d)d.style.display=id===tid?'block':'none';
+  });
+  if(tid==='um-roles')renderPermMatrix();
+  if(tid==='um-reg')loadRegRequests();
+}
+
+async function loadRegRequests(){
+  try{
+    if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
+    var t=await getCloudAccessToken();
+    if(!t){toast('Belum login awan');return;}
+    var host=document.getElementById('reg-req-list');if(host)host.innerHTML='Memuat...';
+    var r=await fetch('/.netlify/functions/auth-registration-list?status=pending',{headers:{'authorization':'Bearer '+t}});
+    var j=await r.json().catch(()=>null);
+    if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memuat');if(host)host.innerHTML='';return;}
+    var items=j.items||[];
+    if(!host)return;
+    if(!items.length){host.innerHTML='<div style="font-size:12px;color:#6b7280;padding:.5rem">Tidak ada permintaan pending.</div>';return;}
+    host.innerHTML='<table style="min-width:720px"><thead><tr><th>Email</th><th>Nama</th><th>NIK</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>'
+      +items.map(function(it){
+        var em=String(it.email||'');
+        var nm=String(it.nama||'');
+        var nk=String(it.nik||'');
+        var dt=String(it.created_at||'').slice(0,19).replace('T',' ');
+        return '<tr>'
+          +'<td style="font-weight:800">'+em+'</td>'
+          +'<td>'+escapeHtml(nm)+'</td>'
+          +'<td>'+escapeHtml(nk)+'</td>'
+          +'<td style="font-size:11px;color:#6b7280">'+escapeHtml(dt)+'</td>'
+          +'<td><div class="fl gap1">'
+            +'<button class="btn btn-sm btn-g" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'approve\')">Approve</button>'
+            +'<button class="btn btn-sm btn-r" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'reject\')">Reject</button>'
+          +'</div></td>'
+        +'</tr>';
+      }).join('')
+      +'</tbody></table>';
+  }catch(e){
+    console.error('loadRegRequests',e);
+    toast('Gagal memuat permintaan');
+  }
+}
+
+async function decideRegReq(id,action){
+  try{
+    if(!id)return;
+    if(action==='reject'&&!confirm('Tolak permintaan ini?'))return;
+    if(action==='approve'&&!confirm('Setujui dan kirim undangan email reset password?'))return;
+    var t=await getCloudAccessToken();
+    if(!t){toast('Belum login awan');return;}
+    toast(action==='approve'?'Menyetujui...':'Menolak...');
+    var r=await fetch('/.netlify/functions/auth-registration-decide',{
+      method:'POST',
+      headers:{'content-type':'application/json','authorization':'Bearer '+t},
+      body:JSON.stringify({id:id,action:action})
+    });
+    var j=await r.json().catch(()=>null);
+    if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memproses');return;}
+    toast(action==='approve'?'Approved. Email undangan dikirim (atau user sudah ada).':'Rejected.');
+    loadRegRequests();
+  }catch(e){
+    console.error('decideRegReq',e);
+    toast('Gagal memproses');
+  }
+}
 // ── BRANDING ────────────────────────────────────
 function applyBranding(){
   const logo=perusahaan.logo||'';const nama=perusahaan.nama||'SiGaji';
@@ -930,6 +998,42 @@ function submitForgotPassword(){
   }
   window.sigajiForgotPassword(email);
   closeModal('m-forgot');
+}
+
+function openRegisterModal(){
+  try{
+    if(!sigajiIsCloudConfigured()){
+      toast('Fitur ini hanya untuk mode online (Supabase).');
+      return;
+    }
+    var lu=document.getElementById('lu');
+    var em=(lu&&lu.value?String(lu.value).trim():'');
+    var e=document.getElementById('reg-email');if(e)e.value=em;
+    var n=document.getElementById('reg-nama');if(n)n.value='';
+    var k=document.getElementById('reg-nik');if(k)k.value='';
+    openModal('m-register');
+    setTimeout(function(){try{if(e)e.focus();}catch(x){}},0);
+  }catch(e){
+    toast('Gagal membuka form register.');
+  }
+}
+
+async function submitRegisterRequest(){
+  try{
+    var email=(document.getElementById('reg-email')&&document.getElementById('reg-email').value||'').trim();
+    var nama=(document.getElementById('reg-nama')&&document.getElementById('reg-nama').value||'').trim();
+    var nik=(document.getElementById('reg-nik')&&document.getElementById('reg-nik').value||'').trim();
+    if(!email||email.indexOf('@')<0){toast('Email tidak valid.');return;}
+    toast('Mengirim permintaan...');
+    const r=await fetch('/.netlify/functions/auth-register-request',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,nama,nik})});
+    const j=await r.json().catch(()=>null);
+    if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal mengirim permintaan');return;}
+    closeModal('m-register');
+    toast('Permintaan dikirim. Tunggu persetujuan Admin/HRD.');
+  }catch(e){
+    console.error('submitRegisterRequest',e);
+    toast('Gagal mengirim permintaan');
+  }
 }
 
 function doUpdatePassword(){
