@@ -72,13 +72,13 @@
       throw e;
     }
 
-    // Supabase email reset link (mode baru/PKCE) bisa berupa ?code=...&type=recovery
+    // Supabase email link (mode baru/PKCE) bisa berupa ?code=...&type=recovery / invite / signup
     // Agar modal reset benar-benar muncul di Netlify, kita tukar code -> session secara eksplisit.
     try {
       var qs = new URLSearchParams(window.location.search || '');
       var code = (qs.get('code') || '').trim();
       var type = (qs.get('type') || '').trim();
-      if (code && /recovery/i.test(type)) {
+      if (code && /(recovery|invite|signup)/i.test(type)) {
         await window.sigajiSupabase.auth.exchangeCodeForSession(code);
         if (typeof openModal === 'function') openModal('m-pw-reset');
         // bersihkan URL (jaga privasi & hindari re-run)
