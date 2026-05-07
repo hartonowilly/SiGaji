@@ -27,6 +27,13 @@ function sanitizeNama(nama, fallbackEmail) {
   return String(fallbackEmail || '').split('@')[0].slice(0, 80) || 'User';
 }
 
+function getSiteUrl(event) {
+  const proto = String(event.headers['x-forwarded-proto'] || 'https').split(',')[0].trim() || 'https';
+  const host = String(event.headers.host || '').trim();
+  if (!host) return '';
+  return `${proto}://${host}/`;
+}
+
 exports.handler = async (event) => {
   try {
     if (event.httpMethod !== 'POST') return json(405, { ok: false, error: 'Method not allowed' });
@@ -92,7 +99,8 @@ exports.handler = async (event) => {
     let inviteOk = false;
     let inviteMsg = '';
     try {
-      const { data: inv, error: invErr } = await sb.auth.admin.inviteUserByEmail(req.email, { redirectTo: null });
+      const redirectTo = getSiteUrl(event) || null;
+      const { data: inv, error: invErr } = await sb.auth.admin.inviteUserByEmail(req.email, { redirectTo });
       if (invErr) {
         inviteMsg = invErr.message || String(invErr);
       } else {
