@@ -21,6 +21,8 @@
   <button class="btn btn-p btn-full" onclick="doLogin()">Masuk ke Sistem</button>
   <div id="forgot-pw-wrap" style="display:none;text-align:center;margin-top:.4rem">
     <button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1a56a0;cursor:pointer;font-size:11px;text-decoration:underline;padding:0">Lupa password?</button>
+    <span style="opacity:.35;margin:0 .35rem">|</span>
+    <button type="button" onclick="openRegisterModal()" style="background:none;border:none;color:#2d6a0a;cursor:pointer;font-size:11px;text-decoration:underline;padding:0">Daftar Email</button>
   </div>
   <div id="file-protocol-hint" style="display:none;margin-top:.85rem;padding:.65rem .85rem;background:#fff8e6;border:1px solid #f6d088;border-radius:8px;font-size:11px;line-height:1.55;color:#713f12">
     <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.<br><br>
@@ -530,6 +532,7 @@
   <div class="ph"><div><div class="pt">&#128101; Manajemen User & Akses Modul</div><div class="pst">Atur siapa bisa akses modul apa</div></div></div>
   <div class="tabs">
     <div class="tab active" onclick="switchUsrTab(this,'um-daftar')">&#128100; Daftar User</div>
+    <div class="tab" onclick="switchUsrTab(this,'um-reg')">&#9989; Permintaan Registrasi</div>
     <div class="tab" onclick="switchUsrTab(this,'um-roles')">&#128272; Role & Hak Akses</div>
   </div>
   <div id="um-daftar">
@@ -539,6 +542,18 @@
       <table><thead><tr><th>Username</th><th>Email Supabase</th><th>Nama</th><th>Role</th><th>NIK Karyawan</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody id="tb-users"></tbody></table>
       </div>
+    </div>
+  </div>
+  <div id="um-reg" style="display:none">
+    <div class="card">
+      <div class="ct">Permintaan Registrasi (Email)</div>
+      <div class="info-box info-blue" style="font-size:11px;line-height:1.6">
+        Karyawan klik <strong>Daftar Email</strong> di halaman login → permintaan masuk ke sini. Setelah <strong>Approve</strong>, sistem akan mengundang email tersebut lewat Supabase (set password lewat email).
+      </div>
+      <div class="fl gap1" style="flex-wrap:wrap;align-items:center;margin-bottom:.6rem">
+        <button class="btn btn-sm btn-out" onclick="loadRegRequests()">&#8635; Refresh</button>
+      </div>
+      <div id="reg-req-list" style="overflow-x:auto"></div>
     </div>
   </div>
   <div id="um-roles" style="display:none">
@@ -842,6 +857,43 @@
     <div class="mfoot">
       <button class="btn btn-sm btn-out" onclick="closeModal('m-pw-reset')">Batal</button>
       <button class="btn btn-sm btn-p" onclick="doUpdatePassword()">&#10003; Simpan Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORGOT PASSWORD (input email) -->
+<div class="mbd" id="m-forgot">
+  <div class="modal modal-sm" style="border-top:4px solid #1a56a0">
+    <button class="mclose" onclick="closeModal('m-forgot')">&times;</button>
+    <div class="mtit" style="color:#1a56a0">&#128231; Lupa Password</div>
+    <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem;line-height:1.55">
+      Masukkan <strong>email Supabase</strong> Anda. Kami akan kirim link untuk membuat password baru.
+    </div>
+    <div class="fg">
+      <label>Email</label>
+      <input id="forgot-email" type="email" placeholder="nama@perusahaan.com" onkeydown="if(event.key==='Enter')submitForgotPassword()">
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sm btn-out" onclick="closeModal('m-forgot')">Batal</button>
+      <button class="btn btn-sm btn-p" onclick="submitForgotPassword()">Kirim Link Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGISTER EMAIL (request approval) -->
+<div class="mbd" id="m-register">
+  <div class="modal modal-sm" style="border-top:4px solid #2d6a0a">
+    <button class="mclose" onclick="closeModal('m-register')">&times;</button>
+    <div class="mtit" style="color:#2d6a0a">&#128100; Daftar Email</div>
+    <div class="info-box info-green" style="font-size:11px;margin-bottom:.75rem;line-height:1.55">
+      Isi data Anda untuk meminta akses. <strong>Admin/HRD</strong> akan menyetujui terlebih dahulu sebelum Anda bisa login.
+    </div>
+    <div class="fg"><label>Email</label><input id="reg-email" type="email" placeholder="nama@perusahaan.com"></div>
+    <div class="fg"><label>Nama (opsional)</label><input id="reg-nama" placeholder="Nama lengkap"></div>
+    <div class="fg"><label>NIK (opsional)</label><input id="reg-nik" placeholder="NIK karyawan"></div>
+    <div class="mfoot">
+      <button class="btn btn-sm btn-out" onclick="closeModal('m-register')">Batal</button>
+      <button class="btn btn-sm btn-g" onclick="submitRegisterRequest()">Kirim Permintaan</button>
     </div>
   </div>
 </div>
