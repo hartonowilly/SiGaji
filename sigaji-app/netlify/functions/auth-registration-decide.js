@@ -95,14 +95,26 @@ exports.handler = async (event) => {
     }
 
     // 2) Create/invite user in Supabase Auth (send set-password email)
-    // If user already exists in Auth, invite will return error; in that case we still mark approved.
+    // If user already exists in Auth, fallback to resetPasswordForEmail so email can be resent.
     let inviteOk = false;
     let inviteMsg = '';
     try {
       const redirectTo = getSiteUrl(event) || null;
       const { data: inv, error: invErr } = await sb.auth.admin.inviteUserByEmail(req.email, { redirectTo });
       if (invErr) {
-        inviteMsg = invErr.message || String(invErr);
+        const msg = String(invErr.message || invErr);
+        // Existing user / already invited: send reset email as fallback
+        if (/already|exists|registered|been invited|duplicate/i.test(msg)) {
+          const rr = await sb.auth.resetPasswordForEmail(req.email, { redirectTo: redirectTo || undefined });
+          if (rr && rr.error) {
+            inviteMsg = `invite failed: ${msg}; reset failed: ${rr.error.message || rr.error}`;
+          } else {
+            inviteOk = true;
+            inviteMsg = 'existing user: reset email sent';
+          }
+        } else {
+          inviteMsg = msg;
+        }
       } else {
         inviteOk = true;
         inviteMsg = 'invited';
