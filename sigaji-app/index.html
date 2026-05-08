@@ -5,8 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>SiGaji v9 — Sistem Penggajian</title>
 <link rel="stylesheet" href="css/styles.css">
+<style>
+html[data-sigaji-resume-pending="1"] #login{display:none!important}
+</style>
 </head>
 <body>
+<script>
+(function(){
+  try{
+    if(localStorage.getItem('sigaji_resume_hint')==='1'){
+      document.documentElement.setAttribute('data-sigaji-resume-pending','1');
+      // Fallback: jika resume gagal / cloud tidak aktif, kembalikan login setelah beberapa detik.
+      setTimeout(function(){
+        try{
+          if(document.documentElement.getAttribute('data-sigaji-resume-pending')==='1'){
+            document.documentElement.removeAttribute('data-sigaji-resume-pending');
+            var lg=document.getElementById('login');
+            if(lg)lg.style.display='flex';
+          }
+        }catch(e){}
+      },4000);
+    }
+  }catch(e){}
+})();
+</script>
 <!-- LOGIN -->
 <div id="login">
 <div class="lbox">
