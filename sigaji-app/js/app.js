@@ -805,7 +805,37 @@ function simpanUser(){
   }
   saveAll();renderUsers();closeModal('m-user');toast('User disimpan');
 }
-function hapusUser(i){if(!confirm('Hapus user '+users[i].username+'?'))return;users.splice(i,1);saveAll();renderUsers();toast('User dihapus');}
+async function hapusUser(i){
+  var u=users[i];
+  if(!u)return;
+  if(!confirm('Hapus user '+u.username+'?'))return;
+  var email=(u.email?String(u.email).toLowerCase().trim():'');
+  var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
+  if(cloud&&email){
+    try{
+      var t=await getCloudAccessToken();
+      if(t){
+        var r=await fetch('/.netlify/functions/auth-delete-user',{
+          method:'POST',
+          headers:{'content-type':'application/json','authorization':'Bearer '+t},
+          body:JSON.stringify({email:email})
+        });
+        var j=await r.json().catch(()=>null);
+        if(!r.ok||!j||!j.ok){
+          if(!confirm('Gagal hapus akun Supabase: '+((j&&j.error)||'unknown')+'\nLanjut hapus dari SiGaji saja?'))return;
+        }
+      }else{
+        if(!confirm('Token cloud tidak tersedia. Lanjut hapus dari SiGaji saja?'))return;
+      }
+    }catch(e){
+      if(!confirm('Error saat hapus akun Supabase: '+(e.message||e)+'.\nLanjut hapus dari SiGaji saja?'))return;
+    }
+  }
+  users.splice(i,1);
+  saveAll();
+  renderUsers();
+  toast('User dihapus');
+}
 function renderPermMatrix(){
   const el=document.getElementById('perm-matrix-wrap');if(!el)return;
   const roleKeys=Object.keys(roles);
