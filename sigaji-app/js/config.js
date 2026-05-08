@@ -4,4 +4,4 @@ window.SIGAJI_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 /** Opsional: email Admin untuk satu kali isi kolom Email pada user admin bawaan saat belum ada satu pun email di data (kosongkan setelah berhasil login pertama). */
 window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL = '';
 /** true = buka langsung ke aplikasi jika sesi Supabase masih ada (tanpa ketik sandi lagi). false/undefined = selalu tampil halaman login dulu (disarankan PC bersama). */
-window.SIGAJI_RESUME_SESSION_ON_LOAD = false;
+window.SIGAJI_RESUME_SESSION_ON_LOAD = true;
