@@ -29,7 +29,7 @@
     else console.warn(msg);
   }
 
-  function setResumeBootUi(booting) {
+  function setResumeBootUi(booting, hasSession) {
     if (window.SIGAJI_RESUME_SESSION_ON_LOAD !== true) return;
     try {
       var login = document.getElementById('login');
@@ -39,7 +39,7 @@
         // Hindari flicker: saat cek session, sembunyikan login dulu.
         login.style.display = 'none';
         app.style.display = 'none';
-      } else if (!window.CU) {
+      } else if (!hasSession) {
         // Jika tidak ada sesi valid, tampilkan login normal.
         login.style.display = 'flex';
         app.style.display = 'none';
@@ -128,14 +128,16 @@
       return window.sigajiSupabase.auth.signOut();
     };
 
-    setResumeBootUi(true);
+    var hasSession = false;
+    setResumeBootUi(true, false);
     try {
       var sess = await window.sigajiSupabase.auth.getSession();
       if (sess.data && sess.data.session && window.SIGAJI_RESUME_SESSION_ON_LOAD === true) {
+        hasSession = true;
         await enterFromSession(sess.data.session);
       }
     } finally {
-      setResumeBootUi(false);
+      setResumeBootUi(false, hasSession);
     }
   }
 
