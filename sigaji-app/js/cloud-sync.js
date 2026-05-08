@@ -37,12 +37,16 @@
       if (!login || !app) return;
       if (booting) {
         // Hindari flicker: saat cek session, sembunyikan login dulu.
+        document.documentElement.setAttribute('data-sigaji-resume-pending', '1');
         login.style.display = 'none';
         app.style.display = 'none';
       } else if (!hasSession) {
         // Jika tidak ada sesi valid, tampilkan login normal.
+        document.documentElement.removeAttribute('data-sigaji-resume-pending');
         login.style.display = 'flex';
         app.style.display = 'none';
+      } else {
+        document.documentElement.removeAttribute('data-sigaji-resume-pending');
       }
     } catch (e) {}
   }
@@ -124,6 +128,7 @@
     window.sigajiQueueCloudSave = scheduleUpsert;
 
     window.sigajiCloudLogout = function () {
+      try { localStorage.removeItem('sigaji_resume_hint'); } catch (e) {}
       if (!window.sigajiSupabase) return Promise.resolve();
       return window.sigajiSupabase.auth.signOut();
     };
@@ -202,6 +207,7 @@
   }
 
   async function enterFromSession(session) {
+    try { localStorage.setItem('sigaji_resume_hint', '1'); } catch (e) {}
     await loadCloudPayloadIntoApp(session.user.id);
     bootstrapAdminEmailIfNeeded(session.user);
     var cu = pickCuAfterCloudLoad(session.user.email);

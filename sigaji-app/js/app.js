@@ -1256,6 +1256,7 @@ function initRememberUsername(){
   }catch(e){}
 }
 function doLogout(){
+  try{localStorage.removeItem('sigaji_resume_hint');}catch(e){}
   try{if(typeof window.sigajiCloudLogout==='function')window.sigajiCloudLogout().catch(function(){});}catch(e){}
   document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';CU=null;
 }
