@@ -29,6 +29,24 @@
     else console.warn(msg);
   }
 
+  function setResumeBootUi(booting) {
+    if (window.SIGAJI_RESUME_SESSION_ON_LOAD !== true) return;
+    try {
+      var login = document.getElementById('login');
+      var app = document.getElementById('app');
+      if (!login || !app) return;
+      if (booting) {
+        // Hindari flicker: saat cek session, sembunyikan login dulu.
+        login.style.display = 'none';
+        app.style.display = 'none';
+      } else if (!window.CU) {
+        // Jika tidak ada sesi valid, tampilkan login normal.
+        login.style.display = 'flex';
+        app.style.display = 'none';
+      }
+    } catch (e) {}
+  }
+
   /** Dipanggil segera — login menunggu boot Supabase (tidak lagi bergantung pada fungsi yang baru ada setelah import). */
   function tryCloudLoginWhenReady(email, pw) {
     (bootPromise || Promise.resolve())
@@ -110,9 +128,14 @@
       return window.sigajiSupabase.auth.signOut();
     };
 
-    var sess = await window.sigajiSupabase.auth.getSession();
-    if (sess.data && sess.data.session && window.SIGAJI_RESUME_SESSION_ON_LOAD === true) {
-      await enterFromSession(sess.data.session);
+    setResumeBootUi(true);
+    try {
+      var sess = await window.sigajiSupabase.auth.getSession();
+      if (sess.data && sess.data.session && window.SIGAJI_RESUME_SESSION_ON_LOAD === true) {
+        await enterFromSession(sess.data.session);
+      }
+    } finally {
+      setResumeBootUi(false);
     }
   }
 
