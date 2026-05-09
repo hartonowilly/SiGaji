@@ -98,6 +98,8 @@ exports.handler = async (event) => {
     // If user already exists in Auth, fallback to resetPasswordForEmail so email can be resent.
     let inviteOk = false;
     let inviteMsg = '';
+    /** Ditulis ke payload.users[].auth_uid agar login app bisa cocok walau ada selisih format email di JSON. */
+    let inviteAuthUserId = null;
     try {
       const redirectTo = getSiteUrl(event) || null;
       const { data: inv, error: invErr } = await sb.auth.admin.inviteUserByEmail(req.email, { redirectTo });
@@ -111,6 +113,11 @@ exports.handler = async (event) => {
           } else {
             inviteOk = true;
             inviteMsg = 'existing user: reset email sent';
+            try {
+              const { data: lud } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+              const found = (lud && lud.users && lud.users.find((x) => String(x.email || '').toLowerCase() === emailLower)) || null;
+              if (found && found.id) inviteAuthUserId = found.id;
+            } catch (e) {}
           }
         } else {
           inviteMsg = msg;
@@ -118,6 +125,7 @@ exports.handler = async (event) => {
       } else {
         inviteOk = true;
         inviteMsg = 'invited';
+        if (inv && inv.user && inv.user.id) inviteAuthUserId = inv.user.id;
         // optional: set metadata
         try {
           if (inv && inv.user && inv.user.id) {
@@ -127,6 +135,21 @@ exports.handler = async (event) => {
       }
     } catch (e) {
       inviteMsg = e.message || String(e);
+    }
+
+    if (inviteAuthUserId) {
+      try {
+        const usersArr = Array.isArray(payload.users) ? payload.users.slice() : [];
+        const idx = usersArr.findIndex((u) => u && u.email && String(u.email).toLowerCase() === emailLower);
+        if (idx >= 0) {
+          usersArr[idx] = Object.assign({}, usersArr[idx], { auth_uid: inviteAuthUserId });
+          payload.users = usersArr;
+          const { error: puidErr } = await sb.from('sigaji_cloud').update({ payload }).eq('tenant_key', tenant);
+          if (puidErr) inviteMsg = `${inviteMsg}; auth_uid save: ${puidErr.message}`;
+        }
+      } catch (e) {
+        inviteMsg = `${inviteMsg}; auth_uid save error`;
+      }
     }
 
     // 3) Mark request approved
