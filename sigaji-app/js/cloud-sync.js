@@ -227,12 +227,21 @@
       });
   }
 
-  /** Hanya baris user SiGaji yang punya email sama dengan Auth — tidak ada fallback ke Admin (itu yang bikin HRD terlihat seperti Admin). */
-  function pickCuAfterCloudLoad(email) {
-    var em = (email || '').toLowerCase();
+  /**
+   * Cocokkan baris user SiGaji dengan Auth: (1) email sama, (2) opsional auth_uid dari payload (setelah approve undangan).
+   * Urutan email dulu agar jelas niat admin; auth_uid membantu bila email di JSON terkorup/spasi beda.
+   */
+  function pickCuAfterCloudLoad(email, authUserId) {
+    var em = (email || '').toLowerCase().trim();
+    var uid = (authUserId || '').trim();
     var matched = users.find(function (x) {
-      return x.email && String(x.email).toLowerCase() === em && x.aktif !== false;
+      return x.email && String(x.email).toLowerCase().trim() === em && x.aktif !== false;
     });
+    if (!matched && uid) {
+      matched = users.find(function (x) {
+        return x.aktif !== false && String(x.auth_uid || '') === uid;
+      });
+    }
     return matched ? Object.assign({}, matched) : null;
   }
 
@@ -263,10 +272,10 @@
     try { localStorage.setItem('sigaji_resume_hint', '1'); } catch (e) {}
     await loadCloudPayloadIntoApp(session.user.id);
     bootstrapAdminEmailIfNeeded(session.user);
-    var cu = pickCuAfterCloudLoad(session.user.email);
+    var cu = pickCuAfterCloudLoad(session.user.email, session.user.id);
     if (!cu) {
       toastSafe(
-        'Email ini belum terdaftar di SiGaji atau tidak aktif. Minta Admin buka Manajemen User → Edit user Anda → isi Email Supabase persis seperti email login (role HRD/Admin mengikuti pengaturan di situ).'
+        'Akun Supabase sudah cocok, tapi pengguna tidak ditemukan di data SiGaji. Pastikan di Manajemen User kolom "Email Supabase" sama persis dengan email login, atau approve ulang pendaftar agar sistem menyimpan tautan akun (auth_uid). Minta Admin cek juga baris payload di Supabase (sigaji_cloud) dan kebijakan RLS/shared.'
       );
       if (window.sigajiSupabase) await window.sigajiSupabase.auth.signOut();
       return;
