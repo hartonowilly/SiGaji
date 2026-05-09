@@ -78,6 +78,26 @@
       return;
     }
 
+    // WAJIB parse URL sebelum createClient: detectSessionInUrl bisa menghapus ?code=... lebih dulu.
+    var urlAuthSnap = (function () {
+      try {
+        var qs = new URLSearchParams(window.location.search || '');
+        var code = (qs.get('code') || '').trim();
+        var type = (qs.get('type') || '').trim();
+        var hash =
+          window.location.hash && window.location.hash.indexOf('code=') >= 0 ? window.location.hash.substring(1) : '';
+        if (!code && hash) {
+          var qh = new URLSearchParams(hash);
+          code = (qh.get('code') || '').trim();
+          type = type || (qh.get('type') || '').trim();
+        }
+        var typeOk = !type || /(recovery|invite|signup|magiclink|email)/i.test(type);
+        return { code: code, type: type, expectPw: !!(code && typeOk) };
+      } catch (e) {
+        return { code: '', type: '', expectPw: false };
+      }
+    })();
+
     try {
       var mod = await import('https://esm.sh/@supabase/supabase-js@2');
       window.sigajiSupabase = mod.createClient(url, key, {
@@ -94,22 +114,21 @@
       throw e;
     }
 
-    // Supabase email link (mode baru/PKCE) bisa berupa ?code=...&type=recovery / invite / signup
-    // Agar modal reset benar-benar muncul di Netlify, kita tukar code -> session secara eksplisit.
-    try {
-      var qs = new URLSearchParams(window.location.search || '');
-      var code = (qs.get('code') || '').trim();
-      var type = (qs.get('type') || '').trim();
-      if (code && /(recovery|invite|signup)/i.test(type)) {
-        await window.sigajiSupabase.auth.exchangeCodeForSession(code);
-        if (typeof openModal === 'function') openModal('m-pw-reset');
-        // bersihkan URL (jaga privasi & hindari re-run)
-        try {
-          window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
-        } catch (e2) {}
+    // Link email (invite/reset): jangan auto-resume — pakai modal set password dulu.
+    var skipResumeForPasswordModal = false;
+    if (urlAuthSnap.expectPw) {
+      skipResumeForPasswordModal = true;
+      try {
+        if (urlAuthSnap.code) {
+          await window.sigajiSupabase.auth.exchangeCodeForSession(urlAuthSnap.code);
+        }
+      } catch (e) {
+        console.warn('Sigaji: exchangeCodeForSession (mungkin sudah diproses otomatis oleh Supabase)', e);
       }
-    } catch (e) {
-      console.warn('Sigaji cloud recovery parse:', e);
+      if (typeof openModal === 'function') openModal('m-pw-reset');
+      try {
+        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+      } catch (e2) {}
     }
 
     // Tangkap event PASSWORD_RECOVERY saat user klik link dari email reset
@@ -137,9 +156,29 @@
     setResumeBootUi(true, false);
     try {
       var sess = await window.sigajiSupabase.auth.getSession();
-      if (sess.data && sess.data.session && window.SIGAJI_RESUME_SESSION_ON_LOAD === true) {
-        hasSession = true;
-        await enterFromSession(sess.data.session);
+      if (
+        sess.data &&
+        sess.data.session &&
+        window.SIGAJI_RESUME_SESSION_ON_LOAD === true &&
+        !skipResumeForPasswordModal
+      ) {
+        if (typeof window.sigajiIsIdleExpired === 'function' && window.sigajiIsIdleExpired()) {
+          toastSafe('Sesi berakhir karena melewati batas tidak ada aktivitas. Silakan login lagi.');
+          await window.sigajiSupabase.auth.signOut();
+          hasSession = false;
+        } else {
+          hasSession = true;
+          await enterFromSession(sess.data.session);
+        }
+      } else if (skipResumeForPasswordModal && sess.data && sess.data.session) {
+        try {
+          document.documentElement.removeAttribute('data-sigaji-resume-pending');
+          var lg0 = document.getElementById('login');
+          var ap0 = document.getElementById('app');
+          if (lg0) lg0.style.display = 'flex';
+          if (ap0) ap0.style.display = 'none';
+        } catch (eUi) {}
+        toastSafe('Silakan buat password baru di jendela ini, lalu login.');
       }
     } finally {
       setResumeBootUi(false, hasSession);

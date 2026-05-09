@@ -5,3 +5,5 @@ window.SIGAJI_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL = '';
 /** true = buka langsung ke aplikasi jika sesi Supabase masih ada (tanpa ketik sandi lagi). false/undefined = selalu tampil halaman login dulu (disarankan PC bersama). */
 window.SIGAJI_RESUME_SESSION_ON_LOAD = true;
+/** Menit tanpa aktivitas → logout otomatis (aman di PC bersama). 0 = nonaktif. Berlaku mode cloud; waktu terakhir disimpan di browser. */
+window.SIGAJI_IDLE_LOGOUT_MINUTES = 30;

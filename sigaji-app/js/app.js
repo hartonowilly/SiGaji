@@ -1189,6 +1189,7 @@ function enterAppWithUser(user){
   const firstPg=MODULES.map(m=>m.id).find(id=>canAccessModule(id))||'notifikasi';
   showPg(canAccessModule('dashboard')?'dashboard':firstPg);
   updateNotifBadge();
+  initIdleSession();
 }
 function doLogin(){
   const rawU=document.getElementById('lu').value.trim();
@@ -1255,8 +1256,80 @@ function initRememberUsername(){
     };
   }catch(e){}
 }
+
+var _sigajiIdleTimer=null;
+var _sigajiIdleHandlers=[];
+window.SIGAJI_LAST_ACTIVITY_KEY='sigaji_last_activity_ts';
+function getIdleLogoutMs(){
+  var m=(typeof window.SIGAJI_IDLE_LOGOUT_MINUTES!=='undefined'?parseInt(window.SIGAJI_IDLE_LOGOUT_MINUTES,10):0)||0;
+  return Math.max(0,m)*60*1000;
+}
+function destroyIdleSession(){
+  if(_sigajiIdleTimer){clearTimeout(_sigajiIdleTimer);_sigajiIdleTimer=null;}
+  _sigajiIdleHandlers.forEach(function(h){
+    try{document.removeEventListener(h.e,h.fn,h.opt||false);}catch(e){}
+  });
+  _sigajiIdleHandlers=[];
+}
+function scheduleIdleLogout(){
+  if(_sigajiIdleTimer)clearTimeout(_sigajiIdleTimer);
+  _sigajiIdleTimer=null;
+  var ms=getIdleLogoutMs();
+  if(ms<=0||!CU)return;
+  _sigajiIdleTimer=setTimeout(function(){
+    _sigajiIdleTimer=null;
+    if(!CU)return;
+    window._sigajiIdleLogout=true;
+    try{toast('Sesi berakhir karena tidak ada aktivitas. Silakan login lagi.');}catch(e){}
+    doLogout();
+    window._sigajiIdleLogout=false;
+  },ms);
+}
+function bumpActivityTs(){
+  try{localStorage.setItem(window.SIGAJI_LAST_ACTIVITY_KEY,String(Date.now()));}catch(e){}
+  scheduleIdleLogout();
+}
+function initIdleSession(){
+  destroyIdleSession();
+  if(getIdleLogoutMs()<=0)return;
+  bumpActivityTs();
+  function onAct(){bumpActivityTs();}
+  var evts=[{e:'mousedown',opt:{passive:true}},{e:'keydown',opt:{}},{e:'click',opt:{passive:true}},{e:'touchstart',opt:{passive:true}},{e:'scroll',opt:{passive:true}}];
+  evts.forEach(function(x){
+    document.addEventListener(x.e,onAct,x.opt||false);
+    _sigajiIdleHandlers.push({e:x.e,fn:onAct,opt:x.opt});
+  });
+  function vis(){
+    if(document.visibilityState==='visible'&&typeof window.sigajiCheckIdleExpiredNow==='function')window.sigajiCheckIdleExpiredNow();
+  }
+  document.addEventListener('visibilitychange',vis);
+  _sigajiIdleHandlers.push({e:'visibilitychange',fn:vis,opt:false});
+}
+window.sigajiIsIdleExpired=function(){
+  var ms=getIdleLogoutMs();
+  if(ms<=0)return false;
+  try{
+    var raw=localStorage.getItem(window.SIGAJI_LAST_ACTIVITY_KEY);
+    if(!raw)return false;
+    var ts=parseInt(raw,10);
+    if(!isFinite(ts))return false;
+    return Date.now()-ts>ms;
+  }catch(e){return false;}
+};
+window.sigajiCheckIdleExpiredNow=function(){
+  if(!CU)return;
+  if(window.sigajiIsIdleExpired()){
+    window._sigajiIdleLogout=true;
+    try{toast('Sesi berakhir karena tidak ada aktivitas. Silakan login lagi.');}catch(e){}
+    doLogout();
+    window._sigajiIdleLogout=false;
+  }else bumpActivityTs();
+};
+
 function doLogout(){
   try{localStorage.removeItem('sigaji_resume_hint');}catch(e){}
+  try{localStorage.removeItem(window.SIGAJI_LAST_ACTIVITY_KEY);}catch(e){}
+  destroyIdleSession();
   try{if(typeof window.sigajiCloudLogout==='function')window.sigajiCloudLogout().catch(function(){});}catch(e){}
   document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';CU=null;
 }
