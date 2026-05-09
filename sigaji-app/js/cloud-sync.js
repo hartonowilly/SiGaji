@@ -93,7 +93,17 @@
           if (!code) code = (qh.get('code') || '').trim();
           if (!type) type = (qh.get('type') || '').trim();
         }
-        var accessFromQs = !!(qs.get('access_token') || '').trim();
+        var accessToken = ((qs.get('access_token') || '') + '').trim();
+        var refreshToken = ((qs.get('refresh_token') || '') + '').trim();
+        var expiresIn = ((qs.get('expires_in') || '') + '').trim();
+        var tokenType = ((qs.get('token_type') || '') + '').trim();
+        if (qh) {
+          if (!accessToken) accessToken = ((qh.get('access_token') || '') + '').trim();
+          if (!refreshToken) refreshToken = ((qh.get('refresh_token') || '') + '').trim();
+          if (!expiresIn) expiresIn = ((qh.get('expires_in') || '') + '').trim();
+          if (!tokenType) tokenType = ((qh.get('token_type') || '') + '').trim();
+        }
+        var accessFromQs = !!accessToken;
         var accessFromHash = !!(qh && (qh.get('access_token') || '').trim());
         var hasAccessToken = accessFromQs || accessFromHash;
         // PKCE (?code= / #code=)
@@ -106,6 +116,10 @@
           code: code,
           type: type,
           expectPw: expectPkce || expectImplicit,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          expiresIn: expiresIn,
+          tokenType: tokenType,
         };
       } catch (e) {
         return { code: '', type: '', expectPw: false };
@@ -138,6 +152,21 @@
         }
       } catch (e) {
         console.warn('Sigaji: exchangeCodeForSession (mungkin sudah diproses otomatis oleh Supabase)', e);
+      }
+      // Fallback untuk link implicit (#access_token=...): jika detectSessionInUrl gagal membentuk sesi,
+      // coba setSession secara manual dari token yang kita snapshot sebelum URL dibersihkan.
+      try {
+        if (urlAuthSnap.accessToken && urlAuthSnap.refreshToken) {
+          var s0 = await window.sigajiSupabase.auth.getSession();
+          if (!s0.data || !s0.data.session) {
+            await window.sigajiSupabase.auth.setSession({
+              access_token: urlAuthSnap.accessToken,
+              refresh_token: urlAuthSnap.refreshToken,
+            });
+          }
+        }
+      } catch (e3) {
+        console.warn('Sigaji: setSession fallback gagal', e3);
       }
       if (typeof openModal === 'function') openModal('m-pw-reset');
       try {
