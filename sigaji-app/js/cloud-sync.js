@@ -84,15 +84,29 @@
         var qs = new URLSearchParams(window.location.search || '');
         var code = (qs.get('code') || '').trim();
         var type = (qs.get('type') || '').trim();
-        var hash =
-          window.location.hash && window.location.hash.indexOf('code=') >= 0 ? window.location.hash.substring(1) : '';
-        if (!code && hash) {
-          var qh = new URLSearchParams(hash);
-          code = (qh.get('code') || '').trim();
-          type = type || (qh.get('type') || '').trim();
+        var hp = '';
+        if (window.location.hash && window.location.hash.length > 1) {
+          hp = window.location.hash.charAt(0) === '#' ? window.location.hash.substring(1) : window.location.hash;
         }
-        var typeOk = !type || /(recovery|invite|signup|magiclink|email)/i.test(type);
-        return { code: code, type: type, expectPw: !!(code && typeOk) };
+        var qh = hp ? new URLSearchParams(hp) : null;
+        if (qh) {
+          if (!code) code = (qh.get('code') || '').trim();
+          if (!type) type = (qh.get('type') || '').trim();
+        }
+        var accessFromQs = !!(qs.get('access_token') || '').trim();
+        var accessFromHash = !!(qh && (qh.get('access_token') || '').trim());
+        var hasAccessToken = accessFromQs || accessFromHash;
+        // PKCE (?code= / #code=)
+        var typeOkPkce = !type || /(recovery|invite|signup|magiclink|email)/i.test(type);
+        var expectPkce = !!(code && typeOkPkce);
+        // Fragment token (#access_token=...) — tidak punya code=; undangan/recovery pakai ini
+        var typeOkPw = type && /(recovery|invite|signup)/i.test(type);
+        var expectImplicit = !!(hasAccessToken && typeOkPw);
+        return {
+          code: code,
+          type: type,
+          expectPw: expectPkce || expectImplicit,
+        };
       } catch (e) {
         return { code: '', type: '', expectPw: false };
       }
@@ -346,6 +360,15 @@
 
   window.sigajiTryCloudLogin = tryCloudLoginWhenReady;
 
+  function friendlyAuthEmailError(msg) {
+    var m = String(msg || '').toLowerCase();
+    if (/limit|exceeded|quota|rate|too many|429/i.test(m))
+      return 'Kuota email Supabase habis (batas pengiriman terlampaui). Tunggu beberapa jam/hari atau hubungi Admin: aktifkan SMTP custom di Supabase (Authentication → SMTP), atau upgrade paket.';
+    if (/smtp|mail delivery/i.test(m))
+      return 'Pengiriman email gagal (SMTP). Periksa pengaturan email di Supabase Dashboard.';
+    return String(msg || 'Gagal mengirim email');
+  }
+
   window.sigajiForgotPassword = function (email) {
     (bootPromise || Promise.resolve()).then(function () {
       if (!clientReady || !window.sigajiSupabase) {
@@ -357,7 +380,7 @@
         .resetPasswordForEmail(email.trim(), { redirectTo: redirectUrl })
         .then(function (r) {
           if (r.error) {
-            toastSafe('Gagal mengirim email: ' + (r.error.message || r.error));
+            toastSafe(friendlyAuthEmailError(r.error.message || r.error));
           } else {
             toastSafe(
               'Email reset password telah dikirim ke ' +
