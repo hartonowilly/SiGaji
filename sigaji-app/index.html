@@ -2,9 +2,9 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5">
 <title>SiGaji v9 — Sistem Penggajian</title>
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=9.1.0-m">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -63,6 +63,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="app">
 <div class="topbar">
   <div class="tl">
+    <button type="button" class="nav-drawer-btn" id="nav-drawer-btn" aria-label="Buka menu modul" onclick="sigajiToggleNavDrawer(event)">&#9776;</button>
     <img class="topbar-logo-img" id="topbar-logo">
     <span class="alogo" id="topbar-nama">&#9670; SiGaji</span>
     <button class="periode-pill" onclick="showPg('master')">&#128197; <span id="top-periode">-</span></button>
@@ -75,6 +76,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm btn-out" onclick="doLogout()" style="margin-left:4px">Keluar</button>
   </div>
 </div>
+<div class="nav-backdrop" id="nav-backdrop" onclick="sigajiCloseNavDrawer()" aria-hidden="true"></div>
 <div class="layout">
 <div class="sidebar" id="sidebar-wrap">
   <div id="nav-dynamic"></div>
@@ -997,7 +999,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=9.0.1"></script>
 <script src="js/storage.js?v=9.0.1"></script>
 <script src="js/ptkp.js?v=9.0.1"></script>
-<script src="js/app.js?v=9.0.8"></script>
+<script src="js/app.js?v=9.0.9"></script>
 <script src="js/pesangon.js?v=9.0.1"></script>
 <script src="js/config.js?v=9.0.1"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
