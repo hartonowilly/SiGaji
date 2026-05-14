@@ -287,6 +287,20 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm" id="btn-pdf-all-thr" style="display:none;background:#f5f0ff;color:#5b21b6;border:1.5px solid #c4b5fd;font-weight:700" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
   </div></div>
   <div id="slip-thr-banner"></div>
+  <div id="slip-tg-batch" style="display:none;margin-bottom:.65rem">
+    <div class="card" style="border-left:4px solid #229ED9">
+      <div class="ct" style="color:#229ED9">&#9992; Kirim slip ke Telegram (banyak sekaligus)</div>
+      <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.5rem">
+        Centang karyawan yang ingin dikirimi slip untuk <strong>periode</strong> dan <strong>jenis slip</strong> yang dipilih di atas (sama seperti pratinjau). Hanya yang sudah <strong>hubungkan Telegram</strong> (<code>/start</code> kode) yang akan berhasil. Pengiriman berurutan dengan jeda singkat.
+      </div>
+      <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
+        <button type="button" class="btn btn-sm btn-out" onclick="slipTgToggleAll(true)">Pilih semua</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="slipTgToggleAll(false)">Kosongkan</button>
+        <button type="button" class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
+      </div>
+      <div id="slip-tg-batch-wrap"></div>
+    </div>
+  </div>
   <div id="slip-share-bar" style="display:none;margin-bottom:.65rem">
     <div style="background:#eef6ff;border:1px solid #c5d9f5;border-radius:10px;padding:.65rem 1rem">
       <div style="font-size:10px;font-weight:700;color:#1a56a0;margin-bottom:.45rem">Slip PDF (mengacu pada slip gaji di bawah — unduh lalu lampirkan atau bagikan file di HP)</div>
@@ -689,6 +703,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div id="sp-mode-badge" style="margin-top:6px;font-size:10px;font-weight:800;display:inline-block;padding:4px 8px;border-radius:999px"></div>
     </div>
     <div class="fl gap1">
+      <button type="button" id="sp-btn-telegram" onclick="openTelegramFromKarPanel()" style="display:none;background:#229ED9;color:#fff;border:1.5px solid rgba(255,255,255,.35);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer" title="Buat kode /start untuk hubungkan bot slip gaji">Telegram slip</button>
       <button onclick="hapusKarFromPanel()" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Hapus</button>
       <button class="spc" onclick="closePanel()">&times;</button>
     </div>
@@ -977,7 +992,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=9.0.1"></script>
 <script src="js/storage.js?v=9.0.1"></script>
 <script src="js/ptkp.js?v=9.0.1"></script>
-<script src="js/app.js?v=9.0.2"></script>
+<script src="js/app.js?v=9.0.3"></script>
 <script src="js/pesangon.js?v=9.0.1"></script>
 <script src="js/config.js?v=9.0.1"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
