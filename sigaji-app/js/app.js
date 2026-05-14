@@ -1162,79 +1162,262 @@ async function sendCurrentSlipToTelegram(){
     var caption=(type==='thr'?'Slip THR ':'Slip Gaji ')+(p.nama||'')+' — '+(k.nama||k.nik);
     toast('Mengirim ke Telegram...');
     var ok=await telegramSendSlipPdf(k.nik,o.fileName||('Slip_'+k.nik+'.pdf'),caption,pdfBase64);
-    if(ok)toast('Terkirim ke Telegram');
+    if(ok){
+      await recordSlipTelegramSentToCloud(k.nik,p.nama,type==='thr'&&p.thr_aktif?'thr':'gaji');
+      slipTgInvalidateMetaCache();
+      renderSlipTelegramBatchChecklist(true);
+      toast('Terkirim ke Telegram');
+    }
   }catch(e){
     console.error('sendCurrentSlipToTelegram',e);
     toast(e.message||'Gagal kirim Telegram');
   }
 }
 
-/** Daftar centang karyawan (periode aktif di slip) untuk kirim Telegram massal. */
-function renderSlipTelegramBatchChecklist(){
-  var wrap=document.getElementById('slip-tg-batch-wrap');
-  var card=document.getElementById('slip-tg-batch');
-  if(!wrap||!card)return;
-  if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){card.style.display='none';return;}
-  var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  var p=periodes.find(function(x){return x.id==pid;})||PA();
-  if(!p){card.style.display='none';return;}
-  var list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
-  if(!list.length){
-    wrap.innerHTML='<div style="font-size:12px;color:#6b7280">Tidak ada karyawan aktif di periode ini.</div>';
-    card.style.display='block';
+/** Tenant key konsisten dengan Netlify SIGAJI_TENANT_KEY / cloud-sync.js */
+function getSlipTenantKey(){
+  return (window.SIGAJI_TENANT_KEY && String(window.SIGAJI_TENANT_KEY).trim()) || 'main';
+}
+function fmtSlipTgSentAt(iso){
+  try{
+    return new Date(iso).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }catch(e){
+    return String(iso || '');
+  }
+}
+var __slipTgMetaCacheKey = '';
+var __slipTgMetaBundle = null;
+function slipTgInvalidateMetaCache(){
+  __slipTgMetaCacheKey = '';
+  __slipTgMetaBundle = null;
+}
+async function loadSlipTelegramMetaBundle(p){
+  var linked = new Set();
+  var sentMap = {};
+  var out = { linked: linked, sentMap: sentMap, sentTableMissing: false, linksError: false };
+  if (!window.sigajiSupabase || typeof sigajiIsCloudConfigured !== 'function' || !sigajiIsCloudConfigured()) return out;
+  var tk = getSlipTenantKey();
+  var sb = window.sigajiSupabase;
+  var lr = await sb.from('sigaji_telegram_links').select('nik').eq('tenant_key', tk);
+  if (lr.error) {
+    out.linksError = true;
+    if (!/42703|relation|does not exist/i.test(String(lr.error.message || ''))) console.warn('sigaji_telegram_links', lr.error);
+  } else if (lr.data) {
+    lr.data.forEach(function (r) {
+      if (r.nik) linked.add(String(r.nik).trim());
+    });
+  }
+  var sr = await sb.from('sigaji_slip_tg_sent').select('nik,slip_type,sent_at').eq('tenant_key', tk).eq('period_nama', p.nama);
+  if (sr.error) {
+    var blob = String(sr.error.message || '') + String(sr.error.code || '');
+    if (/42703|does not exist|relation|sigaji_slip_tg_sent|42P01/i.test(blob)) out.sentTableMissing = true;
+    else console.warn('sigaji_slip_tg_sent', sr.error);
+  } else if (sr.data) {
+    sr.data.forEach(function (r) {
+      if (!r.nik) return;
+      var nk = String(r.nik).trim();
+      if (!sentMap[nk]) sentMap[nk] = {};
+      if (r.slip_type === 'gaji') sentMap[nk].gaji = r.sent_at;
+      if (r.slip_type === 'thr') sentMap[nk].thr = r.sent_at;
+    });
+  }
+  return out;
+}
+function renderSlipTgBatchTableRows(list, p, slipType, bundle){
+  var wrap = document.getElementById('slip-tg-batch-wrap');
+  if (!wrap) return;
+  var isThr = slipType === 'thr' && p.thr_aktif;
+  var foot = '';
+  if (bundle.sentTableMissing)
+    foot +=
+      '<div style="font-size:10px;color:#9b2121;margin-top:.5rem">Tabel riwayat belum ada — jalankan <code>sql/supabase_sigaji_slip_tg_sent.sql</code> di Supabase agar kolom <strong>Slip</strong> tercatat.</div>';
+  if (bundle.linksError) foot += '<div style="font-size:10px;color:#9b2121;margin-top:.35rem">Gagal membaca tautan Telegram (cek login &amp; RLS).</div>';
+  var rows = list
+    .map(function (k) {
+      var nikEsc = String(k.nik || '').replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
+      var L = bundle.linked.has(String(k.nik || '').trim());
+      var sm = bundle.sentMap[String(k.nik || '').trim()] || {};
+      var sentIso = isThr ? sm.thr : sm.gaji;
+      var tgCell = L
+        ? '<span class="bdg b-ok" style="font-size:10px">Terhubung</span>'
+        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
+      var slCell = sentIso
+        ? '<span class="bdg b-ok" style="font-size:10px">Terkirim</span><div style="font-size:9px;color:#6b7280;margin-top:2px">' +
+          escapeHtml(fmtSlipTgSentAt(sentIso)) +
+          '</div>'
+        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
+      return (
+        '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-tg-cb" data-nik="' +
+        nikEsc +
+        '"></td><td>' +
+        escapeHtml(k.nama) +
+        '</td><td style="font-size:11px;color:#6b7280">' +
+        escapeHtml(k.nik) +
+        '</td><td style="white-space:nowrap">' +
+        tgCell +
+        '</td><td style="min-width:110px">' +
+        slCell +
+        '</td></tr>'
+      );
+    })
+    .join('');
+  wrap.innerHTML =
+    '<div style="overflow-x:auto;max-height:280px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-tg-cb-all" title="Pilih semua" onchange="slipTgToggleAll(this.checked)"></th><th>Karyawan</th><th>NIK</th><th>Telegram</th><th>Slip (periode ini)</th></tr></thead><tbody>' +
+    rows +
+    '</tbody></table></div>' +
+    foot;
+}
+
+/** Daftar centang + status Telegram & riwayat kirim slip. forceReload = true: ambil ulang dari Supabase. */
+function renderSlipTelegramBatchChecklist(forceReload){
+  var wrap = document.getElementById('slip-tg-batch-wrap');
+  var card = document.getElementById('slip-tg-batch');
+  var hint = document.getElementById('slip-tg-hint');
+  if (hint) {
+    hint.style.display =
+      CU && (CU.role === 'Admin' || CU.role === 'HRD') && typeof sigajiIsCloudConfigured === 'function' && sigajiIsCloudConfigured()
+        ? 'block'
+        : 'none';
+  }
+  if (!wrap || !card) return;
+  if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
+    card.style.display = 'none';
     return;
   }
-  card.style.display='block';
-  var rows=list.map(function(k){
-    var nikEsc=String(k.nik||'').replace(/\\/g,'\\\\').replace(/"/g,'&quot;');
-    return '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-tg-cb" data-nik="'+nikEsc+'"></td><td>'+escapeHtml(k.nama)+'</td><td style="font-size:11px;color:#6b7280">'+escapeHtml(k.nik)+'</td></tr>';
-  }).join('');
-  wrap.innerHTML='<div style="overflow-x:auto;max-height:240px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-tg-cb-all" title="Pilih semua" onchange="slipTgToggleAll(this.checked)"></th><th>Karyawan</th><th>NIK</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
+  var p = periodes.find(function (x) {
+    return x.id === pid;
+  }) || PA();
+  if (!p) {
+    card.style.display = 'none';
+    return;
+  }
+  var slipType = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
+  var list = karyawan.filter(function (k) {
+    return karyawanInPeriode(k, p);
+  });
+  if (!list.length) {
+    wrap.innerHTML = '<div style="font-size:12px;color:#6b7280">Tidak ada karyawan aktif di periode ini.</div>';
+    card.style.display = 'block';
+    return;
+  }
+  card.style.display = 'block';
+  if (typeof sigajiIsCloudConfigured !== 'function' || !sigajiIsCloudConfigured()) {
+    wrap.innerHTML =
+      '<div style="font-size:12px;color:#6b7280">Fitur ini membutuhkan <strong>mode online</strong> (Supabase + deploy Netlify).</div>';
+    return;
+  }
+  var cacheKey =
+    getSlipTenantKey() + '|' + p.nama + '|' + slipType + '|' + list.map(function (k) { return k.nik; }).sort().join(',');
+  if (!forceReload && __slipTgMetaCacheKey === cacheKey && __slipTgMetaBundle) {
+    renderSlipTgBatchTableRows(list, p, slipType, __slipTgMetaBundle);
+    return;
+  }
+  wrap.innerHTML =
+    '<div style="font-size:12px;color:#6b7280;padding:.75rem">Memuat status Telegram dari server…</div>';
+  loadSlipTelegramMetaBundle(p).then(function (bundle) {
+    __slipTgMetaCacheKey = cacheKey;
+    __slipTgMetaBundle = bundle;
+    renderSlipTgBatchTableRows(list, p, slipType, bundle);
+  });
 }
 
 function slipTgToggleAll(checked){
-  var v=!!checked;
-  document.querySelectorAll('.slip-tg-cb').forEach(function(el){el.checked=v;});
-  var h=document.getElementById('slip-tg-cb-all');
-  if(h)h.checked=v;
+  var v = !!checked;
+  document.querySelectorAll('.slip-tg-cb').forEach(function (el) {
+    el.checked = v;
+  });
+  var h = document.getElementById('slip-tg-cb-all');
+  if (h) h.checked = v;
+}
+
+async function recordSlipTelegramSentToCloud(nik, periodNama, slipTypeUi){
+  try{
+    if (!window.sigajiSupabase) return;
+    var tk = getSlipTenantKey();
+    var st = slipTypeUi === 'thr' ? 'thr' : 'gaji';
+    await window.sigajiSupabase.from('sigaji_slip_tg_sent').upsert(
+      {
+        tenant_key: tk,
+        nik: String(nik || '').trim(),
+        period_nama: String(periodNama || '').trim(),
+        slip_type: st,
+        sent_at: new Date().toISOString(),
+      },
+      { onConflict: 'tenant_key,nik,period_nama,slip_type' }
+    );
+  }catch(e){
+    console.warn('recordSlipTelegramSentToCloud', e);
+  }
 }
 
 async function sendSlipTelegramBatch(){
-  if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
-  var niks=[];
-  document.querySelectorAll('.slip-tg-cb:checked').forEach(function(cb){
-    if(cb.dataset.nik)niks.push(cb.dataset.nik);
+  if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
+    toast('Hanya Admin/HRD');
+    return;
+  }
+  var niks = [];
+  document.querySelectorAll('.slip-tg-cb:checked').forEach(function (cb) {
+    if (cb.dataset.nik) niks.push(cb.dataset.nik);
   });
-  if(!niks.length){toast('Centang minimal satu karyawan');return;}
-  var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  var p=periodes.find(function(x){return x.id==pid;})||PA();
-  var type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
-  var isThr=type==='thr'&&p.thr_aktif;
-  var ok=0,fail=0,skip=0;
-  toast('Mengirim '+niks.length+' slip ke Telegram...');
-  for(var i=0;i<niks.length;i++){
-    var nik=niks[i];
-    var k=karyawan.find(function(x){return x.nik===nik;});
-    if(!k){skip++;continue;}
-    if(isThr){
+  if (!niks.length) {
+    toast('Centang minimal satu karyawan');
+    return;
+  }
+  var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
+  var p = periodes.find(function (x) {
+    return x.id === pid;
+  }) || PA();
+  var type = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
+  var isThr = type === 'thr' && p.thr_aktif;
+  var ok = 0,
+    fail = 0,
+    skip = 0;
+  toast('Mengirim ' + niks.length + ' slip ke Telegram...');
+  for (var i = 0; i < niks.length; i++) {
+    var nik = niks[i];
+    var k = karyawan.find(function (x) {
+      return x.nik === nik;
+    });
+    if (!k) {
+      skip++;
+      continue;
+    }
+    if (isThr) {
       try{
-        if(!hitungTHRBruto(k,p.nama).eligible){skip++;continue;}
-      }catch(e0){skip++;continue;}
+        if (!hitungTHRBruto(k, p.nama).eligible) {
+          skip++;
+          continue;
+        }
+      }catch(e0){
+        skip++;
+        continue;
+      }
     }
     try{
-      var o=isThr?buildTHRSlipPDF(k,p):buildGajiSlipPDF(k,p.nama,p.bayar);
-      var pdfBase64=jsPdfToBase64(o.doc);
-      if(!pdfBase64){fail++;continue;}
-      var caption=(isThr?'Slip THR ':'Slip Gaji ')+(p.nama||'')+' — '+(k.nama||k.nik);
-      var sent=await telegramSendSlipPdf(k.nik,o.fileName||('Slip_'+k.nik+'.pdf'),caption,pdfBase64);
-      if(sent)ok++;else fail++;
+      var o = isThr ? buildTHRSlipPDF(k, p) : buildGajiSlipPDF(k, p.nama, p.bayar);
+      var pdfBase64 = jsPdfToBase64(o.doc);
+      if (!pdfBase64) {
+        fail++;
+        continue;
+      }
+      var caption = (isThr ? 'Slip THR ' : 'Slip Gaji ') + (p.nama || '') + ' — ' + (k.nama || k.nik);
+      var sent = await telegramSendSlipPdf(k.nik, o.fileName || 'Slip_' + k.nik + '.pdf', caption, pdfBase64);
+      if (sent) {
+        ok++;
+        await recordSlipTelegramSentToCloud(k.nik, p.nama, isThr ? 'thr' : 'gaji');
+      } else fail++;
     }catch(e){
-      console.error('sendSlipTelegramBatch',nik,e);
+      console.error('sendSlipTelegramBatch', nik, e);
       fail++;
     }
-    await new Promise(function(r){setTimeout(r,450);});
+    await new Promise(function (r) {
+      setTimeout(r, 450);
+    });
   }
-  toast('Selesai: terkirim '+ok+', gagal '+fail+(skip?', tidak diproses '+skip+' (mis. THR tidak eligible)':''));
+  slipTgInvalidateMetaCache();
+  renderSlipTelegramBatchChecklist(true);
+  toast('Selesai: terkirim ' + ok + ', gagal ' + fail + (skip ? ', tidak diproses ' + skip + ' (mis. THR tidak eligible)' : ''));
 }
 /** Dipakai login lokal + login Supabase (cloud-sync.js). */
 function enterAppWithUser(user){
