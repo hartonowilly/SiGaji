@@ -10,6 +10,12 @@ const PA=()=>{
   });
   return sorted.at(-1)||{id:0,nama:'Maret 2026',start:'2026-02-25',end:'2026-03-24',bayar:'2026-03-25',status:'aktif',thr_aktif:false};
 };
+/** Nilai <select> periode selalu string; id di memori (JSON) bisa number — jangan pakai === mentah. */
+function periodesFindById(id){
+  if(id==null||id==='')return null;
+  var s=String(id).trim();
+  return (periodes||[]).find(function(x){return String(x.id).trim()===s;})||null;
+}
 const isHL=d=>hariLibur.some(l=>l.tgl===d);
 const namaHL=d=>{const l=hariLibur.find(x=>x.tgl===d);return l?l.nama:'';};
 function isHariLiburKerja(dow){const hk=perusahaan.hariKerja||6;return hk===5?(dow===0||dow===6):(dow===0);}
@@ -1148,7 +1154,7 @@ async function sendCurrentSlipToTelegram(){
     const k=nik?karyawan.find(function(x){return x.nik===nik;}):null;
     if(!k){toast('Pilih karyawan');return;}
     const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-    const p=periodes.find(function(x){return x.id==pid;})||PA();
+    const p=periodesFindById(pid)||PA();
     const type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
 
     var o=null;
@@ -1285,9 +1291,7 @@ function renderSlipTelegramBatchChecklist(forceReload){
     return;
   }
   var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
-  var p = periodes.find(function (x) {
-    return x.id === pid;
-  }) || PA();
+  var p = periodesFindById(pid) || PA();
   if (!p) {
     card.style.display = 'none';
     return;
@@ -1365,9 +1369,7 @@ async function sendSlipTelegramBatch(){
     return;
   }
   var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
-  var p = periodes.find(function (x) {
-    return x.id === pid;
-  }) || PA();
+  var p = periodesFindById(pid) || PA();
   var type = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
   var isThr = type === 'thr' && p.thr_aktif;
   var ok = 0,
@@ -2362,7 +2364,7 @@ function makeSlipTHR(k,p){
 // ── SLIP CONTROLS ─────────────────────────────────
 function onSlipPeriodeChange(){
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  const p=periodes.find(function(x){return x.id==pid;})||PA();
+  const p=periodesFindById(pid)||PA();
   const typeEl=document.getElementById('slip-type');
   const btnAll=document.getElementById('btn-pdf-all-thr');
   const banner=document.getElementById('slip-thr-banner');
@@ -2384,7 +2386,7 @@ function previewSlip(){
   const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
   if(!nik)return;
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  const p=periodes.find(function(x){return x.id==pid;})||PA();
+  const p=periodesFindById(pid)||PA();
   const k=karyawan.find(function(x){return x.nik===nik;});
   if(!k)return;
   const type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
@@ -2397,7 +2399,7 @@ function getSlipContext(){
   var nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
   if(!nik)return null;
   var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  var p=periodes.find(function(x){return x.id==pid;})||PA();
+  var p=periodesFindById(pid)||PA();
   var k=karyawan.find(function(x){return x.nik===nik;});
   if(!k)return null;
   var type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
@@ -2680,7 +2682,7 @@ function getMySlipCtx(){
   if(!CU||!CU.nik)return null;
   var k=karyawan.find(function(x){return x.nik===CU.nik;});
   var pid=document.getElementById('my-period')&&document.getElementById('my-period').value;
-  var p=periodes.find(function(x){return x.id==pid;})||PA();
+  var p=periodesFindById(pid)||PA();
   if(!k)return null;
   return{k:k,p:p};
 }
@@ -2723,7 +2725,7 @@ function loadMySlip(){
   if(!CU||!CU.nik)return;
   const k=karyawan.find(function(x){return x.nik===CU.nik;});
   const pid=document.getElementById('my-period')&&document.getElementById('my-period').value;
-  const p=periodes.find(function(x){return x.id==pid;})||PA();
+  const p=periodesFindById(pid)||PA();
   if(k)document.getElementById('my-slip-content').innerHTML=makeSlip(k,p.nama);
 }
 function exportPDF(){
@@ -2731,7 +2733,7 @@ function exportPDF(){
   const k=nik?karyawan.find(function(x){return x.nik===nik;}):null;
   if(!k){toast('Pilih karyawan');return;}
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  const p=periodes.find(function(x){return x.id==pid;})||PA();
+  const p=periodesFindById(pid)||PA();
   const type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
   if(type==='thr'&&p.thr_aktif)generateTHRPDF(k,p);else generatePDF(k,p.nama,p.bayar);
 }
@@ -2739,12 +2741,12 @@ function exportPDFMe(){
   if(!CU||!CU.nik)return;
   const k=karyawan.find(function(x){return x.nik===CU.nik;});
   const pid=document.getElementById('my-period')&&document.getElementById('my-period').value;
-  const p=periodes.find(function(x){return x.id==pid;})||PA();
+  const p=periodesFindById(pid)||PA();
   if(k)generatePDF(k,p.nama,p.bayar);
 }
 function exportAllTHRPDF(){
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  const p=periodes.find(function(x){return x.id==pid;})||PA();
+  const p=periodesFindById(pid)||PA();
   if(!p.thr_aktif){toast('Periode ini tidak ada THR');return;}
   karyawan.forEach(function(k){if(hitungTHRBruto(k).eligible)generateTHRPDF(k,p);});
   toast('PDF THR semua karyawan diunduh');
@@ -3684,7 +3686,7 @@ function populateSelects(){
   var sc=document.getElementById('slip-kar');
   if(!sc)return;
   var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
-  var p=periodes.find(function(x){return x.id==pid;})||PA();
+  var p=periodesFindById(pid)||PA();
   var list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
   var opts=list.map(function(k){return '<option value="'+k.nik+'">'+k.nama+'</option>';}).join('');
   sc.innerHTML='<option value="">-- Pilih Karyawan --</option>'+opts;
@@ -3706,9 +3708,11 @@ function renderPeriodeSelects(){
     if (!el) return;
     el.innerHTML = opts;
     if (id === 'slip-per') {
-      if (prevSlip && periodes.some(function (p) { return p.id === prevSlip; })) el.value = prevSlip;
-      else el.value = aktif;
-    } else el.value = aktif;
+      if (prevSlip && periodes.some(function (p) { return String(p.id).trim() === String(prevSlip).trim(); })) {
+        var keep = periodesFindById(prevSlip);
+        el.value = keep ? String(keep.id) : String(prevSlip).trim();
+      } else el.value = String(aktif);
+    } else el.value = String(aktif);
   });
 }
 var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels','tunjVarColumns','karSnapshot','auditLog'];
