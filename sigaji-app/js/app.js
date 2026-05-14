@@ -2232,9 +2232,8 @@ function detailGaji(nik){
   h+='<div class="cr bold"><span>Total Gross PPh 21</span><span>'+fmt(g.grossPPh)+'</span></div></div>';
   h+='<div class="pph-calc-sec"><div class="pph-calc-tit">PPh 21 - TER PMK 168/2023</div>';
   h+='<div class="cr"><span>Penghasilan Bruto</span><span>'+fmt(g.grossPPh)+'</span></div>';
-  h+='<div class="cr"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'%</span><span>= '+fmt(g.pph)+'</span></div>';
   if(g.thrBruto>0)h+='<div class="cr" style="color:#5b21b6"><span>Porsi PPh atas THR</span><span>'+fmt(g.pphAtasThr)+'</span></div>';
-  h+='<div class="cr result"><span>PPh 21 bulan ini</span><span>'+fmt(g.pph)+'</span></div></div>';
+  h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div></div>';
   h+='<div style="display:flex;gap:.75rem;margin-top:.75rem;flex-wrap:wrap">';
   h+='<div style="flex:1"><div class="stit">Take Home Bruto</div><div class="pr-row-info"><span>Gaji+Tunjangan+Lembur</span><span>'+fmt(g.brutoTH)+'</span></div>'+(g.thrBruto>0?'<div style="font-size:10px;color:#5b21b6">THR TIDAK masuk TH (dibayar terpisah)</div>':'')+'</div>';
   h+='<div style="flex:1"><div class="stit">Potongan</div><div class="pr-row-info"><span>PPh 21</span><span>- '+fmt(g.pph)+'</span></div><div class="pr-row-info"><span>BPJS Kar</span><span>- '+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</span></div>';
@@ -2296,8 +2295,7 @@ function makeSlip(k,pNama){
   h+='<div class="cr bold"><span>TOTAL GROSS INCOME</span><span>'+fmt(g.grossPPh)+'</span></div></div>';
   h+='<div class="pph-calc-sec"><div class="pph-calc-tit">PPh 21 - PMK 168/2023 Metode TER</div>';
   h+='<div class="cr"><span>Penghasilan Bruto bulan ini</span><span>'+fmt(g.grossPPh)+'</span></div>';
-  h+='<div class="cr"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% x '+fmt(g.grossPPh)+'</span><span>'+fmt(g.pph)+'</span></div>';
-  h+='<div class="cr result"><span>PPh 21 Bulan Ini</span><span>'+fmt(g.pph)+'</span></div></div>';
+  h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div></div>';
   h+='<div class="ssec">Potongan dari Take Home</div>';
   h+='<div class="sr"><span>PPh 21</span><span>- '+fmt(g.pph)+'</span></div>';
   h+='<div class="sr"><span>BPJS Kesehatan Karyawan (1%)</span><span>- '+fmt(g.bpjs.kes_kar)+'</span></div>';
@@ -2436,6 +2434,30 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   }
   function rowM(l,v){rowL(l,'- '+fmt(v));}
   function rowP(l,v){rowL(l,'+ '+fmt(v));}
+  /** Satu blok TER = PPh (satu baris angka kanan; teks kiri dipotong baris agar tidak menabrak nominal). */
+  function rowTerPphCombined(){
+    chk();
+    doc.setFont(undefined,'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(0,0,0);
+    var rhs=fmt(g.pph);
+    var lbl='TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = PPh 21 bulan ini';
+    var rhsW=doc.getTextWidth(rhs);
+    var maxW=Math.max(40,pw-28-rhsW-6);
+    var lines=doc.splitTextToSize(lbl,maxW);
+    var y0=y;
+    var lineH=4;
+    lines.forEach(function(ln){
+      doc.text(ln,14,y);
+      y+=lineH;
+    });
+    var blockH=lines.length*lineH;
+    var rY=y0+Math.max(0,blockH/2-2);
+    doc.text(rhs,pw-14,rY,{align:'right'});
+    if(y<y0+5)y=y0+5;
+    doc.setFont(undefined,'normal');
+    doc.setFontSize(8.5);
+  }
 
   doc.setFillColor(26,86,160);doc.rect(0,0,pw,32,'F');doc.setTextColor(255,255,255);
   doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('SLIP GAJI',14,11);
@@ -2493,10 +2515,8 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
 
   sec('PPh 21 - PMK 168/2023 Metode TER');
   rowL('Penghasilan Bruto bulan ini',fmt(g.grossPPh));
-  chk();
-  var terKiri='TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% x '+fmt(g.grossPPh);
-  doc.text(terKiri,14,y);doc.text(fmt(g.pph),pw-14,y,{align:'right'});y+=5;
-  doc.setFont(undefined,'bold');rowL('PPh 21 Bulan Ini',fmt(g.pph));doc.setFont(undefined,'normal');y+=2;
+  rowTerPphCombined();
+  y+=1;
 
   sec('Potongan dari Take Home');
   rowM('PPh 21',g.pph);
@@ -3672,7 +3692,25 @@ function populateSelects(){
   if(sc.value&&!list.find(function(k){return k.nik===sc.value;}))sc.value='';
   renderSlipTelegramBatchChecklist();
 }
-function renderPeriodeSelects(){var aktif=PA().id;var opts=periodes.map(function(p){return '<option value="'+p.id+'">'+p.nama+'</option>';}).join('');['slip-per','my-period'].forEach(function(id){var el=document.getElementById(id);if(!el)return;el.innerHTML=opts;el.value=aktif;});}
+function renderPeriodeSelects(){
+  var aktif = PA().id;
+  var opts = periodes
+    .map(function (p) {
+      return '<option value="' + p.id + '">' + p.nama + '</option>';
+    })
+    .join('');
+  var slipEl = document.getElementById('slip-per');
+  var prevSlip = slipEl && slipEl.value;
+  ['slip-per', 'my-period'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = opts;
+    if (id === 'slip-per') {
+      if (prevSlip && periodes.some(function (p) { return p.id === prevSlip; })) el.value = prevSlip;
+      else el.value = aktif;
+    } else el.value = aktif;
+  });
+}
 var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels','tunjVarColumns','karSnapshot','auditLog'];
 var DATA_LABELS={karyawan:'Karyawan',periodes:'Periode',hariLibur:'Hari Libur',masterCuti:'Setting Cuti',absensi:'Absensi',lembur:'Lembur',prorata:'Pro-Rata',approvals:'Approval',notifikasi:'Notifikasi',perusahaan:'Perusahaan',users:'Users',roles:'Roles',thrManual:'THR Manual',tunjVarBulan:'Tunjangan variabel per periode',tunjVarLabels:'Label kolom tunj. variabel',tunjVarColumns:'Definisi kolom tunj. variabel',karSnapshot:'Snapshot karyawan per periode',auditLog:'Audit trail payroll'};
 /** Salinan dalam memori agar backup identik dengan data tersimpan & tidak ada field yang terpotong */
