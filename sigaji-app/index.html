@@ -294,7 +294,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card" style="border-left:4px solid #229ED9;box-shadow:0 1px 8px rgba(34,158,217,.12)">
       <div class="ct" style="color:#229ED9;font-size:14px">&#9992; Kirim ke Telegram (banyak sekaligus)</div>
       <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.5rem">
-        Pilih <strong>periode</strong> dan <strong>jenis slip</strong> di atas dulu. Centang karyawan lalu <strong>Kirim Telegram terpilih</strong>. Hanya yang sudah <code>/start</code> ke bot yang berhasil. Pengiriman berurutan (~0,5 detik/antar orang).
+        Pilih <strong>periode</strong> dan <strong>Slip Gaji Bulanan</strong> di atas untuk mengirim <strong>gaji + THR</strong> (dua PDF) per orang jika periode ber-THR. Pilih <strong>Slip THR</strong> untuk hanya slip THR. Centang karyawan lalu <strong>Kirim Telegram terpilih</strong>. Hanya yang sudah <code>/start</code> ke bot yang berhasil. Pengiriman berurutan (~0,5 detik/antar dokumen).
       </div>
       <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
         <button type="button" class="btn btn-sm btn-out" onclick="slipTgToggleAll(true)">Pilih semua</button>
@@ -315,7 +315,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700" onclick="shareSlipWhatsAppWithPDF()">&#128242; WA + unduh PDF</button>
         <button class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:700" onclick="shareSlipEmailWithPDF()">&#9993; Email + unduh PDF</button>
       </div>
-      <div style="font-size:10px;color:#6b7280;margin-top:.5rem;line-height:1.45">Di PC, email biasanya tidak bisa melampirkan PDF otomatis: file sudah diunduh — lampirkan manual. Di ponsel, &quot;Bagikan PDF&quot; bisa membuka WhatsApp dengan lampiran.</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:.5rem;line-height:1.45">Periode dengan THR: tombol <strong>Telegram</strong> saat jenis slip <strong>Gaji bulanan</strong> akan mengirim <strong>dua PDF berurutan</strong> (gaji lalu THR) jika karyawan eligible. Untuk hanya mengirim ulang THR, pilih <strong>Slip THR</strong> di dropdown di atas.</div>
     </div>
   </div>
   <div id="slip-preview"><div style="text-align:center;color:#6b7280;padding:2rem;background:#f8f9fc;border-radius:8px">Pilih karyawan</div></div>
@@ -997,7 +997,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=9.0.1"></script>
 <script src="js/storage.js?v=9.0.1"></script>
 <script src="js/ptkp.js?v=9.0.1"></script>
-<script src="js/app.js?v=9.0.7"></script>
+<script src="js/app.js?v=9.0.8"></script>
 <script src="js/pesangon.js?v=9.0.1"></script>
 <script src="js/config.js?v=9.0.1"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
