@@ -1147,6 +1147,26 @@ function jsPdfToBase64(doc){
   }
 }
 
+/** Setelah slip gaji terkirim: kirim slip THR terpisah jika periode punya THR & karyawan eligible (jeda singkat antar dokumen). */
+async function trySendThrTelegramAfterGaji(k,p){
+  if(!p||!p.thr_aktif||!k)return false;
+  try{
+    var th=hitungTHRBruto(k,p.nama);
+    if(!th||!th.eligible)return false;
+    var oThr=buildTHRSlipPDF(k,p);
+    var pdfThr=jsPdfToBase64(oThr.doc);
+    if(!pdfThr)return false;
+    await new Promise(function(r){setTimeout(r,450);});
+    var capThr='Slip THR '+(p.nama||'')+' — '+(k.nama||k.nik);
+    var okT=await telegramSendSlipPdf(k.nik,oThr.fileName||('SlipTHR_'+k.nik+'.pdf'),capThr,pdfThr);
+    if(okT){
+      await recordSlipTelegramSentToCloud(k.nik,p.nama,'thr');
+      return true;
+    }
+  }catch(e){console.warn('trySendThrTelegramAfterGaji',e);}
+  return false;
+}
+
 async function sendCurrentSlipToTelegram(){
   try{
     if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
@@ -1170,9 +1190,14 @@ async function sendCurrentSlipToTelegram(){
     var ok=await telegramSendSlipPdf(k.nik,o.fileName||('Slip_'+k.nik+'.pdf'),caption,pdfBase64);
     if(ok){
       await recordSlipTelegramSentToCloud(k.nik,p.nama,type==='thr'&&p.thr_aktif?'thr':'gaji');
+      var alsoThr=false;
+      if(type!=='thr'&&p.thr_aktif){
+        toast('Mengirim slip THR...');
+        alsoThr=await trySendThrTelegramAfterGaji(k,p);
+      }
       slipTgInvalidateMetaCache();
       renderSlipTelegramBatchChecklist(true);
-      toast('Terkirim ke Telegram');
+      toast(alsoThr?'Terkirim: slip gaji + slip THR':'Terkirim ke Telegram');
     }
   }catch(e){
     console.error('sendCurrentSlipToTelegram',e);
@@ -1408,6 +1433,10 @@ async function sendSlipTelegramBatch(){
       if (sent) {
         ok++;
         await recordSlipTelegramSentToCloud(k.nik, p.nama, isThr ? 'thr' : 'gaji');
+        if (!isThr && p.thr_aktif) {
+          var thr2 = await trySendThrTelegramAfterGaji(k, p);
+          if (thr2) ok++;
+        }
       } else fail++;
     }catch(e){
       console.error('sendSlipTelegramBatch', nik, e);
@@ -2596,7 +2625,7 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   return{doc:doc,fileName:fileName};
 }
 function buildTHRSlipPDF(k,p){
-  var thr=hitungTHRBruto(k);if(!thr.eligible)throw new Error('Belum eligible THR');
+  var thr=hitungTHRBruto(k,p.nama);if(!thr.eligible)throw new Error('Belum eligible THR');
   var g=hitungGaji(k,p.nama);
   var namaHR=p.thr_nama||'Hari Raya';
   var mbStr=Math.floor(thr.mb/12)+'thn '+thr.mb%12+'bln';
