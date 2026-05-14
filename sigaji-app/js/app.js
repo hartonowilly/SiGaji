@@ -1168,6 +1168,74 @@ async function sendCurrentSlipToTelegram(){
     toast(e.message||'Gagal kirim Telegram');
   }
 }
+
+/** Daftar centang karyawan (periode aktif di slip) untuk kirim Telegram massal. */
+function renderSlipTelegramBatchChecklist(){
+  var wrap=document.getElementById('slip-tg-batch-wrap');
+  var card=document.getElementById('slip-tg-batch');
+  if(!wrap||!card)return;
+  if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){card.style.display='none';return;}
+  var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
+  var p=periodes.find(function(x){return x.id==pid;})||PA();
+  if(!p){card.style.display='none';return;}
+  var list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  if(!list.length){
+    wrap.innerHTML='<div style="font-size:12px;color:#6b7280">Tidak ada karyawan aktif di periode ini.</div>';
+    card.style.display='block';
+    return;
+  }
+  card.style.display='block';
+  var rows=list.map(function(k){
+    var nikEsc=String(k.nik||'').replace(/\\/g,'\\\\').replace(/"/g,'&quot;');
+    return '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-tg-cb" data-nik="'+nikEsc+'"></td><td>'+escapeHtml(k.nama)+'</td><td style="font-size:11px;color:#6b7280">'+escapeHtml(k.nik)+'</td></tr>';
+  }).join('');
+  wrap.innerHTML='<div style="overflow-x:auto;max-height:240px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-tg-cb-all" title="Pilih semua" onchange="slipTgToggleAll(this.checked)"></th><th>Karyawan</th><th>NIK</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+function slipTgToggleAll(checked){
+  var v=!!checked;
+  document.querySelectorAll('.slip-tg-cb').forEach(function(el){el.checked=v;});
+  var h=document.getElementById('slip-tg-cb-all');
+  if(h)h.checked=v;
+}
+
+async function sendSlipTelegramBatch(){
+  if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
+  var niks=[];
+  document.querySelectorAll('.slip-tg-cb:checked').forEach(function(cb){
+    if(cb.dataset.nik)niks.push(cb.dataset.nik);
+  });
+  if(!niks.length){toast('Centang minimal satu karyawan');return;}
+  var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
+  var p=periodes.find(function(x){return x.id==pid;})||PA();
+  var type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
+  var isThr=type==='thr'&&p.thr_aktif;
+  var ok=0,fail=0,skip=0;
+  toast('Mengirim '+niks.length+' slip ke Telegram...');
+  for(var i=0;i<niks.length;i++){
+    var nik=niks[i];
+    var k=karyawan.find(function(x){return x.nik===nik;});
+    if(!k){skip++;continue;}
+    if(isThr){
+      try{
+        if(!hitungTHRBruto(k,p.nama).eligible){skip++;continue;}
+      }catch(e0){skip++;continue;}
+    }
+    try{
+      var o=isThr?buildTHRSlipPDF(k,p):buildGajiSlipPDF(k,p.nama,p.bayar);
+      var pdfBase64=jsPdfToBase64(o.doc);
+      if(!pdfBase64){fail++;continue;}
+      var caption=(isThr?'Slip THR ':'Slip Gaji ')+(p.nama||'')+' — '+(k.nama||k.nik);
+      var sent=await telegramSendSlipPdf(k.nik,o.fileName||('Slip_'+k.nik+'.pdf'),caption,pdfBase64);
+      if(sent)ok++;else fail++;
+    }catch(e){
+      console.error('sendSlipTelegramBatch',nik,e);
+      fail++;
+    }
+    await new Promise(function(r){setTimeout(r,450);});
+  }
+  toast('Selesai: terkirim '+ok+', gagal '+fail+(skip?', tidak diproses '+skip+' (mis. THR tidak eligible)':''));
+}
 /** Dipakai login lokal + login Supabase (cloud-sync.js). */
 function enterAppWithUser(user){
   if(!user)return;
@@ -1452,6 +1520,10 @@ function openPanel(nik){
   else{const nl=document.getElementById('natura-list'),nt=document.getElementById('natura-total');if(nl)nl.innerHTML='';if(nt)nt.innerHTML='';}
   if(canAccessSubTab('karyawan','pphret'))renderPPhRetPanel(kp);else{const el=document.getElementById('pphret-preview');if(el)el.innerHTML='';}
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  try{
+    var spTg=document.getElementById('sp-btn-telegram');
+    if(spTg)spTg.style.display=CU&&(CU.role==='Admin'||CU.role==='HRD')?'inline-block':'none';
+  }catch(eTg){}
   if(!applyKarSlideTabsVisibility()){closePanel();return;}
   setSpPayrollView('periode');
   updateGajiSummary();
@@ -1466,6 +1538,12 @@ function openTelegramModalForNik(nik){
     document.getElementById('tg-code').value='';
     openModal('m-tg');
   }catch(e){console.error(e);toast('Gagal membuka Telegram');}
+}
+/** Dari panel samping profil karyawan: sama dengan tombol Telegram di tabel Master. */
+function openTelegramFromKarPanel(){
+  if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
+  if(!cpNik){toast('Buka profil karyawan dulu');return;}
+  openTelegramModalForNik(cpNik);
 }
 
 async function tgBuatKode(){
@@ -2117,9 +2195,11 @@ function onSlipPeriodeChange(){
     if(banner)banner.innerHTML='';
   }
   populateSelects();
+  renderSlipTelegramBatchChecklist();
   previewSlip();
 }
 function previewSlip(){
+  renderSlipTelegramBatchChecklist();
   const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
   if(!nik)return;
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
@@ -3407,6 +3487,7 @@ function populateSelects(){
   sc.innerHTML='<option value="">-- Pilih Karyawan --</option>'+opts;
   // Jika pilihan sebelumnya sudah tidak valid utk periode ini, kosongkan agar tidak "nyangkut"
   if(sc.value&&!list.find(function(k){return k.nik===sc.value;}))sc.value='';
+  renderSlipTelegramBatchChecklist();
 }
 function renderPeriodeSelects(){var aktif=PA().id;var opts=periodes.map(function(p){return '<option value="'+p.id+'">'+p.nama+'</option>';}).join('');['slip-per','my-period'].forEach(function(id){var el=document.getElementById(id);if(!el)return;el.innerHTML=opts;el.value=aktif;});}
 var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels','tunjVarColumns','karSnapshot','auditLog'];
