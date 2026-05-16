@@ -1468,6 +1468,7 @@ function enterAppWithUser(user){
   document.getElementById('uav').textContent=ini(CU.nama);document.getElementById('uname').textContent=CU.nama;document.getElementById('urbadge').textContent=CU.role;
   document.getElementById('top-periode').textContent=PA().nama;
   applyBranding();renderSidebar();renderAll();
+  try{initSigajiNavDrawer();}catch(e){}
   const firstPg=MODULES.map(m=>m.id).find(id=>canAccessModule(id))||'notifikasi';
   showPg(canAccessModule('dashboard')?'dashboard':firstPg);
   updateNotifBadge();
@@ -1609,6 +1610,7 @@ window.sigajiCheckIdleExpiredNow=function(){
 };
 
 function doLogout(){
+  sigajiCloseNavDrawer();
   try{localStorage.removeItem('sigaji_resume_hint');}catch(e){}
   try{localStorage.removeItem(window.SIGAJI_LAST_ACTIVITY_KEY);}catch(e){}
   destroyIdleSession();
@@ -1733,6 +1735,7 @@ function openPanel(nik){
   if(canAccessSubTab('karyawan','natura')){renderNaturaPanel(kp);document.getElementById('natura-kar-lbl').textContent=k.nama;}
   else{const nl=document.getElementById('natura-list'),nt=document.getElementById('natura-total');if(nl)nl.innerHTML='';if(nt)nt.innerHTML='';}
   if(canAccessSubTab('karyawan','pphret'))renderPPhRetPanel(kp);else{const el=document.getElementById('pphret-preview');if(el)el.innerHTML='';}
+  sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
   try{
     var spTg=document.getElementById('sp-btn-telegram');
@@ -1768,7 +1771,7 @@ async function tgBuatKode(){
   document.getElementById('tg-code').value=r.code;
   toast('Kode dibuat (berlaku 30 menit)');
 }
-function closePanel(){document.getElementById('slide-panel').classList.remove('show');document.getElementById('panel-overlay').classList.remove('show');cpNik=null;}
+function closePanel(){sigajiCloseNavDrawer();document.getElementById('slide-panel').classList.remove('show');document.getElementById('panel-overlay').classList.remove('show');cpNik=null;}
 function simpanKarPanel(){
   const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;
   const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
@@ -3889,8 +3892,63 @@ function eksekusiImport(){
 }
 function exportCSVAll(){var rows=[['NIK','Nama','Dept','Jabatan','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','Neto','PTKP','Status','Tgl Masuk']];karyawan.forEach(function(k){var g=hitungGaji(k);rows.push([k.nik,k.nama,k.dept,k.jabatan,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,Math.round(g.neto),k.ptkp,k.status,k.masuk]);});var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var b=new Blob(['\uFEFF'+csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SiGaji_v9_'+new Date().toISOString().split('T')[0]+'.csv';a.click();toast('CSV diunduh');}
 // ── NAVIGASI ─────────────────────────────────────
+function sigajiSyncNavDrawerA11y(){
+  try{
+    var open=document.documentElement.classList.contains('sigaji-nav-open');
+    var btn=document.getElementById('nav-drawer-btn');
+    if(btn){
+      btn.setAttribute('aria-expanded',open?'true':'false');
+      btn.setAttribute('aria-label',open?'Tutup menu modul':'Buka menu modul');
+    }
+    var sb=document.getElementById('sidebar-wrap');
+    if(sb)sb.setAttribute('aria-hidden',open?'false':'true');
+  }catch(e){}
+}
+function sigajiCloseNavDrawer(){
+  try{document.documentElement.classList.remove('sigaji-nav-open');sigajiSyncNavDrawerA11y();}catch(e){}
+}
+function sigajiOpenNavDrawer(){
+  try{document.documentElement.classList.add('sigaji-nav-open');sigajiSyncNavDrawerA11y();}catch(e){}
+}
+function sigajiToggleNavDrawer(ev){
+  try{
+    if(ev){ev.preventDefault();ev.stopPropagation();}
+    document.documentElement.classList.toggle('sigaji-nav-open');
+    sigajiSyncNavDrawerA11y();
+  }catch(e){}
+}
+function initSigajiNavDrawer(){
+  var btn=document.getElementById('nav-drawer-btn');
+  var backdrop=document.getElementById('nav-backdrop');
+  if(!btn||btn.dataset.sigajiNavBound==='1')return;
+  btn.dataset.sigajiNavBound='1';
+  var lastTouch=0;
+  function onToggle(ev){
+    if(ev&&ev.type==='touchend')lastTouch=Date.now();
+    sigajiToggleNavDrawer(ev);
+  }
+  btn.addEventListener('touchend',onToggle,{passive:false});
+  btn.addEventListener('click',function(ev){
+    if(Date.now()-lastTouch<500)return;
+    onToggle(ev);
+  });
+  if(backdrop){
+    backdrop.addEventListener('click',function(ev){if(ev)ev.preventDefault();sigajiCloseNavDrawer();});
+    backdrop.addEventListener('touchend',function(ev){if(ev)ev.preventDefault();sigajiCloseNavDrawer();},{passive:false});
+  }
+  document.addEventListener('keydown',function(ev){
+    if(ev&&ev.key==='Escape'&&document.documentElement.classList.contains('sigaji-nav-open'))sigajiCloseNavDrawer();
+  });
+  sigajiSyncNavDrawerA11y();
+}
+if(typeof window!=='undefined'){
+  window.sigajiCloseNavDrawer=sigajiCloseNavDrawer;
+  window.sigajiOpenNavDrawer=sigajiOpenNavDrawer;
+  window.sigajiToggleNavDrawer=sigajiToggleNavDrawer;
+}
 function showPg(pg){
   if(!canAccess(pg)){toast('Tidak punya akses ke modul ini');return;}
+  sigajiCloseNavDrawer();
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
   var el=document.getElementById('pg-'+pg);if(el)el.classList.add('active');
@@ -4053,9 +4111,13 @@ function resetTERCustom(){
 setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_autobackup',JSON.stringify(Object.assign({},d,{_meta:Object.assign({},d._meta,{catatan:'Auto backup'})})));}catch(e){}},30*60*1000);
 initLibnasYearSelect();
 if(typeof document!=='undefined'){
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initRememberUsername);
-  else initRememberUsername();
+  function sigajiDomReady(){
+    initRememberUsername();
+    initSigajiNavDrawer();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sigajiDomReady);
+  else sigajiDomReady();
 }
 if(typeof window!=='undefined'){
-  try{window.addEventListener('load',initRememberUsername);}catch(e){}
+  try{window.addEventListener('load',function(){initRememberUsername();initSigajiNavDrawer();});}catch(e){}
 }
