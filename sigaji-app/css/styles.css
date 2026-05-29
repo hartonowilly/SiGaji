@@ -177,46 +177,55 @@ tr:hover td{background:#f8f9fc}
 .perm-cell input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:#1a56a0}
 .thr-badge{display:inline-block;padding:2px 8px;background:#ede9fe;color:#5b21b6;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #c4b5fd}
 
-/* ── Ponsel / tablet kecil (nav drawer, area aman iPhone) ── */
+/* ── Ponsel / tablet (drawer — class .sigaji-mobile-nav dari JS) ── */
 :root{--topbar-h:52px}
 .nav-drawer-btn{display:none}
-.nav-backdrop{display:none;position:fixed;top:var(--topbar-h);left:0;right:0;bottom:0;background:rgba(15,23,42,.4);z-index:105;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-html.sigaji-nav-open .nav-backdrop{display:block}
-html.sigaji-nav-open,html.sigaji-nav-open body{overflow:hidden}
+.nav-backdrop{display:none}
+html.sigaji-nav-open,html.sigaji-nav-open body{overflow:hidden;touch-action:none}
 #app{min-height:100vh;min-height:100dvh}
 .btn,.ni,.notif-btn,.periode-pill,.nav-drawer-btn{-webkit-tap-highlight-color:rgba(26,86,160,.15)}
+html.sigaji-mobile-nav .nav-drawer-btn{
+  display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;
+  margin-right:2px;border:none;background:#e8f0fb;color:#1a56a0;border-radius:10px;font-size:22px;line-height:1;
+  cursor:pointer;flex-shrink:0;font-family:inherit;position:relative;z-index:2;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;-webkit-appearance:none;appearance:none
+}
+html.sigaji-mobile-nav .topbar{
+  position:sticky;top:0;z-index:800;
+  padding:.45rem max(.65rem,env(safe-area-inset-left)) .45rem max(.65rem,env(safe-area-inset-right));
+  flex-wrap:wrap;row-gap:6px;height:auto;min-height:48px;
+  padding-top:max(.45rem,env(safe-area-inset-top));
+}
+html.sigaji-mobile-nav .layout{position:relative;min-height:0;flex:1}
+/* Slot kosong di layout; sidebar asli dipindah ke body lewat JS saat HP */
+html.sigaji-mobile-nav .layout>.sidebar-slot{display:none}
+html.sigaji-mobile-nav #sidebar-wrap{
+  display:none;position:fixed;top:0;left:0;bottom:0;width:min(300px,88vw);
+  min-height:unset;max-height:none;height:100%;height:100dvh;
+  z-index:1200;padding-top:calc(var(--topbar-h) + env(safe-area-inset-top,0px));
+  padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px));
+  box-shadow:none;-webkit-overflow-scrolling:touch;overflow-y:auto;
+  -webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0);
+  flex-direction:column;justify-content:space-between
+}
+html.sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open{
+  display:flex;box-shadow:8px 0 32px rgba(0,0,0,.28)
+}
+body:not(.sigaji-app-active) #sidebar-wrap,
+body:not(.sigaji-app-active) .nav-backdrop{display:none!important}
+html.sigaji-mobile-nav .nav-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1100;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation
+}
+html.sigaji-mobile-nav .nav-backdrop.sigaji-nav-drawer-open{display:block}
+html.sigaji-mobile-nav .content{
+  width:100%;min-width:0;padding:.65rem max(.65rem,env(safe-area-inset-left)) calc(.85rem + env(safe-area-inset-bottom,0px)) max(.65rem,env(safe-area-inset-right))
+}
+html.sigaji-mobile-nav .topbar .tl{flex-wrap:wrap;gap:.45rem;max-width:100%}
+html.sigaji-mobile-nav .alogo{font-size:15px;max-width:min(160px,34vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.sigaji-mobile-nav .periode-pill{max-width:min(200px,42vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 10px;font-size:10px}
+html.sigaji-mobile-nav .uname{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:900px){
-  .nav-drawer-btn{
-    display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;
-    margin-right:2px;border:none;background:#e8f0fb;color:#1a56a0;border-radius:10px;font-size:22px;line-height:1;
-    cursor:pointer;flex-shrink:0;font-family:inherit;position:relative;z-index:3;touch-action:manipulation;-webkit-user-select:none;user-select:none
-  }
-  .topbar{z-index:210}
-  .layout{position:relative;min-height:0;flex:1}
-  #sidebar-wrap{
-    position:fixed;top:var(--topbar-h);left:0;bottom:0;width:min(288px,86vw);
-    min-height:unset;height:auto;max-height:none;
-    z-index:200;transform:translateX(-100%);
-    transition:transform .28s ease;
-    box-shadow:none;
-    -webkit-overflow-scrolling:touch;
-    padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px));
-    pointer-events:none;visibility:hidden
-  }
-  html.sigaji-nav-open #sidebar-wrap{
-    transform:translateX(0);box-shadow:8px 0 28px rgba(0,0,0,.22);
-    pointer-events:auto;visibility:visible
-  }
-  .content{width:100%;min-width:0;padding:.65rem max(.65rem,env(safe-area-inset-left)) calc(.85rem + env(safe-area-inset-bottom,0px)) max(.65rem,env(safe-area-inset-right))}
-  .topbar{
-    padding:.45rem max(.65rem,env(safe-area-inset-left)) .45rem max(.65rem,env(safe-area-inset-right));
-    flex-wrap:wrap;row-gap:6px;height:auto;min-height:48px;
-    padding-top:max(.45rem,env(safe-area-inset-top));
-  }
-  .topbar .tl{flex-wrap:wrap;gap:.45rem;max-width:100%}
-  .alogo{font-size:15px;max-width:min(160px,34vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .periode-pill{max-width:min(200px,42vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 10px;font-size:10px}
-  .uname{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .btn-sm{padding:7px 12px;font-size:11px;min-height:36px}
   .sg4{grid-template-columns:repeat(2,1fr);gap:6px}
   .sv{font-size:16px}
