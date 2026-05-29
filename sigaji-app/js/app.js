@@ -371,22 +371,54 @@ function logPayrollAudit(nik,action,detail){
   }catch(e){}
 }
 
+function syncPphReturnFieldState(){
+  var p=PA();
+  var ro=isPayrollSnapshotMode()&&p&&isPeriodeLocked(p.nama);
+  var rv=document.getElementById('sp-pphret-val');
+  var rk=document.getElementById('sp-pphret-ket');
+  if(rv)rv.readOnly=!!ro;
+  if(rk)rk.readOnly=!!ro;
+  var hint=document.getElementById('sp-pphret-mode-hint');
+  if(hint){
+    if(isPayrollSnapshotMode()){
+      hint.innerHTML='Mengedit <strong>snapshot '+escapeHtml(p&&p.nama?p.nama:'-')+'</strong>. Nilai ini hanya untuk periode aktif.';
+    }else{
+      hint.innerHTML='Mode <strong>Master global</strong>: kosongkan jika masih ada sisa nilai lama. Periode baru <em>tidak</em> menyalin PPh Return dari master.';
+    }
+    hint.style.display='block';
+  }
+}
 function onPPhRetChange(){
   if(!cpNik)return;
-  if(!isPayrollSnapshotMode())return; // PPh return hanya boleh di snapshot periode
   if(!guardPayrollEditUnlocked())return;
-  var p=PA();if(!p||!p.nama)return;
-  var k=getPayrollTargetByNik(cpNik,true,'periode');if(!k)return;
   var vEl=document.getElementById('sp-pphret-val');
   var kEl=document.getElementById('sp-pphret-ket');
   var val=parseFloat((vEl&&vEl.value)||'')||0;
+  if(val<0)val=0;
   var ket=(kEl&&kEl.value)||'';
+  var k;
+  if(isPayrollSnapshotMode()){
+    k=getPayrollTargetByNik(cpNik,true,'periode');
+  }else{
+    k=karyawan.find(function(x){return x.nik===cpNik;});
+  }
+  if(!k)return;
   var before=(k.pph_return&&k.pph_return.nilai)||0;
   k.pph_return={nilai:val,ket:ket};
-  logPayrollAudit(cpNik,'Update PPh Return',`${before} → ${val} | ${ket}`);
+  logPayrollAudit(cpNik,'Update PPh Return',(isPayrollSnapshotMode()?'snapshot':'master')+` ${before} → ${val} | ${ket}`);
   saveAll();
   renderPPhRetPanel(k);
   updateGajiSummary();
+}
+function clearPphReturnPanel(){
+  if(!cpNik)return;
+  if(!guardPayrollEditUnlocked())return;
+  var vEl=document.getElementById('sp-pphret-val');
+  var kEl=document.getElementById('sp-pphret-ket');
+  if(vEl)vEl.value='0';
+  if(kEl)kEl.value='';
+  onPPhRetChange();
+  toast('PPh Return dikosongkan');
 }
 
 // Snapshot master karyawan per periode agar revisi bulan lain tidak mengubah periode yang sudah dikerjakan.
@@ -398,7 +430,7 @@ function snapshotKarFromMaster(k){
     natura:deepCloneLite(k.natura||[]),
     bpjs_aktif:deepCloneLite(k.bpjs_aktif||{}),
     bpjs_manual:deepCloneLite(k.bpjs_manual||{}),
-    pph_return:deepCloneLite(k.pph_return||{nilai:0,ket:''}),
+    pph_return:{nilai:0,ket:''},
   };
 }
 function getPeriodeByNama(pNama){
@@ -492,7 +524,7 @@ function getPayrollTargetByNik(nik,createIfMissing,sourceMode){
   if(tgt.natura===undefined)tgt.natura=deepCloneLite(k.natura||[]);
   if(tgt.bpjs_aktif===undefined)tgt.bpjs_aktif=deepCloneLite(k.bpjs_aktif||{});
   if(tgt.bpjs_manual===undefined)tgt.bpjs_manual=deepCloneLite(k.bpjs_manual||{});
-  if(tgt.pph_return===undefined)tgt.pph_return=deepCloneLite(k.pph_return||{nilai:0,ket:''});
+  if(tgt.pph_return===undefined)tgt.pph_return={nilai:0,ket:''};
   if(tgt.gapok===undefined)tgt.gapok=Math.round(k.gapok||0);
   // Penting: kembalikan REFERENCE snapshot asli (bukan copy),
   // agar perubahan (mis. pph_return=0) benar-benar tersimpan ke karSnapshot.
@@ -544,8 +576,7 @@ function setSpPayrollView(mode){
   if(gap)gap.readOnly=!isPayrollSnapshotMode();
   var rv=document.getElementById('sp-pphret-val');if(rv)rv.value=(src.pph_return&&src.pph_return.nilai)||0;
   var rk=document.getElementById('sp-pphret-ket');if(rk)rk.value=(src.pph_return&&src.pph_return.ket)||'';
-  if(rv)rv.readOnly=!isPayrollSnapshotMode();
-  if(rk)rk.readOnly=!isPayrollSnapshotMode();
+  syncPphReturnFieldState();
   if(document.getElementById('sp-gaji').style.display!=='none'){renderTunjPanel(src);renderPotPanel(src);}
   if(document.getElementById('sp-bpjs').style.display!=='none')loadBPJSPanel(src);
   if(document.getElementById('sp-natura').style.display!=='none')renderNaturaPanel(src);
@@ -1746,6 +1777,7 @@ function openPanel(nik){
   }catch(eTg){}
   if(!applyKarSlideTabsVisibility()){closePanel();return;}
   setSpPayrollView('periode');
+  syncPphReturnFieldState();
   updateGajiSummary();
 }
 
@@ -1792,12 +1824,11 @@ function simpanKarPanel(){
   Object.assign(k,{nik:newNik,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   var pAktif=PA();
   var locked=!!(pAktif&&pAktif.nama&&isPeriodeLocked(pAktif.nama));
-  var tgt=(pAktif&&pAktif.nama)?getPayrollTargetByNik(k.nik,true,'periode'):k;
-  if(!locked){
-    if(canAccessSubTab('karyawan','gaji'))tgt.gapok=parseFloat(gv('sp-gapok-f'))||0;
-    // PPh Return adalah komponen payroll-periode → hanya disimpan ke snapshot periode aktif
-    if(canAccessSubTab('karyawan','pphret'))tgt.pph_return={nilai:parseFloat(gv('sp-pphret-val'))||0,ket:gv('sp-pphret-ket')};
-    logPayrollAudit(k.nik,'Simpan Payroll Panel',`gapok=${tgt.gapok} pph_return=${(tgt.pph_return&&tgt.pph_return.nilai)||0}`);
+  var tgt=getPayrollTargetByNik(k.nik,true,spPayrollView||'periode');
+  if(!locked&&tgt){
+    if(canAccessSubTab('karyawan','gaji')&&isPayrollSnapshotMode())tgt.gapok=parseFloat(gv('sp-gapok-f'))||0;
+    if(canAccessSubTab('karyawan','pphret'))tgt.pph_return={nilai:parseFloat(gv('sp-pphret-val'))||0,ket:gv('sp-pphret-ket')||''};
+    logPayrollAudit(k.nik,'Simpan Payroll Panel',(isPayrollSnapshotMode()?'snapshot':'master')+` gapok=${tgt.gapok||k.gapok} pph_return=${(tgt.pph_return&&tgt.pph_return.nilai)||0}`);
   }
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
   if(locked&&typeof toast==='function')toast('Periode '+pAktif.nama+' terkunci: snapshot tidak diubah.');
