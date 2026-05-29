@@ -1465,10 +1465,11 @@ function enterAppWithUser(user){
     }
   }catch(e){}
   document.getElementById('login').style.display='none';document.getElementById('app').style.display='flex';
+  try{document.body.classList.add('sigaji-app-active');}catch(e){}
   document.getElementById('uav').textContent=ini(CU.nama);document.getElementById('uname').textContent=CU.nama;document.getElementById('urbadge').textContent=CU.role;
   document.getElementById('top-periode').textContent=PA().nama;
   applyBranding();renderSidebar();renderAll();
-  try{initSigajiNavDrawer();}catch(e){}
+  try{sigajiApplyMobileNavMode();initSigajiNavDrawer();}catch(e){}
   const firstPg=MODULES.map(m=>m.id).find(id=>canAccessModule(id))||'notifikasi';
   showPg(canAccessModule('dashboard')?'dashboard':firstPg);
   updateNotifBadge();
@@ -1615,7 +1616,9 @@ function doLogout(){
   try{localStorage.removeItem(window.SIGAJI_LAST_ACTIVITY_KEY);}catch(e){}
   destroyIdleSession();
   try{if(typeof window.sigajiCloudLogout==='function')window.sigajiCloudLogout().catch(function(){});}catch(e){}
-  document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';CU=null;
+  document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';
+  try{document.body.classList.remove('sigaji-app-active');}catch(e){}
+  CU=null;
 }
 if(typeof window!=='undefined')window.enterAppWithUser=enterAppWithUser;
 function uploadLogo(inp){const f=inp.files[0];if(!f)return;if(f.size>2097152){toast('Maks 2MB');return;}const r=new FileReader();r.onload=e=>{perusahaan.logo=e.target.result;saveAll();applyBranding();toast('Logo diupload');};r.readAsDataURL(f);}
@@ -1999,9 +2002,50 @@ function toggleManual(key){
   try{renderKar();}catch(e){};try{renderDash();}catch(e){}
 }
 // ── NATURA PANEL ─────────────────────────────────
-function renderNaturaPanel(k){const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input value="${n.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="number" value="${n.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r" onclick="delNat('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span style="color:#2d6a0a;font-weight:700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span style="color:#9b2121;font-weight:700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';}
-function addNatura(){if(!canAccessSubTab('karyawan','natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama:'Natura Baru',nilai:0,kp:false});renderNaturaPanel(k);updateGajiSummary();}
-function addNatTmpl(nama,nilai,kp){if(!canAccessSubTab('karyawan','natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama,nilai,kp});renderNaturaPanel(k);updateGajiSummary();toast(nama+' ditambahkan');}
+function naturaListForNikPeriode(nik,pNama){
+  if(!nik)return[];
+  var k=karyawan.find(function(x){return x.nik===nik;});
+  if(!k)return[];
+  if(!pNama)return k.natura||[];
+  var snap=karSnapshot&&karSnapshot[pNama]&&karSnapshot[pNama][nik];
+  if(snap&&snap.natura!==undefined)return snap.natura||[];
+  return k.natura||[];
+}
+function renderNaturaPeriodeHint(nik){
+  var el=document.getElementById('natura-periode-hint');
+  if(!el||!nik)return;
+  var km=karyawan.find(function(x){return x.nik===nik;});
+  if(!km){el.style.display='none';return;}
+  var masterN=(km.natura||[]).length;
+  var pAct=PA();
+  var rows=[];
+  (periodes||[]).slice().sort(function(a,b){return String(a.start||'').localeCompare(String(b.start||''));}).forEach(function(p){
+    if(!p||!p.nama)return;
+    var n=naturaListForNikPeriode(nik,p.nama).length;
+    var tag=p.nama+(p.status==='aktif'?' • aktif':'');
+    rows.push('<strong>'+escapeHtml(p.nama)+'</strong>: '+n+' baris'+(p.status==='aktif'?' (periode aktif)':''));
+  });
+  var mode=isPayrollSnapshotMode()?'Snapshot '+((pAct&&pAct.nama)||'-'):'Master global';
+  var cur=naturaListForNikPeriode(nik,pAct&&pAct.nama).length;
+  el.innerHTML='<div><strong>Sumber tampilan:</strong> '+escapeHtml(mode)+' — '+cur+' baris natura.</div>'
+    +'<div style="margin-top:4px"><strong>Master global:</strong> '+masterN+' baris. Saat periode baru dibuka, snapshot pertama kali <em>menyalin</em> master (termasuk natura).</div>'
+    +(rows.length?'<div style="margin-top:4px"><strong>Per periode:</strong> '+rows.join(' · ')+'</div>':'')
+    +'<div style="margin-top:4px;color:#6b7280">Item seperti "Makan Siang Kantor" Rp 550.000 berasal dari tombol <em>Template Cepat</em> (bukan diisi otomatis sistem).</div>';
+  el.style.display='block';
+}
+function renderNaturaPanel(k){
+  renderNaturaPeriodeHint(k&&k.nik);
+  const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input value="${n.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="number" value="${n.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r" onclick="delNat('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span style="color:#2d6a0a;font-weight:700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span style="color:#9b2121;font-weight:700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';}
+function addNatura(){if(!canAccessSubTab('karyawan','natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama:'Natura Baru',nilai:0,kp:false});logPayrollAudit(cpNik,'Tambah Natura','Natura Baru (manual)');saveAll();renderNaturaPanel(k);updateGajiSummary();}
+function addNatTmpl(nama,nilai,kp){
+  if(!canAccessSubTab('karyawan','natura'))return;
+  if(!guardPayrollEditUnlocked())return;
+  var modeLbl=isPayrollSnapshotMode()?('snapshot '+((PA()&&PA().nama)||'periode aktif')):'master global';
+  if(!confirm('Tambah natura "'+nama+'" ('+fmt(nilai)+') ke '+modeLbl+'?\n\nPastikan ini memang benar — template cepat sering ter-tap tidak sengaja di HP.'))return;
+  const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama,nilai,kp});
+  logPayrollAudit(cpNik,'Tambah Natura (template)',nama+' '+fmt(nilai)+' kp='+(kp?'ya':'tidak'));
+  saveAll();renderNaturaPanel(k);updateGajiSummary();toast(nama+' ditambahkan');
+}
 function updNat(nik,i,f,v){
   if(!guardPayrollEditUnlocked())return;
   const k=getPayrollTargetByNik(nik,true);if(!k)return;
@@ -2207,7 +2251,7 @@ function renderPenggajian(skipTunjVar){
       +'<td>'+(g.pphRet>0?'<span style="color:#2d6a0a;font-weight:700">+'+fmt(g.pphRet)+'</span>':'&#8212;')+'</td>'
       +'<td><strong style="color:#2d6a0a">'+fmt(g.neto)+'</strong></td>'
       +'<td>'+stBdg+'</td>'
-      +'<td><button class="btn btn-sm btn-out" onclick="detailGaji(\''+k.nik+'\')">Detail</button></td></tr>';
+      +'<td><button class="btn btn-sm btn-out" onclick="detailGaji(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')">Detail</button></td></tr>';
   });
   document.getElementById('tb-penggajian').innerHTML=rows.join('');
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
@@ -2248,17 +2292,19 @@ function renderApproval(){
 function approveItem(id){const a=approvals.find(function(x){return x.id==id;});if(!a)return;a.status='approved';a.approvedBy=CU.nama;saveAll();renderApproval();renderPenggajian();toast('Disetujui');}
 function rejectItem(id){const a=approvals.find(function(x){return x.id==id;});if(!a)return;a.status='rejected';a.approvedBy=CU.nama;saveAll();renderApproval();renderPenggajian();toast('Ditolak');}
 function hapusApproval(){if(!confirm('Hapus riwayat?'))return;approvals=[];saveAll();renderApproval();toast('Dihapus');}
-function detailGaji(nik){
+function detailGaji(nik,pNama){
   const k=karyawan.find(function(x){return x.nik===nik;});if(!k)return;
-  const p=PA();const g=hitungGaji(k,p.nama);
+  const pN=pNama||PA().nama;
+  const p=periodes.find(function(x){return x.nama===pN;})||PA();
+  const g=hitungGaji(k,pN);
   const tbl=getTERTable(k.ptkp);
   const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
-  document.getElementById('m-gaji-t').textContent='Detail Gaji - '+k.nama;
+  document.getElementById('m-gaji-t').textContent='Detail Gaji - '+k.nama+' ('+pN+')';
   let h='';
   if(g.thrBruto>0)h+='<div style="background:#f5f0ff;border:1px solid #c4b5fd;border-radius:7px;padding:10px 14px;margin-bottom:.75rem;font-size:12px"><strong>&#127873; THR:</strong> '+fmt(g.thrBruto)+' dibayar full netto. PPh THR: <strong>'+fmt(g.pphAtasThr)+'</strong> dipotong dari gaji ini.</div>';
-  h+='<div class="gross-sec"><div class="gross-tit">GROSS INCOME</div>';
+  h+='<div class="gross-sec"><div class="gross-tit">GROSS INCOME (dasar PPh 21)</div>';
   h+='<div class="cr"><span>Gaji Pokok'+(g.isPR?' (Pro-Rata '+g.pr.hh+'/'+g.pr.hk+')':'')+'</span><span>'+fmt(g.gapokEff)+'</span></div>';
-  g.tItems.forEach(function(t){h+='<div class="cr"><span>'+t.nama+'</span><span>'+fmt(t.eff)+'</span></div>';});
+  g.tItems.forEach(function(t){h+='<div class="cr"><span>'+t.nama+(t.isHarian?' [masuk PPh, tidak TH]':(t.inTH===false?' [tidak TH]':''))+'</span><span>'+fmt(t.eff)+'</span></div>';});
   if(g.natKP>0)h+='<div class="cr"><span>Natura KP</span><span>'+fmt(g.natKP)+'</span></div>';
   if(g.lb>0)h+='<div class="cr"><span>Lembur</span><span>'+fmt(g.lb)+'</span></div>';
   if(g.bpjsPrsNatKP>0)h+='<div class="cr" style="color:#1a56a0"><span>BPJS Prs JKK+JKM+Kes (Natura KP)</span><span>'+fmt(g.bpjsPrsNatKP)+'</span></div>';
@@ -2269,7 +2315,11 @@ function detailGaji(nik){
   if(g.thrBruto>0)h+='<div class="cr" style="color:#5b21b6"><span>Porsi PPh atas THR</span><span>'+fmt(g.pphAtasThr)+'</span></div>';
   h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div></div>';
   h+='<div style="display:flex;gap:.75rem;margin-top:.75rem;flex-wrap:wrap">';
-  h+='<div style="flex:1"><div class="stit">Take Home Bruto</div><div class="pr-row-info"><span>Gaji+Tunjangan+Lembur</span><span>'+fmt(g.brutoTH)+'</span></div>'+(g.thrBruto>0?'<div style="font-size:10px;color:#5b21b6">THR TIDAK masuk TH (dibayar terpisah)</div>':'')+'</div>';
+  h+='<div style="flex:1"><div class="stit">Take Home Bruto</div><div class="pr-row-info"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH-g.natNKP)+'</span></div>';
+  if(g.natNKP>0)h+='<div class="pr-row-info"><span>Natura Tidak KP</span><span>'+fmt(g.natNKP)+'</span></div>';
+  h+='<div class="pr-row-info" style="font-weight:700;border-top:1px solid #e5e7eb;padding-top:4px;margin-top:4px"><span>Total Take Home Bruto</span><span>'+fmt(g.brutoTH)+'</span></div>';
+  if(g.thrBruto>0)h+='<div style="font-size:10px;color:#5b21b6">THR TIDAK masuk TH (dibayar terpisah)</div>';
+  h+='</div>';
   h+='<div style="flex:1"><div class="stit">Potongan</div><div class="pr-row-info"><span>PPh 21</span><span>- '+fmt(g.pph)+'</span></div><div class="pr-row-info"><span>BPJS Kar</span><span>- '+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</span></div>';
   (k.potongan||[]).forEach(function(x){h+='<div class="pr-row-info"><span>'+x.nama+'</span><span>- '+fmt(x.nilai)+'</span></div>';});
   if(g.pphRet>0)h+='<div class="pr-row-info" style="color:#2d6a0a"><span>Return PPh</span><span>+ '+fmt(g.pphRet)+'</span></div>';
@@ -3891,7 +3941,48 @@ function eksekusiImport(){
   var inp=document.getElementById('import-file-input');if(inp)inp.value='';
 }
 function exportCSVAll(){var rows=[['NIK','Nama','Dept','Jabatan','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','Neto','PTKP','Status','Tgl Masuk']];karyawan.forEach(function(k){var g=hitungGaji(k);rows.push([k.nik,k.nama,k.dept,k.jabatan,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,Math.round(g.neto),k.ptkp,k.status,k.masuk]);});var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var b=new Blob(['\uFEFF'+csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SiGaji_v9_'+new Date().toISOString().split('T')[0]+'.csv';a.click();toast('CSV diunduh');}
-// ── NAVIGASI ─────────────────────────────────────
+// ── NAVIGASI (drawer HP) ──
+function sigajiIsMobileNav(){
+  try{
+    if(window.matchMedia('(max-width:900px)').matches)return true;
+    if(window.matchMedia('(hover:none) and (pointer:coarse)').matches)return true;
+  }catch(e){}
+  return false;
+}
+function sigajiApplyMobileNavMode(){
+  var on=sigajiIsMobileNav();
+  try{document.documentElement.classList.toggle('sigaji-mobile-nav',on);}catch(e){}
+  if(on)sigajiMountNavToBody();
+  else{sigajiCloseNavDrawer();sigajiRestoreNavDom();}
+}
+function sigajiRestoreNavDom(){
+  var sb=document.getElementById('sidebar-wrap');
+  var bd=document.getElementById('nav-backdrop');
+  var app=document.getElementById('app');
+  var layout=document.querySelector('.layout');
+  var slot=layout?layout.querySelector('.sidebar-slot'):null;
+  if(!sb||!bd||!app||!layout)return;
+  if(bd.parentNode!==app){
+    var topbar=app.querySelector('.topbar');
+    if(topbar&&topbar.nextSibling)app.insertBefore(bd,topbar.nextSibling);
+    else app.insertBefore(bd,layout);
+  }
+  if(sb.parentNode!==layout){
+    if(slot&&slot.nextSibling)layout.insertBefore(sb,slot.nextSibling);
+    else layout.insertBefore(sb,layout.firstChild);
+  }
+}
+function sigajiMountNavToBody(){
+  if(!sigajiIsMobileNav()||!document.body.classList.contains('sigaji-app-active')){
+    sigajiRestoreNavDom();
+    return;
+  }
+  var sb=document.getElementById('sidebar-wrap');
+  var bd=document.getElementById('nav-backdrop');
+  if(!sb||!bd)return;
+  if(bd.parentNode!==document.body)document.body.appendChild(bd);
+  if(sb.parentNode!==document.body)document.body.appendChild(sb);
+}
 function sigajiSyncNavDrawerA11y(){
   try{
     var open=document.documentElement.classList.contains('sigaji-nav-open');
@@ -3902,46 +3993,60 @@ function sigajiSyncNavDrawerA11y(){
     }
     var sb=document.getElementById('sidebar-wrap');
     if(sb)sb.setAttribute('aria-hidden',open?'false':'true');
+    var bd=document.getElementById('nav-backdrop');
+    if(bd)bd.setAttribute('aria-hidden',open?'false':'true');
   }catch(e){}
 }
-function sigajiCloseNavDrawer(){
-  try{document.documentElement.classList.remove('sigaji-nav-open');sigajiSyncNavDrawerA11y();}catch(e){}
+function sigajiSetNavDrawerOpen(open){
+  try{
+    sigajiMountNavToBody();
+    var sb=document.getElementById('sidebar-wrap');
+    var bd=document.getElementById('nav-backdrop');
+    if(open){
+      document.documentElement.classList.add('sigaji-nav-open');
+      if(sb){sb.classList.add('sigaji-nav-drawer-open');sb.style.display='flex';sb.style.visibility='visible';}
+      if(bd){bd.classList.add('sigaji-nav-drawer-open');bd.style.display='block';}
+    }else{
+      document.documentElement.classList.remove('sigaji-nav-open');
+      if(sb){sb.classList.remove('sigaji-nav-drawer-open');sb.style.display=sigajiIsMobileNav()?'none':'';sb.style.visibility='';}
+      if(bd){bd.classList.remove('sigaji-nav-drawer-open');bd.style.display='none';}
+    }
+    sigajiSyncNavDrawerA11y();
+  }catch(e){console.error('sigajiSetNavDrawerOpen',e);}
 }
-function sigajiOpenNavDrawer(){
-  try{document.documentElement.classList.add('sigaji-nav-open');sigajiSyncNavDrawerA11y();}catch(e){}
-}
+function sigajiCloseNavDrawer(){sigajiSetNavDrawerOpen(false);}
+function sigajiOpenNavDrawer(){sigajiApplyMobileNavMode();sigajiSetNavDrawerOpen(true);}
 function sigajiToggleNavDrawer(ev){
   try{
     if(ev){ev.preventDefault();ev.stopPropagation();}
-    document.documentElement.classList.toggle('sigaji-nav-open');
-    sigajiSyncNavDrawerA11y();
-  }catch(e){}
+    sigajiApplyMobileNavMode();
+    sigajiSetNavDrawerOpen(!document.documentElement.classList.contains('sigaji-nav-open'));
+  }catch(e){console.error('sigajiToggleNavDrawer',e);}
+  return false;
 }
 function initSigajiNavDrawer(){
-  var btn=document.getElementById('nav-drawer-btn');
+  sigajiApplyMobileNavMode();
   var backdrop=document.getElementById('nav-backdrop');
-  if(!btn||btn.dataset.sigajiNavBound==='1')return;
-  btn.dataset.sigajiNavBound='1';
-  var lastTouch=0;
-  function onToggle(ev){
-    if(ev&&ev.type==='touchend')lastTouch=Date.now();
-    sigajiToggleNavDrawer(ev);
+  if(backdrop&&backdrop.dataset.sigajiNavBound!=='1'){
+    backdrop.dataset.sigajiNavBound='1';
+    backdrop.addEventListener('click',function(ev){
+      if(ev){ev.preventDefault();ev.stopPropagation();}
+      sigajiCloseNavDrawer();
+    });
   }
-  btn.addEventListener('touchend',onToggle,{passive:false});
-  btn.addEventListener('click',function(ev){
-    if(Date.now()-lastTouch<500)return;
-    onToggle(ev);
-  });
-  if(backdrop){
-    backdrop.addEventListener('click',function(ev){if(ev)ev.preventDefault();sigajiCloseNavDrawer();});
-    backdrop.addEventListener('touchend',function(ev){if(ev)ev.preventDefault();sigajiCloseNavDrawer();},{passive:false});
+  if(!window._sigajiNavResizeBound){
+    window._sigajiNavResizeBound=true;
+    window.addEventListener('resize',function(){sigajiApplyMobileNavMode();},{passive:true});
+    window.addEventListener('orientationchange',function(){setTimeout(sigajiApplyMobileNavMode,120);},{passive:true});
+    document.addEventListener('keydown',function(ev){
+      if(ev&&ev.key==='Escape'&&document.documentElement.classList.contains('sigaji-nav-open'))sigajiCloseNavDrawer();
+    });
   }
-  document.addEventListener('keydown',function(ev){
-    if(ev&&ev.key==='Escape'&&document.documentElement.classList.contains('sigaji-nav-open'))sigajiCloseNavDrawer();
-  });
-  sigajiSyncNavDrawerA11y();
+  sigajiSetNavDrawerOpen(false);
 }
 if(typeof window!=='undefined'){
+  window.sigajiIsMobileNav=sigajiIsMobileNav;
+  window.sigajiApplyMobileNavMode=sigajiApplyMobileNavMode;
   window.sigajiCloseNavDrawer=sigajiCloseNavDrawer;
   window.sigajiOpenNavDrawer=sigajiOpenNavDrawer;
   window.sigajiToggleNavDrawer=sigajiToggleNavDrawer;
@@ -4119,5 +4224,8 @@ if(typeof document!=='undefined'){
   else sigajiDomReady();
 }
 if(typeof window!=='undefined'){
-  try{window.addEventListener('load',function(){initRememberUsername();initSigajiNavDrawer();});}catch(e){}
+  try{
+    window.addEventListener('load',function(){initRememberUsername();initSigajiNavDrawer();});
+    window.sigajiApplyMobileNavMode=sigajiApplyMobileNavMode;
+  }catch(e){}
 }
