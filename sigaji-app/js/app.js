@@ -1261,8 +1261,8 @@ async function sendCurrentSlipToTelegram(){
         toast('Mengirim slip THR...');
         alsoThr=await trySendThrTelegramAfterGaji(k,p);
       }
-      slipTgInvalidateMetaCache();
-      renderSlipTelegramBatchChecklist(true);
+      slipSendInvalidateMetaCache();
+      renderSlipSendBatchChecklist(true);
       toast(alsoThr?'Terkirim: slip gaji + slip THR':'Terkirim ke Telegram');
     }
   }catch(e){
@@ -1284,10 +1284,20 @@ function fmtSlipTgSentAt(iso){
 }
 var __slipTgMetaCacheKey = '';
 var __slipTgMetaBundle = null;
-function slipTgInvalidateMetaCache(){
+var __slipEmailMetaCacheKey = '';
+var __slipEmailMetaBundle = null;
+var __slipSendMetaCacheKey = '';
+var __slipSendMetaBundle = null;
+function slipSendInvalidateMetaCache(){
   __slipTgMetaCacheKey = '';
   __slipTgMetaBundle = null;
+  __slipEmailMetaCacheKey = '';
+  __slipEmailMetaBundle = null;
+  __slipSendMetaCacheKey = '';
+  __slipSendMetaBundle = null;
 }
+function slipTgInvalidateMetaCache(){ slipSendInvalidateMetaCache(); }
+function slipEmailInvalidateMetaCache(){ slipSendInvalidateMetaCache(); }
 async function loadSlipTelegramMetaBundle(p){
   var linked = new Set();
   var sentMap = {};
@@ -1320,55 +1330,78 @@ async function loadSlipTelegramMetaBundle(p){
   }
   return out;
 }
-function renderSlipTgBatchTableRows(list, p, slipType, bundle){
-  var wrap = document.getElementById('slip-tg-batch-wrap');
+async function loadSlipSendMetaBundle(p){
+  var tg = await loadSlipTelegramMetaBundle(p);
+  var em = await loadSlipEmailMetaBundle(p);
+  return { tg: tg, email: em };
+}
+
+function renderSlipSendBatchTableRows(list, p, slipType, bundle){
+  var wrap = document.getElementById('slip-send-batch-wrap');
   if (!wrap) return;
   var isThr = slipType === 'thr' && p.thr_aktif;
+  var tgB = bundle.tg || {};
+  var emB = bundle.email || {};
   var foot = '';
-  if (bundle.sentTableMissing)
+  if (tgB.sentTableMissing)
     foot +=
-      '<div style="font-size:10px;color:#9b2121;margin-top:.5rem">Tabel riwayat belum ada — jalankan <code>sql/supabase_sigaji_slip_tg_sent.sql</code> di Supabase agar kolom <strong>Slip</strong> tercatat.</div>';
-  if (bundle.linksError) foot += '<div style="font-size:10px;color:#9b2121;margin-top:.35rem">Gagal membaca tautan Telegram (cek login &amp; RLS).</div>';
+      '<div style="font-size:10px;color:#9b2121;margin-top:.5rem">Riwayat Telegram: jalankan <code>sql/supabase_sigaji_slip_tg_sent.sql</code> di Supabase.</div>';
+  if (emB.sentTableMissing)
+    foot +=
+      '<div style="font-size:10px;color:#9b2121;margin-top:.35rem">Riwayat email: jalankan <code>sql/supabase_sigaji_slip_email_sent.sql</code> di Supabase.</div>';
+  if (tgB.linksError) foot += '<div style="font-size:10px;color:#9b2121;margin-top:.35rem">Gagal membaca tautan Telegram (cek login &amp; RLS).</div>';
   var rows = list
     .map(function (k) {
       var nikEsc = String(k.nik || '').replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
-      var L = bundle.linked.has(String(k.nik || '').trim());
-      var sm = bundle.sentMap[String(k.nik || '').trim()] || {};
-      var sentIso = isThr ? sm.thr : sm.gaji;
+      var nk = String(k.nik || '').trim();
+      var L = tgB.linked && tgB.linked.has(nk);
+      var tgSm = (tgB.sentMap && tgB.sentMap[nk]) || {};
+      var emSm = (emB.sentMap && emB.sentMap[nk]) || {};
+      var tgSentIso = isThr ? tgSm.thr : tgSm.gaji;
+      var emSentRec = isThr ? emSm.thr : emSm.gaji;
+      var hasEm = slipEmailHasValidAddress(k);
       var tgCell = L
         ? '<span class="bdg b-ok" style="font-size:10px">Terhubung</span>'
         : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
-      var slCell = sentIso
-        ? '<span class="bdg b-ok" style="font-size:10px">Terkirim</span><div style="font-size:9px;color:#6b7280;margin-top:2px">' +
-          escapeHtml(fmtSlipTgSentAt(sentIso)) +
-          '</div>'
+      var emCell = hasEm
+        ? '<span class="bdg b-ok" style="font-size:10px" title="' + escapeHtml(String(k.email).trim()) + '">Ada</span>'
+        : '<span class="bdg b-err" style="font-size:10px">Kosong</span>';
+      var tgSl = tgSentIso
+        ? '<span class="bdg b-ok" style="font-size:10px">Ya</span><div style="font-size:9px;color:#6b7280">' + escapeHtml(fmtSlipTgSentAt(tgSentIso)) + '</div>'
+        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
+      var emSl = emSentRec
+        ? '<span class="bdg b-ok" style="font-size:10px">Ya</span><div style="font-size:9px;color:#6b7280">' + escapeHtml(fmtSlipTgSentAt(emSentRec.at)) + '</div>'
         : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
       return (
-        '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-tg-cb" data-nik="' +
+        '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-send-cb" data-nik="' +
         nikEsc +
-        '"></td><td>' +
-        escapeHtml(k.nama) +
-        '</td><td style="font-size:11px;color:#6b7280">' +
+        '"></td><td style="font-size:11px;font-weight:600;white-space:nowrap">' +
         escapeHtml(k.nik) +
+        '</td><td>' +
+        escapeHtml(k.nama) +
         '</td><td style="white-space:nowrap">' +
         tgCell +
-        '</td><td style="min-width:110px">' +
-        slCell +
+        '</td><td>' +
+        emCell +
+        '</td><td style="min-width:88px">' +
+        tgSl +
+        '</td><td style="min-width:88px">' +
+        emSl +
         '</td></tr>'
       );
     })
     .join('');
   wrap.innerHTML =
-    '<div style="overflow-x:auto;max-height:280px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-tg-cb-all" title="Pilih semua" onchange="slipTgToggleAll(this.checked)"></th><th>Karyawan</th><th>NIK</th><th>Telegram</th><th>Slip (periode ini)</th></tr></thead><tbody>' +
+    '<div style="overflow-x:auto;max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-send-cb-all" title="Pilih semua" onchange="slipSendToggleAll(this.checked)"></th><th>Kode</th><th>Nama</th><th>Telegram</th><th>Email</th><th>Slip TG</th><th>Slip email</th></tr></thead><tbody>' +
     rows +
     '</tbody></table></div>' +
     foot;
 }
 
-/** Daftar centang + status Telegram & riwayat kirim slip. forceReload = true: ambil ulang dari Supabase. */
-function renderSlipTelegramBatchChecklist(forceReload){
-  var wrap = document.getElementById('slip-tg-batch-wrap');
-  var card = document.getElementById('slip-tg-batch');
+/** Satu tabel centang — kirim Telegram atau email. forceReload = ambil ulang status dari Supabase. */
+function renderSlipSendBatchChecklist(forceReload){
+  var wrap = document.getElementById('slip-send-batch-wrap');
+  var card = document.getElementById('slip-send-batch');
   var hint = document.getElementById('slip-tg-hint');
   if (hint) {
     hint.style.display =
@@ -1388,9 +1421,7 @@ function renderSlipTelegramBatchChecklist(forceReload){
     return;
   }
   var slipType = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
-  var list = karyawan.filter(function (k) {
-    return karyawanInPeriode(k, p);
-  });
+  var list = karyawanListPeriode(p);
   if (!list.length) {
     wrap.innerHTML = '<div style="font-size:12px;color:#6b7280">Tidak ada karyawan aktif di periode ini.</div>';
     card.style.display = 'block';
@@ -1403,28 +1434,37 @@ function renderSlipTelegramBatchChecklist(forceReload){
     return;
   }
   var cacheKey =
-    getSlipTenantKey() + '|' + p.nama + '|' + slipType + '|' + list.map(function (k) { return k.nik; }).sort().join(',');
-  if (!forceReload && __slipTgMetaCacheKey === cacheKey && __slipTgMetaBundle) {
-    renderSlipTgBatchTableRows(list, p, slipType, __slipTgMetaBundle);
+    getSlipTenantKey() + '|' + p.nama + '|' + slipType + '|' + list.map(function (k) { return k.nik; }).join(',');
+  if (!forceReload && __slipSendMetaCacheKey === cacheKey && __slipSendMetaBundle) {
+    renderSlipSendBatchTableRows(list, p, slipType, __slipSendMetaBundle);
     return;
   }
   wrap.innerHTML =
-    '<div style="font-size:12px;color:#6b7280;padding:.75rem">Memuat status Telegram dari server…</div>';
-  loadSlipTelegramMetaBundle(p).then(function (bundle) {
+    '<div style="font-size:12px;color:#6b7280;padding:.75rem">Memuat status Telegram &amp; email…</div>';
+  loadSlipSendMetaBundle(p).then(function (bundle) {
+    __slipSendMetaCacheKey = cacheKey;
+    __slipSendMetaBundle = bundle;
     __slipTgMetaCacheKey = cacheKey;
-    __slipTgMetaBundle = bundle;
-    renderSlipTgBatchTableRows(list, p, slipType, bundle);
+    __slipTgMetaBundle = bundle.tg;
+    __slipEmailMetaCacheKey = cacheKey;
+    __slipEmailMetaBundle = bundle.email;
+    renderSlipSendBatchTableRows(list, p, slipType, bundle);
   });
 }
 
-function slipTgToggleAll(checked){
+function renderSlipTelegramBatchChecklist(forceReload){ renderSlipSendBatchChecklist(forceReload); }
+function renderSlipEmailBatchChecklist(forceReload){ renderSlipSendBatchChecklist(forceReload); }
+
+function slipSendToggleAll(checked){
   var v = !!checked;
-  document.querySelectorAll('.slip-tg-cb').forEach(function (el) {
+  document.querySelectorAll('.slip-send-cb').forEach(function (el) {
     el.checked = v;
   });
-  var h = document.getElementById('slip-tg-cb-all');
+  var h = document.getElementById('slip-send-cb-all');
   if (h) h.checked = v;
 }
+function slipTgToggleAll(checked){ slipSendToggleAll(checked); }
+function slipEmailToggleAll(checked){ slipSendToggleAll(checked); }
 
 async function recordSlipTelegramSentToCloud(nik, periodNama, slipTypeUi){
   try{
@@ -1452,7 +1492,7 @@ async function sendSlipTelegramBatch(){
     return;
   }
   var niks = [];
-  document.querySelectorAll('.slip-tg-cb:checked').forEach(function (cb) {
+  document.querySelectorAll('.slip-send-cb:checked').forEach(function (cb) {
     if (cb.dataset.nik) niks.push(cb.dataset.nik);
   });
   if (!niks.length) {
@@ -1512,8 +1552,8 @@ async function sendSlipTelegramBatch(){
       setTimeout(r, 450);
     });
   }
-  slipTgInvalidateMetaCache();
-  renderSlipTelegramBatchChecklist(true);
+  slipSendInvalidateMetaCache();
+  renderSlipSendBatchChecklist(true);
   toast('Selesai: terkirim ' + ok + ', gagal ' + fail + (skip ? ', tidak diproses ' + skip + ' (mis. THR tidak eligible)' : ''));
 }
 
@@ -1555,7 +1595,8 @@ async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik)
     return null;
   });
   if (!r.ok || !j || !j.ok) {
-    toast((j && j.error) || 'Gagal kirim slip email');
+    var errMsg = (j && j.error) || ('Gagal kirim slip email (HTTP ' + r.status + ')');
+    toast(errMsg);
     return false;
   }
   return true;
@@ -1640,21 +1681,14 @@ async function sendCurrentSlipToEmail() {
         toast('Mengirim slip THR (email kedua)...');
         await trySendThrEmailAfterGaji(k, p);
       }
-      slipEmailInvalidateMetaCache();
-      renderSlipEmailBatchChecklist(true);
+      slipSendInvalidateMetaCache();
+      renderSlipSendBatchChecklist(true);
       toast('Slip terkirim ke ' + k.email);
     }
   } catch (e) {
     console.error('sendCurrentSlipToEmail', e);
     toast(e.message || 'Gagal kirim email');
   }
-}
-
-var __slipEmailMetaCacheKey = '';
-var __slipEmailMetaBundle = null;
-function slipEmailInvalidateMetaCache() {
-  __slipEmailMetaCacheKey = '';
-  __slipEmailMetaBundle = null;
 }
 
 async function loadSlipEmailMetaBundle(p) {
@@ -1684,105 +1718,6 @@ async function loadSlipEmailMetaBundle(p) {
   return out;
 }
 
-function renderSlipEmailBatchTableRows(list, p, slipType, bundle) {
-  var wrap = document.getElementById('slip-email-batch-wrap');
-  if (!wrap) return;
-  var isThr = slipType === 'thr' && p.thr_aktif;
-  var foot = '';
-  if (bundle.sentTableMissing)
-    foot +=
-      '<div style="font-size:10px;color:#9b2121;margin-top:.5rem">Tabel riwayat belum ada — jalankan <code>sql/supabase_sigaji_slip_email_sent.sql</code> di Supabase.</div>';
-  var rows = list
-    .map(function (k) {
-      var nikEsc = String(k.nik || '').replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
-      var hasEm = slipEmailHasValidAddress(k);
-      var sm = bundle.sentMap[String(k.nik || '').trim()] || {};
-      var sentRec = isThr ? sm.thr : sm.gaji;
-      var emCell = hasEm
-        ? '<span class="bdg b-ok" style="font-size:10px">' + escapeHtml(String(k.email).trim()) + '</span>'
-        : '<span class="bdg b-err" style="font-size:10px">Kosong</span>';
-      var slCell = sentRec
-        ? '<span class="bdg b-ok" style="font-size:10px">Terkirim</span><div style="font-size:9px;color:#6b7280;margin-top:2px">' +
-          escapeHtml(fmtSlipTgSentAt(sentRec.at)) +
-          '</div>'
-        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
-      return (
-        '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-email-cb" data-nik="' +
-        nikEsc +
-        '"' +
-        (hasEm ? '' : ' disabled title="Isi email di profil"') +
-        '></td><td>' +
-        escapeHtml(k.nama) +
-        '</td><td style="font-size:11px;color:#6b7280">' +
-        escapeHtml(k.nik) +
-        '</td><td style="max-width:180px;word-break:break-all">' +
-        emCell +
-        '</td><td style="min-width:110px">' +
-        slCell +
-        '</td></tr>'
-      );
-    })
-    .join('');
-  wrap.innerHTML =
-    '<div style="overflow-x:auto;max-height:280px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-email-cb-all" title="Pilih semua yang punya email" onchange="slipEmailToggleAll(this.checked)"></th><th>Karyawan</th><th>NIK</th><th>Email</th><th>Slip (periode ini)</th></tr></thead><tbody>' +
-    rows +
-    '</tbody></table></div>' +
-    foot;
-}
-
-function renderSlipEmailBatchChecklist(forceReload) {
-  var wrap = document.getElementById('slip-email-batch-wrap');
-  var card = document.getElementById('slip-email-batch');
-  if (!wrap || !card) return;
-  if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
-    card.style.display = 'none';
-    return;
-  }
-  var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
-  var p = periodesFindById(pid) || PA();
-  if (!p) {
-    card.style.display = 'none';
-    return;
-  }
-  var slipType = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
-  var list = karyawan.filter(function (k) {
-    return karyawanInPeriode(k, p);
-  });
-  if (!list.length) {
-    wrap.innerHTML = '<div style="font-size:12px;color:#6b7280">Tidak ada karyawan aktif di periode ini.</div>';
-    card.style.display = 'block';
-    return;
-  }
-  card.style.display = 'block';
-  if (typeof sigajiIsCloudConfigured !== 'function' || !sigajiIsCloudConfigured()) {
-    wrap.innerHTML =
-      '<div style="font-size:12px;color:#6b7280">Fitur ini membutuhkan <strong>mode online</strong> + SMTP di Netlify.</div>';
-    return;
-  }
-  var cacheKey =
-    getSlipTenantKey() + '|' + p.nama + '|' + slipType + '|' + list.map(function (k) { return k.nik; }).sort().join(',');
-  if (!forceReload && __slipEmailMetaCacheKey === cacheKey && __slipEmailMetaBundle) {
-    renderSlipEmailBatchTableRows(list, p, slipType, __slipEmailMetaBundle);
-    return;
-  }
-  wrap.innerHTML =
-    '<div style="font-size:12px;color:#6b7280;padding:.75rem">Memuat status email dari server…</div>';
-  loadSlipEmailMetaBundle(p).then(function (bundle) {
-    __slipEmailMetaCacheKey = cacheKey;
-    __slipEmailMetaBundle = bundle;
-    renderSlipEmailBatchTableRows(list, p, slipType, bundle);
-  });
-}
-
-function slipEmailToggleAll(checked) {
-  var v = !!checked;
-  document.querySelectorAll('.slip-email-cb').forEach(function (el) {
-    if (!el.disabled) el.checked = v;
-  });
-  var h = document.getElementById('slip-email-cb-all');
-  if (h) h.checked = v;
-}
-
 async function recordSlipEmailSentToCloud(nik, periodNama, slipTypeUi, sentTo) {
   try {
     if (!window.sigajiSupabase) return;
@@ -1810,7 +1745,7 @@ async function sendSlipEmailBatch() {
     return;
   }
   var niks = [];
-  document.querySelectorAll('.slip-email-cb:checked').forEach(function (cb) {
+  document.querySelectorAll('.slip-send-cb:checked').forEach(function (cb) {
     if (cb.dataset.nik) niks.push(cb.dataset.nik);
   });
   if (!niks.length) {
@@ -1883,8 +1818,8 @@ async function sendSlipEmailBatch() {
       setTimeout(r, 600);
     });
   }
-  slipEmailInvalidateMetaCache();
-  renderSlipEmailBatchChecklist(true);
+  slipSendInvalidateMetaCache();
+  renderSlipSendBatchChecklist(true);
   toast(
     'Email selesai: terkirim ' +
       ok +
@@ -3042,13 +2977,11 @@ function onSlipPeriodeChange(){
     if(banner)banner.innerHTML='';
   }
   populateSelects();
-  renderSlipTelegramBatchChecklist();
-  renderSlipEmailBatchChecklist();
+  renderSlipSendBatchChecklist();
   previewSlip();
 }
 function previewSlip(){
-  renderSlipTelegramBatchChecklist();
-  renderSlipEmailBatchChecklist();
+  renderSlipSendBatchChecklist();
   const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
   if(!nik)return;
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
@@ -4491,12 +4424,12 @@ function populateSelects(){
   if(!sc)return;
   var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
   var p=periodesFindById(pid)||PA();
-  var list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
-  var opts=list.map(function(k){return '<option value="'+k.nik+'">'+k.nama+'</option>';}).join('');
+  var list=karyawanListPeriode(p);
+  var opts=list.map(function(k){return '<option value="'+k.nik+'">'+k.nik+' — '+k.nama+'</option>';}).join('');
   sc.innerHTML='<option value="">-- Pilih Karyawan --</option>'+opts;
   // Jika pilihan sebelumnya sudah tidak valid utk periode ini, kosongkan agar tidak "nyangkut"
   if(sc.value&&!list.find(function(k){return k.nik===sc.value;}))sc.value='';
-  renderSlipTelegramBatchChecklist();
+  renderSlipSendBatchChecklist();
 }
 function renderPeriodeSelects(){
   var aktif = PA().id;
@@ -5043,3 +4976,127 @@ if(typeof window!=='undefined'){
     window.sigajiApplyMobileNavMode=sigajiApplyMobileNavMode;
   }catch(e){}
 }
+/** Kuota karyawan aktif — diatur penjual (Supabase / Netlify license-set / config deploy). */
+(function () {
+  function parseMax(v) {
+    var n = parseInt(v, 10);
+    return n > 0 ? n : 0;
+  }
+  function configMax() {
+    if (typeof window.SIGAJI_MAX_EMPLOYEES === 'undefined' || window.SIGAJI_MAX_EMPLOYEES === null) return 0;
+    return parseMax(window.SIGAJI_MAX_EMPLOYEES);
+  }
+  function isKaryawanAktifLic(k) {
+    if (!k || !k.nik) return false;
+    return !String(k.tgl_berhenti || '').trim();
+  }
+  function countActiveEmployees(arr) {
+    var list = arr || (typeof karyawan !== 'undefined' ? karyawan : []);
+    var n = 0;
+    for (var i = 0; i < list.length; i++) if (isKaryawanAktifLic(list[i])) n++;
+    return n;
+  }
+  function getStoredLicense() {
+    if (typeof tenantLicense !== 'undefined' && tenantLicense) return tenantLicense;
+    return { maxEmployees: 0, planLabel: '' };
+  }
+  function getEffectiveMaxEmployees() {
+    var cfg = configMax();
+    if (cfg > 0) return cfg;
+    return parseMax(getStoredLicense().maxEmployees);
+  }
+  function getLicensePlanLabel() {
+    var lic = getStoredLicense();
+    var lbl = String(lic.planLabel || '').trim();
+    if (lbl) return lbl;
+    if (configMax() > 0) return 'Paket';
+    return '';
+  }
+  function isLicenseVendorControlled() {
+    return true;
+  }
+  function applyLicenseFromObject(lic) {
+    if (!lic || typeof lic !== 'object') return;
+    if (typeof tenantLicense === 'undefined') return;
+    var cfg = configMax();
+    if (cfg > 0) tenantLicense.maxEmployees = cfg;
+    else tenantLicense.maxEmployees = parseMax(lic.maxEmployees);
+    tenantLicense.planLabel = String(lic.planLabel || '').trim();
+  }
+  function licenseQuotaMessage(addCount) {
+    var max = getEffectiveMaxEmployees();
+    if (!max) return '';
+    var cur = countActiveEmployees();
+    var add = addCount || 0;
+    var plan = getLicensePlanLabel();
+    var head = plan ? 'Paket ' + plan + ': ' : 'Kuota lisensi: ';
+    return (
+      head +
+      'maks ' +
+      max +
+      ' karyawan aktif (saat ini ' +
+      cur +
+      '). Tambah ' +
+      add +
+      ' akan melebihi batas. Hubungi penyedia SiGaji untuk upgrade atau perpanjangan kuota.'
+    );
+  }
+  function canAddActiveEmployees(addCount, arr) {
+    var max = getEffectiveMaxEmployees();
+    if (!max) return { ok: true };
+    var add = addCount || 0;
+    if (add <= 0) return { ok: true };
+    var cur = countActiveEmployees(arr);
+    if (cur + add <= max) return { ok: true };
+    return { ok: false, message: licenseQuotaMessage(add) };
+  }
+  function assertCanAddActiveEmployees(addCount, arr) {
+    var r = canAddActiveEmployees(addCount, arr);
+    if (r.ok) return true;
+    if (typeof toast === 'function') toast(r.message);
+    return false;
+  }
+  function renderLicenseQuotaUi() {
+    var badge = document.getElementById('kar-quota-badge');
+    if (badge) {
+      var max = getEffectiveMaxEmployees();
+      var cur = countActiveEmployees();
+      if (!max) {
+        badge.textContent = cur + ' karyawan aktif';
+        badge.className = 'bdg b-info';
+      } else {
+        var plan = getLicensePlanLabel();
+        badge.textContent = (plan ? plan + ' · ' : '') + cur + ' / ' + max + ' karyawan aktif';
+        badge.className = 'bdg ' + (cur >= max ? 'b-err' : cur >= max - 2 ? 'b-warn' : 'b-ok');
+      }
+    }
+    var card = document.getElementById('lic-card');
+    if (!card) return;
+    var showAdmin = typeof CU !== 'undefined' && CU && CU.role === 'Admin';
+    card.style.display = showAdmin ? '' : 'none';
+    var stat = document.getElementById('lic-stat');
+    if (stat) {
+      var mx = getEffectiveMaxEmployees();
+      var c = countActiveEmployees();
+      stat.textContent = mx
+        ? 'Karyawan aktif: ' + c + ' dari maks ' + mx + ' (resign tidak dihitung).'
+        : 'Karyawan aktif: ' + c + ' (belum ada batas kuota dari penyedia).';
+    }
+    var note = document.getElementById('lic-vendor-note');
+    if (note) {
+      note.textContent =
+        'Kuota dan nama paket diatur oleh penyedia SiGaji (bukan dari menu ini). Untuk menambah kuota atau upgrade paket, hubungi penyedia layanan Anda.';
+    }
+  }
+  function simpanKuotaLisensi() {
+    if (typeof toast === 'function') toast('Kuota hanya dapat diatur oleh penyedia SiGaji. Hubungi penyedia layanan Anda.');
+  }
+  window.sigajiCountActiveEmployees = countActiveEmployees;
+  window.sigajiGetEffectiveMaxEmployees = getEffectiveMaxEmployees;
+  window.sigajiCanAddActiveEmployees = canAddActiveEmployees;
+  window.sigajiAssertCanAddActiveEmployees = assertCanAddActiveEmployees;
+  window.sigajiApplyLicenseFromObject = applyLicenseFromObject;
+  window.sigajiRenderLicenseQuotaUi = renderLicenseQuotaUi;
+  window.sigajiIsLicenseVendorControlled = isLicenseVendorControlled;
+  window.simpanKuotaLisensi = simpanKuotaLisensi;
+})();
