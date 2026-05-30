@@ -1014,11 +1014,36 @@ async function decideRegReq(id,action){
 }
 // ── BRANDING ────────────────────────────────────
 function applyBranding(){
-  const logo=perusahaan.logo||'';const nama=perusahaan.nama||'SiGaji';
-  ['login-logo','topbar-logo'].forEach(id=>{const e=document.getElementById(id);if(e){e.src=logo;e.style.display=logo?'block':'none';}});
-  const ln=document.getElementById('login-nama');if(ln)ln.textContent=logo?'':('\u25C6 '+nama.split(' ')[0]);
-  const tn=document.getElementById('topbar-nama');if(tn)tn.style.display=logo?'none':'inline';
-  const lp=document.getElementById('logo-preview');if(lp){if(logo){lp.src=logo;lp.style.display='block';}else lp.style.display='none';}
+  var appEl=document.getElementById('app');
+  var onLoginPage=!appEl||appEl.style.display==='none'||appEl.style.display==='';
+  var cloudB=window.sigajiLoginBranding;
+  var loginSrc=onLoginPage&&cloudB&&(cloudB.nama||cloudB.logo)?cloudB:perusahaan;
+  var topSrc=String(perusahaan.nama||'').trim()||perusahaan.logo?perusahaan:cloudB||perusahaan;
+  const logo=loginSrc.logo||'';
+  const namaPt=String(loginSrc.nama||'').trim();
+  const topLogoVal=topSrc.logo||'';
+  const topNama=String(topSrc.nama||'').trim();
+  const loginLogo=document.getElementById('login-logo');
+  if(loginLogo){
+    if(logo){loginLogo.src=logo;loginLogo.style.display='block';loginLogo.alt=namaPt||'Logo perusahaan';}
+    else{loginLogo.removeAttribute('src');loginLogo.style.display='none';}
+  }
+  const topLogo=document.getElementById('topbar-logo');
+  if(topLogo){if(topLogoVal){topLogo.src=topLogoVal;topLogo.style.display='block';}else{topLogo.removeAttribute('src');topLogo.style.display='none';}}
+  const lt=document.getElementById('login-title');
+  if(lt)lt.textContent='SiGaji';
+  const lpt=document.getElementById('login-pt-nama');
+  if(lpt){
+    if(namaPt){lpt.textContent=namaPt;lpt.style.display='block';}
+    else{lpt.textContent='';lpt.style.display='none';}
+  }
+  const tn=document.getElementById('topbar-nama');
+  if(tn){
+    tn.textContent=topNama||'SiGaji';
+    tn.style.display=topLogoVal&&!topNama?'none':'inline';
+  }
+  const lp=document.getElementById('logo-preview');
+  if(lp){if(logo){lp.src=logo;lp.style.display='block';}else lp.style.display='none';}
 }
 // ── LOGIN ────────────────────────────────────────
 function ql(u,p){document.getElementById('lu').value=u;document.getElementById('lp').value=p;}
@@ -4533,6 +4558,7 @@ setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_
 initLibnasYearSelect();
 if(typeof document!=='undefined'){
   function sigajiDomReady(){
+    if(typeof sigajiIsCloudConfigured==='function'&&!sigajiIsCloudConfigured())applyBranding();
     initRememberUsername();
     initSigajiNavDrawer();
   }
@@ -4541,7 +4567,10 @@ if(typeof document!=='undefined'){
 }
 if(typeof window!=='undefined'){
   try{
-    window.addEventListener('load',function(){initRememberUsername();initSigajiNavDrawer();});
+    window.addEventListener('load',function(){
+      if(typeof sigajiIsCloudConfigured==='function'&&!sigajiIsCloudConfigured())applyBranding();
+      initRememberUsername();initSigajiNavDrawer();
+    });
     window.sigajiApplyMobileNavMode=sigajiApplyMobileNavMode;
   }catch(e){}
 }

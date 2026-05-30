@@ -136,6 +136,11 @@
         },
       });
       clientReady = true;
+      if (typeof window.sigajiFetchLoginBranding === 'function') {
+        window.sigajiFetchLoginBranding(window.sigajiSupabase).catch(function (e) {
+          console.warn('Sigaji: branding login dari cloud', e);
+        });
+      }
     } catch (e) {
       console.error('Sigaji cloud:', e);
       toastSafe('Gagal memuat pustaka Supabase');
