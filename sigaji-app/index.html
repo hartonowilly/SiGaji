@@ -388,6 +388,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="tabs">
     <div class="tab active" data-mstab="prs" data-panel="m-prs" onclick="switchTab(this,'m-prs')">&#127970; Profil Perusahaan</div>
     <div class="tab" data-mstab="periode" data-panel="m-periode" onclick="switchTab(this,'m-periode')">&#128197; Periode Gaji & THR</div>
+    <div class="tab" data-mstab="umk" data-panel="m-umk" onclick="switchTab(this,'m-umk')">&#128176; UMK</div>
     <div class="tab" data-mstab="libur" data-panel="m-libur" onclick="switchTab(this,'m-libur')">&#127976; Hari Libur &amp; Cuti</div>
     <div class="tab" data-mstab="potongan" data-panel="m-potongan" onclick="switchTab(this,'m-potongan')">&#9998; Aturan Potongan</div>
     <div class="tab" data-mstab="ter" data-panel="m-ter" onclick="switchTab(this,'m-ter')">&#9878; Tabel PTKP dan TER PPh 21</div>
@@ -452,6 +453,26 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div id="lic-vendor-note" class="info-box info-blue" style="font-size:11px;margin:0"></div>
     </div>
   </div>
+  <div id="m-umk" style="display:none">
+    <div class="card" style="border-left:4px solid #2d6a0a">
+      <div class="ct" style="color:#2d6a0a">&#128176; UMK (Upah Minimum Kabupaten/Kota)</div>
+      <div class="info-box info-blue" style="font-size:11px;line-height:1.6;margin-bottom:.75rem">
+        Simpan nilai UMK per tahun (dikunci setelah disimpan). Tombol di bawah menerapkan UMK tahun terpilih ke <strong>gaji pokok master</strong> seluruh karyawan. Periode snapshot yang terkunci tidak diubah otomatis.
+      </div>
+      <div class="fl gap2" style="flex-wrap:wrap;align-items:flex-end;margin-bottom:.75rem">
+        <div class="fg"><label>Tahun</label><select id="umk-year-sel" style="width:auto;min-width:100px" onchange="renderUmkPanel()"></select></div>
+        <div class="fg" style="min-width:240px">
+          <label>Nilai UMK (Rp)</label>
+          <div class="fl gap1" style="align-items:center;flex-wrap:wrap">
+            <input type="text" class="inp-rp" id="umk-nilai" data-rp="1" readonly style="flex:1;min-width:160px">
+            <button type="button" class="btn btn-sm btn-out" id="umk-btn-edit" onclick="toggleUmkEdit()">Edit</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-p" onclick="applyUmkToAllGapok()">Set gaji pokok = UMK (semua karyawan)</button>
+      </div>
+      <div id="umk-history-wrap"></div>
+    </div>
+  </div>
   <div id="m-periode" style="display:none">
     <div id="pb-master"></div>
     <div class="card">
@@ -507,6 +528,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </div>
         </div>
       </div>
+      <div id="periode-guard-msg" style="display:none"></div>
       <button class="btn btn-sm btn-p" style="margin-top:.75rem" onclick="simpanPeriode()">Simpan Periode</button>
     </div>
     <div class="card"><div class="ct">Riwayat Periode</div>
@@ -1043,10 +1065,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=10.0.8"></script>
-<script src="js/storage.js?v=10.0.6"></script>
+<script src="js/constants.js?v=10.0.9"></script>
+<script src="js/storage.js?v=10.0.9"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/app.js?v=10.0.9"></script>
+<script src="js/app.js?v=10.0.12"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
