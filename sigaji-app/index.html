@@ -41,7 +41,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- LOGIN -->
 <div id="login">
 <div class="lbox">
-  <div class="llogo"><img class="llogo-img" id="login-logo"><h1 id="login-nama">&#9670; SiGaji</h1><p>Sistem Informasi Penggajian v10</p></div>
+  <div class="llogo">
+    <img class="llogo-img" id="login-logo" alt="">
+    <h1 id="login-title">SiGaji</h1>
+    <p id="login-pt-nama" class="login-pt-nama" style="display:none"></p>
+    <p class="login-tagline">Sistem Informasi Penggajian</p>
+  </div>
   <div class="fg"><label id="lu-lbl">Username</label><input id="lu" value="" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <div class="fg"><label id="lp-lbl">Password</label><input type="password" id="lp" value="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <label style="display:flex;align-items:center;gap:.5rem;margin:.25rem 0 .5rem;cursor:pointer;font-size:12px;color:#374151">
@@ -1036,6 +1041,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/app.js?v=10.0.0"></script>
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
+<script src="js/cloud-branding.js?v=10.0.0"></script>
 <script src="js/cloud-tables.js?v=11.0.1"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="js/cloud-sync.js?v=11.0.1"></script>
