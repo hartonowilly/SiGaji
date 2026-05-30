@@ -680,7 +680,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <button type="button" class="btn btn-p" id="btn-cloud-db-export" onclick="exportCloudDatabaseBackup()">&#9729; Unduh backup database (cloud)</button>
       <button class="btn btn-sm btn-out" onclick="exportCSVAll()">&#128196; Export CSV</button>
     </div>
-    <label id="backup-exclude-logo-wrap" style="display:none;align-items:center;gap:.4rem;margin-top:.5rem;font-size:12px;cursor:pointer">
+    <label id="backup-exclude-logo-wrap" class="backup-exclude-logo-wrap" style="display:flex;align-items:center;gap:.4rem;margin-top:.5rem;font-size:12px;cursor:pointer">
       <input type="checkbox" id="backup-exclude-logo" checked style="width:16px;height:16px;accent-color:#1a56a0">
       Kecilkan file: jangan sertakan logo (base64) di backup cloud
     </label>
@@ -1044,7 +1044,15 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=10.0.0"></script>
 <script src="js/storage.js?v=10.0.0"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/app.js?v=10.0.2"></script>
+<script src="js/app.js?v=10.0.3"></script>
+<script>
+if(typeof exportCloudDatabaseBackup!=='function'){
+  window.exportCloudDatabaseBackup=async function(){
+    var m='File js/app.js belum terbaru. Deploy ulang dari proyek SiGaji lalu Ctrl+F5 (versi 10.0.3).';
+    if(typeof toast==='function')toast(m);else alert(m);
+  };
+}
+</script>
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
