@@ -1516,6 +1516,384 @@ async function sendSlipTelegramBatch(){
   renderSlipTelegramBatchChecklist(true);
   toast('Selesai: terkirim ' + ok + ', gagal ' + fail + (skip ? ', tidak diproses ' + skip + ' (mis. THR tidak eligible)' : ''));
 }
+
+function slipEmailHasValidAddress(k) {
+  var e = String((k && k.email) || '').trim().toLowerCase();
+  return e.length > 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+}
+
+function buildSlipEmailText(k, p, isThr) {
+  var pt = String((perusahaan && perusahaan.nama) || 'Perusahaan').trim();
+  var line1 = isThr
+    ? 'Berikut lampiran slip THR periode ' + (p.thr_nama || p.nama || '') + '.'
+    : 'Berikut lampiran slip gaji periode ' + (p.nama || '') + '.';
+  return (
+    'Yth. ' +
+    (k.nama || k.nik) +
+    ',\n\n' +
+    line1 +
+    '\n\nDikirim oleh sistem SiGaji — ' +
+    pt +
+    '.\nMohon simpan dokumen ini dengan aman.\n\nHormat kami,\nHRD ' +
+    pt
+  );
+}
+
+/** Kirim satu slip PDF ke email karyawan (HRD/Admin, SMTP server). */
+async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik) {
+  var t = await getCloudAccessToken();
+  if (!t) {
+    toast('Belum login awan / sesi tidak ada');
+    return false;
+  }
+  var r = await fetch('/.netlify/functions/slip-email-send', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + t },
+    body: JSON.stringify({ to: to, subject: subject, text: bodyText, filename: filename, pdfBase64: pdfBase64, nik: nik || '' }),
+  });
+  var j = await r.json().catch(function () {
+    return null;
+  });
+  if (!r.ok || !j || !j.ok) {
+    toast((j && j.error) || 'Gagal kirim slip email');
+    return false;
+  }
+  return true;
+}
+
+async function trySendThrEmailAfterGaji(k, p) {
+  if (!p || !p.thr_aktif || !k) return false;
+  if (!slipEmailHasValidAddress(k)) return false;
+  try {
+    var th = hitungTHRBruto(k, p.nama);
+    if (!th || !th.eligible) return false;
+    var oThr = buildTHRSlipPDF(k, p);
+    var pdfThr = jsPdfToBase64(oThr.doc);
+    if (!pdfThr) return false;
+    await new Promise(function (r) {
+      setTimeout(r, 600);
+    });
+    var subThr = 'Slip THR - ' + (k.nama || k.nik) + ' - ' + (p.thr_nama || p.nama || '');
+    var okT = await emailSendSlipPdf(
+      String(k.email).trim().toLowerCase(),
+      subThr,
+      buildSlipEmailText(k, p, true),
+      oThr.fileName || 'SlipTHR_' + k.nik + '.pdf',
+      pdfThr,
+      k.nik
+    );
+    if (okT) {
+      await recordSlipEmailSentToCloud(k.nik, p.nama, 'thr', k.email);
+      return true;
+    }
+  } catch (e) {
+    console.warn('trySendThrEmailAfterGaji', e);
+  }
+  return false;
+}
+
+async function sendCurrentSlipToEmail() {
+  try {
+    if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
+      toast('Hanya Admin/HRD');
+      return;
+    }
+    var nik = document.getElementById('slip-kar') && document.getElementById('slip-kar').value;
+    var k = nik ? karyawan.find(function (x) { return x.nik === nik; }) : null;
+    if (!k) {
+      toast('Pilih karyawan');
+      return;
+    }
+    if (!slipEmailHasValidAddress(k)) {
+      toast('Email karyawan kosong atau tidak valid — isi di profil karyawan');
+      return;
+    }
+    var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
+    var p = periodesFindById(pid) || PA();
+    var type = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
+    var isThr = type === 'thr' && p.thr_aktif;
+    var o = isThr ? buildTHRSlipPDF(k, p) : buildGajiSlipPDF(k, p.nama, p.bayar);
+    if (!o || !o.doc) {
+      toast('Gagal menyiapkan PDF');
+      return;
+    }
+    var pdfBase64 = jsPdfToBase64(o.doc);
+    if (!pdfBase64) {
+      toast('Gagal encode PDF');
+      return;
+    }
+    var subj = isThr
+      ? 'Slip THR - ' + k.nama + ' - ' + (p.thr_nama || p.nama || '')
+      : 'Slip Gaji ' + p.nama + ' - ' + k.nama;
+    toast('Mengirim email...');
+    var ok = await emailSendSlipPdf(
+      String(k.email).trim().toLowerCase(),
+      subj,
+      buildSlipEmailText(k, p, isThr),
+      o.fileName || 'Slip_' + k.nik + '.pdf',
+      pdfBase64,
+      k.nik
+    );
+    if (ok) {
+      await recordSlipEmailSentToCloud(k.nik, p.nama, isThr ? 'thr' : 'gaji', k.email);
+      if (!isThr && p.thr_aktif) {
+        toast('Mengirim slip THR (email kedua)...');
+        await trySendThrEmailAfterGaji(k, p);
+      }
+      slipEmailInvalidateMetaCache();
+      renderSlipEmailBatchChecklist(true);
+      toast('Slip terkirim ke ' + k.email);
+    }
+  } catch (e) {
+    console.error('sendCurrentSlipToEmail', e);
+    toast(e.message || 'Gagal kirim email');
+  }
+}
+
+var __slipEmailMetaCacheKey = '';
+var __slipEmailMetaBundle = null;
+function slipEmailInvalidateMetaCache() {
+  __slipEmailMetaCacheKey = '';
+  __slipEmailMetaBundle = null;
+}
+
+async function loadSlipEmailMetaBundle(p) {
+  var sentMap = {};
+  var out = { sentMap: sentMap, sentTableMissing: false };
+  if (!window.sigajiSupabase || typeof sigajiIsCloudConfigured !== 'function' || !sigajiIsCloudConfigured()) return out;
+  var tk = getSlipTenantKey();
+  var sb = window.sigajiSupabase;
+  var sr = await sb
+    .from('sigaji_slip_email_sent')
+    .select('nik,slip_type,sent_at,sent_to')
+    .eq('tenant_key', tk)
+    .eq('period_nama', p.nama);
+  if (sr.error) {
+    var blob = String(sr.error.message || '') + String(sr.error.code || '');
+    if (/42703|does not exist|relation|sigaji_slip_email_sent|42P01/i.test(blob)) out.sentTableMissing = true;
+    else console.warn('sigaji_slip_email_sent', sr.error);
+  } else if (sr.data) {
+    sr.data.forEach(function (r) {
+      if (!r.nik) return;
+      var nk = String(r.nik).trim();
+      if (!sentMap[nk]) sentMap[nk] = {};
+      if (r.slip_type === 'gaji') sentMap[nk].gaji = { at: r.sent_at, to: r.sent_to };
+      if (r.slip_type === 'thr') sentMap[nk].thr = { at: r.sent_at, to: r.sent_to };
+    });
+  }
+  return out;
+}
+
+function renderSlipEmailBatchTableRows(list, p, slipType, bundle) {
+  var wrap = document.getElementById('slip-email-batch-wrap');
+  if (!wrap) return;
+  var isThr = slipType === 'thr' && p.thr_aktif;
+  var foot = '';
+  if (bundle.sentTableMissing)
+    foot +=
+      '<div style="font-size:10px;color:#9b2121;margin-top:.5rem">Tabel riwayat belum ada — jalankan <code>sql/supabase_sigaji_slip_email_sent.sql</code> di Supabase.</div>';
+  var rows = list
+    .map(function (k) {
+      var nikEsc = String(k.nik || '').replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
+      var hasEm = slipEmailHasValidAddress(k);
+      var sm = bundle.sentMap[String(k.nik || '').trim()] || {};
+      var sentRec = isThr ? sm.thr : sm.gaji;
+      var emCell = hasEm
+        ? '<span class="bdg b-ok" style="font-size:10px">' + escapeHtml(String(k.email).trim()) + '</span>'
+        : '<span class="bdg b-err" style="font-size:10px">Kosong</span>';
+      var slCell = sentRec
+        ? '<span class="bdg b-ok" style="font-size:10px">Terkirim</span><div style="font-size:9px;color:#6b7280;margin-top:2px">' +
+          escapeHtml(fmtSlipTgSentAt(sentRec.at)) +
+          '</div>'
+        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
+      return (
+        '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-email-cb" data-nik="' +
+        nikEsc +
+        '"' +
+        (hasEm ? '' : ' disabled title="Isi email di profil"') +
+        '></td><td>' +
+        escapeHtml(k.nama) +
+        '</td><td style="font-size:11px;color:#6b7280">' +
+        escapeHtml(k.nik) +
+        '</td><td style="max-width:180px;word-break:break-all">' +
+        emCell +
+        '</td><td style="min-width:110px">' +
+        slCell +
+        '</td></tr>'
+      );
+    })
+    .join('');
+  wrap.innerHTML =
+    '<div style="overflow-x:auto;max-height:280px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-email-cb-all" title="Pilih semua yang punya email" onchange="slipEmailToggleAll(this.checked)"></th><th>Karyawan</th><th>NIK</th><th>Email</th><th>Slip (periode ini)</th></tr></thead><tbody>' +
+    rows +
+    '</tbody></table></div>' +
+    foot;
+}
+
+function renderSlipEmailBatchChecklist(forceReload) {
+  var wrap = document.getElementById('slip-email-batch-wrap');
+  var card = document.getElementById('slip-email-batch');
+  if (!wrap || !card) return;
+  if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
+    card.style.display = 'none';
+    return;
+  }
+  var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
+  var p = periodesFindById(pid) || PA();
+  if (!p) {
+    card.style.display = 'none';
+    return;
+  }
+  var slipType = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
+  var list = karyawan.filter(function (k) {
+    return karyawanInPeriode(k, p);
+  });
+  if (!list.length) {
+    wrap.innerHTML = '<div style="font-size:12px;color:#6b7280">Tidak ada karyawan aktif di periode ini.</div>';
+    card.style.display = 'block';
+    return;
+  }
+  card.style.display = 'block';
+  if (typeof sigajiIsCloudConfigured !== 'function' || !sigajiIsCloudConfigured()) {
+    wrap.innerHTML =
+      '<div style="font-size:12px;color:#6b7280">Fitur ini membutuhkan <strong>mode online</strong> + SMTP di Netlify.</div>';
+    return;
+  }
+  var cacheKey =
+    getSlipTenantKey() + '|' + p.nama + '|' + slipType + '|' + list.map(function (k) { return k.nik; }).sort().join(',');
+  if (!forceReload && __slipEmailMetaCacheKey === cacheKey && __slipEmailMetaBundle) {
+    renderSlipEmailBatchTableRows(list, p, slipType, __slipEmailMetaBundle);
+    return;
+  }
+  wrap.innerHTML =
+    '<div style="font-size:12px;color:#6b7280;padding:.75rem">Memuat status email dari server…</div>';
+  loadSlipEmailMetaBundle(p).then(function (bundle) {
+    __slipEmailMetaCacheKey = cacheKey;
+    __slipEmailMetaBundle = bundle;
+    renderSlipEmailBatchTableRows(list, p, slipType, bundle);
+  });
+}
+
+function slipEmailToggleAll(checked) {
+  var v = !!checked;
+  document.querySelectorAll('.slip-email-cb').forEach(function (el) {
+    if (!el.disabled) el.checked = v;
+  });
+  var h = document.getElementById('slip-email-cb-all');
+  if (h) h.checked = v;
+}
+
+async function recordSlipEmailSentToCloud(nik, periodNama, slipTypeUi, sentTo) {
+  try {
+    if (!window.sigajiSupabase) return;
+    var tk = getSlipTenantKey();
+    var st = slipTypeUi === 'thr' ? 'thr' : 'gaji';
+    await window.sigajiSupabase.from('sigaji_slip_email_sent').upsert(
+      {
+        tenant_key: tk,
+        nik: String(nik || '').trim(),
+        period_nama: String(periodNama || '').trim(),
+        slip_type: st,
+        sent_at: new Date().toISOString(),
+        sent_to: String(sentTo || '').trim().toLowerCase() || null,
+      },
+      { onConflict: 'tenant_key,nik,period_nama,slip_type' }
+    );
+  } catch (e) {
+    console.warn('recordSlipEmailSentToCloud', e);
+  }
+}
+
+async function sendSlipEmailBatch() {
+  if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
+    toast('Hanya Admin/HRD');
+    return;
+  }
+  var niks = [];
+  document.querySelectorAll('.slip-email-cb:checked').forEach(function (cb) {
+    if (cb.dataset.nik) niks.push(cb.dataset.nik);
+  });
+  if (!niks.length) {
+    toast('Centang minimal satu karyawan (yang punya email)');
+    return;
+  }
+  var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
+  var p = periodesFindById(pid) || PA();
+  var type = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
+  var isThr = type === 'thr' && p.thr_aktif;
+  var ok = 0,
+    fail = 0,
+    skip = 0;
+  toast('Mengirim ' + niks.length + ' slip ke email...');
+  for (var i = 0; i < niks.length; i++) {
+    var nik = niks[i];
+    var k = karyawan.find(function (x) {
+      return x.nik === nik;
+    });
+    if (!k) {
+      skip++;
+      continue;
+    }
+    if (!slipEmailHasValidAddress(k)) {
+      skip++;
+      continue;
+    }
+    if (isThr) {
+      try {
+        if (!hitungTHRBruto(k, p.nama).eligible) {
+          skip++;
+          continue;
+        }
+      } catch (e0) {
+        skip++;
+        continue;
+      }
+    }
+    try {
+      var o = isThr ? buildTHRSlipPDF(k, p) : buildGajiSlipPDF(k, p.nama, p.bayar);
+      var pdfBase64 = jsPdfToBase64(o.doc);
+      if (!pdfBase64) {
+        fail++;
+        continue;
+      }
+      var subj = isThr
+        ? 'Slip THR - ' + k.nama + ' - ' + (p.thr_nama || p.nama || '')
+        : 'Slip Gaji ' + p.nama + ' - ' + k.nama;
+      var sent = await emailSendSlipPdf(
+        String(k.email).trim().toLowerCase(),
+        subj,
+        buildSlipEmailText(k, p, isThr),
+        o.fileName || 'Slip_' + k.nik + '.pdf',
+        pdfBase64,
+        k.nik
+      );
+      if (sent) {
+        ok++;
+        await recordSlipEmailSentToCloud(k.nik, p.nama, isThr ? 'thr' : 'gaji', k.email);
+        if (!isThr && p.thr_aktif) {
+          var thr2 = await trySendThrEmailAfterGaji(k, p);
+          if (thr2) ok++;
+        }
+      } else fail++;
+    } catch (e) {
+      console.error('sendSlipEmailBatch', nik, e);
+      fail++;
+    }
+    await new Promise(function (r) {
+      setTimeout(r, 600);
+    });
+  }
+  slipEmailInvalidateMetaCache();
+  renderSlipEmailBatchChecklist(true);
+  toast(
+    'Email selesai: terkirim ' +
+      ok +
+      ', gagal ' +
+      fail +
+      (skip ? ', dilewati ' + skip + ' (tanpa email / THR tidak eligible)' : '')
+  );
+}
+
 /** Dipakai login lokal + login Supabase (cloud-sync.js). */
 function enterAppWithUser(user){
   if(!user)return;
@@ -1704,7 +2082,7 @@ function toggleSpPhkWrap(){
   w.style.display=on?'':'none';
   if(on&&(!document.getElementById('sp-phk-alasan')||!document.getElementById('sp-phk-alasan').options.length))populatePhkAlasanSelect();
 }
-function renderAll(){renderDash();renderKar();renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();try{sigajiUpdateCloudBackupUi();}catch(eCb){}}
+function renderAll(){renderDash();renderKar();try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();try{sigajiUpdateCloudBackupUi();}catch(eCb){}}
 // ── DASHBOARD ───────────────────────────────────
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
@@ -1775,7 +2153,7 @@ function filterKompgaji(q){
   document.getElementById('tb-kompgaji').innerHTML=r.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
 }
 function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
-function openNewKar(){if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}const nik=nextNikOtomatis();karyawan.push({nik,nama:'Karyawan Baru',dept:'Operasional',jabatan:'Staff',status:'Tetap',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',jk:'L',agama:'Islam',ktp:'',npwp:'',hp:'',email:'',alamat:'',atasan:'',lokasi:'',bank:'BCA',norek:'',reknam:'',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{'kes-prs':true,'kes-kar':true,'jht-prs':true,'jht-kar':true,'jp-prs':true,'jp-kar':true,'jkk-prs':true,'jkm-prs':true},bpjs_manual:{},natura:[],pph_return:{nilai:0,ket:''}});saveAll();renderKar();populateSelects();openPanel(nik);toast('Karyawan baru dibuat');}
+function openNewKar(){if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;const nik=nextNikOtomatis();karyawan.push({nik,nama:'Karyawan Baru',dept:'Operasional',jabatan:'Staff',status:'Tetap',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',jk:'L',agama:'Islam',ktp:'',npwp:'',hp:'',email:'',alamat:'',atasan:'',lokasi:'',bank:'BCA',norek:'',reknam:'',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{'kes-prs':true,'kes-kar':true,'jht-prs':true,'jht-kar':true,'jp-prs':true,'jp-kar':true,'jkk-prs':true,'jkm-prs':true},bpjs_manual:{},natura:[],pph_return:{nilai:0,ket:''}});saveAll();renderKar();populateSelects();openPanel(nik);toast('Karyawan baru dibuat');}
 // ── SLIDE PANEL KARYAWAN (profil SDM) ──────────
 function openPanel(nik){
   if(!canAccessModule('karyawan')){toast('Tidak punya akses modul Master Karyawan');return;}
@@ -2665,10 +3043,12 @@ function onSlipPeriodeChange(){
   }
   populateSelects();
   renderSlipTelegramBatchChecklist();
+  renderSlipEmailBatchChecklist();
   previewSlip();
 }
 function previewSlip(){
   renderSlipTelegramBatchChecklist();
+  renderSlipEmailBatchChecklist();
   const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
   if(!nik)return;
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
@@ -4041,7 +4421,7 @@ function rebuildSnapshotPeriode(id){
 function hapusPeriode(id){if(!confirm('Hapus periode?'))return;periodes=periodes.filter(function(p){return p.id!=id;});saveAll();renderPeriodes();toast('Dihapus');}
 function updatePolaPeriode(){var pola=document.getElementById('p-pola').value;if(pola==='25-24'){document.getElementById('p-start').value='2026-02-25';document.getElementById('p-end').value='2026-03-24';document.getElementById('p-bayar').value='2026-03-25';}else if(pola==='21-20'){document.getElementById('p-start').value='2026-02-21';document.getElementById('p-end').value='2026-03-20';document.getElementById('p-bayar').value='2026-03-21';}else if(pola==='1-akhir'){document.getElementById('p-start').value='2026-03-01';document.getElementById('p-end').value='2026-03-31';document.getElementById('p-bayar').value='2026-03-31';}}
 function simpanPerusahaan(){perusahaan.nama=document.getElementById('prs-nama').value;perusahaan.npwp=document.getElementById('prs-npwp').value;perusahaan.alamat=document.getElementById('prs-alamat').value;perusahaan.telp=document.getElementById('prs-telp').value;perusahaan.email=document.getElementById('prs-email').value;perusahaan.web=document.getElementById('prs-web').value;perusahaan.a1_kota=(document.getElementById('prs-a1-kota')&&document.getElementById('prs-a1-kota').value)||'';perusahaan.a1_prefix=(document.getElementById('prs-a1-prefix')&&document.getElementById('prs-a1-prefix').value.trim())||'A1';perusahaan.a1_ttd_nama=(document.getElementById('prs-a1-ttd')&&document.getElementById('prs-a1-ttd').value)||'';perusahaan.a1_ttd_jabatan=(document.getElementById('prs-a1-jab')&&document.getElementById('prs-a1-jab').value)||'';var hk=document.querySelector('input[name="hk-radio"]:checked');perusahaan.hariKerja=hk?parseInt(hk.value)||6:6;saveAll();applyBranding();updateHKRadioStyle();renderPenggajian();renderDash();toast('Data perusahaan disimpan');}
-function loadPrsForm(){['nama','npwp','alamat','telp','email','web'].forEach(function(f){var e=document.getElementById('prs-'+f);if(e)e.value=perusahaan[f]||'';});var a1k=document.getElementById('prs-a1-kota');if(a1k)a1k.value=perusahaan.a1_kota||'';var a1p=document.getElementById('prs-a1-prefix');if(a1p)a1p.value=perusahaan.a1_prefix!=null?perusahaan.a1_prefix:'A1';var a1t=document.getElementById('prs-a1-ttd');if(a1t)a1t.value=perusahaan.a1_ttd_nama||'';var a1j=document.getElementById('prs-a1-jab');if(a1j)a1j.value=perusahaan.a1_ttd_jabatan||'';var hk=perusahaan.hariKerja||6;var r=document.getElementById('hk-'+hk);if(r)r.checked=true;updateHKRadioStyle();renderPTKPForm();}
+function loadPrsForm(){['nama','npwp','alamat','telp','email','web'].forEach(function(f){var e=document.getElementById('prs-'+f);if(e)e.value=perusahaan[f]||'';});try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}var a1k=document.getElementById('prs-a1-kota');if(a1k)a1k.value=perusahaan.a1_kota||'';var a1p=document.getElementById('prs-a1-prefix');if(a1p)a1p.value=perusahaan.a1_prefix!=null?perusahaan.a1_prefix:'A1';var a1t=document.getElementById('prs-a1-ttd');if(a1t)a1t.value=perusahaan.a1_ttd_nama||'';var a1j=document.getElementById('prs-a1-jab');if(a1j)a1j.value=perusahaan.a1_ttd_jabatan||'';var hk=perusahaan.hariKerja||6;var r=document.getElementById('hk-'+hk);if(r)r.checked=true;updateHKRadioStyle();renderPTKPForm();}
 function renderPTKPForm(){
   var tb=document.getElementById('tb-ptkp-master');if(!tb)return;
   var t=getPTKPTable();
@@ -4353,7 +4733,7 @@ function eksekusiImport(){
     if(importData[k]===undefined)return;
     var val=normalisasiData(k,importData[k]);
     if(mode==='merge'){
-      if(k==='karyawan'){var ex=karyawan.map(function(x){return x.nik;});var baru=val.filter(function(x){return !ex.includes(x.nik);});var upd=val.filter(function(x){return ex.includes(x.nik);});upd.forEach(function(nk){var i=karyawan.findIndex(function(x){return x.nik===nk.nik;});if(i>=0)karyawan[i]=Object.assign({},karyawan[i],nk);});karyawan.push.apply(karyawan,baru);}
+      if(k==='karyawan'){var ex=karyawan.map(function(x){return x.nik;});var baru=val.filter(function(x){return !ex.includes(x.nik);});var upd=val.filter(function(x){return ex.includes(x.nik);});var baruAktif=baru.filter(function(x){return !String((x&&x.tgl_berhenti)||'').trim();});if(typeof sigajiCanAddActiveEmployees==='function'){var chk=sigajiCanAddActiveEmployees(baruAktif.length);if(!chk.ok){toast(chk.message);return;}}upd.forEach(function(nk){var i=karyawan.findIndex(function(x){return x.nik===nk.nik;});if(i>=0)karyawan[i]=Object.assign({},karyawan[i],nk);});karyawan.push.apply(karyawan,baru);}
       else if(k==='periodes'){var en=periodes.map(function(x){return x.nama;});periodes.push.apply(periodes,val.filter(function(x){return !en.includes(x.nama);}));}
       else if(k==='hariLibur'){var et=hariLibur.map(function(x){return x.tgl;});hariLibur.push.apply(hariLibur,val.filter(function(x){return !et.includes(x.tgl);}));}
       else if(k==='absensi'||k==='lembur'||k==='prorata'){var cur=k==='absensi'?absensi:k==='lembur'?lembur:prorata;Object.keys(val).forEach(function(n){if(!cur[n])cur[n]=val[n];else Object.assign(cur[n],val[n]);});}
