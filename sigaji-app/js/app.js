@@ -2248,6 +2248,88 @@ function salinTunjVarDariPeriodeLalu(){
   });
   saveAll();renderPenggajian();toast('Disalin dari '+prev);
 }
+function ensureXlsxForTunjVar(cb){
+  if(typeof ensureXLSX==='function'){ensureXLSX(cb);return;}
+  if(typeof XLSX!=='undefined'){cb();return;}
+  toast('Pustaka Excel belum dimuat');
+}
+function exportTunjVarExcelTemplate(){
+  ensureXlsxForTunjVar(function(){
+    var p=PA(),pn=p.nama;
+    var cols=getTunjVarColumnsResolved();
+    var listK=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+    var hdr=['NIK','Nama'].concat(cols.map(function(c){return c.nama;}));
+    var aoa=[hdr];
+    listK.forEach(function(k){
+      var r=(tunjVarBulan[pn]||{})[k.nik]||{};
+      var row=[k.nik,k.nama];
+      cols.forEach(function(c){
+        var v=parseFloat(r[c.id]);row.push(isNaN(v)?0:v);
+      });
+      aoa.push(row);
+    });
+    var ws=XLSX.utils.aoa_to_sheet(aoa);
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'TunjVar');
+    var fn='TunjVar_'+pn.replace(/[^\w\d]+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
+    XLSX.writeFile(wb,fn);
+    toast('Template diunduh — isi kolom nilai lalu Import Excel');
+  });
+}
+function importTunjVarExcel(inp){
+  var f=inp&&inp.files&&inp.files[0];
+  if(!f)return;
+  ensureXlsxForTunjVar(function(){
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        var wb=XLSX.read(ev.target.result,{type:'array'});
+        var sh=wb.Sheets[wb.SheetNames[0]];
+        if(!sh){toast('Sheet kosong');inp.value='';return;}
+        var rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:''});
+        if(!rows.length||rows.length<2){toast('Minimal baris header + 1 data');inp.value='';return;}
+        var hdr=rows[0].map(function(x){return String(x||'').trim();});
+        var nikIdx=hdr.findIndex(function(h){return /^nik$/i.test(h);});
+        if(nikIdx<0){toast('Kolom NIK wajib di baris pertama');inp.value='';return;}
+        var cols=getTunjVarColumnsResolved();
+        var colMap=[];
+        hdr.forEach(function(h,i){
+          if(i===nikIdx||/^nama$/i.test(h))return;
+          var hLow=h.toLowerCase();
+          var c=cols.find(function(x){return String(x.id).toLowerCase()===hLow||String(x.nama).toLowerCase()===hLow;});
+          if(c)colMap.push({idx:i,id:c.id});
+        });
+        if(!colMap.length){toast('Header kolom tidak cocok dengan definisi tunjangan (nama/id kolom)');inp.value='';return;}
+        var pn=PA().nama;
+        if(!tunjVarBulan[pn])tunjVarBulan[pn]={};
+        var nikSet={};
+        karyawan.forEach(function(k){nikSet[String(k.nik)]=k;});
+        var ok=0,skip=0;
+        for(var r=1;r<rows.length;r++){
+          var row=rows[r];
+          if(!row||!row.length)continue;
+          var nik=String(row[nikIdx]||'').trim();
+          if(!nik||!nikSet[nik]){skip++;continue;}
+          if(!tunjVarBulan[pn][nik])tunjVarBulan[pn][nik]={};
+          colMap.forEach(function(cm){
+            var v=parseFloat(row[cm.idx]);
+            if(!isNaN(v)&&v!==0)tunjVarBulan[pn][nik][cm.id]=Math.max(0,Math.round(v));
+          });
+          ok++;
+        }
+        saveAll();
+        renderTunjVariabelBulan();
+        renderPenggajian(true);
+        toast('Import selesai: '+ok+' karyawan'+(skip?' ('+skip+' baris dilewati)':''));
+      }catch(e){
+        console.error(e);
+        toast('Gagal baca Excel: '+(e.message||e));
+      }
+      inp.value='';
+    };
+    reader.readAsArrayBuffer(f);
+  });
+}
 function renderTunjVariabelBulan(){
   var card=document.getElementById('tunjvar-card'),wrap=document.getElementById('tunjvar-tabel-wrap'),foot=document.getElementById('tunjvar-foot');
   if(!card||!wrap)return;

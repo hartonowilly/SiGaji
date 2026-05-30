@@ -314,7 +314,7 @@
     }
   }
 
-  async function loadCloudPayloadIntoApp(uid) {
+  async function fetchBlobPayload(uid) {
     var sb = window.sigajiSupabase;
     var res;
 
@@ -332,17 +332,37 @@
       }
     }
 
-    if (res.error) {
-      console.error(res.error);
-      var er = res.error.message || String(res.error.code || '') || 'Gagal membaca cloud';
-      if (/row-level security|RLS|42501|permission denied/i.test(String(res.error.message) + String(res.error.details || '')))
-        er +=
-          ' — cek kebijakan RLS tabel sigaji_cloud (baca/insert untuk user terautentikasi).';
-      toastSafe(er);
-      return;
+    if (res.error) throw res.error;
+    return res.data && res.data.payload ? res.data.payload : null;
+  }
+
+  async function loadCloudPayloadIntoApp(uid) {
+    var sb = window.sigajiSupabase;
+
+    if (window.sigajiCloudTables && typeof window.sigajiCloudTables.tryLoadWithTables === 'function') {
+      try {
+        var fromTables = await window.sigajiCloudTables.tryLoadWithTables(sb, uid, fetchBlobPayload);
+        if (fromTables && typeof window.applyDbFromCloudPayload === 'function') {
+          window.applyDbFromCloudPayload(fromTables);
+          return;
+        }
+      } catch (e) {
+        console.warn('Sigaji: load tabel gagal, coba blob', e);
+      }
     }
-    if (res.data && res.data.payload && typeof window.applyDbFromCloudPayload === 'function') {
-      window.applyDbFromCloudPayload(res.data.payload);
+
+    try {
+      var payload = await fetchBlobPayload(uid);
+      if (payload && typeof window.applyDbFromCloudPayload === 'function') {
+        window.applyDbFromCloudPayload(payload);
+      }
+    } catch (err) {
+      console.error(err);
+      var er = err.message || String(err.code || '') || 'Gagal membaca cloud';
+      if (/row-level security|RLS|42501|permission denied/i.test(String(err.message) + String(err.details || '')))
+        er +=
+          ' — cek kebijakan RLS tabel sigaji_cloud / sigaji_karyawan (user terautentikasi).';
+      toastSafe(er);
     }
   }
 
@@ -354,21 +374,9 @@
     }, DEBOUNCE_MS);
   }
 
-  async function cloudUpsert() {
-    if (window.sigajiApplyingCloud) return;
+  async function upsertBlobOnly(uid, payload) {
     var sb = window.sigajiSupabase;
-    if (!sb) return;
-    var sess = await sb.auth.getSession();
-    if (!sess.data || !sess.data.session) return;
-    var uid = sess.data.session.user.id;
-    if (typeof window.getPayloadForCloud !== 'function') return;
-    var payload = window.getPayloadForCloud();
-    if (typeof window.sigajiShouldSkipCloudUpload === 'function' && window.sigajiShouldSkipCloudUpload(payload)) {
-      console.warn('Sigaji cloud: lewati unggah — payload masih template kosong (lindungi data tenant di Supabase).');
-      return;
-    }
     var ts = new Date().toISOString();
-
     var r;
     if (cloudPayloadMode === 'legacy') {
       r = await sb
@@ -394,6 +402,29 @@
       }
     }
     if (r.error) console.error('Sigaji cloud save:', r.error);
+  }
+
+  async function cloudUpsert() {
+    if (window.sigajiApplyingCloud) return;
+    var sb = window.sigajiSupabase;
+    if (!sb) return;
+    var sess = await sb.auth.getSession();
+    if (!sess.data || !sess.data.session) return;
+    var uid = sess.data.session.user.id;
+    if (typeof window.getPayloadForCloud !== 'function') return;
+    var payload = window.getPayloadForCloud();
+    if (typeof window.sigajiShouldSkipCloudUpload === 'function' && window.sigajiShouldSkipCloudUpload(payload)) {
+      console.warn('Sigaji cloud: lewati unggah — payload masih template kosong (lindungi data tenant di Supabase).');
+      return;
+    }
+
+    if (window.sigajiCloudTables && typeof window.sigajiCloudTables.trySaveWithTables === 'function') {
+      await window.sigajiCloudTables.trySaveWithTables(sb, payload, function () {
+        return upsertBlobOnly(uid, payload);
+      });
+      return;
+    }
+    await upsertBlobOnly(uid, payload);
   }
 
   window.sigajiTryCloudLogin = tryCloudLoginWhenReady;
