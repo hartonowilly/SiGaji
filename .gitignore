@@ -1,0 +1,10 @@
+# Rahasia lokal — jangan ke GitHub (salin dari js/config.example.js)
+js/config.js
+scripts/backup-supabase.env
+.env
+.env.*
+
+# Dependensi & artefak lokal
+node_modules/
+.DS_Store
+Thumbs.db
