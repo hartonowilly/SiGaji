@@ -1026,10 +1026,7 @@ function sigajiApplyCloudLoginUi(){
   var q=document.getElementById('login-quick-local');
   if(q)q.style.display='none';
   var h=document.getElementById('cloud-login-hint');
-  if(h){
-    h.style.display='block';
-    h.innerHTML='Login memakai <strong>email + sandi Supabase</strong> (Authentication). Setelah sukses, data di perangkat digabung dengan salinan di awan. <strong>Cadangan:</strong> F12 → Application → Local Storage → salin <code style="background:#e5e7eb;padding:1px 4px;border-radius:4px">sigaji_db</code> atau <code style="background:#e5e7eb;padding:1px 4px;border-radius:4px">sigaji_universal</code>.';
-  }
+  if(h)h.style.display='none';
   var fp = document.getElementById('forgot-pw-wrap');
   if (fp) fp.style.display = 'block';
   // Jika fitur "ingat username" aktif, aplikasikan lagi setelah UI cloud membersihkan input
