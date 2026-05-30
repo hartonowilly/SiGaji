@@ -311,37 +311,23 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm" id="btn-pdf-all-thr" style="display:none;background:#f5f0ff;color:#5b21b6;border:1.5px solid #c4b5fd;font-weight:700" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
   </div>
   <div id="slip-tg-hint" style="display:none;font-size:11px;color:#1565a8;margin:.5rem 0 0;padding:.5rem .75rem;background:#e8f4fc;border-radius:8px;border:1px solid #b8d9f0;line-height:1.55">
-    <strong>Telegram &amp; email massal:</strong> tabel <strong style="color:#229ED9">Telegram</strong> dan <strong style="color:#1a56a0">Email</strong> ada tepat <em>di bawah ini</em>. Kolom <strong>Telegram</strong> = sudah hubung bot atau belum; kolom <strong>Slip</strong> = sudah pernah dikirim untuk periode &amp; jenis slip yang dipilih di atas (perlu SQL <code style="font-size:10px;background:#fff;padding:1px 4px;border-radius:4px">supabase_sigaji_slip_tg_sent.sql</code> di Supabase).
+    <strong>Kirim massal:</strong> satu tabel di bawah — urut <strong>kode pegawai (NIK)</strong>. Centang nama yang akan dikirim, lalu tombol <strong style="color:#229ED9">Telegram</strong> atau <strong style="color:#1a56a0">Email</strong>. Riwayat kirim per periode &amp; jenis slip di atas.
   </div>
 </div>
-  <div id="slip-tg-batch" style="display:none;margin-bottom:.75rem">
-    <div class="card" style="border-left:4px solid #229ED9;box-shadow:0 1px 8px rgba(34,158,217,.12)">
-      <div class="ct" style="color:#229ED9;font-size:14px">&#9992; Kirim ke Telegram (banyak sekaligus)</div>
+  <div id="slip-send-batch" style="display:none;margin-bottom:.75rem">
+    <div class="card" style="border-left:4px solid #1a56a0;box-shadow:0 1px 8px rgba(26,86,160,.1)">
+      <div class="ct" style="font-size:14px">&#128232; Kirim slip ke banyak karyawan</div>
       <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.5rem">
-        Pilih <strong>periode</strong> dan <strong>Slip Gaji Bulanan</strong> di atas untuk mengirim <strong>gaji + THR</strong> (dua PDF) per orang jika periode ber-THR. Pilih <strong>Slip THR</strong> untuk hanya slip THR. Centang karyawan lalu <strong>Kirim Telegram terpilih</strong>. Hanya yang sudah <code>/start</code> ke bot yang berhasil. Pengiriman berurutan (~0,5 detik/antar dokumen).
+        Daftar diurut <strong>NIK</strong>. <strong>Slip Gaji Bulanan</strong> + periode ber-THR: bisa <strong>dua PDF</strong> (gaji + THR) per orang. Telegram hanya untuk yang sudah <code>/start</code> bot. Email butuh alamat di profil + SMTP Netlify (<code style="font-size:10px">SIGAJI_SMTP_*</code>).
       </div>
       <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
-        <button type="button" class="btn btn-sm btn-out" onclick="slipTgToggleAll(true)">Pilih semua</button>
-        <button type="button" class="btn btn-sm btn-out" onclick="slipTgToggleAll(false)">Kosongkan</button>
-        <button type="button" class="btn btn-sm btn-out" onclick="renderSlipTelegramBatchChecklist(true)">&#8635; Segarkan status</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(true)">Pilih semua</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(false)">Kosongkan</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="renderSlipSendBatchChecklist(true)">&#8635; Segarkan status</button>
         <button type="button" class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
-      </div>
-      <div id="slip-tg-batch-wrap"></div>
-    </div>
-  </div>
-  <div id="slip-email-batch" style="display:none;margin-bottom:.75rem">
-    <div class="card" style="border-left:4px solid #1a56a0;box-shadow:0 1px 8px rgba(26,86,160,.12)">
-      <div class="ct" style="color:#1a56a0;font-size:14px">&#9993; Kirim slip ke email (banyak sekaligus)</div>
-      <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.5rem">
-        PDF dikirim otomatis dari server (SMTP), tanpa membuka Outlook/Gmail. Pastikan <strong>email karyawan</strong> terisi di profil. Atur SMTP di Netlify (<code style="font-size:10px">SIGAJI_SMTP_*</code>) — lihat <code style="font-size:10px">docs/SLIP_EMAIL_SMTP.md</code>. Periode THR + slip <strong>Gaji bulanan</strong>: dapat <strong>dua email</strong> (gaji + THR) jika eligible.
-      </div>
-      <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
-        <button type="button" class="btn btn-sm btn-out" onclick="slipEmailToggleAll(true)">Pilih semua (yang punya email)</button>
-        <button type="button" class="btn btn-sm btn-out" onclick="slipEmailToggleAll(false)">Kosongkan</button>
-        <button type="button" class="btn btn-sm btn-out" onclick="renderSlipEmailBatchChecklist(true)">&#8635; Segarkan status</button>
         <button type="button" class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" onclick="sendSlipEmailBatch()">Kirim email terpilih</button>
       </div>
-      <div id="slip-email-batch-wrap"></div>
+      <div id="slip-send-batch-wrap"></div>
     </div>
   </div>
   <div id="slip-thr-banner"></div>
@@ -1066,7 +1052,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=10.0.0"></script>
 <script src="js/storage.js?v=10.0.0"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/app.js?v=10.0.3"></script>
+<script src="js/app.js?v=10.0.5"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1077,7 +1063,6 @@ if(typeof exportCloudDatabaseBackup!=='function'){
 </script>
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
-<script src="js/license-quota.js?v=10.0.4"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
 <script src="js/cloud-tables.js?v=11.0.1"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
