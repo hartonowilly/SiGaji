@@ -675,11 +675,17 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fg"><label>Nama File</label><input id="backup-filename" value="SiGaji_Backup"></div>
       <div class="fg"><label>Catatan (opsional)</label><input id="backup-catatan" placeholder="Backup sebelum tutup bulan"></div>
     </div>
-    <div class="fl gap1">
+    <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
       <button class="btn btn-g" onclick="exportBackup()">&#128190; Download Backup (.json)</button>
+      <button class="btn btn-p" id="btn-cloud-db-export" onclick="exportCloudDatabaseBackup()" style="display:none">&#9729; Unduh backup database (cloud)</button>
       <button class="btn btn-sm btn-out" onclick="exportCSVAll()">&#128196; Export CSV</button>
     </div>
-    <div class="info-box info-blue mt1" style="font-size:11px">Backup JSON mencakup <strong>snapshot karyawan per periode</strong> (karSnapshot) agar histori perhitungan tetap aman saat restore/import.</div>
+    <label id="backup-exclude-logo-wrap" style="display:none;align-items:center;gap:.4rem;margin-top:.5rem;font-size:12px;cursor:pointer">
+      <input type="checkbox" id="backup-exclude-logo" checked style="width:16px;height:16px;accent-color:#1a56a0">
+      Kecilkan file: jangan sertakan logo (base64) di backup cloud
+    </label>
+    <div class="info-box info-blue mt1" style="font-size:11px">Backup <strong>JSON aplikasi</strong> = restore cepat di SiGaji. Backup <strong>database cloud</strong> = unduh data per tabel Supabase (butuh login Admin/HRD + Netlify Functions). Bukan file <code>.dump</code> pg_dump.</div>
+    <div class="info-box info-blue mt1" style="font-size:11px">Backup JSON aplikasi mencakup <strong>snapshot karyawan per periode</strong> (karSnapshot) agar histori perhitungan tetap aman saat restore/import.</div>
     <div id="backup-info" class="mt1" style="font-size:11px;color:#6b7280"></div>
   </div>
   <div class="card" style="border-left:4px solid #1a56a0">
@@ -1038,7 +1044,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=10.0.0"></script>
 <script src="js/storage.js?v=10.0.0"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/app.js?v=10.0.0"></script>
+<script src="js/app.js?v=10.0.1"></script>
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
