@@ -631,11 +631,11 @@ function hitungGaji(k,pNama){
   // Cutoff: lihat periodeTglCutoffPhk — mendukung bayar lebih awal dari end (bank hari kerja).
   const stopCutoff=periodeTglCutoffPhk(p);
   const isStopInPeriode=!!(tglStopIso&&p.start&&stopCutoff&&tglStopIso>=p.start&&tglStopIso<=stopCutoff);
-  const isPeriodeResign=p.tipe_periode==='resign';
   const alasan=(k.phk&&k.phk.alasan)?String(k.phk.alasan):'';
+  const hasPhkAlasan=!!alasan.trim();
   const isResign=alasan.indexOf('resign')===0;
   let phkCtx=null;
-  if(tglStopIso&&(isStopInPeriode||isPeriodeResign)&&typeof hitungPesangon==='function'){
+  if(tglStopIso&&isStopInPeriode&&hasPhkAlasan&&typeof hitungPesangon==='function'){
     const r=hitungPesangon(k);
     if(r&&r.ok){
       const items=[
@@ -665,7 +665,7 @@ function hitungGaji(k,pNama){
   }
   // BPJS pada bulan resign/berhenti: basis hanya GAPOK FULL (tanpa tunjangan),
   // walaupun take home prorata.
-  const isBpjsFullMonth=!!(tglStopIso&&(isStopInPeriode||isPeriodeResign));
+  const isBpjsFullMonth=!!(tglStopIso&&isStopInPeriode&&hasPhkAlasan);
   const gapokBpjs=isBpjsFullMonth?Math.round(k.gapok||0):gapokEff;
   const tunjBpjs=isBpjsFullMonth?0:tBPJS;
   const bpjs=calcBPJS(k,gapokBpjs,tunjBpjs);
@@ -674,14 +674,12 @@ function hitungGaji(k,pNama){
   const grossPPhRegular=gapokEff+tGross+natKP+lb+bpjsPrsNatKP;
   const grossPPh=grossPPhRegular+thrBruto; // PPh dihitung termasuk THR
   const brutoTH=gapokEff+tTH+natNKP+lb;   // Take Home TIDAK termasuk THR
-  // Deteksi masa pajak terakhir:
-  // - Desember (rekonsiliasi tahunan)
-  // - Periode bertipe 'resign'
-  // - Atau karyawan berhenti di dalam periode ini (rekonsiliasi saat pegawai keluar tengah tahun)
+  // Deteksi masa pajak terakhir per karyawan:
+  // - Desember: rekonsiliasi tahunan seluruh karyawan aktif di periode itu
+  // - Resign/PHK: otomatis di periode yang memuat tgl. berhenti (asal alasan PHK sudah diisi)
   const isMasaPajakTerakhir=
     p.tipe_periode==='desember'||
-    p.tipe_periode==='resign'||
-    (!!tglStopIso&&isStopInPeriode);
+    (!!tglStopIso&&isStopInPeriode&&hasPhkAlasan);
   let pph,reconciliation=null;
   if(isMasaPajakTerakhir){
     const ytd=getBrutoYTD(k,pn);
@@ -701,7 +699,7 @@ function hitungGaji(k,pNama){
       opsiLebihBayar:p.opsi_lebih_bayar||'refund', // 'refund' | 'carryover'
       isPajakTerakhir:true,
       tipePeriode:tipeLabel,
-      reason:isStopReason?'stop_in_period':(p.tipe_periode==='resign'?'periode_resign':(p.tipe_periode==='desember'?'desember':'other')),
+      reason:isStopReason?'stop_in_period':(p.tipe_periode==='desember'?'desember':'other'),
       tglBerhenti:isStopReason?tglStopIso:''
     };
     if(selisih<0&&p.opsi_lebih_bayar==='refund') pph=0; // lebih bayar → PPh bulan ini 0
@@ -2451,9 +2449,19 @@ function makeSlip(k,pNama){
   if(g.bpjsPrsNatKP>0)h+='<div class="cr" style="color:#1a56a0"><span>BPJS Prs - JKK+JKM+Kes (Natura KP)</span><span>'+fmt(g.bpjsPrsNatKP)+'</span></div>';
   if(g.thrBruto>0)h+='<div class="cr" style="color:#5b21b6;font-weight:700"><span>THR Bruto (digabung ke Gross PPh)</span><span>'+fmt(g.thrBruto)+'</span></div>';
   h+='<div class="cr bold"><span>TOTAL GROSS INCOME</span><span>'+fmt(g.grossPPh)+'</span></div></div>';
-  h+='<div class="pph-calc-sec"><div class="pph-calc-tit">PPh 21 - PMK 168/2023 Metode TER</div>';
+  h+='<div class="pph-calc-sec"><div class="pph-calc-tit">PPh 21'+(g.reconciliation?' — Rekonsiliasi Masa Pajak Terakhir':' - PMK 168/2023 Metode TER')+'</div>';
   h+='<div class="cr"><span>Penghasilan Bruto bulan ini</span><span>'+fmt(g.grossPPh)+'</span></div>';
-  h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div></div>';
+  if(g.reconciliation){
+    const r=g.reconciliation;
+    h+='<div class="cr"><span>Bruto YTD (bulan sebelumnya)</span><span>'+fmt(r.brutoYTD)+'</span></div>';
+    h+='<div class="cr bold"><span>Total Bruto Setahun</span><span>'+fmt(r.brutoTahunan)+'</span></div>';
+    h+='<div class="cr"><span>PPh Tahunan (Progresif)</span><span>'+fmt(r.pphTahunan)+'</span></div>';
+    h+='<div class="cr"><span>PPh sudah dipotong YTD</span><span>- '+fmt(r.pphYTD)+'</span></div>';
+    h+='<div class="cr result"><span><strong>PPh 21 bulan ini</strong> (selisih rekonsiliasi)</span><span><strong>'+fmt(g.pph)+'</strong></span></div>';
+  }else{
+    h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div>';
+  }
+  h+='</div>';
   h+='<div class="ssec">Potongan dari Take Home</div>';
   h+='<div class="sr"><span>PPh 21</span><span>- '+fmt(g.pph)+'</span></div>';
   h+='<div class="sr"><span>BPJS Kesehatan Karyawan (1%)</span><span>- '+fmt(g.bpjs.kes_kar)+'</span></div>';
@@ -2671,9 +2679,18 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   if(g.thrBruto>0){doc.setTextColor(91,33,182);doc.setFont(undefined,'bold');rowL('THR Bruto (digabung ke Gross PPh)',fmt(g.thrBruto));doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');}
   rowL('TOTAL GROSS INCOME',fmt(g.grossPPh),true);y+=2;
 
-  sec('PPh 21 - PMK 168/2023 Metode TER');
+  sec('PPh 21'+(g.reconciliation?' — Rekonsiliasi Masa Pajak Terakhir':' - PMK 168/2023 Metode TER'));
   rowL('Penghasilan Bruto bulan ini',fmt(g.grossPPh));
-  rowTerPphCombined();
+  if(g.reconciliation){
+    var r=g.reconciliation;
+    rowL('Bruto YTD (bulan sebelumnya)',fmt(r.brutoYTD));
+    rowL('Total Bruto Setahun',fmt(r.brutoTahunan),true);
+    rowL('PPh Tahunan (Progresif)',fmt(r.pphTahunan));
+    rowM('PPh sudah dipotong YTD',r.pphYTD);
+    rowL('PPh 21 bulan ini (selisih rekonsiliasi)',fmt(g.pph),true);
+  }else{
+    rowTerPphCombined();
+  }
   y+=1;
 
   sec('Potongan dari Take Home');
@@ -3291,6 +3308,135 @@ function terInfoForExport(ptkpKey,grossPPh){
   var customRate=perusahaan&&perusahaan.ter_custom&&perusahaan.ter_custom[lmpKey]&&perusahaan.ter_custom[lmpKey][idx>=0?idx:tbl.length-1];
   var rate=customRate!==undefined?customRate:found[1];
   return{lampiran:'Lampiran '+lmpKey,ratePct:Math.round(rate*10000)/100,batasBrutoTer:found[0]};
+}
+/** Periode gaji yang memuat tanggal berhenti karyawan */
+function findPeriodeForTglBerhenti(k){
+  var t=String((k&&k.tgl_berhenti)||'').trim();
+  if(!t)return null;
+  var found=null;
+  periodes.forEach(function(p){
+    var cutoff=periodeTglCutoffPhk(p);
+    if(p.start&&cutoff&&t>=String(p.start)&&t<=String(cutoff))found=p;
+  });
+  return found;
+}
+/** Periode dalam tahun pajak yang sama, Jan s.d. bulan berhenti (urut tgl bayar) */
+function getPeriodesResignTahun(k){
+  var stopP=findPeriodeForTglBerhenti(k);
+  if(!stopP)return [];
+  var thn=new Date(stopP.bayar||stopP.end||stopP.start).getFullYear();
+  var bayarStop=String(stopP.bayar||'');
+  return periodes.filter(function(p){
+    var pThn=new Date(p.bayar||p.end||p.start).getFullYear();
+    if(pThn!==thn)return false;
+    return String(p.bayar||'')<=bayarStop;
+  }).sort(function(a,b){return String(a.bayar||'').localeCompare(String(b.bayar||''));});
+}
+function karyawanEligibleRekonResign(){
+  return karyawan.filter(function(k){
+    var t=String(k.tgl_berhenti||'').trim();
+    var a=(k.phk&&k.phk.alasan)?String(k.phk.alasan).trim():'';
+    return t&&a&&findPeriodeForTglBerhenti(k);
+  });
+}
+function phkAlasanLbl(k){
+  var id=(k.phk&&k.phk.alasan)||'';
+  if(typeof phkOpt==='function'){var o=phkOpt(id);if(o&&o.lbl)return o.lbl;}
+  return id||'-';
+}
+function xlsxSheetNameSafe(s){
+  return String(s||'Sheet').replace(/[\\/*?:\[\]]/g,' ').trim().substring(0,31)||'Sheet';
+}
+/** Excel: rekonsiliasi PPh resign/PHK — per karyawan, Jan s.d. bulan berhenti */
+function exportExcelRekonResign(){
+  var list=karyawanEligibleRekonResign();
+  if(!list.length){toast('Tidak ada karyawan dengan tgl. berhenti + alasan PHK/resign');return;}
+  ensureXLSX(function(){
+    try{
+      var pt=(perusahaan.nama||'PERUSAHAAN');
+      var wb=XLSX.utils.book_new();
+      var exportThn=new Date().getFullYear();
+      list.forEach(function(k){
+        var pers=getPeriodesResignTahun(k);
+        if(!pers.length)return;
+        var stopP=findPeriodeForTglBerhenti(k);
+        var thn=new Date(stopP.bayar||stopP.end||stopP.start).getFullYear();
+        exportThn=thn;
+        var rows=[];
+        rows.push(['REKONSILIASI PPh 21 — MASA PAJAK TERAKHIR (RESIGN/PHK)']);
+        rows.push(['Perusahaan: '+pt]);
+        rows.push(['Karyawan: '+(k.nama||'-')+' | NIK: '+k.nik+' | PTKP: '+(k.ptkp||'-')+' | NPWP: '+(k.npwp||'-')]);
+        rows.push(['Tgl. berhenti: '+fmtDate(k.tgl_berhenti)+' | Alasan: '+phkAlasanLbl(k)]);
+        rows.push(['Tahun pajak: '+thn+' | Periode terakhir: '+(stopP.nama||'-')+' | Bayar: '+fmtDate(stopP.bayar||'-')]);
+        rows.push(['Dicetak: '+new Date().toISOString().split('T')[0]]);
+        rows.push([]);
+        rows.push(['No','Periode','Tgl mulai','Tgl selesai','Tgl bayar','Bruto PPh 21','Metode PPh','PPh dipotong','Bruto kumulatif','PPh kumulatif','Lebih bayar','Kurang bayar']);
+        var cumB=0,cumP=0,lastG=null;
+        pers.forEach(function(p,i){
+          var g=hitungGaji(k,p.nama);
+          lastG=g;
+          cumB+=g.grossPPh||0;
+          cumP+=g.pph||0;
+          var metode=g.reconciliation?'Rekonsiliasi progresif':'TER (PMK 168)';
+          var lb=g.reconciliation&&g.reconciliation.lebihBayar>0?Math.round(g.reconciliation.lebihBayar):'';
+          var kb=g.reconciliation&&g.reconciliation.kurangBayar>0?Math.round(g.reconciliation.kurangBayar):'';
+          rows.push([
+            i+1,p.nama||'',p.start||'',p.end||'',p.bayar||'',
+            Math.round(g.grossPPh||0),metode,Math.round(g.pph||0),
+            Math.round(cumB),Math.round(cumP),lb,kb
+          ]);
+        });
+        rows.push([]);
+        if(lastG&&lastG.reconciliation){
+          var r=lastG.reconciliation;
+          rows.push(['RINGKASAN REKONSILIASI (bulan terakhir: '+(stopP.nama||'-')+')']);
+          rows.push(['Total bruto YTD (Jan s.d. bulan sebelum terakhir)',Math.round(r.brutoYTD)]);
+          rows.push(['Bruto bulan terakhir',Math.round(lastG.grossPPh)]);
+          rows.push(['Total bruto setahun',Math.round(r.brutoTahunan)]);
+          rows.push(['PPh tahunan (progresif Pasal 17)',Math.round(r.pphTahunan)]);
+          rows.push(['PPh sudah dipotong (Jan s.d. bulan sebelum terakhir)',Math.round(r.pphYTD)]);
+          rows.push(['PPh bulan terakhir (selisih rekonsiliasi)',Math.round(lastG.pph)]);
+          rows.push(['Lebih bayar PPh',r.lebihBayar>0?Math.round(r.lebihBayar):0]);
+          rows.push(['Kurang bayar PPh',r.kurangBayar>0?Math.round(r.kurangBayar):0]);
+        }else{
+          rows.push(['Catatan: Bulan terakhir belum terdeteksi rekonsiliasi — pastikan alasan PHK/resign sudah diisi.']);
+        }
+        if(lastG&&lastG.phk){
+          rows.push([]);
+          rows.push(['PEMBAYARAN PHK / PESANGON (bulan terakhir)']);
+          (lastG.phk.items||[]).forEach(function(it){
+            rows.push([it.nama,Math.round(it.nilai||0)]);
+          });
+          if(lastG.phk.mode==='phk'){
+            rows.push(['Total bruto pesangon',Math.round(lastG.phk.bruto||0)]);
+            rows.push(['PPh 21 Final pesangon (PP 68/2009)',Math.round(lastG.phk.pphFinal||0)]);
+            rows.push(['Netto pesangon diterima',Math.round((lastG.phk.bruto||0)-(lastG.phk.pphFinal||0))]);
+          }else{
+            rows.push(['Mode resign: UPH (jika ada) sudah masuk bruto PPh gaji di atas; UP/UPMK tidak.']);
+          }
+        }
+        var ws=XLSX.utils.aoa_to_sheet(rows);
+        var ncol=12;
+        ws['!merges']=[
+          {s:{r:0,c:0},e:{r:0,c:ncol-1}},
+          {s:{r:1,c:0},e:{r:1,c:ncol-1}},
+          {s:{r:2,c:0},e:{r:2,c:ncol-1}},
+          {s:{r:3,c:0},e:{r:3,c:ncol-1}},
+          {s:{r:4,c:0},e:{r:4,c:ncol-1}},
+          {s:{r:5,c:0},e:{r:5,c:ncol-1}}
+        ];
+        ws['!cols']=[{wch:4},{wch:18},{wch:12},{wch:12},{wch:12},{wch:16},{wch:22},{wch:14},{wch:16},{wch:14},{wch:14},{wch:14}];
+        var firstDataRow=7;
+        var lastDataRow=firstDataRow+pers.length-1;
+        for(var c=5;c<=11;c++)xlsxSetNumFmtRange(ws,c,firstDataRow,lastDataRow,'#,##0');
+        XLSX.utils.book_append_sheet(wb,ws,xlsxSheetNameSafe(k.nik+'_'+k.nama));
+      });
+      if(!wb.SheetNames.length){toast('Tidak ada data periode untuk karyawan berhenti');return;}
+      var fn='Rekon_Resign_'+exportThn+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
+      XLSX.writeFile(wb,fn);
+      toast('Excel rekonsiliasi resign diunduh ('+wb.SheetNames.length+' karyawan)');
+    }catch(e){toast('Gagal: '+e.message);}
+  });
 }
 /** Excel: kertas kerja PPh 21 & THP — per karyawan, periode aktif */
 function exportExcelKertasKerjaPPh(){
