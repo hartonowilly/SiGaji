@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
-const { json, requireEnv, getTenantKey } = require('./_shared');
+const { json, requireEnv, getTenantKey, assertCallerIsHrdOrAdmin } = require('./_shared');
 
 function sbAdmin() {
   const url = requireEnv('SIGAJI_SUPABASE_URL');
@@ -8,35 +8,39 @@ function sbAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-async function assertCallerIsHrdOrAdmin(sb, jwt, tenant) {
-  if (!jwt) throw new Error('Missing Authorization bearer token');
-  const { data: u, error: ue } = await sb.auth.getUser(jwt);
-  if (ue || !u || !u.user) throw new Error('Invalid auth token');
-  const { data: row, error: re } = await sb.from('sigaji_cloud').select('payload').eq('tenant_key', tenant).maybeSingle();
-  if (re) throw new Error(re.message);
-  const payload = row && row.payload;
-  const users = (payload && payload.users) || [];
-  const me = users.find(
-    (x) => x && x.email && String(x.email).toLowerCase() === String(u.user.email || '').toLowerCase()
-  );
-  const role = me && me.role;
-  if (role !== 'Admin' && role !== 'HRD') throw new Error('Forbidden');
-  return { user: u.user, role };
-}
-
 function getMailTransport() {
   const host = requireEnv('SIGAJI_SMTP_HOST');
   const user = requireEnv('SIGAJI_SMTP_USER');
   const pass = requireEnv('SIGAJI_SMTP_PASS');
-  const port = parseInt(process.env.SIGAJI_SMTP_PORT || '465', 10);
-  const secure = process.env.SIGAJI_SMTP_SECURE !== 'false' && port === 465;
+  const port = parseInt(process.env.SIGAJI_SMTP_PORT || '587', 10);
+  const secureEnv = String(process.env.SIGAJI_SMTP_SECURE || '').trim().toLowerCase();
+  let secure;
+  if (secureEnv === 'true') secure = true;
+  else if (secureEnv === 'false') secure = false;
+  else secure = port === 465;
   return nodemailer.createTransport({
     host,
     port,
     secure,
     auth: { user, pass },
-    ...(port === 587 ? { requireTLS: true } : {}),
+    connectionTimeout: 20000,
+    greetingTimeout: 15000,
+    ...(port === 587 && !secure ? { requireTLS: true } : {}),
   });
+}
+
+function friendlySmtpError(e) {
+  const msg = (e && (e.message || e.response)) || String(e);
+  const code = e && e.code;
+  if (code === 'EAUTH' || /535|authentication failed|invalid login/i.test(msg)) {
+    return 'Login SMTP ditolak — periksa SIGAJI_SMTP_USER dan SIGAJI_SMTP_PASS di Netlify (Hostinger: gunakan password email penuh).';
+  }
+  if (code === 'ETIMEDOUT' || code === 'ESOCKET' || /ECONNREFUSED|ETIMEOUT|connect/i.test(msg)) {
+    return (
+      'Tidak bisa terhubung ke server SMTP — coba SIGAJI_SMTP_PORT=587 dan SIGAJI_SMTP_SECURE=false (Hostinger: smtp.hostinger.com).'
+    );
+  }
+  return msg;
 }
 
 function getFromAddress() {
@@ -92,13 +96,16 @@ exports.handler = async (event) => {
       nik: nik || undefined,
     });
   } catch (e) {
-    const msg = e.message || String(e);
-    if (/Missing env: SIGAJI_SMTP/i.test(msg)) {
+    const raw = e.message || String(e);
+    if (/Missing env: SIGAJI_SMTP/i.test(raw)) {
       return json(503, {
         ok: false,
         error: 'SMTP belum dikonfigurasi di Netlify (SIGAJI_SMTP_HOST, USER, PASS).',
       });
     }
-    return json(500, { ok: false, error: msg });
+    if (/Forbidden|Invalid auth|Missing Authorization/i.test(raw)) {
+      return json(403, { ok: false, error: raw });
+    }
+    return json(500, { ok: false, error: friendlySmtpError(e) });
   }
 };
