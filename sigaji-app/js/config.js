@@ -7,3 +7,5 @@ window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL = '';
 window.SIGAJI_RESUME_SESSION_ON_LOAD = true;
 /** Menit tanpa aktivitas → logout otomatis (aman di PC bersama). 0 = nonaktif. Berlaku mode cloud; waktu terakhir disimpan di browser. */
 window.SIGAJI_IDLE_LOGOUT_MINUTES = 30;
+/** dual = tabel Supabase + cadangan blob (setelah jalankan sql/supabase_sigaji_tables_v11.sql) */
+window.SIGAJI_STORAGE_MODE = 'dual';
