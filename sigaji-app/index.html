@@ -478,7 +478,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card">
       <div class="ct">Buat / Edit Periode</div>
       <div class="fg2">
-        <div class="fg"><label>Nama Periode</label><input id="p-nama" placeholder="Maret 2026"></div>
+        <div class="fg"><label>Nama Periode</label><input id="p-nama" placeholder="Maret 2026" oninput="updatePeriodeSimpanButtonState()"></div>
         <div class="fg"><label>Pola</label>
           <select id="p-pola" onchange="updatePolaPeriode()">
             <option value="custom">Custom</option><option value="25-24">Tgl 25–24</option>
@@ -529,7 +529,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         </div>
       </div>
       <div id="periode-guard-msg" style="display:none"></div>
-      <button class="btn btn-sm btn-p" style="margin-top:.75rem" onclick="simpanPeriode()">Simpan Periode</button>
+      <button type="button" class="btn btn-sm btn-p" id="btn-simpan-periode" style="margin-top:.75rem" onclick="simpanPeriode()">Simpan Periode</button>
     </div>
     <div class="card"><div class="ct">Riwayat Periode</div>
       <table><thead><tr><th>Nama</th><th>Mulai</th><th>Selesai</th><th>Bayar Gaji</th><th>THR</th><th>Status</th><th>Aksi</th></tr></thead>
@@ -1068,7 +1068,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=10.0.9"></script>
 <script src="js/storage.js?v=10.0.9"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/app.js?v=10.0.12"></script>
+<script src="js/app.js?v=10.0.13"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
