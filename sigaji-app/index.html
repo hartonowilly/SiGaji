@@ -272,6 +272,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
       <button type="button" class="btn btn-sm btn-p" onclick="addTunjVarColumn()">+ Tambah kolom</button>
       <button type="button" class="btn btn-sm btn-out" onclick="salinTunjVarDariPeriodeLalu()">&#8635; Salin dari periode sebelumnya</button>
+      <button type="button" class="btn btn-sm btn-out" onclick="exportTunjVarExcelTemplate()">&#128196; Template Excel</button>
+      <button type="button" class="btn btn-sm btn-s" onclick="document.getElementById('inp-tunjvar-xlsx').click()">&#128229; Import Excel</button>
+      <input type="file" id="inp-tunjvar-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importTunjVarExcel(this)">
     </div>
     <div id="tunjvar-col-editor" class="mb1" style="font-size:12px;color:#6b7280"></div>
     <div style="overflow-x:auto" id="tunjvar-tabel-wrap"></div>
@@ -1033,8 +1036,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/app.js?v=9.1.4-m"></script>
 <script src="js/pesangon.js?v=9.0.1"></script>
 <script src="js/config.js?v=9.0.1"></script>
+<script src="js/cloud-tables.js?v=11.0.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=9.0.1"></script>
+<script src="js/cloud-sync.js?v=11.0.0"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
