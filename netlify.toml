@@ -1,7 +1,20 @@
-# Deploy folder ini ke Netlify (drag & drop atau Git).
-# Situs hanya menyajikan file; data tetap di localStorage per perangkat/browser.
+# =============================================================================
+# Pakai isi file ini sebagai netlify.toml di ROOT repo GitHub (hartonowilly/SiGaji)
+# ketika struktur GitHub seperti ini:
+#
+#   SiGaji/                 ← root repo (netlify.toml di sini)
+#     sigaji-app/
+#       index.html
+#       package.json
+#       netlify/functions/
+#
+# Cara: salin semua isi bawah ini → commit sebagai netlify.toml di ROOT GitHub
+# (bukan hanya di dalam folder sigaji-app).
+# =============================================================================
 
 [build]
+  base = "sigaji-app"
+  command = "npm install && npm run build"
   publish = "."
 
 [functions]
