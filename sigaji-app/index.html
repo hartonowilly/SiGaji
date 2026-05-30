@@ -131,6 +131,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="card">
     <div class="flb mb2">
       <input type="text" placeholder="&#128269; Cari..." style="width:220px" oninput="filterKar(this.value)">
+      <span class="bdg b-info" id="kar-quota-badge" style="font-size:11px"></span>
       <span style="font-size:11px;color:#6b7280" id="kar-count"></span>
     </div>
     <div style="overflow-x:auto">
@@ -310,7 +311,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm" id="btn-pdf-all-thr" style="display:none;background:#f5f0ff;color:#5b21b6;border:1.5px solid #c4b5fd;font-weight:700" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
   </div>
   <div id="slip-tg-hint" style="display:none;font-size:11px;color:#1565a8;margin:.5rem 0 0;padding:.5rem .75rem;background:#e8f4fc;border-radius:8px;border:1px solid #b8d9f0;line-height:1.55">
-    <strong>Telegram massal &amp; status:</strong> tabel <strong style="color:#229ED9">Kirim ke Telegram (banyak sekaligus)</strong> ada tepat <em>di bawah ini</em>. Kolom <strong>Telegram</strong> = sudah hubung bot atau belum; kolom <strong>Slip</strong> = sudah pernah dikirim untuk periode &amp; jenis slip yang dipilih di atas (perlu SQL <code style="font-size:10px;background:#fff;padding:1px 4px;border-radius:4px">supabase_sigaji_slip_tg_sent.sql</code> di Supabase).
+    <strong>Telegram &amp; email massal:</strong> tabel <strong style="color:#229ED9">Telegram</strong> dan <strong style="color:#1a56a0">Email</strong> ada tepat <em>di bawah ini</em>. Kolom <strong>Telegram</strong> = sudah hubung bot atau belum; kolom <strong>Slip</strong> = sudah pernah dikirim untuk periode &amp; jenis slip yang dipilih di atas (perlu SQL <code style="font-size:10px;background:#fff;padding:1px 4px;border-radius:4px">supabase_sigaji_slip_tg_sent.sql</code> di Supabase).
   </div>
 </div>
   <div id="slip-tg-batch" style="display:none;margin-bottom:.75rem">
@@ -328,6 +329,21 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div id="slip-tg-batch-wrap"></div>
     </div>
   </div>
+  <div id="slip-email-batch" style="display:none;margin-bottom:.75rem">
+    <div class="card" style="border-left:4px solid #1a56a0;box-shadow:0 1px 8px rgba(26,86,160,.12)">
+      <div class="ct" style="color:#1a56a0;font-size:14px">&#9993; Kirim slip ke email (banyak sekaligus)</div>
+      <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.5rem">
+        PDF dikirim otomatis dari server (SMTP), tanpa membuka Outlook/Gmail. Pastikan <strong>email karyawan</strong> terisi di profil. Atur SMTP di Netlify (<code style="font-size:10px">SIGAJI_SMTP_*</code>) — lihat <code style="font-size:10px">docs/SLIP_EMAIL_SMTP.md</code>. Periode THR + slip <strong>Gaji bulanan</strong>: dapat <strong>dua email</strong> (gaji + THR) jika eligible.
+      </div>
+      <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
+        <button type="button" class="btn btn-sm btn-out" onclick="slipEmailToggleAll(true)">Pilih semua (yang punya email)</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="slipEmailToggleAll(false)">Kosongkan</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="renderSlipEmailBatchChecklist(true)">&#8635; Segarkan status</button>
+        <button type="button" class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" onclick="sendSlipEmailBatch()">Kirim email terpilih</button>
+      </div>
+      <div id="slip-email-batch-wrap"></div>
+    </div>
+  </div>
   <div id="slip-thr-banner"></div>
   <div id="slip-share-bar" style="display:none;margin-bottom:.65rem">
     <div style="background:#eef6ff;border:1px solid #c5d9f5;border-radius:10px;padding:.65rem 1rem">
@@ -336,7 +352,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <button class="btn btn-sm btn-g" type="button" onclick="shareSlipNativePDF()" title="Chrome/Android: bagikan file PDF langsung">&#128229; Bagikan PDF</button>
         <button class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToTelegram()">Telegram</button>
         <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700" onclick="shareSlipWhatsAppWithPDF()">&#128242; WA + unduh PDF</button>
-        <button class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:700" onclick="shareSlipEmailWithPDF()">&#9993; Email + unduh PDF</button>
+        <button class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToEmail()">&#9993; Kirim email</button>
+        <button class="btn btn-sm btn-out" onclick="shareSlipEmailWithPDF()" title="Buka klien email manual + unduh PDF">Email manual</button>
       </div>
       <div style="font-size:10px;color:#6b7280;margin-top:.5rem;line-height:1.45">Periode dengan THR: tombol <strong>Telegram</strong> saat jenis slip <strong>Gaji bulanan</strong> akan mengirim <strong>dua PDF berurutan</strong> (gaji lalu THR) jika karyawan eligible. Untuk hanya mengirim ulang THR, pilih <strong>Slip THR</strong> di dropdown di atas.</div>
     </div>
@@ -437,6 +454,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         </div>
       </div>
       <button class="btn btn-sm btn-p" onclick="simpanPerusahaan()">Simpan Data Perusahaan</button>
+    </div>
+    <div class="card" id="lic-card" style="display:none">
+      <div class="ct">Informasi paket (kuota)</div>
+      <p id="lic-stat" style="font-size:12px;color:#374151;margin:0 0 .5rem;font-weight:600"></p>
+      <div id="lic-vendor-note" class="info-box info-blue" style="font-size:11px;margin:0"></div>
     </div>
   </div>
   <div id="m-periode" style="display:none">
@@ -1055,6 +1077,7 @@ if(typeof exportCloudDatabaseBackup!=='function'){
 </script>
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
+<script src="js/license-quota.js?v=10.0.4"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
 <script src="js/cloud-tables.js?v=11.0.1"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
