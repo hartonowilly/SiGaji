@@ -1,5 +1,53 @@
 const fmtDate=d=>{if(!d||d==='-')return'-';const p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;};
 const fmt=n=>{const v=Math.round(n);if(isNaN(v))return'Rp 0';const abs=Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(v<0?'-Rp ':'Rp ')+abs;};
+/** Parse teks input rupiah (1.500.000 atau 1500000) → angka bulat. */
+function parseRpInput(val){
+  if(val==null||val==='')return 0;
+  var s=String(val).trim().replace(/Rp/gi,'').replace(/\s/g,'');
+  if(s.indexOf(',')>=0){
+    var p=s.split(',');
+    s=p[0].replace(/\./g,'')+(p[1]?'.'+p[1].replace(/\./g,''):'');
+    var f=parseFloat(s);
+    return isNaN(f)?0:Math.max(0,Math.round(f));
+  }
+  s=s.replace(/\./g,'');
+  var n=parseInt(s,10);
+  return isNaN(n)?0:Math.max(0,n);
+}
+/** Format angka untuk kotak input (pemisah ribuan titik). */
+function formatRpInputNum(n){
+  var v=Math.max(0,Math.round(Number(n)||0));
+  return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+/** Pasang format rupiah pada input teks (class inp-rp atau data-rp="1"). */
+function sigajiBindRpInputs(root){
+  var scope=root||document;
+  scope.querySelectorAll('input.inp-rp,input[data-rp="1"]').forEach(function(inp){
+    if(inp.dataset.rpBound==='1')return;
+    inp.dataset.rpBound='1';
+    inp.setAttribute('inputmode','numeric');
+    inp.setAttribute('autocomplete','off');
+    if(inp.type==='number')inp.type='text';
+    if(!inp.dataset.rpEditing){
+      var init=inp.value;
+      if(init!==''&&init!=null)inp.value=formatRpInputNum(parseRpInput(init));
+    }
+    inp.addEventListener('focus',function(){
+      inp.dataset.rpEditing='1';
+      inp.value=String(parseRpInput(inp.value)||'');
+      try{inp.select();}catch(e){}
+    });
+    inp.addEventListener('blur',function(){
+      delete inp.dataset.rpEditing;
+      var n=parseRpInput(inp.value);
+      inp.value=formatRpInputNum(n);
+      inp.dataset.rpValue=String(n);
+      try{inp.dispatchEvent(new Event('change',{bubbles:true}));}catch(e2){
+        if(typeof Event==='function')inp.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+}
 /** Nilai rupiah ke kata Indonesia (untuk terbilang slip) */
 function terbilangRupiah(n){
   const num=Math.floor(Math.abs(Number(n)||0));
@@ -45,17 +93,16 @@ const TUNJ_TYPES={tetap:'Tetap (BPJS+THR+PPh+TH)',tetap_no_bpjs:'Tetap Excl.BPJS
 // Sub-tab permissions: moduleId.subtabId
 const SUBTABS={
   karyawan:['info'],
-  kompgaji:['gaji','bpjs','natura','pphret','ring'],
-  absensi:['kalender','cuti','lembur'],
+  kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
+  absensi:['kalender','cuti'],
   master:['prs','periode','libur','potongan','ter'],
   approval:['pend','hist'],
 };
 const SUBTAB_LBL={
   'karyawan.info':'Info & Jabatan',
-  'kompgaji.gaji':'Gaji & Tunjangan','kompgaji.bpjs':'BPJS','kompgaji.natura':'Natura',
+  'kompgaji.gaji':'Gaji & Tunjangan','kompgaji.tunjvar':'Tunjangan Variabel','kompgaji.bpjs':'BPJS','kompgaji.natura':'Natura',
   'kompgaji.pphret':'PPh Return','kompgaji.ring':'Ringkasan',
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
-  'absensi.lembur':'Lembur',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
@@ -64,12 +111,12 @@ const MODULES=[
   {id:'dashboard',lbl:'Dashboard',icon:'&#9632;',sec:'Utama'},
   {id:'notifikasi',lbl:'Notifikasi',icon:'&#128276;',sec:'Utama'},
   {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info']},
-  {id:'absensi',lbl:'Absensi, Cuti & Lembur',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti','lembur']},
-  {id:'thr',lbl:'THR',icon:'&#127873;',sec:'SDM'},
-  {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'SDM'},
-  {id:'kompgaji',lbl:'Komponen Gaji',icon:'&#128178;',sec:'Penggajian',subtabs:['gaji','bpjs','natura','pphret','ring']},
+  {id:'absensi',lbl:'Absensi & Cuti',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti']},
+  {id:'thr',lbl:'THR',icon:'&#127873;',sec:'Penggajian'},
+  {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'Penggajian'},
+  {id:'kompgaji',lbl:'Komponen Gaji',icon:'&#128178;',sec:'Penggajian',subtabs:['gaji','tunjvar','bpjs','natura','pphret','ring']},
+  {id:'lembur',lbl:'Lembur',icon:'&#9203;',sec:'Penggajian'},
   {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
-  {id:'approval',lbl:'Approval',icon:'&#10003;',sec:'Penggajian',subtabs:['pend','hist']},
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
   {id:'pph',lbl:'PPh 21',icon:'&#128200;',sec:'Laporan'},
   {id:'laporan',lbl:'Rekap',icon:'&#128196;',sec:'Laporan'},
