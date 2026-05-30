@@ -1746,7 +1746,7 @@ function openPanel(nik){
   if(!canAccessModule('karyawan')){toast('Tidak punya akses modul Master Karyawan');return;}
   closePayrollPanel();
   const k=karyawan.find(x=>x.nik===nik);if(!k)return;cpNik=nik;
-  document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;document.getElementById('sp-saved-lbl').textContent='ID: '+k.nik;
+  document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;document.getElementById('sp-saved-lbl').textContent='ID: '+k.nik;
   const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??'';};
   const isNew=k._new;
   if(isNew)delete k._new;
@@ -1822,7 +1822,7 @@ function openPayrollPanel(nik){
   closePanel();
   const k=karyawan.find(x=>x.nik===nik);if(!k)return;cpNik=nik;
   spPayrollView='periode';
-  document.getElementById('kg-sp-nik').textContent=k.nik;document.getElementById('kg-sp-name').textContent=k.nama;document.getElementById('kg-sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;document.getElementById('kg-sp-saved-lbl').textContent='ID: '+k.nik;
+  document.getElementById('kg-sp-nik').textContent=k.nik;document.getElementById('kg-sp-name').textContent=k.nama;document.getElementById('kg-sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;document.getElementById('kg-sp-saved-lbl').textContent='ID: '+k.nik;
   const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??'';};
   var kp=getPayrollTargetByNik(k.nik,true,'periode')||k;
   if(canAccessPayrollSub('gaji'))sv('sp-gapok-f',kp.gapok);else sv('sp-gapok-f','');
@@ -1878,7 +1878,7 @@ function simpanKarPanel(){
   }
   Object.assign(k,{nik:newNik,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
-  saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;
+  saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
   renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();toast('Profil '+k.nama+' disimpan');
 }
 function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
