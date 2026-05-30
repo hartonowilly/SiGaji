@@ -43,17 +43,17 @@ const PTKP_LBL={TK0:'TK/0',TK1:'TK/1',TK2:'TK/2',TK3:'TK/3',K0:'K/0',K1:'K/1',K2
 const BPJS_DEF={'kes-prs':{pct:4,basis:12e6,lbl:'BPJS Kes Perusahaan (4%)'},'kes-kar':{pct:1,basis:12e6,lbl:'BPJS Kes Karyawan (1%)'},'jht-prs':{pct:3.7,basis:null,lbl:'JHT Perusahaan (3,7%)'},'jht-kar':{pct:2,basis:null,lbl:'JHT Karyawan (2%)'},'jp-prs':{pct:2,basis:9559600,lbl:'JP Perusahaan (2%)'},'jp-kar':{pct:1,basis:9559600,lbl:'JP Karyawan (1%)'},'jkk-prs':{pct:0.24,basis:null,lbl:'JKK Perusahaan (0,24%)'},'jkm-prs':{pct:0.3,basis:null,lbl:'JKM Perusahaan (0,3%)'}};
 const TUNJ_TYPES={tetap:'Tetap (BPJS+THR+PPh+TH)',tetap_no_bpjs:'Tetap Excl.BPJS',tidak_tetap:'Tidak Tetap',harian_exclude:'Harian Excl.TH'};
 // Sub-tab permissions: moduleId.subtabId
-// Contoh: 'karyawan.gaji' = akses tab Gaji & Tunjangan di modul karyawan
 const SUBTABS={
-  karyawan:['info','gaji','bpjs','natura','pphret','ring'],
+  karyawan:['info'],
+  kompgaji:['gaji','bpjs','natura','pphret','ring'],
   absensi:['kalender','cuti','lembur'],
   master:['prs','periode','libur','potongan','ter'],
   approval:['pend','hist'],
 };
 const SUBTAB_LBL={
-  'karyawan.info':'Info & Jabatan','karyawan.gaji':'Gaji & Tunjangan',
-  'karyawan.bpjs':'BPJS','karyawan.natura':'Natura',
-  'karyawan.pphret':'PPh Return','karyawan.ring':'Ringkasan',
+  'karyawan.info':'Info & Jabatan',
+  'kompgaji.gaji':'Gaji & Tunjangan','kompgaji.bpjs':'BPJS','kompgaji.natura':'Natura',
+  'kompgaji.pphret':'PPh Return','kompgaji.ring':'Ringkasan',
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
   'absensi.lembur':'Lembur',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR',
@@ -63,10 +63,11 @@ const SUBTAB_LBL={
 const MODULES=[
   {id:'dashboard',lbl:'Dashboard',icon:'&#9632;',sec:'Utama'},
   {id:'notifikasi',lbl:'Notifikasi',icon:'&#128276;',sec:'Utama'},
-  {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info','gaji','bpjs','natura','pphret','ring']},
+  {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info']},
   {id:'absensi',lbl:'Absensi, Cuti & Lembur',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti','lembur']},
   {id:'thr',lbl:'THR',icon:'&#127873;',sec:'SDM'},
   {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'SDM'},
+  {id:'kompgaji',lbl:'Komponen Gaji',icon:'&#128178;',sec:'Penggajian',subtabs:['gaji','bpjs','natura','pphret','ring']},
   {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
   {id:'approval',lbl:'Approval',icon:'&#10003;',sec:'Penggajian',subtabs:['pend','hist']},
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
@@ -115,4 +116,4 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=9;
+const SCHEMA_VERSION=10;

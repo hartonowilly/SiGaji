@@ -1,3 +1,20 @@
+function migrateKompgajiRolePerms(r){
+  if(!r||typeof r!=='object')return;
+  var map={'karyawan.gaji':'kompgaji.gaji','karyawan.bpjs':'kompgaji.bpjs','karyawan.natura':'kompgaji.natura','karyawan.pphret':'kompgaji.pphret','karyawan.ring':'kompgaji.ring'};
+  Object.keys(r).forEach(function(roleName){
+    if(roleName==='Admin')return;
+    var p=r[roleName];
+    if(!Array.isArray(p))return;
+    Object.keys(map).forEach(function(oldKey){
+      var idx=p.indexOf(oldKey);
+      if(idx>=0){
+        p.splice(idx,1);
+        var newKey=map[oldKey];
+        if(p.indexOf(newKey)<0)p.push(newKey);
+      }
+    });
+  });
+}
 function migrateRolePerms(r){
   if(!r||typeof r!=='object')return;
   Object.keys(r).forEach(function(roleName){
@@ -11,7 +28,6 @@ function migrateRolePerms(r){
       var hasExplicit=subs.some(function(s){return p.indexOf(mid+'.'+s)>=0;});
       if(!hasExplicit){
         var toAdd=subs;
-        if(mid==='karyawan')toAdd=subs.filter(function(s){return s!=='gaji';});
         toAdd.forEach(function(s){var k=mid+'.'+s;if(p.indexOf(k)<0)p.push(k);});
       }
     });
@@ -95,6 +111,13 @@ function migrateStorage(db){
   if(v<9){
     if(db.roles)migrateRolePerms(db.roles);
     v=9;
+  }
+  if(v<10){
+    if(db.roles){
+      migrateKompgajiRolePerms(db.roles);
+      migrateRolePerms(db.roles);
+    }
+    v=10;
   }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
@@ -190,7 +213,7 @@ let approvals=LS('approvals',[]);
 let notifikasi=LS('notifikasi',[]);
 let perusahaan=LS('perusahaan',{nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,ptkp_nilai:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}});
 let users=LS('users',[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}]);
-let roles=LS('roles',{Admin:MODULES.map(m=>m.id),HRD:['dashboard','notifikasi','karyawan.info','karyawan.bpjs','karyawan.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']});
+let roles=LS('roles',{Admin:MODULES.map(m=>m.id),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.bpjs','kompgaji.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','kompgaji','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']});
 let thrManual=LS('thrManual',{});
 let tunjVarBulan=LS('tunjVarBulan',{});
 let tunjVarLabels=LS('tunjVarLabels',{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'});

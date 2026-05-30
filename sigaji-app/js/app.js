@@ -563,7 +563,7 @@ function setSpPayrollView(mode){
       bdg.style.border='1px solid #d1d5db';
     }
   }
-  var hint=document.getElementById('sp-saved-lbl');
+  var hint=document.getElementById('kg-sp-saved-lbl');
   if(hint){
     hint.textContent=spPayrollView==='periode'
       ?'Mode Snapshot: nominal payroll yang diedit hanya berlaku untuk periode aktif.'
@@ -771,6 +771,7 @@ function canAccessSubTab(moduleId,subTabId){
   if(CU.role==='Admin')return true;
   return(roles[CU.role]||[]).includes(moduleId+'.'+subTabId);
 }
+function canAccessPayrollSub(subTabId){return canAccessSubTab('kompgaji',subTabId);}
 function renderSidebar(){
   const secs={};
   MODULES.forEach(m=>{
@@ -1668,7 +1669,7 @@ function toggleSpPhkWrap(){
   w.style.display=on?'':'none';
   if(on&&(!document.getElementById('sp-phk-alasan')||!document.getElementById('sp-phk-alasan').options.length))populatePhkAlasanSelect();
 }
-function renderAll(){renderDash();renderKar();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();}
+function renderAll(){renderDash();renderKar();renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();}
 // ── DASHBOARD ───────────────────────────────────
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
@@ -1686,33 +1687,20 @@ function renderDash(){
 }
 // ── MASTER KARYAWAN ─────────────────────────────
 function karRowHtml(k,no){
-  const showGaji=CU&&(CU.role==='Admin'||canAccessSubTab('karyawan','gaji'));
-  // Badge BPJS di tabel master mengikuti periode aktif (agar perubahan snapshot periode terlihat).
-  // Jika tidak ada periode aktif, fallback ke master global.
-  const p=PA();const kPer=(p&&p.nama)?resolveKarForPeriode(k,p.nama):k;
   const yrKar=new Date().getFullYear();
   const t=cutiTerpakai(k.nik,yrKar);
   const kuotaCut=masterCuti.kuota||12;
   const s=kuotaCut-t;
   const sCls=s<=0?'b-err':s<=3?'b-warn':'b-teal';
   const sLbl=s+'/'+kuotaCut;
-  const bpjsKeys=['kes-prs','kes-kar','jht-prs','jht-kar','jp-prs','jp-kar','jkk-prs','jkm-prs'];
-  const bpjsOn=bpjsKeys.filter(function(key){return bpjsKompAktif(kPer,key);}).length;
-  const bst=bpjsOn===8?'b-ok':bpjsOn>0?'b-warn':'b-err';
-  const bpjsLbl=bpjsOn===8?'Lengkap':bpjsOn===0?'Off':bpjsOn+'/8 aktif';
   const stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
   const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out" onclick="openTelegramModalForNik('${k.nik}')">Telegram</button>`:'';
-  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td>${showGaji?`<td>${fmt(k.gapok)}</td>`:''}<td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${bst}">${bpjsLbl}</span></td><td><span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
+  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td><td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   const p=PA();
   const list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
-  const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Master global (bukan histori periode)';
-  const th=document.getElementById('kar-thead-row');
-  if(th){
-    const showGaji=CU&&(CU.role==='Admin'||canAccessSubTab('karyawan','gaji'));
-    th.innerHTML='<th>No</th><th>Karyawan</th><th>Dept</th><th>Jabatan</th><th>Status</th>'+(showGaji?'<th>Gaji Pokok</th>':'')+'<th>PTKP</th><th>BPJS</th><th>Saldo Cuti</th><th>Aksi</th>';
-  }
+  const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Data profil SDM';
   const tb=document.getElementById('tb-kar');if(!tb)return;
   tb.innerHTML=list.map((k,i)=>karRowHtml(k,i+1)).join('');
 }
@@ -1724,27 +1712,40 @@ function filterKar(q){
   document.getElementById('kar-count').textContent=r.length+' ditampilkan';
   document.getElementById('tb-kar').innerHTML=r.map((k,i)=>karRowHtml(k,i+1)).join('');
 }
+// ── KOMPONEN GAJI (modul terpisah) ──────────────
+function kompgajiRowHtml(k,no){
+  const p=PA();const kPer=(p&&p.nama)?resolveKarForPeriode(k,p.nama):k;
+  const bpjsKeys=['kes-prs','kes-kar','jht-prs','jht-kar','jp-prs','jp-kar','jkk-prs','jkm-prs'];
+  const bpjsOn=bpjsKeys.filter(function(key){return bpjsKompAktif(kPer,key);}).length;
+  const bst=bpjsOn===8?'b-ok':bpjsOn>0?'b-warn':'b-err';
+  const bpjsLbl=bpjsOn===8?'Lengkap':bpjsOn===0?'Off':bpjsOn+'/8';
+  const nTunj=(kPer.tunjangan||[]).length;
+  const nNat=(kPer.natura||[]).length;
+  const showGapok=CU&&(CU.role==='Admin'||canAccessPayrollSub('gaji'));
+  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPayrollPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td>${showGapok?`<td>${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${bpjsLbl}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p" onclick="openPayrollPanel('${k.nik}')">Edit Komponen</button></td></tr>`;
+}
+function renderKompgaji(){
+  const p=PA();
+  const list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  const el=document.getElementById('kg-count');if(el)el.textContent=list.length+' karyawan • Periode aktif: '+(p&&p.nama?p.nama:'-');
+  const tb=document.getElementById('tb-kompgaji');if(!tb)return;
+  tb.innerHTML=list.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
+}
+function filterKompgaji(q){
+  const p=PA();
+  const r=karyawan
+    .filter(function(k){return karyawanInPeriode(k,p);})
+    .filter(function(k){return (k.nama+k.nik+k.dept).toLowerCase().includes(q.toLowerCase());});
+  const el=document.getElementById('kg-count');if(el)el.textContent=r.length+' ditampilkan';
+  document.getElementById('tb-kompgaji').innerHTML=r.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
+}
 function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
 function openNewKar(){if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}const nik='K'+String(karyawan.length+1).padStart(4,'0');karyawan.push({nik,nama:'Karyawan Baru',dept:'Operasional',jabatan:'Staff',status:'Tetap',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',jk:'L',agama:'Islam',ktp:'',npwp:'',hp:'',email:'',alamat:'',atasan:'',lokasi:'',bank:'BCA',norek:'',reknam:'',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{'kes-prs':true,'kes-kar':true,'jht-prs':true,'jht-kar':true,'jp-prs':true,'jp-kar':true,'jkk-prs':true,'jkm-prs':true},bpjs_manual:{},natura:[],pph_return:{nilai:0,ket:''}});saveAll();renderKar();populateSelects();openPanel(nik);toast('Karyawan baru dibuat');}
-// ── SLIDE PANEL ──────────────────────────────────
-const KAR_SP_TABS=[['sp-info','info'],['sp-gaji','gaji'],['sp-bpjs','bpjs'],['sp-natura','natura'],['sp-pphret','pphret'],['sp-ring','ring']];
-function applyKarSlideTabsVisibility(){
-  let first=null;
-  KAR_SP_TABS.forEach(function(pair){
-    var tid=pair[0],sub=pair[1];
-    var ok=canAccessSubTab('karyawan',sub);
-    var btn=document.querySelector('#slide-panel .spt[data-kstab="'+sub+'"]');
-    if(btn){btn.style.display=ok?'':'none';if(ok&&!first)first={btn:btn,tid:tid};}
-    var d=document.getElementById(tid);if(d)d.style.display='none';
-  });
-  if(!first){toast('Role Anda tidak punya akses tab pada profil karyawan.');return false;}
-  switchSpTab(first.btn,first.tid);
-  return true;
-}
+// ── SLIDE PANEL KARYAWAN (profil SDM) ──────────
 function openPanel(nik){
   if(!canAccessModule('karyawan')){toast('Tidak punya akses modul Master Karyawan');return;}
+  closePayrollPanel();
   const k=karyawan.find(x=>x.nik===nik);if(!k)return;cpNik=nik;
-  spPayrollView='periode';
   document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;document.getElementById('sp-saved-lbl').textContent='ID: '+k.nik;
   const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??'';};
   const isNew=k._new;
@@ -1758,27 +1759,14 @@ function openPanel(nik){
   sv('sp-ptkp-f',k.ptkp);sv('sp-atasan-f',isNew?'':k.atasan);sv('sp-lokasi-f',isNew?'':k.lokasi);
   sv('sp-bank-f',k.bank||'BCA');sv('sp-norek-f',isNew?'':k.norek||'');
   sv('sp-reknam-f',k.reknam||k.nama||'');
-  var kp=getPayrollTargetByNik(k.nik,true,'periode')||k;
-  if(canAccessSubTab('karyawan','gaji'))sv('sp-gapok-f',isNew?'':kp.gapok);else sv('sp-gapok-f','');
   const re=document.getElementById('sp-reknam-f');if(re)re.dataset.manualEdit=(k.reknam&&k.reknam!==k.nama)?'1':'';
-  if(canAccessSubTab('karyawan','pphret')){sv('sp-pphret-val',kp.pph_return?.nilai||0);sv('sp-pphret-ket',kp.pph_return?.ket||'');}
-  else{sv('sp-pphret-val','');sv('sp-pphret-ket','');}
   updatePTKPVal();
-  if(canAccessSubTab('karyawan','gaji')){renderTunjPanel(kp);renderPotPanel(kp);}else{const tj=document.getElementById('tunj-list'),pt=document.getElementById('pot-list');if(tj)tj.innerHTML='';if(pt)pt.innerHTML='';}
-  if(canAccessSubTab('karyawan','bpjs'))loadBPJSPanel(kp);else{const k1=document.getElementById('bpjs-kes-rows'),k2=document.getElementById('bpjs-tk-rows');if(k1)k1.innerHTML='';if(k2)k2.innerHTML='';}
-  if(canAccessSubTab('karyawan','natura')){renderNaturaPanel(kp);document.getElementById('natura-kar-lbl').textContent=k.nama;}
-  else{const nl=document.getElementById('natura-list'),nt=document.getElementById('natura-total');if(nl)nl.innerHTML='';if(nt)nt.innerHTML='';}
-  if(canAccessSubTab('karyawan','pphret'))renderPPhRetPanel(kp);else{const el=document.getElementById('pphret-preview');if(el)el.innerHTML='';}
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
   try{
     var spTg=document.getElementById('sp-btn-telegram');
     if(spTg)spTg.style.display=CU&&(CU.role==='Admin'||CU.role==='HRD')?'inline-block':'none';
   }catch(eTg){}
-  if(!applyKarSlideTabsVisibility()){closePanel();return;}
-  setSpPayrollView('periode');
-  syncPphReturnFieldState();
-  updateGajiSummary();
 }
 
 function openTelegramModalForNik(nik){
@@ -1806,7 +1794,74 @@ async function tgBuatKode(){
   document.getElementById('tg-code').value=r.code;
   toast('Kode dibuat (berlaku 30 menit)');
 }
-function closePanel(){sigajiCloseNavDrawer();document.getElementById('slide-panel').classList.remove('show');document.getElementById('panel-overlay').classList.remove('show');cpNik=null;}
+function closePanel(){
+  sigajiCloseNavDrawer();
+  document.getElementById('slide-panel').classList.remove('show');
+  if(!document.getElementById('slide-panel-payroll').classList.contains('show'))
+    document.getElementById('panel-overlay').classList.remove('show');
+  cpNik=null;
+}
+function closeAnyPanel(){closePanel();closePayrollPanel();}
+// ── SLIDE PANEL KOMPONEN GAJI ────────────────────
+const PAYROLL_SP_TABS=[['sp-gaji','gaji'],['sp-bpjs','bpjs'],['sp-natura','natura'],['sp-pphret','pphret'],['sp-ring','ring']];
+function applyPayrollSlideTabsVisibility(){
+  let first=null;
+  PAYROLL_SP_TABS.forEach(function(pair){
+    var tid=pair[0],sub=pair[1];
+    var ok=canAccessPayrollSub(sub);
+    var btn=document.querySelector('#slide-panel-payroll .spt[data-kgstab="'+sub+'"]');
+    if(btn){btn.style.display=ok?'':'none';if(ok&&!first)first={btn:btn,tid:tid};}
+    var d=document.getElementById(tid);if(d)d.style.display='none';
+  });
+  if(!first){toast('Role Anda tidak punya akses tab Komponen Gaji.');return false;}
+  switchPayrollSpTab(first.btn,first.tid);
+  return true;
+}
+function openPayrollPanel(nik){
+  if(!canAccessModule('kompgaji')){toast('Tidak punya akses modul Komponen Gaji');return;}
+  closePanel();
+  const k=karyawan.find(x=>x.nik===nik);if(!k)return;cpNik=nik;
+  spPayrollView='periode';
+  document.getElementById('kg-sp-nik').textContent=k.nik;document.getElementById('kg-sp-name').textContent=k.nama;document.getElementById('kg-sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;document.getElementById('kg-sp-saved-lbl').textContent='ID: '+k.nik;
+  const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??'';};
+  var kp=getPayrollTargetByNik(k.nik,true,'periode')||k;
+  if(canAccessPayrollSub('gaji'))sv('sp-gapok-f',kp.gapok);else sv('sp-gapok-f','');
+  if(canAccessPayrollSub('pphret')){sv('sp-pphret-val',kp.pph_return?.nilai||0);sv('sp-pphret-ket',kp.pph_return?.ket||'');}
+  else{sv('sp-pphret-val','');sv('sp-pphret-ket','');}
+  if(canAccessPayrollSub('gaji')){renderTunjPanel(kp);renderPotPanel(kp);}else{const tj=document.getElementById('tunj-list'),pt=document.getElementById('pot-list');if(tj)tj.innerHTML='';if(pt)pt.innerHTML='';}
+  if(canAccessPayrollSub('bpjs'))loadBPJSPanel(kp);else{const k1=document.getElementById('bpjs-kes-rows'),k2=document.getElementById('bpjs-tk-rows');if(k1)k1.innerHTML='';if(k2)k2.innerHTML='';}
+  if(canAccessPayrollSub('natura')){renderNaturaPanel(kp);document.getElementById('natura-kar-lbl').textContent=k.nama;}
+  else{const nl=document.getElementById('natura-list'),nt=document.getElementById('natura-total');if(nl)nl.innerHTML='';if(nt)nt.innerHTML='';}
+  if(canAccessPayrollSub('pphret'))renderPPhRetPanel(kp);else{const el=document.getElementById('pphret-preview');if(el)el.innerHTML='';}
+  sigajiCloseNavDrawer();
+  document.getElementById('slide-panel-payroll').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  if(!applyPayrollSlideTabsVisibility()){closePayrollPanel();return;}
+  setSpPayrollView('periode');
+  syncPphReturnFieldState();
+  updateGajiSummary();
+}
+function closePayrollPanel(){
+  sigajiCloseNavDrawer();
+  document.getElementById('slide-panel-payroll').classList.remove('show');
+  if(!document.getElementById('slide-panel').classList.contains('show'))
+    document.getElementById('panel-overlay').classList.remove('show');
+  cpNik=null;
+}
+function simpanPayrollPanel(){
+  const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;
+  const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  var pAktif=PA();
+  var locked=!!(pAktif&&pAktif.nama&&isPeriodeLocked(pAktif.nama));
+  var tgt=getPayrollTargetByNik(k.nik,true,spPayrollView||'periode');
+  if(!locked&&tgt){
+    if(canAccessPayrollSub('gaji')&&isPayrollSnapshotMode())tgt.gapok=parseFloat(gv('sp-gapok-f'))||0;
+    if(canAccessPayrollSub('pphret'))tgt.pph_return={nilai:parseFloat(gv('sp-pphret-val'))||0,ket:gv('sp-pphret-ket')||''};
+    logPayrollAudit(k.nik,'Simpan Komponen Gaji',(isPayrollSnapshotMode()?'snapshot':'master')+` gapok=${tgt.gapok||k.gapok} pph_return=${(tgt.pph_return&&tgt.pph_return.nilai)||0}`);
+  }
+  if(locked&&typeof toast==='function')toast('Periode '+pAktif.nama+' terkunci: snapshot tidak diubah.');
+  saveAll();
+  renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();updateGajiSummary();toast('Komponen gaji '+k.nama+' disimpan');
+}
 function simpanKarPanel(){
   const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;
   const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
@@ -1822,18 +1877,9 @@ function simpanKarPanel(){
     delete k.phk;
   }
   Object.assign(k,{nik:newNik,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
-  var pAktif=PA();
-  var locked=!!(pAktif&&pAktif.nama&&isPeriodeLocked(pAktif.nama));
-  var tgt=getPayrollTargetByNik(k.nik,true,spPayrollView||'periode');
-  if(!locked&&tgt){
-    if(canAccessSubTab('karyawan','gaji')&&isPayrollSnapshotMode())tgt.gapok=parseFloat(gv('sp-gapok-f'))||0;
-    if(canAccessSubTab('karyawan','pphret'))tgt.pph_return={nilai:parseFloat(gv('sp-pphret-val'))||0,ket:gv('sp-pphret-ket')||''};
-    logPayrollAudit(k.nik,'Simpan Payroll Panel',(isPayrollSnapshotMode()?'snapshot':'master')+` gapok=${tgt.gapok||k.gapok} pph_return=${(tgt.pph_return&&tgt.pph_return.nilai)||0}`);
-  }
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
-  if(locked&&typeof toast==='function')toast('Periode '+pAktif.nama+' terkunci: snapshot tidak diubah.');
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' &#8212; '+k.dept;
-  renderKar();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();updateGajiSummary();toast('Data '+k.nama+' disimpan');
+  renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();toast('Profil '+k.nama+' disimpan');
 }
 function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
 function renderTunjPanel(k){
@@ -1878,7 +1924,7 @@ function updTunjEl(el){
 function delTunjEl(el){delTunj(el.dataset.nik,parseInt(el.dataset.i));}
 function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.4rem;align-items:center;padding:.5rem .6rem;background:#fdeaea;border-radius:7px;border:1px solid #f5a3a3;margin-bottom:.4rem"><input value="${p.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'nama',this.value)"><input type="number" value="${p.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><input value="${p.ket||''}" placeholder="Ket." style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'ket',this.value)"><button class="btn btn-xs btn-r" onclick="delPot('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}
 function addTunj(){
-  if(!canAccessSubTab('karyawan','gaji'))return;
+  if(!canAccessPayrollSub('gaji'))return;
   if(!guardPayrollEditUnlocked())return;
   const k=getPayrollTargetByNik(cpNik,true);if(!k)return;
   if(!k.tunjangan)k.tunjangan=[];
@@ -1888,7 +1934,7 @@ function addTunj(){
   renderTunjPanel(k);updateGajiSummary();
 }
 function addPot(){
-  if(!canAccessSubTab('karyawan','gaji'))return;
+  if(!canAccessPayrollSub('gaji'))return;
   if(!guardPayrollEditUnlocked())return;
   const k=getPayrollTargetByNik(cpNik,true);if(!k)return;
   if(!k.potongan)k.potongan=[];
@@ -1964,7 +2010,7 @@ function loadBPJSPanel(k){
   document.getElementById('bpjs-tk-rows').innerHTML=KOMP.filter(function(c){return c.sec==='tk';}).map(mkRow).join('');
 }
 function onBPJSKompChange(el){
-  if(!canAccessSubTab('karyawan','bpjs'))return;
+  if(!canAccessPayrollSub('bpjs'))return;
   if(!guardPayrollEditUnlocked()){
     const kb=karyawan.find(function(x){return x.nik===el.dataset.nik;});
     if(kb)loadBPJSPanel(kb);
@@ -1987,7 +2033,7 @@ function onBMChange2(el){
   onBMChange(nik,key,el.value);
 }
 function bpjsSetAll(aktif){
-  if(!canAccessSubTab('karyawan','bpjs'))return;
+  if(!canAccessPayrollSub('bpjs'))return;
   if(!guardPayrollEditUnlocked())return;
   const k=getPayrollTargetByNik(cpNik,true);if(!k)return;
   if(!k.bpjs_aktif)k.bpjs_aktif={};
@@ -1996,7 +2042,7 @@ function bpjsSetAll(aktif){
   try{renderKar();}catch(e){};try{renderDash();}catch(e){}
 }
 function bpjsSetPreset(preset){
-  if(!canAccessSubTab('karyawan','bpjs'))return;
+  if(!canAccessPayrollSub('bpjs'))return;
   if(!guardPayrollEditUnlocked())return;
   const k=getPayrollTargetByNik(cpNik,true);if(!k)return;
   if(!k.bpjs_aktif)k.bpjs_aktif={};
@@ -2010,7 +2056,7 @@ function bpjsSetPreset(preset){
 }
 function onBPJSAktifChange(){const k=karyawan.find(function(x){return x.nik===cpNik;});if(k){loadBPJSPanel(k);updateGajiSummary();}}
 function onBMChange(nik,key,val){
-  if(!canAccessSubTab('karyawan','bpjs'))return;
+  if(!canAccessPayrollSub('bpjs'))return;
   if(!guardPayrollEditUnlocked())return;
   const k=getPayrollTargetByNik(nik,true);if(!k||!bmState[key])return;
   if(!k.bpjs_manual)k.bpjs_manual={};
@@ -2021,7 +2067,7 @@ function onBMChange(nik,key,val){
   updateGajiSummary();
 }
 function toggleManual(key){
-  if(!canAccessSubTab('karyawan','bpjs'))return;
+  if(!canAccessPayrollSub('bpjs'))return;
   if(!guardPayrollEditUnlocked())return;
   const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.bpjs_manual)k.bpjs_manual={};
   const isNow=!bmState[key];bmState[key]=isNow;const ve=document.getElementById('b-'+key+'-v');const te=document.getElementById('tm-'+key);
@@ -2067,9 +2113,9 @@ function renderNaturaPeriodeHint(nik){
 function renderNaturaPanel(k){
   renderNaturaPeriodeHint(k&&k.nik);
   const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input value="${n.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="number" value="${n.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'nilai',parseFloat(this.value)||0)"><select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r" onclick="delNat('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span style="color:#2d6a0a;font-weight:700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span style="color:#9b2121;font-weight:700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';}
-function addNatura(){if(!canAccessSubTab('karyawan','natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama:'Natura Baru',nilai:0,kp:false});logPayrollAudit(cpNik,'Tambah Natura','Natura Baru (manual)');saveAll();renderNaturaPanel(k);updateGajiSummary();}
+function addNatura(){if(!canAccessPayrollSub('natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama:'Natura Baru',nilai:0,kp:false});logPayrollAudit(cpNik,'Tambah Natura','Natura Baru (manual)');saveAll();renderNaturaPanel(k);updateGajiSummary();}
 function addNatTmpl(nama,nilai,kp){
-  if(!canAccessSubTab('karyawan','natura'))return;
+  if(!canAccessPayrollSub('natura'))return;
   if(!guardPayrollEditUnlocked())return;
   var modeLbl=isPayrollSnapshotMode()?('snapshot '+((PA()&&PA().nama)||'periode aktif')):'master global';
   if(!confirm('Tambah natura "'+nama+'" ('+fmt(nilai)+') ke '+modeLbl+'?\n\nPastikan ini memang benar — template cepat sering ter-tap tidak sengaja di HP.'))return;
@@ -4102,6 +4148,7 @@ function showPg(pg){
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
   if(pg==='pesangon')try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);toast('Modul Pesangon error — cek konsol (F12).');}
+  if(pg==='kompgaji')renderKompgaji();
   if(pg==='penggajian'){
     var t0=document.querySelector('#pg-penggajian .tab[data-pgtab="proses"]');
     if(t0)switchPenggajianTab(t0,'pg-gaji-proses');
@@ -4161,14 +4208,13 @@ function switchAbTab(el,tid){
   var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti','abt-lembur':'lembur'};
   if(abSubs[tid]&&!canAccessSubTab('absensi',abSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
   el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['abt-kalender','abt-cuti','abt-lembur'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});if(tid==='abt-cuti')renderCutiRekap();if(tid==='abt-lembur'){var ls=document.getElementById('lembur-kar-sel');if(ls)ls.innerHTML=karyawan.map(function(k){return'<option value="'+k.nik+'">'+k.nama+'</option>';}).join('');renderLemburList();}}
-function switchSpTab(el,tid){
-  // Cek sub-tab permission
-  const tabMap={'sp-info':'info','sp-gaji':'gaji','sp-bpjs':'bpjs','sp-natura':'natura','sp-pphret':'pphret','sp-ring':'ring'};
+function switchPayrollSpTab(el,tid){
+  const tabMap={'sp-gaji':'gaji','sp-bpjs':'bpjs','sp-natura':'natura','sp-pphret':'pphret','sp-ring':'ring'};
   const subId=tabMap[tid];
-  if(subId&&!canAccessSubTab('karyawan',subId)){toast('Tidak punya akses ke tab ini');return;}
-  document.querySelectorAll('.spt').forEach(function(t){t.classList.remove('active');});
+  if(subId&&!canAccessPayrollSub(subId)){toast('Tidak punya akses ke tab ini');return;}
+  document.querySelectorAll('#slide-panel-payroll .spt').forEach(function(t){t.classList.remove('active');});
   el.classList.add('active');
-  ['sp-info','sp-gaji','sp-bpjs','sp-natura','sp-pphret','sp-ring'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});
+  ['sp-gaji','sp-bpjs','sp-natura','sp-pphret','sp-ring'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});
   if(tid==='sp-ring')updateGajiSummary();
   if(tid==='sp-bpjs'){var k=getPayrollTargetByNik(cpNik,true);if(k)loadBPJSPanel(k);}
   if(tid==='sp-gaji'){var k2=getPayrollTargetByNik(cpNik,true);if(k2){renderTunjPanel(k2);renderPotPanel(k2);}}
@@ -4182,7 +4228,7 @@ function execReset(){
   karyawan=[];periodes=[];hariLibur=[];masterCuti={kuota:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
   perusahaan={nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}};
   users=[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}];
-  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','karyawan.bpjs','karyawan.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']};
+  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.bpjs','kompgaji.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','kompgaji','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']};
   thrManual={};tunjVarBulan={};tunjVarLabels={v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'};tunjVarColumns=[{id:'v1',nama:'Bonus'},{id:'v2',nama:'Uang Makan'},{id:'v3',nama:'Lain-lain'}];localStorage.removeItem(DB_KEY);localStorage.removeItem('sigaji_universal');saveAll();closeModal('m-reset');renderSidebar();renderAll();updateNotifBadge();applyBranding();
   document.getElementById('reset-inp').value='';document.getElementById('btn-reset').disabled=true;toast('Reset selesai');
 }
