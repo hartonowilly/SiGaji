@@ -95,7 +95,7 @@ const SUBTABS={
   karyawan:['info'],
   kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
   absensi:['kalender','cuti'],
-  master:['prs','periode','libur','potongan','ter'],
+  master:['prs','periode','umk','libur','potongan','ter'],
   approval:['pend','hist'],
 };
 const SUBTAB_LBL={
@@ -103,7 +103,7 @@ const SUBTAB_LBL={
   'kompgaji.gaji':'Gaji & Tunjangan','kompgaji.tunjvar':'Tunjangan Variabel','kompgaji.bpjs':'BPJS','kompgaji.natura':'Natura',
   'kompgaji.pphret':'PPh Return','kompgaji.ring':'Ringkasan',
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
-  'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR',
+  'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR','master.umk':'UMK',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
 };
@@ -120,7 +120,7 @@ const MODULES=[
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
   {id:'pph',lbl:'PPh 21',icon:'&#128200;',sec:'Laporan'},
   {id:'laporan',lbl:'Rekap',icon:'&#128196;',sec:'Laporan'},
-  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','libur','potongan','ter']},
+  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter']},
   {id:'backup',lbl:'Backup & Import',icon:'&#128190;',sec:'Pengaturan'},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
   {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
@@ -163,6 +163,6 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=10;
+const SCHEMA_VERSION=12;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
