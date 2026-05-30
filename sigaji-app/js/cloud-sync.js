@@ -141,6 +141,11 @@
           console.warn('Sigaji: branding login dari cloud', e);
         });
       }
+      if (typeof window.sigajiUpdateCloudBackupUi === 'function') {
+        try {
+          window.sigajiUpdateCloudBackupUi();
+        } catch (eBu) {}
+      }
     } catch (e) {
       console.error('Sigaji cloud:', e);
       toastSafe('Gagal memuat pustaka Supabase');

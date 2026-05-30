@@ -1535,6 +1535,7 @@ function enterAppWithUser(user){
   document.getElementById('uav').textContent=ini(CU.nama);document.getElementById('uname').textContent=CU.nama;document.getElementById('urbadge').textContent=CU.role;
   document.getElementById('top-periode').textContent=PA().nama;
   applyBranding();renderSidebar();renderAll();
+  try{sigajiUpdateCloudBackupUi();}catch(eCu){}
   try{sigajiApplyMobileNavMode();initSigajiNavDrawer();}catch(e){}
   const firstPg=MODULES.map(m=>m.id).find(id=>canAccessModule(id))||'notifikasi';
   showPg(canAccessModule('dashboard')?'dashboard':firstPg);
@@ -1703,7 +1704,7 @@ function toggleSpPhkWrap(){
   w.style.display=on?'':'none';
   if(on&&(!document.getElementById('sp-phk-alasan')||!document.getElementById('sp-phk-alasan').options.length))populatePhkAlasanSelect();
 }
-function renderAll(){renderDash();renderKar();renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();}
+function renderAll(){renderDash();renderKar();renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderApproval();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();try{sigajiUpdateCloudBackupUi();}catch(eCb){}}
 // ── DASHBOARD ───────────────────────────────────
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
@@ -4181,6 +4182,64 @@ function buildExportData(){
   };
 }
 function exportBackup(){var data=buildExportData();var json=JSON.stringify(data,null,2);var blob=new Blob([json],{type:'application/json;charset=utf-8'});var a=document.createElement('a');var fn=((document.getElementById('backup-filename')&&document.getElementById('backup-filename').value)||'SiGaji_Backup').trim();var tgl=new Date().toISOString().split('T')[0];a.href=URL.createObjectURL(blob);a.download=fn+'_'+tgl+'.json';a.click();simpanRiwayatBackup(data._meta);var inf=document.getElementById('backup-info');if(inf)inf.textContent='Backup lengkap diunduh ('+DATA_KEYS.length+' jenis data, '+data._meta.totalKaryawan+' karyawan, snapshot '+(data._meta.snapshotPeriodeCount||0)+' periode / '+(data._meta.snapshotRowCount||0)+' baris): '+a.download;toast('Backup lengkap diunduh');}
+function sigajiIsAdminOrHrd(){
+  return !!(CU&&(CU.role==='Admin'||CU.role==='HRD'));
+}
+function sigajiCloudBackupAvailable(){
+  if(typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured())return true;
+  if(window.sigajiSupabase)return true;
+  if(window.sigajiCloudOnlyMode)return true;
+  return false;
+}
+function sigajiUpdateCloudBackupUi(){
+  var staff=sigajiIsAdminOrHrd();
+  var btn=document.getElementById('btn-cloud-db-export');
+  var wrap=document.getElementById('backup-exclude-logo-wrap');
+  if(btn)btn.style.display=staff?'inline-block':'none';
+  if(wrap)wrap.style.display=staff?'flex':'none';
+}
+async function exportCloudDatabaseBackup(){
+  if(!sigajiCloudBackupAvailable()){toast('Mode cloud belum aktif — pastikan config.js Supabase di server & login email');return;}
+  if(!CU||!(CU.role==='Admin'||CU.role==='HRD')){toast('Hanya Admin/HRD');return;}
+  if(!window.sigajiSupabase){toast('Supabase belum siap — refresh halaman');return;}
+  var btn=document.getElementById('btn-cloud-db-export');
+  var sess=await window.sigajiSupabase.auth.getSession();
+  if(!sess.data||!sess.data.session){toast('Login cloud dulu');return;}
+  var ex=document.getElementById('backup-exclude-logo');
+  var q=ex&&ex.checked?'?exclude_logo=1':'';
+  if(btn){btn.disabled=true;btn.textContent='Mengunduh…';}
+  toast('Mengunduh backup database…');
+  try{
+    var r=await fetch('/.netlify/functions/backup-database-export'+q,{headers:{authorization:'Bearer '+sess.data.session.access_token}});
+    if(!r.ok){
+      var err={};try{err=await r.json();}catch(eJ){}
+      toast('Gagal: '+(err.error||r.statusText||r.status));
+      return;
+    }
+    var text=await r.text();
+    var disp=r.headers.get('content-disposition')||'';
+    var m=/filename="([^"]+)"/i.exec(disp);
+    var fn=m?m[1]:'Sigaji_DB_Export_'+new Date().toISOString().split('T')[0]+'.json';
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'}));
+    a.download=fn;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    var inf=document.getElementById('backup-info');
+    var detail='';
+    try{
+      var parsed=JSON.parse(text);
+      if(parsed&&parsed._meta&&parsed._meta.row_counts)detail=' — '+JSON.stringify(parsed._meta.row_counts);
+    }catch(eP){}
+    if(inf)inf.textContent='Backup database cloud: '+fn+' ('+Math.round(text.length/1024)+' KB)'+detail;
+    toast('Backup database diunduh');
+  }catch(e){
+    console.error(e);
+    toast('Gagal unduh: '+(e.message||e));
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='&#9729; Unduh backup database (cloud)';}
+  }
+}
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){}}
 function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:7px;border:1px solid var(--bd);margin-bottom:.35rem;font-size:12px;'+(i===0?'background:#e8f4de;border-color:#b3d98f':'')+'"><div><div style="font-weight:700">'+(x.tanggalDisplay||x.tanggal)+'</div><div style="font-size:10px;color:#6b7280">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}catch(e){}}
 function renderAuditLog(){
@@ -4408,7 +4467,7 @@ function showPg(pg){
   if(pg==='myslip')loadMySlip();
   if(pg==='pph')renderPPH();
   if(pg==='laporan')renderLaporan();
-  if(pg==='backup'){renderBackupRiwayat();renderMigrationStatus();renderAuditLog();}
+  if(pg==='backup'){sigajiUpdateCloudBackupUi();renderBackupRiwayat();renderMigrationStatus();renderAuditLog();}
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
   if(pg==='pesangon')try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);toast('Modul Pesangon error — cek konsol (F12).');}
