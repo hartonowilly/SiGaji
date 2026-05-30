@@ -479,4 +479,5 @@
   };
 
   bootPromise = boot();
+  window.sigajiCloudBootPromise = bootPromise;
 })();

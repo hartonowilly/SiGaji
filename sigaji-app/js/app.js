@@ -4199,47 +4199,77 @@ function sigajiUpdateCloudBackupUi(){
   if(wrap)wrap.style.display=staff?'flex':'none';
 }
 async function exportCloudDatabaseBackup(){
-  if(!sigajiCloudBackupAvailable()){toast('Mode cloud belum aktif — pastikan config.js Supabase di server & login email');return;}
-  if(!CU||!(CU.role==='Admin'||CU.role==='HRD')){toast('Hanya Admin/HRD');return;}
-  if(!window.sigajiSupabase){toast('Supabase belum siap — refresh halaman');return;}
+  var inf=document.getElementById('backup-info');
   var btn=document.getElementById('btn-cloud-db-export');
-  var sess=await window.sigajiSupabase.auth.getSession();
-  if(!sess.data||!sess.data.session){toast('Login cloud dulu');return;}
-  var ex=document.getElementById('backup-exclude-logo');
-  var q=ex&&ex.checked?'?exclude_logo=1':'';
-  if(btn){btn.disabled=true;btn.textContent='Mengunduh…';}
-  toast('Mengunduh backup database…');
   try{
-    var r=await fetch('/.netlify/functions/backup-database-export'+q,{headers:{authorization:'Bearer '+sess.data.session.access_token}});
-    if(!r.ok){
-      var err={};try{err=await r.json();}catch(eJ){}
-      toast('Gagal: '+(err.error||r.statusText||r.status));
+    if(inf)inf.textContent='Memproses backup database cloud…';
+    toast('Memproses backup database…');
+    if(btn){btn.disabled=true;btn.textContent='Mengunduh…';}
+    if(window.sigajiCloudBootPromise){
+      try{await window.sigajiCloudBootPromise;}catch(eBoot){console.warn(eBoot);}
+    }
+    if(!sigajiIsAdminOrHrd()){toast('Hanya Admin/HRD');if(inf)inf.textContent='';return;}
+    if(!sigajiCloudBackupAvailable()&&!window.sigajiSupabase){
+      toast('Mode cloud belum aktif — pastikan config.js di server & login email Supabase');
+      if(inf)inf.textContent='Cloud belum aktif (config.js / login).';
       return;
     }
+    if(!window.sigajiSupabase){
+      toast('Supabase belum siap — tunggu beberapa detik lalu coba lagi');
+      if(inf)inf.textContent='Menunggu koneksi Supabase…';
+      return;
+    }
+    if(location.protocol==='file:'){
+      toast('Backup cloud butuh situs Netlify (https), bukan file:// lokal');
+      if(inf)inf.textContent='Buka lewat https://…netlify.app';
+      return;
+    }
+    var sess=await window.sigajiSupabase.auth.getSession();
+    if(!sess.data||!sess.data.session){
+      toast('Login dengan email Supabase (bukan login cepat lokal)');
+      if(inf)inf.textContent='Belum ada sesi cloud.';
+      return;
+    }
+    var ex=document.getElementById('backup-exclude-logo');
+    var q=ex&&ex.checked?'?exclude_logo=1':'';
+    var apiUrl='/.netlify/functions/backup-database-export'+q;
+    if(inf)inf.textContent='Menghubungi server backup…';
+    var r=await fetch(apiUrl,{headers:{authorization:'Bearer '+sess.data.session.access_token}});
     var text=await r.text();
+    if(!r.ok){
+      var errMsg=text;
+      try{var ej=JSON.parse(text);if(ej&&ej.error)errMsg=ej.error;}catch(eJ){}
+      if(r.status===404)errMsg='Fungsi Netlify belum ada — deploy netlify/functions/backup-database-export.js';
+      toast('Gagal: '+errMsg);
+      if(inf)inf.textContent='Error: '+errMsg;
+      return;
+    }
     var disp=r.headers.get('content-disposition')||'';
     var m=/filename="([^"]+)"/i.exec(disp);
     var fn=m?m[1]:'Sigaji_DB_Export_'+new Date().toISOString().split('T')[0]+'.json';
     var a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'}));
     a.download=fn;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    var inf=document.getElementById('backup-info');
     var detail='';
     try{
       var parsed=JSON.parse(text);
       if(parsed&&parsed._meta&&parsed._meta.row_counts)detail=' — '+JSON.stringify(parsed._meta.row_counts);
     }catch(eP){}
     if(inf)inf.textContent='Backup database cloud: '+fn+' ('+Math.round(text.length/1024)+' KB)'+detail;
-    toast('Backup database diunduh');
+    toast('Backup database diunduh — cek folder Downloads');
   }catch(e){
-    console.error(e);
-    toast('Gagal unduh: '+(e.message||e));
+    console.error('exportCloudDatabaseBackup',e);
+    toast('Gagal: '+(e.message||e));
+    if(inf)inf.textContent='Gagal: '+(e.message||e);
   }finally{
     if(btn){btn.disabled=false;btn.innerHTML='&#9729; Unduh backup database (cloud)';}
   }
 }
+if(typeof window!=='undefined')window.exportCloudDatabaseBackup=exportCloudDatabaseBackup;
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){}}
 function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:7px;border:1px solid var(--bd);margin-bottom:.35rem;font-size:12px;'+(i===0?'background:#e8f4de;border-color:#b3d98f':'')+'"><div><div style="font-weight:700">'+(x.tanggalDisplay||x.tanggal)+'</div><div style="font-size:10px;color:#6b7280">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}catch(e){}}
 function renderAuditLog(){
