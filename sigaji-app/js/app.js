@@ -4445,6 +4445,7 @@ function renderPeriodes(){
       +'<td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="aktifkanPeriode(\''+p.id+'\')">Aktifkan</button>'+lockBtn+rebuildBtn+'<button class="btn btn-sm btn-r" onclick="hapusPeriode(\''+p.id+'\')">Hapus</button></div></td></tr>';
   }).join('');
   renderPeriodeSnapshotGuardUi(false);
+  updatePeriodeSimpanButtonState();
 }
 function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));el.innerHTML='<div class="pb mb2"><div><div style="font-size:10px;opacity:.75">Periode Aktif</div><div style="font-size:17px;font-weight:800">'+p.nama+(p.thr_aktif?' <span style="font-size:12px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:20px">&#127873; THR</span>':'')+'</div><div style="font-size:11px;opacity:.8">'+fmtDate(p.start)+' - '+fmtDate(p.end)+'</div></div><div style="text-align:right"><div style="font-size:28px;font-weight:800">'+hP+'</div><div style="font-size:10px;opacity:.75">hari</div></div></div>';}
 function toggleOpsiLebihBayar(){
@@ -4452,11 +4453,24 @@ function toggleOpsiLebihBayar(){
   const el=document.getElementById('fg-opsi-lebih-bayar');
   if(el)el.style.display=(tipe==='desember'||tipe==='resign')?'block':'none';
 }
+function isPeriodeSnapshotTerbuka(p){
+  if(!p)return false;
+  return p.snapshot_locked!==true;
+}
+function findPeriodeByNama(nama){
+  var n=String(nama||'').trim().toLowerCase();
+  if(!n)return null;
+  return (periodes||[]).find(function(p){return String(p.nama||'').trim().toLowerCase()===n;})||null;
+}
+function isNamaPeriodeBaru(nama){
+  return !findPeriodeByNama(nama);
+}
 /** Periode yang snapshot-nya masih terbuka (belum dikunci). */
 function getPeriodesSnapshotTerbuka(excludeNama){
+  var exNorm=excludeNama?String(excludeNama).trim().toLowerCase():'';
   return (periodes||[]).filter(function(p){
-    if(!p||p.snapshot_locked)return false;
-    if(excludeNama&&p.nama===excludeNama)return false;
+    if(!isPeriodeSnapshotTerbuka(p))return false;
+    if(exNorm&&String(p.nama||'').trim().toLowerCase()===exNorm)return false;
     return true;
   });
 }
@@ -4494,15 +4508,36 @@ function goToDaftarPeriode(){
     if(tb){try{tb.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){tb.scrollIntoView(true);}}
   },100);
 }
-function guardCanBuatPeriodeBaru(){
+function guardCanBuatPeriodeBaru(nama){
+  if(nama!=null&&nama!==''&&!isNamaPeriodeBaru(nama)){
+    updatePeriodeSimpanButtonState();
+    return true;
+  }
   var open=getPeriodesSnapshotTerbuka();
-  if(!open.length){renderPeriodeSnapshotGuardUi(false);return true;}
+  if(!open.length){
+    renderPeriodeSnapshotGuardUi(false);
+    updatePeriodeSimpanButtonState();
+    return true;
+  }
   renderPeriodeSnapshotGuardUi(true);
+  updatePeriodeSimpanButtonState();
   return false;
+}
+function updatePeriodeSimpanButtonState(){
+  var btn=document.getElementById('btn-simpan-periode');
+  var namaEl=document.getElementById('p-nama');
+  if(!btn||!namaEl)return;
+  var nama=namaEl.value.trim();
+  var blockBaru=isNamaPeriodeBaru(nama)&&getPeriodesSnapshotTerbuka().length>0;
+  btn.disabled=blockBaru;
+  btn.style.opacity=blockBaru?'.55':'';
+  btn.style.cursor=blockBaru?'not-allowed':'';
+  btn.title=blockBaru?'Kunci semua snapshot terbuka dulu sebelum menambah periode baru':'';
 }
 function simpanPeriode(){
   var nama=document.getElementById('p-nama').value.trim();var start=document.getElementById('p-start').value;var end=document.getElementById('p-end').value;var bayar=document.getElementById('p-bayar').value;var status=document.getElementById('p-status').value;
   if(!nama||!start||!end||!bayar){toast('Wajib diisi');return;}
+  if(isNamaPeriodeBaru(nama)&&!guardCanBuatPeriodeBaru(nama))return;
   var tipeP=(document.getElementById('p-tipe-periode')&&document.getElementById('p-tipe-periode').value)||'normal';
   var opsiLB=(document.getElementById('p-opsi-lebih-bayar')&&document.getElementById('p-opsi-lebih-bayar').value)||'refund';
   var thrAktif=!!(document.getElementById('p-thr-aktif')&&document.getElementById('p-thr-aktif').checked);
@@ -4510,9 +4545,8 @@ function simpanPeriode(){
   var thrBayar=thrAktif&&document.getElementById('p-thr-bayar')?document.getElementById('p-thr-bayar').value:'';
   var thrHR=thrAktif&&document.getElementById('p-thr-hariraya')?document.getElementById('p-thr-hariraya').value:'';
   var obj={nama:nama,start:start,end:end,bayar:bayar,status:status,tipe_periode:tipeP,opsi_lebih_bayar:opsiLB,thr_aktif:thrAktif,thr_nama:thrNama,thr_bayar:thrBayar,thr_hariraya:thrHR};
-  var ex=periodes.find(function(p){return p.nama===nama;});
+  var ex=findPeriodeByNama(nama);
   var isNew=!ex;
-  if(isNew&&!guardCanBuatPeriodeBaru())return;
   if(ex)Object.assign(ex,obj);
   else periodes.push(Object.assign({id:Date.now(),snapshot_locked:false},obj));
   if(status==='aktif')periodes.forEach(function(p){if(p.nama!==nama)p.status='tutup';});
@@ -4533,11 +4567,11 @@ function toggleLockPeriode(id){
     if(!prog.ok){toast('Snapshot belum lengkap: '+prog.done+'/'+prog.total);return;}
     if(!confirm('Kunci snapshot periode "'+p.nama+'"? Setelah dikunci, perubahan master tidak akan mengubah perhitungan periode ini.'))return;
     p.snapshot_locked=true;
-    saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);toast('Periode '+p.nama+' terkunci');
+    saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci');
   }else{
     if(!confirm('Buka kunci snapshot periode "'+p.nama+'"? Perubahan berikutnya pada periode ini bisa mengubah snapshot.'))return;
     p.snapshot_locked=false;
-    saveAll();renderPeriodes();toast('Kunci periode dibuka');
+    saveAll();renderPeriodes();updatePeriodeSimpanButtonState();toast('Kunci periode dibuka');
   }
 }
 function rebuildSnapshotPeriode(id){
@@ -4564,13 +4598,23 @@ function renderUmkYearSelect(){
   var sel=document.getElementById('umk-year-sel');if(!sel)return;
   var yr=new Date().getFullYear();
   var years={};
-  years[yr]=1;years[yr-1]=1;years[yr+1]=1;
-  Object.keys(perusahaan.umk||{}).forEach(function(y){var n=parseInt(y,10);if(!isNaN(n))years[n]=1;});
+  var minY=yr-8;
+  var maxY=yr+15;
+  for(var y=minY;y<=maxY;y++)years[y]=1;
+  Object.keys(perusahaan.umk||{}).forEach(function(y){var n=parseInt(y,10);if(!isNaN(n)&&n>=2000&&n<2100)years[n]=1;});
+  (periodes||[]).forEach(function(p){
+    [p.start,p.end,p.bayar].forEach(function(d){
+      if(!d)return;
+      var m=String(d).match(/^(\d{4})/);
+      if(m){var ny=parseInt(m[1],10);if(!isNaN(ny))years[ny]=1;}
+    });
+  });
   var list=Object.keys(years).map(Number).filter(function(y){return y>=2000&&y<2100;}).sort(function(a,b){return b-a;});
   if(!list.length)list=[yr];
   var prev=sel.value;
   sel.innerHTML=list.map(function(y){return'<option value="'+y+'">'+y+'</option>';}).join('');
   if(prev&&list.indexOf(parseInt(prev,10))>=0)sel.value=prev;
+  else if(list.indexOf(yr)>=0)sel.value=String(yr);
 }
 function renderUmkPanel(){
   ensurePerusahaanUmk();
