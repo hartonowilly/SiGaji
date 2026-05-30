@@ -129,8 +129,23 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <span style="font-size:11px;color:#6b7280" id="kar-count"></span>
     </div>
     <div style="overflow-x:auto">
-    <table><thead><tr id="kar-thead-row"><th>No</th><th>Karyawan</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>Gaji Pokok</th><th>PTKP</th><th>BPJS</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
+    <table><thead><tr id="kar-thead-row"><th>No</th><th>Karyawan</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
     <tbody id="tb-kar"></tbody></table></div>
+  </div>
+</div>
+
+<!-- KOMPONEN GAJI (terpisah dari Master Karyawan) -->
+<div class="pg" id="pg-kompgaji">
+  <div class="ph"><div><div class="pt">Komponen Gaji</div><div class="pst">Gaji pokok, tunjangan, potongan, BPJS, natura &amp; PPh — terpisah dari data profil karyawan</div></div>
+  <button class="btn btn-sm btn-out" onclick="renderKompgaji()">&#8635; Refresh</button></div>
+  <div class="card">
+    <div class="flb mb2">
+      <input type="text" placeholder="&#128269; Cari..." style="width:220px" id="kg-filter" oninput="filterKompgaji(this.value)">
+      <span style="font-size:11px;color:#6b7280" id="kg-count"></span>
+    </div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>No</th><th>Karyawan</th><th>Dept</th><th>Gaji Pokok</th><th>BPJS</th><th>Tunjangan</th><th>Natura</th><th>Aksi</th></tr></thead>
+    <tbody id="tb-kompgaji"></tbody></table></div>
   </div>
 </div>
 
@@ -703,35 +718,20 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 </div></div></div><!-- end content/layout/app -->
 
-<!-- SLIDE PANEL KARYAWAN -->
-<div class="po" id="panel-overlay" onclick="closePanel()"></div>
+<!-- SLIDE PANEL KARYAWAN (profil SDM saja) -->
+<div class="po" id="panel-overlay" onclick="closeAnyPanel()"></div>
 <div class="sp" id="slide-panel">
   <div class="sph">
     <div>
       <div style="font-size:10px;opacity:.75" id="sp-nik">NIK</div>
       <div style="font-size:20px;font-weight:800;margin-top:2px" id="sp-name">Nama</div>
       <div style="font-size:12px;opacity:.8;margin-top:3px" id="sp-sub">Jabatan</div>
-    <div id="sp-payroll-mode-wrap" style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:10px;opacity:.85">Mode Payroll:</span>
-      <button class="btn btn-sm btn-out" id="sp-mode-periode" onclick="setSpPayrollView('periode')" style="padding:2px 8px;font-size:10px">Snapshot Periode</button>
-      <button class="btn btn-sm btn-out" id="sp-mode-master" onclick="setSpPayrollView('master')" style="padding:2px 8px;font-size:10px">Master Global</button>
-      <span id="sp-mode-lbl" style="font-size:10px;opacity:.85"></span>
-    </div>
-    <div id="sp-mode-badge" style="margin-top:6px;font-size:10px;font-weight:800;display:inline-block;padding:4px 8px;border-radius:999px"></div>
     </div>
     <div class="fl gap1">
       <button type="button" id="sp-btn-telegram" onclick="openTelegramFromKarPanel()" style="display:none;background:#229ED9;color:#fff;border:1.5px solid rgba(255,255,255,.35);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer" title="Buat kode /start untuk hubungkan bot slip gaji">Telegram slip</button>
       <button onclick="hapusKarFromPanel()" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Hapus</button>
       <button class="spc" onclick="closePanel()">&times;</button>
     </div>
-  </div>
-  <div class="spt-wrap">
-    <div class="spt active" data-kstab="info" onclick="switchSpTab(this,'sp-info')">&#128100; Info & Jabatan</div>
-    <div class="spt" data-kstab="gaji" onclick="switchSpTab(this,'sp-gaji')">&#128176; Gaji & Tunjangan</div>
-    <div class="spt" data-kstab="bpjs" onclick="switchSpTab(this,'sp-bpjs')">&#9829; BPJS</div>
-    <div class="spt" data-kstab="natura" onclick="switchSpTab(this,'sp-natura')">&#127873; Natura</div>
-    <div class="spt" data-kstab="pphret" onclick="switchSpTab(this,'sp-pphret')">&#9312; PPh Return</div>
-    <div class="spt" data-kstab="ring" onclick="switchSpTab(this,'sp-ring')">&#128200; Ringkasan</div>
   </div>
   <div class="spb">
     <div id="sp-info">
@@ -786,6 +786,43 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         </div>
       </div>
     </div>
+  </div>
+  <div class="spf">
+    <div style="font-size:11px;color:#6b7280" id="sp-saved-lbl">-</div>
+    <div class="fl gap1">
+      <button class="btn btn-sm btn-out" onclick="closePanel()">Tutup</button>
+      <button class="btn btn-sm btn-p" onclick="simpanKarPanel()">&#10003; Simpan Profil</button>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE PANEL KOMPONEN GAJI -->
+<div class="sp" id="slide-panel-payroll">
+  <div class="sph">
+    <div>
+      <div style="font-size:10px;opacity:.75" id="kg-sp-nik">NIK</div>
+      <div style="font-size:20px;font-weight:800;margin-top:2px" id="kg-sp-name">Nama</div>
+      <div style="font-size:12px;opacity:.8;margin-top:3px" id="kg-sp-sub">Jabatan</div>
+    <div id="sp-payroll-mode-wrap" style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:10px;opacity:.85">Mode Payroll:</span>
+      <button class="btn btn-sm btn-out" id="sp-mode-periode" onclick="setSpPayrollView('periode')" style="padding:2px 8px;font-size:10px">Snapshot Periode</button>
+      <button class="btn btn-sm btn-out" id="sp-mode-master" onclick="setSpPayrollView('master')" style="padding:2px 8px;font-size:10px">Master Global</button>
+      <span id="sp-mode-lbl" style="font-size:10px;opacity:.85"></span>
+    </div>
+    <div id="sp-mode-badge" style="margin-top:6px;font-size:10px;font-weight:800;display:inline-block;padding:4px 8px;border-radius:999px"></div>
+    </div>
+    <div class="fl gap1">
+      <button class="spc" onclick="closePayrollPanel()">&times;</button>
+    </div>
+  </div>
+  <div class="spt-wrap" id="payroll-spt-wrap">
+    <div class="spt active" data-kgstab="gaji" onclick="switchPayrollSpTab(this,'sp-gaji')">&#128176; Gaji & Tunjangan</div>
+    <div class="spt" data-kgstab="bpjs" onclick="switchPayrollSpTab(this,'sp-bpjs')">&#9829; BPJS</div>
+    <div class="spt" data-kgstab="natura" onclick="switchPayrollSpTab(this,'sp-natura')">&#127873; Natura</div>
+    <div class="spt" data-kgstab="pphret" onclick="switchPayrollSpTab(this,'sp-pphret')">&#9312; PPh Return</div>
+    <div class="spt" data-kgstab="ring" onclick="switchPayrollSpTab(this,'sp-ring')">&#128200; Ringkasan</div>
+  </div>
+  <div class="spb">
     <div id="sp-gaji" style="display:none">
       <div class="stit">Gaji Pokok</div>
       <div class="fg"><label>Gaji Pokok per Bulan (Rp)</label><input type="number" id="sp-gapok-f" oninput="updateGajiSummary()"></div>
@@ -854,10 +891,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
   </div>
   <div class="spf">
-    <div style="font-size:11px;color:#6b7280" id="sp-saved-lbl">-</div>
+    <div style="font-size:11px;color:#6b7280" id="kg-sp-saved-lbl">-</div>
     <div class="fl gap1">
-      <button class="btn btn-sm btn-out" onclick="closePanel()">Tutup</button>
-      <button class="btn btn-sm btn-p" onclick="simpanKarPanel()">&#10003; Simpan Perubahan</button>
+      <button class="btn btn-sm btn-out" onclick="closePayrollPanel()">Tutup</button>
+      <button class="btn btn-sm btn-p" onclick="simpanPayrollPanel()">&#10003; Simpan Komponen Gaji</button>
     </div>
   </div>
 </div>
