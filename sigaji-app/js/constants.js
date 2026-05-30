@@ -117,3 +117,5 @@ function bulanUPMKPasal41(months){
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
 const SCHEMA_VERSION=10;
+/** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
+const SIGAJI_APP_LABEL='SiGaji v10';

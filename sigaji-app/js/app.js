@@ -327,8 +327,22 @@ function karyawanInPeriode(k,p){
   // ISO date string compare aman untuk format YYYY-MM-DD
   return t>=String(p.start);
 }
+function sortKaryawanByNik(list){
+  return list.slice().sort(function(a,b){
+    return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
+  });
+}
+/** NIK baru = angka terbesar yang pernah dipakai + 1 (tidak mengisi lubang K0015 resign/hapus). */
+function nextNikOtomatis(){
+  var maxNum=0;
+  karyawan.forEach(function(k){
+    var m=String(k.nik||'').match(/(\d+)/);
+    if(m){var n=parseInt(m[1],10);if(!isNaN(n)&&n>maxNum)maxNum=n;}
+  });
+  return 'K'+String(maxNum+1).padStart(4,'0');
+}
 function karyawanListPeriode(p){
-  return karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  return sortKaryawanByNik(karyawan.filter(function(k){return karyawanInPeriode(k,p);}));
 }
 /** Batas atas (inklusif) tgl berhenti masuk periode untuk PHK / rekonsiliasi PPh.
  *  Absensi & komponen gaji memakai start–end. Tgl bayar boleh **lebih awal** dari end (transfer bank hari kerja);
@@ -1694,16 +1708,16 @@ function karRowHtml(k,no){
 }
 function renderKar(){
   const p=PA();
-  const list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  const list=karyawanListPeriode(p);
   const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Data profil SDM';
   const tb=document.getElementById('tb-kar');if(!tb)return;
   tb.innerHTML=list.map((k,i)=>karRowHtml(k,i+1)).join('');
 }
 function filterKar(q){
   const p=PA();
-  const r=karyawan
-    .filter(function(k){return karyawanInPeriode(k,p);})
-    .filter(function(k){return (k.nama+k.nik+k.jabatan+k.dept).toLowerCase().includes(q.toLowerCase());});
+  const r=sortKaryawanByNik(karyawanListPeriode(p).filter(function(k){
+    return (k.nama+k.nik+k.jabatan+k.dept).toLowerCase().includes(q.toLowerCase());
+  }));
   document.getElementById('kar-count').textContent=r.length+' ditampilkan';
   document.getElementById('tb-kar').innerHTML=r.map((k,i)=>karRowHtml(k,i+1)).join('');
 }
@@ -1721,21 +1735,21 @@ function kompgajiRowHtml(k,no){
 }
 function renderKompgaji(){
   const p=PA();
-  const list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  const list=karyawanListPeriode(p);
   const el=document.getElementById('kg-count');if(el)el.textContent=list.length+' karyawan • Periode aktif: '+(p&&p.nama?p.nama:'-');
   const tb=document.getElementById('tb-kompgaji');if(!tb)return;
   tb.innerHTML=list.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
 }
 function filterKompgaji(q){
   const p=PA();
-  const r=karyawan
-    .filter(function(k){return karyawanInPeriode(k,p);})
-    .filter(function(k){return (k.nama+k.nik+k.dept).toLowerCase().includes(q.toLowerCase());});
+  const r=sortKaryawanByNik(karyawanListPeriode(p).filter(function(k){
+    return (k.nama+k.nik+k.dept).toLowerCase().includes(q.toLowerCase());
+  }));
   const el=document.getElementById('kg-count');if(el)el.textContent=r.length+' ditampilkan';
   document.getElementById('tb-kompgaji').innerHTML=r.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
 }
 function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
-function openNewKar(){if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}const nik='K'+String(karyawan.length+1).padStart(4,'0');karyawan.push({nik,nama:'Karyawan Baru',dept:'Operasional',jabatan:'Staff',status:'Tetap',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',jk:'L',agama:'Islam',ktp:'',npwp:'',hp:'',email:'',alamat:'',atasan:'',lokasi:'',bank:'BCA',norek:'',reknam:'',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{'kes-prs':true,'kes-kar':true,'jht-prs':true,'jht-kar':true,'jp-prs':true,'jp-kar':true,'jkk-prs':true,'jkm-prs':true},bpjs_manual:{},natura:[],pph_return:{nilai:0,ket:''}});saveAll();renderKar();populateSelects();openPanel(nik);toast('Karyawan baru dibuat');}
+function openNewKar(){if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}const nik=nextNikOtomatis();karyawan.push({nik,nama:'Karyawan Baru',dept:'Operasional',jabatan:'Staff',status:'Tetap',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',jk:'L',agama:'Islam',ktp:'',npwp:'',hp:'',email:'',alamat:'',atasan:'',lokasi:'',bank:'BCA',norek:'',reknam:'',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{'kes-prs':true,'kes-kar':true,'jht-prs':true,'jht-kar':true,'jp-prs':true,'jp-kar':true,'jkk-prs':true,'jkm-prs':true},bpjs_manual:{},natura:[],pph_return:{nilai:0,ket:''}});saveAll();renderKar();populateSelects();openPanel(nik);toast('Karyawan baru dibuat');}
 // ── SLIDE PANEL KARYAWAN (profil SDM) ──────────
 function openPanel(nik){
   if(!canAccessModule('karyawan')){toast('Tidak punya akses modul Master Karyawan');return;}
@@ -2257,7 +2271,7 @@ function exportTunjVarExcelTemplate(){
   ensureXlsxForTunjVar(function(){
     var p=PA(),pn=p.nama;
     var cols=getTunjVarColumnsResolved();
-    var listK=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+    var listK=karyawanListPeriode(p);
     var hdr=['NIK','Nama'].concat(cols.map(function(c){return c.nama;}));
     var aoa=[hdr];
     listK.forEach(function(k){
@@ -2340,7 +2354,7 @@ function renderTunjVariabelBulan(){
   if(!tunjVarColumns||!tunjVarColumns.length){tunjVarColumns=cols.slice();syncTunjVarLabelsFromColumns();saveAll();}
   renderTunjVarColEditor();
   var sub=document.getElementById('tunjvar-per-lbl');if(sub)sub.textContent=pn;
-  var listK=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  var listK=karyawanListPeriode(p);
   if(!listK.length){wrap.innerHTML='<div style="color:#6b7280;font-size:12px">Belum ada karyawan aktif untuk periode ini.</div>';if(foot)foot.textContent='';return;}
   if(!tunjVarBulan[pn])tunjVarBulan[pn]={};
   var thead='<th style="min-width:42px;text-align:center">No</th><th>Karyawan</th>'
@@ -2382,7 +2396,7 @@ function renderPenggajian(skipTunjVar){
       '';
   }
   let prAktif=0;
-  const rows=karyawan.filter(function(k){return karyawanInPeriode(k,p);}).map(function(k,idx){
+  const rows=karyawanListPeriode(p).map(function(k,idx){
     const g=hitungGaji(k,p.nama);
     const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
     const st=ap?ap.status:'draft';
@@ -2416,7 +2430,7 @@ function renderPenggajian(skipTunjVar){
 }
 function kirimApproval(){
   const p=PA();let added=0;
-  karyawan.filter(function(k){return karyawanInPeriode(k,p);}).forEach(function(k){
+  karyawanListPeriode(p).forEach(function(k){
     if(!approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;})){
       const g=hitungGaji(k,p.nama);
       approvals.push({id:Date.now()+Math.random(),nik:k.nik,nama:k.nama,period:p.nama,bruto:g.grossPPh,neto:g.neto,status:'pending',time:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})});
@@ -4108,7 +4122,7 @@ function buildExportData(){
   var snapPeriods=Object.keys(karSnapshot||{});
   var snapRows=snapPeriods.reduce(function(s,pn){return s+Object.keys((karSnapshot&&karSnapshot[pn])||{}).length;},0);
   var meta={
-    versi:'SiGaji v9',
+    versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',
     schemaVersion:typeof SCHEMA_VERSION!=='undefined'?SCHEMA_VERSION:3,
     tanggal:new Date().toISOString(),
     catatan:(document.getElementById('backup-catatan')&&document.getElementById('backup-catatan').value)||'',
@@ -4242,7 +4256,7 @@ function eksekusiImport(){
   document.getElementById('import-preview').style.display='none';importData=null;
   var inp=document.getElementById('import-file-input');if(inp)inp.value='';
 }
-function exportCSVAll(){var rows=[['NIK','Nama','Dept','Jabatan','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','Neto','PTKP','Status','Tgl Masuk']];karyawan.forEach(function(k){var g=hitungGaji(k);rows.push([k.nik,k.nama,k.dept,k.jabatan,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,Math.round(g.neto),k.ptkp,k.status,k.masuk]);});var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var b=new Blob(['\uFEFF'+csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SiGaji_v9_'+new Date().toISOString().split('T')[0]+'.csv';a.click();toast('CSV diunduh');}
+function exportCSVAll(){var rows=[['NIK','Nama','Dept','Jabatan','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','Neto','PTKP','Status','Tgl Masuk']];karyawan.forEach(function(k){var g=hitungGaji(k);rows.push([k.nik,k.nama,k.dept,k.jabatan,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,Math.round(g.neto),k.ptkp,k.status,k.masuk]);});var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var b=new Blob(['\uFEFF'+csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SiGaji_v10_'+new Date().toISOString().split('T')[0]+'.csv';a.click();toast('CSV diunduh');}
 // ── NAVIGASI (drawer HP) ──
 function sigajiIsMobileNav(){
   try{
