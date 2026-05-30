@@ -8,6 +8,8 @@
       ? window.SIGAJI_TENANT_KEY.trim()
       : 'main';
 
+  var migratingToTables = false;
+
   var STORE_KEYS = [
     'perusahaan',
     'masterCuti',
@@ -44,6 +46,29 @@
   function chunk(arr, size) {
     var out = [];
     for (var i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  }
+
+  /** Hindari duplikat id kolom (penyebab error 23505 di sigaji_tunj_var_kolom). */
+  function normalizeTunjVarColumns(p) {
+    var cols = Array.isArray(p.tunjVarColumns) ? p.tunjVarColumns.slice() : [];
+    if (!cols.length && p.tunjVarLabels && typeof p.tunjVarLabels === 'object') {
+      var L = p.tunjVarLabels;
+      cols = [
+        { id: 'v1', nama: L.v1 || 'Bonus' },
+        { id: 'v2', nama: L.v2 || 'Uang Makan' },
+        { id: 'v3', nama: L.v3 || 'Lain-lain' },
+      ];
+    }
+    var seen = {};
+    var out = [];
+    cols.forEach(function (c) {
+      if (!c) return;
+      var id = String(c.id || '').trim();
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      out.push({ id: id, nama: String(c.nama || c.id).trim() || id });
+    });
     return out;
   }
 
@@ -258,19 +283,39 @@
       }
     }
 
-    var cols = Array.isArray(p.tunjVarColumns) ? p.tunjVarColumns : [];
+    var cols = normalizeTunjVarColumns(p);
     if (cols.length) {
-      await sb.from('sigaji_tunj_var_kolom').delete().eq('tenant_key', TK);
       var colRows = cols.map(function (c, idx) {
         return {
           tenant_key: TK,
-          id: String(c.id),
-          nama: String(c.nama || c.id),
+          id: c.id,
+          nama: c.nama,
           sort_order: idx,
         };
       });
-      var rc = await sb.from('sigaji_tunj_var_kolom').insert(colRows);
-      if (rc.error) throw rc.error;
+      for (var ci = 0; ci < colRows.length; ci += 50) {
+        var cb = colRows.slice(ci, ci + 50);
+        var rc = await sb.from('sigaji_tunj_var_kolom').upsert(cb, { onConflict: 'tenant_key,id' });
+        if (rc.error) throw rc.error;
+      }
+      var exCol = await sb.from('sigaji_tunj_var_kolom').select('id').eq('tenant_key', TK);
+      if (!exCol.error && exCol.data && exCol.data.length) {
+        var keepIds = colRows.map(function (x) {
+          return x.id;
+        });
+        var delCol = exCol.data
+          .map(function (x) {
+            return x.id;
+          })
+          .filter(function (id) {
+            return keepIds.indexOf(id) === -1;
+          });
+        for (var dc = 0; dc < delCol.length; dc += 50) {
+          var dcb = delCol.slice(dc, dc + 50);
+          if (dcb.length)
+            await sb.from('sigaji_tunj_var_kolom').delete().eq('tenant_key', TK).in('id', dcb);
+        }
+      }
     }
 
     var tunjRows = flattenTunjVarBulan(p.tunjVarBulan);
@@ -325,8 +370,14 @@
 
   async function migrateBlobToTables(sb, blobPayload) {
     if (!blobPayload || typeof blobPayload !== 'object') return false;
-    await savePayloadToTables(sb, blobPayload);
-    return true;
+    if (migratingToTables) return false;
+    migratingToTables = true;
+    try {
+      await savePayloadToTables(sb, blobPayload);
+      return true;
+    } finally {
+      migratingToTables = false;
+    }
   }
 
   async function loadFromTables(sb) {
@@ -352,7 +403,12 @@
       var hasKar = (payload.karyawan || []).length > 0;
       var hasPer = (payload.periodes || []).length > 0;
 
-      if (!hasKar && !hasPer && typeof loadBlobFn === 'function') {
+      var kolRes = await sb.from('sigaji_tunj_var_kolom').select('id').eq('tenant_key', TK).limit(1);
+      var hasKolom = !kolRes.error && kolRes.data && kolRes.data.length > 0;
+      var needsMigrate = !hasKar && !hasPer;
+      if (hasKar && hasPer && !hasKolom) needsMigrate = true;
+
+      if (needsMigrate && typeof loadBlobFn === 'function') {
         var blob = await loadBlobFn(uid);
         if (blob && ((blob.karyawan || []).length > 0 || (blob.periodes || []).length > 0)) {
           await migrateBlobToTables(sb, blob);
