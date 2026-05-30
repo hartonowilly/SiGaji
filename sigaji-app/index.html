@@ -302,7 +302,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- SLIP -->
 <div class="pg" id="pg-slip">
   <div class="ph"><div><div class="pt">Slip Gaji</div></div>
-  <div class="fl gap1" style="flex-wrap:wrap;margin-bottom:.5rem">
+  <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
     <select style="width:auto" id="slip-per" onchange="onSlipPeriodeChange()"></select>
     <select style="width:auto" id="slip-type" onchange="previewSlip()">
       <option value="gaji">&#128203; Slip Gaji Bulanan</option>
@@ -311,8 +311,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <select style="width:200px" id="slip-kar" onchange="previewSlip()"><option value="">-- Pilih Karyawan --</option></select>
     <button class="btn btn-sm btn-out" onclick="exportPDF()">&#128438; PDF</button>
     <button class="btn btn-sm" id="btn-pdf-all-thr" style="display:none;background:#f5f0ff;color:#5b21b6;border:1.5px solid #c4b5fd;font-weight:700" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
-  </div>
-  <div class="tabs" style="margin:.25rem 0 .5rem">
+  </div></div>
+  <div class="tabs">
     <div class="tab active" data-sliptab="gaji" onclick="switchSlipTab(this,'slip-tab-gaji')">&#128203; Slip Gaji</div>
     <div class="tab" data-sliptab="kirim" onclick="switchSlipTab(this,'slip-tab-kirim')">&#128232; Kirim Slip</div>
   </div>
