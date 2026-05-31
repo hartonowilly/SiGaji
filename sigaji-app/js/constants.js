@@ -122,6 +122,7 @@ const MODULES=[
   {id:'laporan',lbl:'Rekap',icon:'&#128196;',sec:'Laporan'},
   {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter']},
   {id:'backup',lbl:'Backup & Import',icon:'&#128190;',sec:'Pengaturan'},
+  {id:'sysstatus',lbl:'Status Sistem',icon:'&#128295;',sec:'Pengaturan',adminOnly:true},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
   {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
   {id:'mycuti',lbl:'Cuti Saya',icon:'&#127774;',sec:'Saya'},
