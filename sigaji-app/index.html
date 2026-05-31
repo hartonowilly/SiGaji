@@ -64,12 +64,6 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.<br><br>
     <strong>Cadangan lokal (login awan / Supabase):</strong> tekan F12 → Application (Chrome) / Storage → Local Storage → situs Anda → salin nilai <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_db</code> atau <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_universal</code> ke file teks sebagai backup.
   </div>
-  <div id="login-quick-local" style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #eee">
-    <p style="font-size:11px;color:#9ca3af;margin-bottom:6px">Login cepat (hanya mode lokal, tanpa Supabase):</p>
-    <button class="chip-login" onclick="ql('admin','admin123')">Admin</button>
-    <button class="chip-login" onclick="ql('hrd','hrd123')">HRD</button>
-    <button class="chip-login" onclick="ql('karyawan','kar123')">Karyawan</button>
-  </div>
 </div>
 </div>
 
@@ -1068,11 +1062,19 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/constants.js?v=10.0.9"></script>
 <script src="js/storage.js?v=10.0.9"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/app.js?v=10.0.13"></script>
+<script src="js/modules/app-globals.js?v=11.0.2"></script>
+<script src="js/modules/app-core.js?v=11.0.2"></script>
+<script src="js/modules/app-access.js?v=11.0.2"></script>
+<script src="js/modules/app-hr.js?v=11.0.2"></script>
+<script src="js/modules/app-slip.js?v=11.0.2"></script>
+<script src="js/modules/app-reports.js?v=11.0.2"></script>
+<script src="js/modules/app-absensi.js?v=11.0.2"></script>
+<script src="js/modules/app-master.js?v=11.0.2"></script>
+<script src="js/modules/app-shell.js?v=11.0.2"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
-    var m='File js/app.js belum terbaru. Deploy ulang dari proyek SiGaji lalu Ctrl+F5 (versi 10.0.3).';
+    var m='Modul js/app-master.js belum termuat. Deploy ulang (js/modules/* v11) lalu Ctrl+F5.';
     if(typeof toast==='function')toast(m);else alert(m);
   };
 }
