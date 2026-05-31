@@ -1266,7 +1266,29 @@ function sigajiDetectModuleCacheVersions(){
       if(m&&vers.indexOf(m[1])<0)vers.push(m[1]);
     });
   }catch(e){}
-  return vers.length?vers.join(', '):'-';
+  return vers;
+}
+function sigajiParseModuleVersionsFromHtml(html){
+  var vers=[];
+  try{
+    var re=/js\/modules\/[^"']+\?v=([^"'&\s]+)/gi;
+    var m;
+    while((m=re.exec(html))){if(vers.indexOf(m[1])<0)vers.push(m[1]);}
+  }catch(e){}
+  return vers;
+}
+function sigajiVersionsMatchTarget(vers){
+  var tgt=typeof SIGAJI_MODULES_CACHE!=='undefined'?String(SIGAJI_MODULES_CACHE):'';
+  if(!tgt)return false;
+  return vers.length===1&&vers[0]===tgt;
+}
+function sigajiFetchServerIndexModuleVersions(cb){
+  if(typeof fetch!=='function'){cb(null,'fetch tidak didukung');return;}
+  var url=(location.origin||'')+'/index.html?_='+Date.now();
+  fetch(url,{cache:'no-store',credentials:'same-origin'})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
+    .then(function(html){cb(sigajiParseModuleVersionsFromHtml(html),null);})
+    .catch(function(e){cb(null,e&&e.message?e.message:String(e));});
 }
 function renderSysStatus(){
   var el=document.getElementById('sysstatus-panel');
@@ -1284,7 +1306,10 @@ function renderSysStatus(){
     var cloudOnly=!!window.sigajiCloudOnlyMode;
     var sbReady=!!window.sigajiSupabase;
     var storageMode=typeof window.SIGAJI_STORAGE_MODE!=='undefined'?String(window.SIGAJI_STORAGE_MODE||'').trim():'';
-    var modVer=sigajiDetectModuleCacheVersions();
+    var targetVer=typeof SIGAJI_MODULES_CACHE!=='undefined'?String(SIGAJI_MODULES_CACHE):'?';
+    var modVers=sigajiDetectModuleCacheVersions();
+    var modVerTxt=modVers.length?modVers.join(', '):'-';
+    var modOk=sigajiVersionsMatchTarget(modVers);
     var host='';
     try{host=location.hostname+(location.port?':'+location.port:'');}catch(eH){}
     var prot=location.protocol||'';
@@ -1299,12 +1324,19 @@ function renderSysStatus(){
     var cloudLbl=cloudOn?(cloudOnly?'Cloud (wajib email)':'Cloud aktif'):'Lokal (tanpa Supabase)';
     var schemaLbl=schemaStored==null?'belum ada data tersimpan':String(schemaStored);
     if(schemaStored!=null&&!schemaOk)schemaLbl+=' - buka app sekali untuk migrasi otomatis';
+    var deployWarn=!modOk
+      ?'<div id="sysstatus-deploy-warn" class="info-box" style="margin-bottom:.75rem;border-color:#f6d088;background:#fff8e6;color:#713f12">'
+        +'<strong>Deploy belum masuk ke situs ini.</strong> Browser masih memuat versi lama. Push <code>index.html</code> + <code>js/modules/*</code> ke folder <code>sigaji-app/</code> di GitHub, tunggu Netlify selesai, lalu Ctrl+F5. Target cache: <strong>'+escapeHtml(targetVer)+'</strong>.</div>'
+      :'<div id="sysstatus-deploy-warn" style="display:none"></div>';
     el.innerHTML=
-      '<div class="card" style="border-left:4px solid #1a56a0">'
+      deployWarn
+      +'<div class="card" style="border-left:4px solid #1a56a0">'
       +'<div class="ct" style="color:#1a56a0">Ringkasan</div>'
       +'<table style="width:100%;border-collapse:collapse"><tbody>'
       +row('Versi aplikasi',escapeHtml(appLabel)+' <span style="color:#6b7280">(label rilis)</span>')
-      +row('Cache modul JS',escapeHtml(modVer)+' <span style="color:#6b7280">- naikkan ?v= di index.html setelah deploy</span>')
+      +row('Target cache (kode)',escapeHtml(targetVer),{cls:'b-info',txt:'deploy'})
+      +row('Modul JS (browser)',escapeHtml(modVerTxt),modOk?{cls:'b-ok',txt:'OK'}:{cls:'b-warn',txt:'lama'})
+      +row('index.html di server','<span id="sysstatus-server-index">Memeriksa...</span>')
       +row('Schema (kode)',String(schemaExp),{cls:'b-info',txt:'target'})
       +row('Schema (data tersimpan)',escapeHtml(schemaLbl),schemaOk?{cls:'b-ok',txt:'sesuai'}:{cls:'b-warn',txt:'cek'})
       +row('Mode cloud',escapeHtml(cloudLbl),cloudOn?{cls:'b-ok',txt:'ON'}:{cls:'b-gray',txt:'OFF'})
@@ -1315,8 +1347,31 @@ function renderSysStatus(){
       +row('Karyawan aktif',String(nKar))
       +row('User login',escapeHtml((CU.nama||'')+' ('+(CU.username||'')+')'))
       +'</tbody></table>'
-      +'<p style="font-size:11px;color:#6b7280;margin:.75rem 0 0;line-height:1.5">Gunakan halaman ini saat troubleshooting: login gagal, data tidak sinkron, atau setelah update deploy. HRD dan Karyawan tidak melihat menu ini.</p>'
+      +'<p style="font-size:11px;color:#6b7280;margin:.75rem 0 0;line-height:1.5">Baris <strong>index.html di server</strong> membaca file yang benar-benar di Netlify (bukan cache browser). Jika masih 11.0.2/11.0.4, file belum ter-push ke repo yang dipakai cemerlang.online.</p>'
       +'</div>';
+    var srvEl=document.getElementById('sysstatus-server-index');
+    if(srvEl){
+      sigajiFetchServerIndexModuleVersions(function(vers,err){
+        if(err){
+          srvEl.textContent='tidak bisa baca: '+err;
+          return;
+        }
+        var txt=vers&&vers.length?vers.join(', '):'(tidak ada js/modules di index)';
+        var ok=sigajiVersionsMatchTarget(vers||[]);
+        srvEl.innerHTML=escapeHtml(txt);
+        if(!ok){
+          var w=document.getElementById('sysstatus-deploy-warn');
+          if(w){
+            w.style.display='block';
+            w.innerHTML='<strong>index.html di Netlify masih lama.</strong> Server: <code>'+escapeHtml(txt)+'</code> — target: <strong>'+escapeHtml(targetVer)+'</strong>. Push ke <code>sigaji-app/index.html</code> di GitHub.';
+          }
+          var rowCell=srvEl.closest('td');
+          if(rowCell)rowCell.innerHTML=escapeHtml(txt)+' <span class="bdg b-warn" style="margin-left:8px">belum deploy</span>';
+        }else if(srvEl.closest('td')){
+          srvEl.closest('td').innerHTML=escapeHtml(txt)+' <span class="bdg b-ok" style="margin-left:8px">OK</span>';
+        }
+      });
+    }
   }catch(err){
     console.error('renderSysStatus',err);
     el.innerHTML='<div class="info-box" style="border-color:#fecaca;background:#fef2f2;color:#991b1b">Gagal memuat status: '
