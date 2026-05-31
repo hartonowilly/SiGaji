@@ -96,6 +96,7 @@ const SUBTABS={
   kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
   absensi:['kalender','cuti'],
   master:['prs','periode','umk','libur','potongan','ter'],
+  laporan:['rekap','pph'],
   approval:['pend','hist'],
 };
 const SUBTAB_LBL={
@@ -105,24 +106,24 @@ const SUBTAB_LBL={
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR','master.umk':'UMK',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
+  'laporan.rekap':'Rekap Penggajian','laporan.pph':'PPh 21 & Bukti Potong',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
 };
+/** UI ringkas UKM: tab payroll/master jarang dipakai disembunyikan (bisa dibuka). */
+const SIGAJI_UI_SIMPLE=true;
 const MODULES=[
   {id:'dashboard',lbl:'Dashboard',icon:'&#9632;',sec:'Utama'},
   {id:'notifikasi',lbl:'Notifikasi',icon:'&#128276;',sec:'Utama'},
   {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info']},
   {id:'absensi',lbl:'Absensi & Cuti',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti']},
   {id:'kompgaji',lbl:'Komponen Gaji',icon:'&#128178;',sec:'Penggajian',subtabs:['gaji','tunjvar','bpjs','natura','pphret','ring']},
-  {id:'thr',lbl:'THR',icon:'&#127873;',sec:'Penggajian'},
   {id:'lembur',lbl:'Lembur',icon:'&#9203;',sec:'Penggajian'},
   {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'Penggajian'},
   {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
-  {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
-  {id:'pph',lbl:'PPh 21',icon:'&#128200;',sec:'Laporan'},
-  {id:'laporan',lbl:'Rekap',icon:'&#128196;',sec:'Laporan'},
+  {id:'slip',lbl:'Slip Gaji & THR',icon:'&#128203;',sec:'Penggajian'},
+  {id:'laporan',lbl:'Laporan & PPh',icon:'&#128196;',sec:'Laporan',subtabs:['rekap','pph']},
   {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter']},
-  {id:'backup',lbl:'Backup & Import',icon:'&#128190;',sec:'Pengaturan'},
-  {id:'sysstatus',lbl:'Status Sistem',icon:'&#128295;',sec:'Pengaturan',adminOnly:true},
+  {id:'backup',lbl:'Backup & Sistem',icon:'&#128190;',sec:'Pengaturan',adminOnly:true},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
   {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
   {id:'mycuti',lbl:'Cuti Saya',icon:'&#127774;',sec:'Saya'},
@@ -168,4 +169,4 @@ const SCHEMA_VERSION=12;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.0.7';
+const SIGAJI_MODULES_CACHE='11.0.8';
