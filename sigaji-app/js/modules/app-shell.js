@@ -109,75 +109,6 @@ if(typeof window!=='undefined'){
   window.sigajiOpenNavDrawer=sigajiOpenNavDrawer;
   window.sigajiToggleNavDrawer=sigajiToggleNavDrawer;
 }
-function sigajiReadStoredSchemaVersion(){
-  try{
-    var raw=localStorage.getItem(typeof DB_KEY!=='undefined'?DB_KEY:'sigaji_db');
-    if(!raw)return null;
-    var db=JSON.parse(raw);
-    return db&&db.schemaVersion!=null?parseInt(db.schemaVersion,10):null;
-  }catch(e){return null;}
-}
-function sigajiDetectModuleCacheVersions(){
-  var vers=[];
-  try{
-    document.querySelectorAll('script[src*="js/modules/"]').forEach(function(s){
-      var m=/[?&]v=([^&]+)/.exec(s.src||'');
-      if(m&&vers.indexOf(m[1])<0)vers.push(m[1]);
-    });
-  }catch(e){}
-  return vers.length?vers.join(', '):'—';
-}
-function renderSysStatus(){
-  var el=document.getElementById('sysstatus-panel');
-  if(!el)return;
-  if(!CU||CU.role!=='Admin'){
-    el.innerHTML='<div class="info-box" style="border-color:#fecaca;background:#fef2f2;color:#991b1b">Halaman ini hanya untuk Administrator.</div>';
-    return;
-  }
-  var appLabel=typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji';
-  var schemaExp=typeof SCHEMA_VERSION!=='undefined'?SCHEMA_VERSION:'?';
-  var schemaStored=sigajiReadStoredSchemaVersion();
-  var schemaOk=schemaStored==null||schemaStored===schemaExp;
-  var cloudOn=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
-  var cloudOnly=!!window.sigajiCloudOnlyMode;
-  var sbReady=!!window.sigajiSupabase;
-  var storageMode=typeof window.SIGAJI_STORAGE_MODE!=='undefined'?String(window.SIGAJI_STORAGE_MODE||'').trim():'';
-  var modVer=sigajiDetectModuleCacheVersions();
-  var host='';
-  try{host=location.hostname+(location.port?':'+location.port:'');}catch(eH){}
-  var prot=location.protocol||'';
-  var periodeAktif='—';
-  try{var pa=typeof PA==='function'?PA():null;if(pa&&pa.nama)periodeAktif=pa.nama+(pa.status?' ('+pa.status+')':'');}catch(eP){}
-  var nKar=(karyawan||[]).filter(function(k){return k&&k.nik&&!String(k.tgl_berhenti||'').trim();}).length;
-  function row(lbl,val,badge){
-    var b=badge?'<span class="bdg '+badge.cls+'" style="margin-left:8px">'+badge.txt+'</span>':'';
-    return '<tr><td style="padding:8px 12px;font-weight:600;color:#374151;width:38%;border-bottom:1px solid #f3f4f6">'+lbl+'</td>'
-      +'<td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:12px">'+val+b+'</td></tr>';
-  }
-  var cloudLbl=cloudOn?(cloudOnly?'Cloud (wajib email)':'Cloud aktif'):'Lokal (tanpa Supabase)';
-  var schemaLbl=schemaStored==null?'belum ada data tersimpan':String(schemaStored);
-  if(schemaStored!=null&&!schemaOk)schemaLbl+=' — buka app sekali untuk migrasi otomatis';
-  el.innerHTML=
-    '<div class="card" style="border-left:4px solid #1a56a0">'
-    +'<div class="ct" style="color:#1a56a0">Ringkasan</div>'
-    +'<table style="width:100%;border-collapse:collapse"><tbody>'
-    +row('Versi aplikasi',escapeHtml(appLabel)+' <span style="color:#6b7280">(label rilis)</span>')
-    +row('Cache modul JS',escapeHtml(modVer)+' <span style="color:#6b7280">— naikkan ?v= di index.html setelah deploy</span>')
-    +row('Schema (kode)',String(schemaExp),{cls:'b-info',txt:'target'})
-    +row('Schema (data tersimpan)',schemaLbl,schemaOk?{cls:'b-ok',txt:'sesuai'}:{cls:'b-warn',txt:'cek'})
-    +row('Mode cloud',cloudLbl,cloudOn?{cls:'b-ok',txt:'ON'}:{cls:'b-gray',txt:'OFF'})
-    +row('Klien Supabase',sbReady?'terhubung':'belum / tidak dipakai',sbReady?{cls:'b-ok',txt:'siap'}:{cls:'b-gray',txt:'—'})
-    +(storageMode?row('Penyimpanan cloud',escapeHtml(storageMode)):'')
-    +row('Situs',escapeHtml(prot+'//'+host))
-    +row('Periode aktif',escapeHtml(periodeAktif))
-    +row('Karyawan aktif',String(nKar))
-    +row('User login',escapeHtml((CU.nama||'')+' ('+(CU.username||'')+')'))
-    +'</tbody></table>'
-    +'<p style="font-size:11px;color:#6b7280;margin:.75rem 0 0;line-height:1.5">Gunakan halaman ini saat troubleshooting: login gagal, data tidak sinkron, atau setelah update deploy. HRD dan Karyawan tidak melihat menu ini.</p>'
-    +'</div>';
-}
-if(typeof window!=='undefined')window.renderSysStatus=renderSysStatus;
-
 function showPg(pg){
   if(!canAccess(pg)){toast('Tidak punya akses ke modul ini');return;}
   sigajiCloseNavDrawer();
@@ -196,7 +127,13 @@ function showPg(pg){
   if(pg==='laporan')renderLaporan();
   if(pg==='backup'){sigajiUpdateCloudBackupUi();renderBackupRiwayat();renderMigrationStatus();renderAuditLog();}
   if(pg==='users'){renderUsers();renderPermMatrix();}
-  if(pg==='sysstatus')renderSysStatus();
+  if(pg==='sysstatus'){
+    if(typeof renderSysStatus==='function')renderSysStatus();
+    else{
+      var sp=document.getElementById('sysstatus-panel');
+      if(sp)sp.innerHTML='<div class="info-box" style="border-color:#fecaca;background:#fef2f2;color:#991b1b">Modul status belum termuat. Deploy <code>js/modules/app-access.js</code> terbaru lalu Ctrl+F5.</div>';
+    }
+  }
   if(pg==='approval')applyApprovalSubtabVisibility();
   if(pg==='pesangon')try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);toast('Modul Pesangon error — cek konsol (F12).');}
   if(pg==='kompgaji')setTimeout(function(){applyKompgajiSubtabVisibility();},30);
