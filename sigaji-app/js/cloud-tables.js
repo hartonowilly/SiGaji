@@ -131,7 +131,7 @@
   async function assemblePayloadFromTables(sb) {
     var meta = await sb
       .from('sigaji_tenant_meta')
-      .select('schema_version')
+      .select('schema_version,max_employees,plan_label')
       .eq('tenant_key', TK)
       .maybeSingle();
     if (meta.error) throw meta.error;
@@ -173,8 +173,18 @@
       return { id: r.id, nama: r.nama || r.id };
     });
 
+    var licFromMeta = {
+      maxEmployees:
+        meta.data && meta.data.max_employees != null
+          ? parseInt(meta.data.max_employees, 10) || 0
+          : 0,
+      planLabel: (meta.data && meta.data.plan_label) || '',
+    };
+    /* Hanya baca dari sigaji_tenant_meta (penjual); abaikan salinan license di sigaji_store. */
+
     var payload = {
       schemaVersion: (meta.data && meta.data.schema_version) || 10,
+      license: licFromMeta,
       karyawan: karyawan,
       periodes: periodes,
       hariLibur: store.hariLibur || [],
@@ -207,6 +217,7 @@
     var ts = new Date().toISOString();
     var p = payload || {};
 
+    /* Kuota lisensi (max_employees, plan_label) hanya penjual — tidak ditulis dari browser. */
     await sb.from('sigaji_tenant_meta').upsert(
       {
         tenant_key: TK,
