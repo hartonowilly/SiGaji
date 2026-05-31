@@ -2,6 +2,7 @@
 // ── PERMISSIONS & SIDEBAR ────────────────────────
 function canAccessModule(mid){
   if(!CU)return false;
+  if(mid==='sysstatus')return CU.role==='Admin';
   if(CU.role==='Admin')return true;
   const p=roles[CU.role]||[];
   const subs=SUBTABS[mid];
@@ -124,6 +125,7 @@ function renderPermMatrix(){
   let h=`<div class="perm-grid"><div class="perm-hdr"><div class="perm-hdr-cell" style="min-width:200px;text-align:left;flex:2">Modul / Sub-tab</div>`;
   roleKeys.forEach(r=>h+=`<div class="perm-hdr-cell">${r}</div>`);h+=`</div>`;
   MODULES.forEach(m=>{
+    if(m.adminOnly)return;
     const subs=SUBTABS[m.id];
     if(subs&&subs.length){
       h+=`<div class="perm-row perm-mod-head"><div class="perm-cell" style="min-width:200px;flex:2;font-weight:700;flex-direction:column;align-items:flex-start">${m.icon} ${m.lbl}<span style="font-size:10px;font-weight:600;color:#6b7280;margin-top:3px">Centang per sub-tab di bawah (atau semua sekaligus)</span></div>`;
