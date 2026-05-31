@@ -119,11 +119,14 @@ function switchSlipTab(el,panelId){
     el.classList.add('active');
   }
   var gaji=document.getElementById('slip-tab-gaji');
+  var thr=document.getElementById('slip-tab-thr');
   var kirim=document.getElementById('slip-tab-kirim');
   if(gaji)gaji.style.display=panelId==='slip-tab-gaji'?'block':'none';
+  if(thr)thr.style.display=panelId==='slip-tab-thr'?'block':'none';
   if(kirim)kirim.style.display=panelId==='slip-tab-kirim'?'block':'none';
+  if(panelId==='slip-tab-thr'&&typeof renderTHR==='function')renderTHR();
   if(panelId==='slip-tab-kirim')renderSlipSendBatchChecklist();
-  previewSlip();
+  if(panelId!=='slip-tab-thr')previewSlip();
 }
 function onSlipPeriodeChange(){
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;

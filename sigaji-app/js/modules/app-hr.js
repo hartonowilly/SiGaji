@@ -133,6 +133,31 @@ function closePanel(){
 function closeAnyPanel(){closePanel();closePayrollPanel();}
 // ── SLIDE PANEL KOMPONEN GAJI ────────────────────
 const PAYROLL_SP_TABS=[['sp-gaji','gaji'],['sp-bpjs','bpjs'],['sp-natura','natura'],['sp-pphret','pphret'],['sp-ring','ring']];
+function applyPayrollSpTabSimpleUi(){
+  var simple=typeof SIGAJI_UI_SIMPLE!=='undefined'&&SIGAJI_UI_SIMPLE;
+  var wrap=document.getElementById('payroll-spt-wrap');
+  if(!wrap)return;
+  var adv=wrap.querySelectorAll('[data-payroll-adv="1"]');
+  var btn=document.getElementById('payroll-sp-more-btn');
+  if(!simple){
+    adv.forEach(function(el){el.style.display='';});
+    if(btn)btn.style.display='none';
+    return;
+  }
+  var show=wrap.dataset.payrollAdvShow==='1';
+  adv.forEach(function(el){
+    if(el.id==='payroll-sp-more-btn')return;
+    el.style.display=show?'':'none';
+  });
+  if(btn){btn.style.display='';btn.textContent=show?'\u2212 Ringkas':'+ Lanjutan';}
+}
+function sigajiTogglePayrollAdvTabs(){
+  var wrap=document.getElementById('payroll-spt-wrap');
+  if(!wrap)return;
+  wrap.dataset.payrollAdvShow=wrap.dataset.payrollAdvShow==='1'?'0':'1';
+  applyPayrollSpTabSimpleUi();
+}
+if(typeof window!=='undefined')window.sigajiTogglePayrollAdvTabs=sigajiTogglePayrollAdvTabs;
 function applyPayrollSlideTabsVisibility(){
   let first=null;
   PAYROLL_SP_TABS.forEach(function(pair){
@@ -142,6 +167,7 @@ function applyPayrollSlideTabsVisibility(){
     if(btn){btn.style.display=ok?'':'none';if(ok&&!first)first={btn:btn,tid:tid};}
     var d=document.getElementById(tid);if(d)d.style.display='none';
   });
+  applyPayrollSpTabSimpleUi();
   if(!first){toast('Role Anda tidak punya akses tab Komponen Gaji.');return false;}
   switchPayrollSpTab(first.btn,first.tid);
   return true;

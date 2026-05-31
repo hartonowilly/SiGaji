@@ -2,7 +2,10 @@
 // ── PERMISSIONS & SIDEBAR ────────────────────────
 function canAccessModule(mid){
   if(!CU)return false;
-  if(mid==='sysstatus')return CU.role==='Admin';
+  if(mid==='pph')return canAccessModule('laporan');
+  if(mid==='thr')return canAccessModule('slip');
+  if(mid==='sysstatus')return canAccessModule('backup');
+  if(mid==='backup')return CU.role==='Admin';
   if(CU.role==='Admin')return true;
   const p=roles[CU.role]||[];
   const subs=SUBTABS[mid];
