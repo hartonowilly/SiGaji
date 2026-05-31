@@ -679,7 +679,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Status Sistem</div><div class="pst">Versi aplikasi, schema data, dan mode cloud — hanya Administrator</div></div>
     <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Refresh</button>
   </div>
-  <div id="sysstatus-panel"></div>
+  <div id="sysstatus-panel">
+    <div class="card" style="border-left:4px solid #9ca3af">
+      <div class="ct" style="color:#6b7280">Memuat status...</div>
+      <p style="font-size:12px;color:#6b7280;margin:0">Jika tetap kosong, tekan Refresh atau Ctrl+F5 setelah deploy.</p>
+    </div>
+  </div>
 </div>
 
 <!-- BACKUP -->
@@ -1073,13 +1078,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="js/ptkp.js?v=10.0.0"></script>
 <script src="js/modules/app-globals.js?v=11.0.2"></script>
 <script src="js/modules/app-core.js?v=11.0.2"></script>
-<script src="js/modules/app-access.js?v=11.0.3"></script>
+<script src="js/modules/app-access.js?v=11.0.4"></script>
 <script src="js/modules/app-hr.js?v=11.0.2"></script>
 <script src="js/modules/app-slip.js?v=11.0.2"></script>
 <script src="js/modules/app-reports.js?v=11.0.2"></script>
 <script src="js/modules/app-absensi.js?v=11.0.2"></script>
 <script src="js/modules/app-master.js?v=11.0.2"></script>
-<script src="js/modules/app-shell.js?v=11.0.3"></script>
+<script src="js/modules/app-shell.js?v=11.0.4"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
