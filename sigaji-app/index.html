@@ -673,6 +673,15 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="my-cuti-content"></div>
 </div>
 
+<!-- STATUS SISTEM (hanya Admin) -->
+<div class="pg" id="pg-sysstatus">
+  <div class="ph">
+    <div><div class="pt">Status Sistem</div><div class="pst">Versi aplikasi, schema data, dan mode cloud — hanya Administrator</div></div>
+    <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Refresh</button>
+  </div>
+  <div id="sysstatus-panel"></div>
+</div>
+
 <!-- BACKUP -->
 <div class="pg" id="pg-backup">
   <div class="ph"><div><div class="pt">Backup & Import Data</div></div></div>
@@ -1059,18 +1068,18 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=10.0.9"></script>
+<script src="js/constants.js?v=10.1.0"></script>
 <script src="js/storage.js?v=10.0.9"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
 <script src="js/modules/app-globals.js?v=11.0.2"></script>
 <script src="js/modules/app-core.js?v=11.0.2"></script>
-<script src="js/modules/app-access.js?v=11.0.2"></script>
+<script src="js/modules/app-access.js?v=11.0.3"></script>
 <script src="js/modules/app-hr.js?v=11.0.2"></script>
 <script src="js/modules/app-slip.js?v=11.0.2"></script>
 <script src="js/modules/app-reports.js?v=11.0.2"></script>
 <script src="js/modules/app-absensi.js?v=11.0.2"></script>
 <script src="js/modules/app-master.js?v=11.0.2"></script>
-<script src="js/modules/app-shell.js?v=11.0.2"></script>
+<script src="js/modules/app-shell.js?v=11.0.3"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
