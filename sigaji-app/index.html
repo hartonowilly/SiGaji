@@ -229,6 +229,25 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="card"><div class="ct">Rekap Total Lembur</div><div id="lembur-result"></div></div>
 </div>
 
+<!-- THR -->
+<div class="pg" id="pg-thr">
+  <div class="ph"><div><div class="pt">THR — Tunjangan Hari Raya</div><div class="pst">THR diatur per Periode Gaji di Master → Periode Gaji &amp; THR</div></div></div>
+  <div class="card" style="background:#f5f0ff;border-color:#c4b5fd">
+    <div class="ct" style="color:#5b21b6">&#127873; Preview Perhitungan THR</div>
+    <div class="fg2">
+      <div class="fg"><label>Hari Raya</label><select id="thr-hari"><option>Idul Fitri 1447 H</option><option>Natal 2026</option></select></div>
+      <div class="fg"><label>Tgl Hari Raya (referensi)</label><input type="date" id="thr-batas" value="2026-03-20"></div>
+    </div>
+    <button class="btn btn-pu" onclick="renderTHR()">&#9654; Hitung Preview THR</button>
+  </div>
+  <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>No</th><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
+    <tbody id="tb-thr"></tbody></table></div>
+  </div>
+  <div class="card" style="background:#e8f4de;border-color:#b3d98f"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
+</div>
+
 <!-- PESANGON / PHK -->
 <div class="pg" id="pg-pesangon">
   <div class="ph"><div><div class="pt">Pesangon &amp; PHK</div><div class="pst">Estimasi hak sesuai UU Cipta Kerja / PP 35 Tahun 2021 — bukan pengganti konsultasi hukum</div></div>
@@ -274,9 +293,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="ap-hist" style="display:none"><div id="ap-hist-list"></div></div>
 </div>
 
-<!-- SLIP (+ THR) -->
+<!-- SLIP -->
 <div class="pg" id="pg-slip">
-  <div class="ph"><div><div class="pt">Slip Gaji &amp; THR</div><div class="pst">Slip bulanan, slip THR, dan kirim ke karyawan</div></div>
+  <div class="ph"><div><div class="pt">Slip Gaji</div><div class="pst">Slip bulanan / THR (pilih jenis) dan kirim ke karyawan</div></div>
   <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
     <select style="width:auto" id="slip-per" onchange="onSlipPeriodeChange()"></select>
     <select style="width:auto" id="slip-type" onchange="previewSlip()">
@@ -289,29 +308,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div></div>
   <div class="tabs">
     <div class="tab active" data-sliptab="gaji" onclick="switchSlipTab(this,'slip-tab-gaji')">&#128203; Slip Gaji</div>
-    <div class="tab" data-sliptab="thr" onclick="switchSlipTab(this,'slip-tab-thr')">&#127873; Preview THR</div>
     <div class="tab" data-sliptab="kirim" onclick="switchSlipTab(this,'slip-tab-kirim')">&#128232; Kirim Slip</div>
   </div>
   <div id="slip-tab-gaji">
     <div id="slip-thr-banner"></div>
     <div id="slip-preview"><div style="text-align:center;color:#6b7280;padding:2rem;background:#f8f9fc;border-radius:8px">Pilih karyawan</div></div>
-  </div>
-  <div id="slip-tab-thr" style="display:none">
-    <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem">THR diatur di <strong>Master → Periode Gaji &amp; THR</strong>. Preview di sini; slip THR lewat tab Slip Gaji (jenis THR).</div>
-    <div class="card" style="background:#f5f0ff;border-color:#c4b5fd">
-      <div class="ct" style="color:#5b21b6">&#127873; Preview Perhitungan THR</div>
-      <div class="fg2">
-        <div class="fg"><label>Hari Raya</label><select id="thr-hari"><option>Idul Fitri 1447 H</option><option>Natal 2026</option></select></div>
-        <div class="fg"><label>Tgl Hari Raya (referensi)</label><input type="date" id="thr-batas" value="2026-03-20"></div>
-      </div>
-      <button class="btn btn-pu" onclick="renderTHR()">&#9654; Hitung Preview THR</button>
-    </div>
-    <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
-      <div style="overflow-x:auto">
-      <table><thead><tr><th>No</th><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
-      <tbody id="tb-thr"></tbody></table></div>
-    </div>
-    <div class="card" style="background:#e8f4de;border-color:#b3d98f"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
   </div>
   <div id="slip-tab-kirim" style="display:none">
     <div id="slip-share-bar" style="display:none;margin-bottom:.75rem">
@@ -1077,18 +1078,18 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=10.1.3"></script>
+<script src="js/constants.js?v=10.1.4"></script>
 <script src="js/storage.js?v=10.1.0"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/modules/app-globals.js?v=11.0.8"></script>
-<script src="js/modules/app-core.js?v=11.0.8"></script>
-<script src="js/modules/app-access.js?v=11.0.8"></script>
-<script src="js/modules/app-hr.js?v=11.0.8"></script>
-<script src="js/modules/app-slip.js?v=11.0.8"></script>
-<script src="js/modules/app-reports.js?v=11.0.8"></script>
-<script src="js/modules/app-absensi.js?v=11.0.8"></script>
-<script src="js/modules/app-master.js?v=11.0.8"></script>
-<script src="js/modules/app-shell.js?v=11.0.8"></script>
+<script src="js/modules/app-globals.js?v=11.0.9"></script>
+<script src="js/modules/app-core.js?v=11.0.9"></script>
+<script src="js/modules/app-access.js?v=11.0.9"></script>
+<script src="js/modules/app-hr.js?v=11.0.9"></script>
+<script src="js/modules/app-slip.js?v=11.0.9"></script>
+<script src="js/modules/app-reports.js?v=11.0.9"></script>
+<script src="js/modules/app-absensi.js?v=11.0.9"></script>
+<script src="js/modules/app-master.js?v=11.0.9"></script>
+<script src="js/modules/app-shell.js?v=11.0.9"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1100,9 +1101,9 @@ if(typeof exportCloudDatabaseBackup!=='function'){
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
-<script src="js/cloud-tables.js?v=11.0.8"></script>
+<script src="js/cloud-tables.js?v=11.0.9"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=11.0.8"></script>
+<script src="js/cloud-sync.js?v=11.0.9"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
