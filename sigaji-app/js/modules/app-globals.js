@@ -1,3 +1,2 @@
-/* Variabel global modul UI (muat pertama). */
-var cpNik=null;
-var bmState={};
+/* Slot modul pertama — variabel global UI ada di js/storage.js (cpNik, bmState, CU). */
+/* Jangan deklarasikan ulang di sini: akan SyntaxError dan login/hitung gaji mati. */

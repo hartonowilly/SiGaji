@@ -278,7 +278,6 @@ function applyBranding(){
   if(lp){if(logo){lp.src=logo;lp.style.display='block';}else lp.style.display='none';}
 }
 // ── LOGIN ────────────────────────────────────────
-function ql(u,p){document.getElementById('lu').value=u;document.getElementById('lp').value=p;}
 function sigajiIsCloudConfigured(){
   return !!(window.SIGAJI_SUPABASE_URL||'').trim() && !!(window.SIGAJI_SUPABASE_ANON_KEY||'').trim();
 }
@@ -292,8 +291,6 @@ function sigajiApplyCloudLoginUi(){
   if(lp){lp.value='';lp.removeAttribute('value');lp.type='password';lp.placeholder='';}
   var l1=document.getElementById('lu-lbl');if(l1)l1.textContent='Email';
   var l2=document.getElementById('lp-lbl');if(l2)l2.textContent='Kata sandi';
-  var q=document.getElementById('login-quick-local');
-  if(q)q.style.display='none';
   var h=document.getElementById('cloud-login-hint');
   if(h)h.style.display='none';
   var fp = document.getElementById('forgot-pw-wrap');
