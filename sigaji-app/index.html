@@ -229,25 +229,6 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="card"><div class="ct">Rekap Total Lembur</div><div id="lembur-result"></div></div>
 </div>
 
-<!-- THR -->
-<div class="pg" id="pg-thr">
-  <div class="ph"><div><div class="pt">THR — Tunjangan Hari Raya</div><div class="pst">THR diatur per Periode Gaji di Master → Periode Gaji & THR</div></div></div>
-  <div class="card" style="background:#f5f0ff;border-color:#c4b5fd">
-    <div class="ct" style="color:#5b21b6">&#127873; Preview Perhitungan THR</div>
-    <div class="fg2">
-      <div class="fg"><label>Hari Raya</label><select id="thr-hari"><option>Idul Fitri 1447 H</option><option>Natal 2026</option></select></div>
-      <div class="fg"><label>Tgl Hari Raya (referensi)</label><input type="date" id="thr-batas" value="2026-03-20"></div>
-    </div>
-    <button class="btn btn-pu" onclick="renderTHR()">&#9654; Hitung Preview THR</button>
-  </div>
-  <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
-    <div style="overflow-x:auto">
-    <table><thead><tr><th>No</th><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
-    <tbody id="tb-thr"></tbody></table></div>
-  </div>
-  <div class="card" style="background:#e8f4de;border-color:#b3d98f"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
-</div>
-
 <!-- PESANGON / PHK -->
 <div class="pg" id="pg-pesangon">
   <div class="ph"><div><div class="pt">Pesangon &amp; PHK</div><div class="pst">Estimasi hak sesuai UU Cipta Kerja / PP 35 Tahun 2021 — bukan pengganti konsultasi hukum</div></div>
@@ -293,9 +274,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="ap-hist" style="display:none"><div id="ap-hist-list"></div></div>
 </div>
 
-<!-- SLIP -->
+<!-- SLIP (+ THR) -->
 <div class="pg" id="pg-slip">
-  <div class="ph"><div><div class="pt">Slip Gaji</div></div>
+  <div class="ph"><div><div class="pt">Slip Gaji &amp; THR</div><div class="pst">Slip bulanan, slip THR, dan kirim ke karyawan</div></div>
   <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
     <select style="width:auto" id="slip-per" onchange="onSlipPeriodeChange()"></select>
     <select style="width:auto" id="slip-type" onchange="previewSlip()">
@@ -308,23 +289,47 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div></div>
   <div class="tabs">
     <div class="tab active" data-sliptab="gaji" onclick="switchSlipTab(this,'slip-tab-gaji')">&#128203; Slip Gaji</div>
+    <div class="tab" data-sliptab="thr" onclick="switchSlipTab(this,'slip-tab-thr')">&#127873; Preview THR</div>
     <div class="tab" data-sliptab="kirim" onclick="switchSlipTab(this,'slip-tab-kirim')">&#128232; Kirim Slip</div>
   </div>
   <div id="slip-tab-gaji">
     <div id="slip-thr-banner"></div>
     <div id="slip-preview"><div style="text-align:center;color:#6b7280;padding:2rem;background:#f8f9fc;border-radius:8px">Pilih karyawan</div></div>
   </div>
+  <div id="slip-tab-thr" style="display:none">
+    <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem">THR diatur di <strong>Master → Periode Gaji &amp; THR</strong>. Preview di sini; slip THR lewat tab Slip Gaji (jenis THR).</div>
+    <div class="card" style="background:#f5f0ff;border-color:#c4b5fd">
+      <div class="ct" style="color:#5b21b6">&#127873; Preview Perhitungan THR</div>
+      <div class="fg2">
+        <div class="fg"><label>Hari Raya</label><select id="thr-hari"><option>Idul Fitri 1447 H</option><option>Natal 2026</option></select></div>
+        <div class="fg"><label>Tgl Hari Raya (referensi)</label><input type="date" id="thr-batas" value="2026-03-20"></div>
+      </div>
+      <button class="btn btn-pu" onclick="renderTHR()">&#9654; Hitung Preview THR</button>
+    </div>
+    <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
+      <div style="overflow-x:auto">
+      <table><thead><tr><th>No</th><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
+      <tbody id="tb-thr"></tbody></table></div>
+    </div>
+    <div class="card" style="background:#e8f4de;border-color:#b3d98f"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
+  </div>
   <div id="slip-tab-kirim" style="display:none">
     <div id="slip-share-bar" style="display:none;margin-bottom:.75rem">
       <div style="background:#eef6ff;border:1px solid #c5d9f5;border-radius:10px;padding:.65rem 1rem">
         <div style="font-size:11px;font-weight:700;color:#1a56a0;margin-bottom:.45rem">Kirim satu orang (pilih karyawan di atas)</div>
         <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
-          <button class="btn btn-sm btn-g" type="button" onclick="shareSlipNativePDF()" title="Bagikan file PDF">&#128229; Bagikan PDF</button>
-          <button class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToTelegram()">Telegram</button>
-          <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700" onclick="shareSlipWhatsAppWithPDF()">&#128242; WA + PDF</button>
           <button class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToEmail()">&#9993; Kirim email</button>
-          <button class="btn btn-sm btn-out" onclick="shareSlipEmailWithPDF()">Email manual</button>
+          <button class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToTelegram()">Telegram</button>
+          <button class="btn btn-sm btn-out" type="button" onclick="exportPDF()">&#128438; PDF</button>
         </div>
+        <details style="margin-top:.5rem;font-size:11px">
+          <summary style="cursor:pointer;color:#6b7280;font-weight:600">Cara lain (WA, bagikan, email manual)</summary>
+          <div class="fl gap1" style="flex-wrap:wrap;margin-top:.4rem">
+            <button class="btn btn-sm btn-g" type="button" onclick="shareSlipNativePDF()">Bagikan PDF</button>
+            <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700" onclick="shareSlipWhatsAppWithPDF()">WA + PDF</button>
+            <button class="btn btn-sm btn-out" onclick="shareSlipEmailWithPDF()">Email manual</button>
+          </div>
+        </details>
       </div>
     </div>
     <div id="slip-tg-hint" style="display:none;font-size:11px;color:#1565a8;margin:.5rem 0 .75rem;padding:.5rem .75rem;background:#e8f4fc;border-radius:8px;border:1px solid #b8d9f0;line-height:1.55">
@@ -337,8 +342,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(true)">Pilih semua</button>
           <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(false)">Kosongkan</button>
           <button type="button" class="btn btn-sm btn-out" onclick="renderSlipSendBatchChecklist(true)">&#8635; Segarkan status</button>
-          <button type="button" class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
           <button type="button" class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" onclick="sendSlipEmailBatch()">Kirim email terpilih</button>
+          <button type="button" class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
         </div>
         <div id="slip-send-batch-wrap"></div>
       </div>
@@ -346,34 +351,38 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
 </div>
 
-<!-- PPH -->
-<div class="pg" id="pg-pph">
-  <div class="ph"><div class="pt">PPh 21</div></div>
-  <div class="card"><div class="ct">Rekap PPh 21</div>
-    <div style="overflow-x:auto">
-    <table><thead><tr><th>No</th><th>Nama</th><th>PTKP</th><th>Gross/bln</th><th>THR</th><th>Biaya Jabatan</th><th>PKP/tahun</th><th>PPh/tahun</th><th>PPh/bulan</th><th>PPh Return</th></tr></thead>
-    <tbody id="tb-pph"></tbody></table></div>
-  </div>
-  <div class="card">
-    <div class="ct">Bukti potong PPh 21 — Form 1721-A1 (rekap tahunan)</div>
-    <div class="info-box info-blue" style="font-size:11px;line-height:1.55">
-      PDF mengikuti judul formulir <strong>1721-A1</strong> (bentuk acuan). Merangkum <strong>bruto</strong> dan <strong>PPh 21</strong> dari periode gaji di SiGaji untuk tahun pajak dipilih (TER <strong>PMK 168/2023</strong>).
-      <strong>Pegawai resign tengah tahun:</strong> isi <strong>Tgl. berhenti</strong> di profil karyawan — A1 hanya memuat gaji hingga periode dengan tanggal bayar ≤ tanggal itu (contoh: masuk Jan, resign Feb → set berhenti di bulan Feb; bukti memuat Jan–Feb, tanggal bukti = tanggal bayar terakhir yang masuk).
-      Untuk pelaporan DJP gunakan <strong>e-Bupot Unifikasi</strong> / Coretax sesuai ketentuan pemotong.
-    </div>
-    <div class="fg3" style="align-items:flex-end;margin-bottom:.75rem">
-      <div class="fg"><label>Tahun pajak</label><select id="a1-tahun"></select></div>
-      <div class="fg ff"><label>Karyawan</label><select id="a1-kar"><option value="">-- Pilih karyawan --</option></select></div>
-      <div class="fg"><label>&nbsp;</label><button type="button" class="btn btn-sm btn-g" onclick="exportPDF1721A1()">&#128438; Unduh PDF 1721-A1</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- LAPORAN -->
+<!-- LAPORAN & PPh -->
 <div class="pg" id="pg-laporan">
-  <div class="ph"><div><div class="pt">Rekap Penggajian</div></div><button class="btn btn-sm btn-out" onclick="exportCSV()">&#128196; CSV</button></div>
-  <div class="card"><table><thead><tr><th>Periode</th><th>Karyawan</th><th>Total Gross</th><th>Total THR</th><th>Total PPh</th><th>Total Neto</th><th>Status</th></tr></thead>
-  <tbody id="tb-lap"></tbody></table></div>
+  <div class="ph"><div><div class="pt">Laporan &amp; PPh 21</div><div class="pst">Rekap periode dan PPh / bukti potong</div></div>
+    <button class="btn btn-sm btn-out" onclick="exportCSV()">&#128196; CSV Rekap</button></div>
+  <div class="tabs">
+    <div class="tab active" data-laptab="rekap" data-panel="lap-tab-rekap" onclick="switchLaporanTab(this,'lap-tab-rekap')">&#128196; Rekap</div>
+    <div class="tab" data-laptab="pph" data-panel="lap-tab-pph" onclick="switchLaporanTab(this,'lap-tab-pph')">&#128200; PPh 21</div>
+  </div>
+  <div id="lap-tab-rekap">
+    <div class="card"><table><thead><tr><th>Periode</th><th>Karyawan</th><th>Total Gross</th><th>Total THR</th><th>Total PPh</th><th>Total Neto</th><th>Status</th></tr></thead>
+    <tbody id="tb-lap"></tbody></table></div>
+  </div>
+  <div id="lap-tab-pph" style="display:none">
+    <div class="card"><div class="ct">Rekap PPh 21</div>
+      <div style="overflow-x:auto">
+      <table><thead><tr><th>No</th><th>Nama</th><th>PTKP</th><th>Gross/bln</th><th>THR</th><th>Biaya Jabatan</th><th>PKP/tahun</th><th>PPh/tahun</th><th>PPh/bulan</th><th>PPh Return</th></tr></thead>
+      <tbody id="tb-pph"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="ct">Bukti potong PPh 21 — Form 1721-A1 (rekap tahunan)</div>
+      <div class="info-box info-blue" style="font-size:11px;line-height:1.55">
+        PDF mengikuti judul formulir <strong>1721-A1</strong> (bentuk acuan). Merangkum <strong>bruto</strong> dan <strong>PPh 21</strong> dari periode gaji di SiGaji untuk tahun pajak dipilih (TER <strong>PMK 168/2023</strong>).
+        <strong>Pegawai resign tengah tahun:</strong> isi <strong>Tgl. berhenti</strong> di profil karyawan — A1 hanya memuat gaji hingga periode dengan tanggal bayar ≤ tanggal itu.
+        Untuk pelaporan DJP gunakan <strong>e-Bupot Unifikasi</strong> / Coretax sesuai ketentuan pemotong.
+      </div>
+      <div class="fg3" style="align-items:flex-end;margin-bottom:.75rem">
+        <div class="fg"><label>Tahun pajak</label><select id="a1-tahun"></select></div>
+        <div class="fg ff"><label>Karyawan</label><select id="a1-kar"><option value="">-- Pilih karyawan --</option></select></div>
+        <div class="fg"><label>&nbsp;</label><button type="button" class="btn btn-sm btn-g" onclick="exportPDF1721A1()">&#128438; Unduh PDF 1721-A1</button></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MASTER PERUSAHAAN -->
@@ -384,8 +393,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="tab" data-mstab="periode" data-panel="m-periode" onclick="switchTab(this,'m-periode')">&#128197; Periode Gaji & THR</div>
     <div class="tab" data-mstab="umk" data-panel="m-umk" onclick="switchTab(this,'m-umk')">&#128176; UMK</div>
     <div class="tab" data-mstab="libur" data-panel="m-libur" onclick="switchTab(this,'m-libur')">&#127976; Hari Libur &amp; Cuti</div>
-    <div class="tab" data-mstab="potongan" data-panel="m-potongan" onclick="switchTab(this,'m-potongan')">&#9998; Aturan Potongan</div>
-    <div class="tab" data-mstab="ter" data-panel="m-ter" onclick="switchTab(this,'m-ter')">&#9878; Tabel PTKP dan TER PPh 21</div>
+    <div class="tab" data-mstab="potongan" data-panel="m-potongan" data-master-adv="1" onclick="switchTab(this,'m-potongan')">&#9998; Aturan Potongan</div>
+    <div class="tab" data-mstab="ter" data-panel="m-ter" data-master-adv="1" onclick="switchTab(this,'m-ter')">&#9878; PTKP &amp; TER</div>
+    <div class="tab" data-mstab="lanjut" data-panel="m-lanjut" onclick="switchTab(this,'m-lanjut')">&#9881; Pengaturan lanjutan</div>
   </div>
   <div id="m-prs">
     <div class="card">
@@ -673,23 +683,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="my-cuti-content"></div>
 </div>
 
-<!-- STATUS SISTEM (hanya Admin) -->
-<div class="pg" id="pg-sysstatus">
-  <div class="ph">
-    <div><div class="pt">Status Sistem</div><div class="pst">Versi aplikasi, schema data, dan mode cloud — hanya Administrator</div></div>
-    <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Refresh</button>
-  </div>
-  <div id="sysstatus-panel">
+<!-- BACKUP & SISTEM (Admin) -->
+<div class="pg" id="pg-backup">
+  <div class="ph"><div><div class="pt">Backup &amp; Sistem</div><div class="pst">Status deploy, cadangan, import — Administrator</div></div>
+    <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Status</button></div>
+  <div id="sysstatus-panel" style="margin-bottom:1rem">
     <div class="card" style="border-left:4px solid #9ca3af">
-      <div class="ct" style="color:#6b7280">Memuat status...</div>
-      <p style="font-size:12px;color:#6b7280;margin:0">Jika tetap kosong, tekan Refresh atau Ctrl+F5 setelah deploy.</p>
+      <div class="ct" style="color:#6b7280">Status sistem</div>
+      <p style="font-size:12px;color:#6b7280;margin:0">Memuat… tekan tombol Status jika kosong.</p>
     </div>
   </div>
-</div>
-
-<!-- BACKUP -->
-<div class="pg" id="pg-backup">
-  <div class="ph"><div><div class="pt">Backup & Import Data</div></div></div>
   <div class="card" style="border-left:4px solid #5b21b6">
     <div class="ct" style="color:#5b21b6">&#128202; Status Migrasi Snapshot</div>
     <div id="migration-status" style="font-size:12px;color:#374151"></div>
@@ -851,9 +854,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="spt-wrap" id="payroll-spt-wrap">
     <div class="spt active" data-kgstab="gaji" onclick="switchPayrollSpTab(this,'sp-gaji')">&#128176; Gaji & Tunjangan</div>
     <div class="spt" data-kgstab="bpjs" onclick="switchPayrollSpTab(this,'sp-bpjs')">&#9829; BPJS</div>
-    <div class="spt" data-kgstab="natura" onclick="switchPayrollSpTab(this,'sp-natura')">&#127873; Natura</div>
-    <div class="spt" data-kgstab="pphret" onclick="switchPayrollSpTab(this,'sp-pphret')">&#9312; PPh Return</div>
-    <div class="spt" data-kgstab="ring" onclick="switchPayrollSpTab(this,'sp-ring')">&#128200; Ringkasan</div>
+    <div class="spt" data-kgstab="natura" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-natura')">&#127873; Natura</div>
+    <div class="spt" data-kgstab="pphret" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-pphret')">&#9312; PPh Return</div>
+    <div class="spt" data-kgstab="ring" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-ring')">&#128200; Ringkasan</div>
+    <button type="button" id="payroll-sp-more-btn" class="btn btn-xs btn-out" style="margin-left:auto;align-self:center;font-size:10px" onclick="sigajiTogglePayrollAdvTabs()">+ Lanjutan</button>
   </div>
   <div class="spb">
     <div id="sp-gaji" style="display:none">
@@ -1073,18 +1077,18 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=10.1.2"></script>
-<script src="js/storage.js?v=10.0.9"></script>
+<script src="js/constants.js?v=10.1.3"></script>
+<script src="js/storage.js?v=10.1.0"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/modules/app-globals.js?v=11.0.7"></script>
-<script src="js/modules/app-core.js?v=11.0.7"></script>
-<script src="js/modules/app-access.js?v=11.0.7"></script>
-<script src="js/modules/app-hr.js?v=11.0.7"></script>
-<script src="js/modules/app-slip.js?v=11.0.7"></script>
-<script src="js/modules/app-reports.js?v=11.0.7"></script>
-<script src="js/modules/app-absensi.js?v=11.0.7"></script>
-<script src="js/modules/app-master.js?v=11.0.7"></script>
-<script src="js/modules/app-shell.js?v=11.0.7"></script>
+<script src="js/modules/app-globals.js?v=11.0.8"></script>
+<script src="js/modules/app-core.js?v=11.0.8"></script>
+<script src="js/modules/app-access.js?v=11.0.8"></script>
+<script src="js/modules/app-hr.js?v=11.0.8"></script>
+<script src="js/modules/app-slip.js?v=11.0.8"></script>
+<script src="js/modules/app-reports.js?v=11.0.8"></script>
+<script src="js/modules/app-absensi.js?v=11.0.8"></script>
+<script src="js/modules/app-master.js?v=11.0.8"></script>
+<script src="js/modules/app-shell.js?v=11.0.8"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1096,9 +1100,9 @@ if(typeof exportCloudDatabaseBackup!=='function'){
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
-<script src="js/cloud-tables.js?v=11.0.7"></script>
+<script src="js/cloud-tables.js?v=11.0.8"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=11.0.7"></script>
+<script src="js/cloud-sync.js?v=11.0.8"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
