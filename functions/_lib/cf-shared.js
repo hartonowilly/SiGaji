@@ -109,6 +109,95 @@ export function matchSigajiUserForAuth(users, authUser) {
   );
 }
 
+/** Port 587 + secure:true ditolak worker-mailer — pakai STARTTLS (secure:false, startTls:true). */
+export function smtpTlsForPort(port, secureFlag) {
+  const p = Number(port) || 587;
+  const flag = String(secureFlag || '').toLowerCase();
+  if (p === 465) {
+    return { secure: true, startTls: false };
+  }
+  if (flag === 'true') {
+    return { secure: false, startTls: true };
+  }
+  if (flag === 'false') {
+    return { secure: false, startTls: true };
+  }
+  return { secure: false, startTls: true };
+}
+
+export function smtpConnectProfiles(env) {
+  const host = requireEnv(env, 'SIGAJI_SMTP_HOST');
+  const user = requireEnv(env, 'SIGAJI_SMTP_USER');
+  const pass = requireEnv(env, 'SIGAJI_SMTP_PASS');
+  const portEnv = parseInt(envStr(env, 'SIGAJI_SMTP_PORT', '587'), 10);
+  const secureEnv = envStr(env, 'SIGAJI_SMTP_SECURE', '');
+  const base = {
+    host,
+    username: user,
+    password: pass,
+    authType: ['login', 'plain'],
+    logLevel: 'ERROR',
+    socketTimeoutMs: 25000,
+    responseTimeoutMs: 25000,
+  };
+  const profiles = [];
+  const tlsMain = smtpTlsForPort(portEnv, secureEnv);
+  profiles.push({
+    label: `env port ${portEnv}`,
+    opts: { ...base, port: portEnv, ...tlsMain },
+  });
+  if (portEnv !== 465) {
+    profiles.push({
+      label: 'fallback 465 SSL',
+      opts: { ...base, port: 465, secure: true, startTls: false },
+    });
+  }
+  if (portEnv !== 587) {
+    profiles.push({
+      label: 'fallback 587 STARTTLS',
+      opts: { ...base, port: 587, secure: false, startTls: true },
+    });
+  }
+  return profiles;
+}
+
+export function pdfBase64ToBytes(pdfBase64) {
+  const raw = String(pdfBase64 || '').replace(/\s/g, '');
+  if (!raw) return new Uint8Array(0);
+  const bin = atob(raw);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+export function friendlySmtpError(e) {
+  const msg = (e && (e.message || e.response)) || String(e);
+  const name = e && e.name;
+  const code = e && e.code;
+  if (name === 'ConfigurationError' || /invalid combination|port 587.*secure/i.test(msg)) {
+    return (
+      'Konfigurasi SMTP salah: port 587 pakai SIGAJI_SMTP_SECURE=false (STARTTLS). ' +
+      'Port 465 pakai SIGAJI_SMTP_SECURE=true.'
+    );
+  }
+  if (name === 'SmtpAuthError' || code === 'EAUTH' || /535|authentication failed|invalid login|auth/i.test(msg)) {
+    return 'Login SMTP ditolak — periksa SIGAJI_SMTP_USER dan SIGAJI_SMTP_PASS di Cloudflare (password mailbox Hostinger penuh).';
+  }
+  if (
+    name === 'SmtpConnectionError' ||
+    /ETIMEDOUT|ESOCKET|ECONNREFUSED|ETIMEOUT|connect|socket|tcp/i.test(msg)
+  ) {
+    return (
+      'Tidak bisa konek ke SMTP dari Cloudflare. Hostinger: smtp.hostinger.com port 587 + SIGAJI_SMTP_SECURE=false, ' +
+      'atau port 465 + SIGAJI_SMTP_SECURE=true.'
+    );
+  }
+  if (/nodemailer|node:net|node:tls|Cannot find module|No such module/i.test(msg)) {
+    return 'Modul email belum ter-bundle — deploy ulang dengan npm install (@ryyr/worker-mailer) sukses.';
+  }
+  return msg;
+}
+
 export async function assertCallerIsHrdOrAdmin(sb, jwt, tenant) {
   if (!jwt) throw new Error('Missing Authorization bearer token');
   const { data: u, error: ue } = await sb.auth.getUser(jwt);

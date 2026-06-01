@@ -880,6 +880,7 @@ async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik)
     var errMsg = (j && j.error) || ('Gagal kirim slip email (HTTP ' + r.status + ')');
     if (j && j.detail && String(j.detail) !== String(j.error)) errMsg += ' (' + j.detail + ')';
     if (r.status === 404) errMsg = 'API email belum deploy — push functions/api/slip-email-send.js';
+    console.error('slip-email-send', r.status, j);
     toast(errMsg);
     return false;
   }

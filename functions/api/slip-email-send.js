@@ -7,86 +7,60 @@ import {
   jsonResponse,
   handleOptions,
   assertCallerIsHrdOrAdmin,
+  smtpConnectProfiles,
+  pdfBase64ToBytes,
+  friendlySmtpError,
 } from '../_lib/cf-shared.js';
 
 function smtpFromAddress(env) {
   const from = envStr(env, 'SIGAJI_SMTP_FROM', '');
   if (from) return from;
   const user = envStr(env, 'SIGAJI_SMTP_USER', '');
-  return user ? `"SiGaji" <${user}>` : 'SiGaji';
-}
-
-function smtpConnectOptions(env) {
-  const host = requireEnv(env, 'SIGAJI_SMTP_HOST');
-  const user = requireEnv(env, 'SIGAJI_SMTP_USER');
-  const pass = requireEnv(env, 'SIGAJI_SMTP_PASS');
-  const port = parseInt(envStr(env, 'SIGAJI_SMTP_PORT', '587'), 10);
-  const secureFlag = envStr(env, 'SIGAJI_SMTP_SECURE', '').toLowerCase();
-  let secure = port === 465;
-  let startTls = port !== 465;
-  if (secureFlag === 'true') {
-    secure = true;
-    startTls = false;
-  } else if (secureFlag === 'false') {
-    secure = false;
-    startTls = port !== 465;
-  }
-  return {
-    host,
-    port,
-    username: user,
-    password: pass,
-    authType: ['plain', 'login'],
-    secure,
-    startTls,
-    logLevel: 'ERROR',
-    socketTimeoutMs: 25000,
-    responseTimeoutMs: 25000,
-  };
-}
-
-function friendlySmtpError(e) {
-  const msg = (e && (e.message || e.response)) || String(e);
-  const code = e && e.code;
-  if (code === 'EAUTH' || /535|authentication failed|invalid login|auth/i.test(msg)) {
-    return 'Login SMTP ditolak — periksa SIGAJI_SMTP_USER dan SIGAJI_SMTP_PASS di Cloudflare (password mailbox Hostinger penuh).';
-  }
-  if (/ETIMEDOUT|ESOCKET|ECONNREFUSED|ETIMEOUT|connect|socket|tcp/i.test(msg)) {
-    return (
-      'Tidak bisa konek ke SMTP dari Cloudflare. Hostinger: smtp.hostinger.com port 587, SIGAJI_SMTP_SECURE=false. ' +
-      'Coba port 465 + SIGAJI_SMTP_SECURE=true jika 587 gagal.'
-    );
-  }
-  if (/nodemailer|node:net|node:tls/i.test(msg)) {
-    return 'SMTP di Cloudflare memakai worker-mailer (bukan nodemailer). Deploy ulang functions/api/slip-email-send.js terbaru.';
-  }
-  return msg;
+  return user || 'SiGaji';
 }
 
 async function sendSlipViaSmtp(env, { to, subject, text, filename, pdfBase64 }) {
-  const mailer = await WorkerMailer.connect(smtpConnectOptions(env));
-  try {
-    const result = await mailer.send({
-      from: smtpFromAddress(env),
-      to,
-      subject,
-      text: text || 'Berikut lampiran slip gaji Anda.',
-      attachments: [
-        {
-          filename,
-          content: pdfBase64,
-          mimeType: 'application/pdf',
-        },
-      ],
-    });
-    return result;
-  } finally {
+  const pdfBytes = pdfBase64ToBytes(pdfBase64);
+  if (!pdfBytes.length) throw new Error('pdfBase64 kosong atau tidak valid');
+
+  const profiles = smtpConnectProfiles(env);
+  let lastErr;
+  for (const profile of profiles) {
+    let mailer;
     try {
-      if (typeof mailer.close === 'function') mailer.close();
+      mailer = await WorkerMailer.connect(profile.opts);
+      const result = await mailer.send({
+        from: smtpFromAddress(env),
+        to,
+        subject,
+        text: text || 'Berikut lampiran slip gaji Anda.',
+        attachments: [
+          {
+            filename,
+            content: pdfBytes,
+            mimeType: 'application/pdf',
+          },
+        ],
+      });
+      return { ...result, smtpProfile: profile.label };
     } catch (e) {
-      /* ignore */
+      lastErr = e;
+      const msg = (e && e.message) || '';
+      const retryable =
+        (e && e.name === 'SmtpConnectionError') ||
+        /ETIMEDOUT|ESOCKET|ECONNREFUSED|ETIMEOUT|connect|socket/i.test(msg);
+      if (!retryable) throw e;
+    } finally {
+      if (mailer) {
+        try {
+          await mailer.close();
+        } catch (e) {
+          /* ignore */
+        }
+      }
     }
   }
+  throw lastErr || new Error('SMTP gagal (semua profil)');
 }
 
 /** Opsional: kirim lewat Resend HTTP API (tanpa SMTP TCP). */
@@ -142,7 +116,9 @@ export async function onRequestPost({ request, env }) {
 
     const payload = { to, subject, text, filename, pdfBase64 };
     let info;
-    const useResend = envStr(env, 'SIGAJI_EMAIL_PROVIDER', '').toLowerCase() === 'resend' || envStr(env, 'SIGAJI_RESEND_API_KEY', '');
+    const useResend =
+      envStr(env, 'SIGAJI_EMAIL_PROVIDER', '').toLowerCase() === 'resend' ||
+      !!envStr(env, 'SIGAJI_RESEND_API_KEY', '');
     if (useResend) {
       info = await sendSlipViaResend(env, payload);
     } else {
@@ -155,14 +131,15 @@ export async function onRequestPost({ request, env }) {
         ok: true,
         email: true,
         messageId: info && (info.messageId || info.id),
-        provider: info && info.provider,
+        provider: (info && info.provider) || 'smtp',
+        smtpProfile: info && info.smtpProfile,
         to,
         nik: nik || undefined,
       },
       request
     );
   } catch (e) {
-    const raw = e.message || String(e);
+    const raw = [e && e.name, e && e.message].filter(Boolean).join(': ') || String(e);
     if (/Missing env: SIGAJI_SMTP/i.test(raw)) {
       return jsonResponse(
         503,

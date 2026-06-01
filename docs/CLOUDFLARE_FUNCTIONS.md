@@ -9,6 +9,7 @@ SiGaji di **Cloudflare Pages** memakai prefix **`/api/`** (bukan `/netlify/funct
 | `/api/auth-registration-decide` | POST — approve/reject + undangan Supabase |
 | `/api/backup-database-export` | GET — unduh backup DB cloud (Admin/HRD + Bearer), query `?exclude_logo=1` opsional |
 | `/api/slip-email-send` | POST — kirim slip PDF lewat SMTP (Admin/HRD + Bearer) |
+| `/api/slip-email-ping` | POST — tes koneksi SMTP tanpa kirim email (Admin/HRD + Bearer) |
 | `/api/telegram-send-slip` | POST — kirim slip PDF ke Telegram (Admin/HRD + Bearer) |
 | `/api/telegram-create-link` | POST — buat kode link Telegram untuk NIK |
 

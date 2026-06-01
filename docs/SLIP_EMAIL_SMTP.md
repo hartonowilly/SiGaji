@@ -10,7 +10,7 @@ SiGaji mengirim PDF slip dari **server Cloudflare Pages** (`/api/slip-email-send
 |----------|--------|
 | `SIGAJI_SMTP_HOST` | `smtp.hostinger.com` |
 | `SIGAJI_SMTP_PORT` | `587` (disarankan) atau `465` |
-| `SIGAJI_SMTP_SECURE` | kosong/auto, atau `false` untuk port 587, `true` untuk 465 |
+| `SIGAJI_SMTP_SECURE` | **`false` untuk port 587** (STARTTLS), **`true` untuk port 465** — jangan `true` di port 587 (worker-mailer menolak → HTTP 500) |
 | `SIGAJI_SMTP_USER` | `admin@cemerlang.online` |
 | `SIGAJI_SMTP_PASS` | password mailbox Hostinger |
 | `SIGAJI_SMTP_FROM` | `SiGaji HR <admin@cemerlang.online>` (opsional) |
