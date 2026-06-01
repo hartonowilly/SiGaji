@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5">
 <title>SiGaji v10 — Sistem Penggajian</title>
-<link rel="stylesheet" href="css/styles.css?v=11.1.8">
+<link rel="stylesheet" href="css/styles.css?v=11.1.9">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -1114,20 +1114,20 @@ window.sigajiFunctionUrl=window.sigajiFunctionUrl||function(n){
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=11.1.8"></script>
-<script src="js/storage.js?v=11.1.8"></script>
+<script src="js/constants.js?v=11.1.9"></script>
+<script src="js/storage.js?v=11.1.9"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/fn-api.js?v=11.1.8"></script>
-<script src="js/modules/app-globals.js?v=11.1.8"></script>
-<script src="js/modules/app-core.js?v=11.1.8"></script>
-<script src="js/modules/app-access.js?v=11.1.8"></script>
-<script src="js/modules/app-hr.js?v=11.1.8"></script>
-<script src="js/modules/app-slip.js?v=11.1.8"></script>
-<script src="js/modules/app-reports.js?v=11.1.8"></script>
-<script src="js/modules/app-absensi.js?v=11.1.8"></script>
-<script src="js/modules/app-master.js?v=11.1.8"></script>
-<script src="js/modules/app-migrasi-pph.js?v=11.1.8"></script>
-<script src="js/modules/app-shell.js?v=11.1.8"></script>
+<script src="js/fn-api.js?v=11.1.9"></script>
+<script src="js/modules/app-globals.js?v=11.1.9"></script>
+<script src="js/modules/app-core.js?v=11.1.9"></script>
+<script src="js/modules/app-access.js?v=11.1.9"></script>
+<script src="js/modules/app-hr.js?v=11.1.9"></script>
+<script src="js/modules/app-slip.js?v=11.1.9"></script>
+<script src="js/modules/app-reports.js?v=11.1.9"></script>
+<script src="js/modules/app-absensi.js?v=11.1.9"></script>
+<script src="js/modules/app-master.js?v=11.1.9"></script>
+<script src="js/modules/app-migrasi-pph.js?v=11.1.9"></script>
+<script src="js/modules/app-shell.js?v=11.1.9"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1143,9 +1143,9 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
-<script src="js/cloud-tables.js?v=11.1.8"></script>
+<script src="js/cloud-tables.js?v=11.1.9"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=11.1.8"></script>
+<script src="js/cloud-sync.js?v=11.1.9"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
@@ -1216,6 +1216,32 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
     }
   };
 })();
+</script>
+<script>
+/* Override: daftar email Cloudflare — harus /api/ (file ini dimuat terakhir) */
+async function submitRegisterRequest(){
+  try{
+    var email=(document.getElementById('reg-email')&&document.getElementById('reg-email').value||'').trim();
+    var nama=(document.getElementById('reg-nama')&&document.getElementById('reg-nama').value||'').trim();
+    var nik=(document.getElementById('reg-nik')&&document.getElementById('reg-nik').value||'').trim();
+    if(!email||email.indexOf('@')<0){toast('Email tidak valid.');return;}
+    toast('Mengirim permintaan...');
+    var api='/api/auth-register-request';
+    try{if(/\.netlify\.app$/i.test(location.hostname||''))api='/.netlify/functions/auth-register-request';}catch(e){}
+    var r=await fetch(api,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:email,nama:nama,nik:nik})});
+    var j=null;
+    try{j=await r.json();}catch(e){
+      toast('Server tidak mengembalikan JSON. Buka '+api.replace(/^\//,'')+' atau deploy Functions.');
+      return;
+    }
+    if(!r.ok||!j||!j.ok){toast((j&&j.error)||('Gagal ('+r.status+')'));return;}
+    closeModal('m-register');
+    toast('Permintaan dikirim. Tunggu persetujuan Admin/HRD.');
+  }catch(e){
+    console.error('submitRegisterRequest',e);
+    toast('Gagal mengirim permintaan');
+  }
+}
 </script>
 </body>
 </html>

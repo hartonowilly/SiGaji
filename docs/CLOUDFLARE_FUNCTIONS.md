@@ -45,6 +45,8 @@ Tabel `sigaji_registration_requests` harus sudah ada (skema sama dengan deploy N
 
 Setelah domain custom aktif, set `SIGAJI_SITE_URL` ke `https://www.cemerlang.online/` dan tambahkan URL itu di **Supabase → Authentication → Redirect URLs**.
 
+DNS apex `cemerlang.online` masih ke Netlify? Lihat **`docs/DNS_CEMERLANG_CLOUDFLARE.md`**.
+
 ## Uji cepat
 
 1. Deploy ulang dari Git setelah push.
