@@ -1,4 +1,18 @@
 /* SiGaji — hak akses, user, branding, login */
+if(typeof sigajiFunctionUrl!=='function'){
+  window.sigajiFunctionUrl=function(name){
+    var h=(location&&location.hostname)||'';
+    var pre=/\.netlify\.app$/i.test(h)?'/.netlify/functions':(/cemerlang\.online$/i.test(h)||/\.pages\.dev$/i.test(h)?'/api':'/api');
+    return pre+'/'+String(name||'').replace(/^\//,'');
+  };
+}
+if(typeof sigajiParseFunctionJson!=='function'){
+  window.sigajiParseFunctionJson=function(r){
+    var ct=(r.headers&&r.headers.get('content-type'))||'';
+    if(ct.indexOf('application/json')>=0)return r.json().catch(function(){return null;});
+    return Promise.resolve({ok:false,error:'API tidak aktif (deploy /api/ terbaru belum termuat — Ctrl+F5)'});
+  };
+}
 // ── PERMISSIONS & SIDEBAR ────────────────────────
 function canAccessModule(mid){
   if(!CU)return false;

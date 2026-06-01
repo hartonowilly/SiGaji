@@ -1,22 +1,31 @@
 /**
  * URL Functions SiGaji:
- * - Cloudflare Pages: /api/... (hindari bentrok folder statis netlify/)
- * - Netlify: /.netlify/functions/...
+ * - Cloudflare Pages (pages.dev, cemerlang.online, …): /api/...
+ * - Netlify (*.netlify.app): /.netlify/functions/...
  */
 (function (global) {
   var _prefix = null;
 
-  function isCloudflareHost(host) {
-    return /\.pages\.dev$/i.test(host) || /\.cemerlang\.online$/i.test(host);
+  function isNetlifyAppHost(host) {
+    return /\.netlify\.app$/i.test(host);
+  }
+
+  function isCloudflareApiHost(host) {
+    if (!host) return false;
+    if (/\.pages\.dev$/i.test(host) || host === 'pages.dev') return true;
+    if (/cemerlang\.online$/i.test(host)) return true;
+    return false;
   }
 
   function detectPrefix() {
     if (_prefix) return _prefix;
     var host = (global.location && global.location.hostname) || '';
-    if (isCloudflareHost(host)) {
+    if (isNetlifyAppHost(host)) {
+      _prefix = '/.netlify/functions';
+    } else if (isCloudflareApiHost(host)) {
       _prefix = '/api';
     } else {
-      _prefix = '/.netlify/functions';
+      _prefix = '/api';
     }
     return _prefix;
   }
@@ -38,7 +47,7 @@
       return {
         ok: false,
         error:
-          'API tidak aktif (deploy Cloudflare Functions /api/ atau cek env SIGAJI_SUPABASE_*).',
+          'API tidak aktif — pastikan deploy terbaru (URL /api/...) dan env SIGAJI_SUPABASE_* di Cloudflare.',
       };
     }
     return response.json().catch(function () {
