@@ -506,6 +506,53 @@ async function exportCloudDatabaseBackup(){
   }
 }
 if(typeof window!=='undefined')window.exportCloudDatabaseBackup=exportCloudDatabaseBackup;
+function refreshBackupTabContent(tid){
+  tid=tid||'bk-cadangan';
+  if(tid==='bk-cadangan'){
+    renderMigrationStatus();
+    renderBackupRiwayat();
+    renderAuditLog();
+    try{sigajiUpdateCloudBackupUi();}catch(e){}
+  }else if(tid==='bk-saldo'){
+    var mY=document.getElementById('migrasi-pph-tahun');
+    if(mY&&!mY.value)mY.value=String(new Date().getFullYear());
+    if(typeof renderMigrasiPphSaldo==='function')renderMigrasiPphSaldo();
+  }else if(tid==='bk-ringkas'){
+    if(typeof renderSysStatus==='function')renderSysStatus();
+  }
+}
+function switchBackupTab(el,tid){
+  if(el&&el.parentElement){
+    el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    el.classList.add('active');
+  }
+  ['bk-cadangan','bk-saldo','bk-ringkas'].forEach(function(id){
+    var d=document.getElementById(id);
+    if(d)d.style.display=id===tid?'block':'none';
+  });
+  try{sessionStorage.setItem('sigaji_backup_tab',tid);}catch(e){}
+  refreshBackupTabContent(tid);
+}
+function initBackupPageTabs(){
+  var ids=['bk-cadangan','bk-saldo','bk-ringkas'];
+  var tid='bk-cadangan';
+  try{var s=sessionStorage.getItem('sigaji_backup_tab');if(s&&ids.indexOf(s)>=0)tid=s;}catch(e){}
+  var tabs=document.querySelectorAll('#pg-backup .tabs .tab');
+  var idx=ids.indexOf(tid);
+  if(idx<0)idx=0;
+  tid=ids[idx];
+  tabs.forEach(function(t,i){t.classList.toggle('active',i===idx);});
+  ids.forEach(function(id){
+    var d=document.getElementById(id);
+    if(d)d.style.display=id===tid?'block':'none';
+  });
+  refreshBackupTabContent(tid);
+}
+if(typeof window!=='undefined'){
+  window.switchBackupTab=switchBackupTab;
+  window.initBackupPageTabs=initBackupPageTabs;
+  window.refreshBackupTabContent=refreshBackupTabContent;
+}
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){}}
 function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:7px;border:1px solid var(--bd);margin-bottom:.35rem;font-size:12px;'+(i===0?'background:#e8f4de;border-color:#b3d98f':'')+'"><div><div style="font-weight:700">'+(x.tanggalDisplay||x.tanggal)+'</div><div style="font-size:10px;color:#6b7280">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}catch(e){}}
 function renderAuditLog(){

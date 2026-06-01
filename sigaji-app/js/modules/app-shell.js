@@ -127,14 +127,8 @@ function showPg(pg){
   if(pg==='myslip')loadMySlip();
   if(pg==='laporan'){applyLaporanSubtabVisibility();renderLaporan();}
   if(pg==='backup'){
-    if(typeof renderSysStatus==='function')renderSysStatus();
-    sigajiUpdateCloudBackupUi();
-    renderBackupRiwayat();
-    renderMigrationStatus();
-    renderAuditLog();
-    var mY=document.getElementById('migrasi-pph-tahun');
-    if(mY&&!mY.value)mY.value=String(new Date().getFullYear());
-    if(typeof renderMigrasiPphSaldo==='function')renderMigrasiPphSaldo();
+    if(typeof initBackupPageTabs==='function')initBackupPageTabs();
+    else if(typeof refreshBackupTabContent==='function')refreshBackupTabContent('bk-cadangan');
   }
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
