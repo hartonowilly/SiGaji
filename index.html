@@ -1121,7 +1121,7 @@ window.sigajiFunctionUrl=window.sigajiFunctionUrl||function(n){
 <script src="/js/fn-api.js?v=11.2.0"></script>
 <script src="/js/modules/app-globals.js?v=11.2.0"></script>
 <script src="/js/modules/app-core.js?v=11.2.0"></script>
-<script src="/js/modules/app-access.js?v=11.2.0"></script>
+<script src="/js/modules/app-access.js?v=11.2.1"></script>
 <script src="/js/modules/app-hr.js?v=11.2.0"></script>
 <script src="/js/modules/app-slip.js?v=11.2.0"></script>
 <script src="/js/modules/app-reports.js?v=11.2.0"></script>
@@ -1262,7 +1262,68 @@ async function submitRegisterRequest(){
     console.error('submitRegisterRequest',e);
     var msg=e.message||String(e);
     if(/policy|permission|row-level|42501/i.test(msg))toast('Supabase: jalankan sql/supabase_registration_anon_insert.sql');
-    else toast(msg||'Gagal mengirim permintaan');
+    else     toast(msg||'Gagal mengirim permintaan');
+  }
+}
+</script>
+<script>
+/* Admin: daftar permintaan registrasi — /api/ lalu fallback Supabase (RLS authenticated) */
+async function loadRegRequests(){
+  try{
+    if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
+    var t=typeof getCloudAccessToken==='function'?await getCloudAccessToken():'';
+    if(!t){toast('Belum login awan');return;}
+    var host=document.getElementById('reg-req-list');if(host)host.innerHTML='Memuat...';
+    var j=null,apiErr='';
+    var listApi='/api/auth-registration-list?status=pending';
+    try{if(/\.netlify\.app$/i.test(location.hostname||''))listApi='/.netlify/functions/auth-registration-list?status=pending';}catch(e){}
+    try{
+      var r=await fetch(listApi,{headers:{authorization:'Bearer '+t}});
+      var ct=(r.headers&&r.headers.get('content-type'))||'';
+      if(ct.indexOf('application/json')>=0){
+        j=await r.json();
+        if(!(r.ok&&j&&j.ok)){apiErr=(j&&j.error)||('HTTP '+r.status);j=null;}
+      }else apiErr='API tidak aktif (deploy /api/)';
+    }catch(e){apiErr=e.message||String(e);}
+    if(!j&&typeof sigajiLoadRegRequestsViaSupabase==='function'){
+      try{j=await sigajiLoadRegRequestsViaSupabase('pending');}catch(e2){
+        toast(apiErr||e2.message||'Gagal memuat');if(host)host.innerHTML='';return;
+      }
+    }else if(!j){
+      await sigajiWaitSupabase(8000);
+      if(window.sigajiSupabase){
+        var tenant=(window.SIGAJI_TENANT_KEY&&String(window.SIGAJI_TENANT_KEY).trim())||'main';
+        var q=await window.sigajiSupabase.from('sigaji_registration_requests')
+          .select('id,email,nama,nik,status,created_at,decided_at,note')
+          .eq('tenant_key',tenant).eq('status','pending').order('created_at',{ascending:false}).limit(200);
+        if(q.error){toast(apiErr||q.error.message);if(host)host.innerHTML='';return;}
+        j={ok:true,items:q.data||[]};
+      }else{toast(apiErr||'Gagal memuat');if(host)host.innerHTML='';return;}
+    }
+    var items=j.items||[];
+    if(!host)return;
+    if(!items.length){host.innerHTML='<div style="font-size:12px;color:#6b7280;padding:.5rem">Tidak ada permintaan pending.</div>';return;}
+    host.innerHTML='<table style="min-width:720px"><thead><tr><th>Email</th><th>Nama</th><th>NIK</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>'
+      +items.map(function(it){
+        var em=String(it.email||'');
+        var nm=String(it.nama||'');
+        var nk=String(it.nik||'');
+        var dt=String(it.created_at||'').slice(0,19).replace('T',' ');
+        return '<tr>'
+          +'<td style="font-weight:800">'+em+'</td>'
+          +'<td>'+(typeof escapeHtml==='function'?escapeHtml(nm):nm)+'</td>'
+          +'<td>'+(typeof escapeHtml==='function'?escapeHtml(nk):nk)+'</td>'
+          +'<td style="font-size:11px;color:#6b7280">'+(typeof escapeHtml==='function'?escapeHtml(dt):dt)+'</td>'
+          +'<td><div class="fl gap1">'
+            +'<button class="btn btn-sm btn-g" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'approve\')">Approve</button>'
+            +'<button class="btn btn-sm btn-r" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'reject\')">Reject</button>'
+          +'</div></td>'
+        +'</tr>';
+      }).join('')
+      +'</tbody></table>';
+  }catch(e){
+    console.error('loadRegRequests',e);
+    toast('Gagal memuat permintaan');
   }
 }
 </script>

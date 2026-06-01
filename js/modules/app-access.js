@@ -204,15 +204,45 @@ function switchUsrTab(el,tid){
   if(tid==='um-reg')loadRegRequests();
 }
 
+async function sigajiLoadRegRequestsViaSupabase(status){
+  status=status||'pending';
+  var n=0;
+  while(!window.sigajiSupabase&&n<80){await new Promise(function(res){setTimeout(res,100);});n++;}
+  if(!window.sigajiSupabase)throw new Error('Supabase belum siap');
+  var tenant=(window.SIGAJI_TENANT_KEY&&String(window.SIGAJI_TENANT_KEY).trim())||'main';
+  var sess=await window.sigajiSupabase.auth.getSession();
+  if(!sess||!sess.data||!sess.data.session)throw new Error('Belum login awan');
+  var q=await window.sigajiSupabase.from('sigaji_registration_requests')
+    .select('id,email,nama,nik,status,created_at,decided_at,note')
+    .eq('tenant_key',tenant).eq('status',status).order('created_at',{ascending:false}).limit(200);
+  if(q.error)throw new Error(q.error.message);
+  return{ok:true,items:q.data||[]};
+}
+
 async function loadRegRequests(){
   try{
     if(!CU||(CU.role!=='Admin'&&CU.role!=='HRD')){toast('Hanya Admin/HRD');return;}
     var t=await getCloudAccessToken();
     if(!t){toast('Belum login awan');return;}
     var host=document.getElementById('reg-req-list');if(host)host.innerHTML='Memuat...';
-    var r=await fetch(sigajiFunctionUrl('auth-registration-list')+'?status=pending',{headers:{'authorization':'Bearer '+t}});
-    var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
-    if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memuat');if(host)host.innerHTML='';return;}
+    var j=null;
+    var apiErr='';
+    try{
+      var r=await fetch(sigajiFunctionUrl('auth-registration-list')+'?status=pending',{headers:{'authorization':'Bearer '+t}});
+      j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
+      if(r.ok&&j&&j.ok){/* ok */}else{apiErr=(j&&j.error)||('HTTP '+r.status);j=null;}
+    }catch(e){apiErr=e.message||String(e);j=null;}
+    if(!j){
+      try{
+        j=await sigajiLoadRegRequestsViaSupabase('pending');
+      }catch(e2){
+        var msg=apiErr||e2.message||'Gagal memuat';
+        if(/policy|permission|row-level|42501/i.test(String(e2.message||'')))msg+=' — jalankan sql/supabase_sigaji_registration.sql (policy read)';
+        toast(msg);
+        if(host)host.innerHTML='';
+        return;
+      }
+    }
     var items=j.items||[];
     if(!host)return;
     if(!items.length){host.innerHTML='<div style="font-size:12px;color:#6b7280;padding:.5rem">Tidak ada permintaan pending.</div>';return;}
@@ -254,7 +284,12 @@ async function decideRegReq(id,action){
       body:JSON.stringify({id:id,action:action})
     });
     var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
-    if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memproses');return;}
+    if(!r.ok||!j||!j.ok){
+      var err=(j&&j.error)||'Gagal memproses';
+      if(/Missing env|SERVICE_ROLE|Forbidden/i.test(err))err+=' — cek env SIGAJI_SUPABASE_SERVICE_ROLE_KEY di Cloudflare Pages';
+      toast(err);
+      return;
+    }
     toast(action==='approve'?'Approved. Email undangan dikirim (atau user sudah ada).':'Rejected.');
     loadRegRequests();
   }catch(e){

@@ -68,16 +68,32 @@ async function loadUsersForAuth(sb, tenant) {
   return (row && row.payload && row.payload.users) || [];
 }
 
+function matchSigajiUserForAuth(users, authUser) {
+  if (!authUser || !Array.isArray(users)) return null;
+  const authEm = String(authUser.email || '').toLowerCase().trim();
+  const authId = String(authUser.id || '').trim();
+  return (
+    users.find((x) => {
+      if (!x || x.aktif === false) return false;
+      if (authEm && x.email && String(x.email).toLowerCase().trim() === authEm) return true;
+      if (authId && x.auth_uid && String(x.auth_uid) === authId) return true;
+      return false;
+    }) || null
+  );
+}
+
 async function assertCallerIsHrdOrAdmin(sb, jwt, tenant) {
   if (!jwt) throw new Error('Missing Authorization bearer token');
   const { data: u, error: ue } = await sb.auth.getUser(jwt);
   if (ue || !u || !u.user) throw new Error('Invalid auth token');
   const users = await loadUsersForAuth(sb, tenant);
-  const me = users.find(
-    (x) => x && x.email && String(x.email).toLowerCase() === String(u.user.email || '').toLowerCase()
-  );
+  const me = matchSigajiUserForAuth(users, u.user);
   const role = me && me.role;
-  if (role !== 'Admin' && role !== 'HRD') throw new Error('Forbidden — hanya Admin/HRD');
+  if (role !== 'Admin' && role !== 'HRD') {
+    throw new Error(
+      'Forbidden — hanya Admin/HRD (pastikan email login sama dengan Email Supabase di Manajemen User)'
+    );
+  }
   return { user: u.user, role };
 }
 
@@ -89,6 +105,7 @@ module.exports = {
   randomCode,
   extractStartCode,
   loadUsersForAuth,
+  matchSigajiUserForAuth,
   assertCallerIsHrdOrAdmin,
 };
 
