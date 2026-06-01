@@ -878,6 +878,7 @@ async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik)
   var j = typeof sigajiParseFunctionJson === 'function' ? await sigajiParseFunctionJson(r) : await r.json().catch(function () { return null; });
   if (!r.ok || !j || !j.ok) {
     var errMsg = (j && j.error) || ('Gagal kirim slip email (HTTP ' + r.status + ')');
+    if (j && j.detail && String(j.detail) !== String(j.error)) errMsg += ' (' + j.detail + ')';
     if (r.status === 404) errMsg = 'API email belum deploy — push functions/api/slip-email-send.js';
     toast(errMsg);
     return false;
