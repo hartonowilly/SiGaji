@@ -197,7 +197,7 @@ async function loadRegRequests(){
     if(!t){toast('Belum login awan');return;}
     var host=document.getElementById('reg-req-list');if(host)host.innerHTML='Memuat...';
     var r=await fetch(sigajiFunctionUrl('auth-registration-list')+'?status=pending',{headers:{'authorization':'Bearer '+t}});
-    var j=await r.json().catch(()=>null);
+    var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memuat');if(host)host.innerHTML='';return;}
     var items=j.items||[];
     if(!host)return;
@@ -239,7 +239,7 @@ async function decideRegReq(id,action){
       headers:{'content-type':'application/json','authorization':'Bearer '+t},
       body:JSON.stringify({id:id,action:action})
     });
-    var j=await r.json().catch(()=>null);
+    var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memproses');return;}
     toast(action==='approve'?'Approved. Email undangan dikirim (atau user sudah ada).':'Rejected.');
     loadRegRequests();
@@ -361,7 +361,7 @@ async function submitRegisterRequest(){
     if(!email||email.indexOf('@')<0){toast('Email tidak valid.');return;}
     toast('Mengirim permintaan...');
     const r=await fetch(sigajiFunctionUrl('auth-register-request'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,nama,nik})});
-    const j=await r.json().catch(()=>null);
+    const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal mengirim permintaan');return;}
     closeModal('m-register');
     toast('Permintaan dikirim. Tunggu persetujuan Admin/HRD.');
