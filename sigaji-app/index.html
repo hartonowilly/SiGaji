@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5">
 <title>SiGaji v10 — Sistem Penggajian</title>
-<link rel="stylesheet" href="css/styles.css?v=9.1.4-m">
+<link rel="stylesheet" href="css/styles.css?v=11.1.3">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -687,11 +687,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- BACKUP & SISTEM (Admin) -->
 <div class="pg" id="pg-backup">
   <div class="ph"><div><div class="pt">Backup &amp; Sistem</div><div class="pst">Backup data, migrasi pajak, status deploy</div></div></div>
-  <div class="tabs">
-    <div class="tab active" onclick="switchBackupTab(this,'bk-cadangan')">&#128190; Backup</div>
-    <div class="tab" onclick="switchBackupTab(this,'bk-saldo')">&#128176; Saldo PPh</div>
-    <div class="tab" onclick="switchBackupTab(this,'bk-ringkas')">&#128202; Ringkasan</div>
+  <div class="tabs backup-tabs-bar" id="backup-tabs" role="tablist">
+    <div class="tab active" role="tab" data-bktab="bk-cadangan" tabindex="0">&#128190; Backup</div>
+    <div class="tab" role="tab" data-bktab="bk-saldo" tabindex="0">&#128176; Saldo PPh</div>
+    <div class="tab" role="tab" data-bktab="bk-ringkas" tabindex="0">&#128202; Ringkasan</div>
   </div>
+  <div class="backup-tab-panels">
   <div id="bk-cadangan">
     <div class="card" style="border-left:4px solid #5b21b6">
       <div class="ct" style="color:#5b21b6">Snapshot periode</div>
@@ -777,6 +778,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Perbarui</button>
     </div>
     <div id="sysstatus-panel"></div>
+  </div>
   </div>
 </div>
 
@@ -1105,19 +1107,19 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=11.1.2"></script>
-<script src="js/storage.js?v=11.1.2"></script>
+<script src="js/constants.js?v=11.1.3"></script>
+<script src="js/storage.js?v=11.1.3"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/modules/app-globals.js?v=11.1.2"></script>
-<script src="js/modules/app-core.js?v=11.1.2"></script>
-<script src="js/modules/app-access.js?v=11.1.2"></script>
-<script src="js/modules/app-hr.js?v=11.1.2"></script>
-<script src="js/modules/app-slip.js?v=11.1.2"></script>
-<script src="js/modules/app-reports.js?v=11.1.2"></script>
-<script src="js/modules/app-absensi.js?v=11.1.2"></script>
-<script src="js/modules/app-master.js?v=11.1.2"></script>
-<script src="js/modules/app-migrasi-pph.js?v=11.1.2"></script>
-<script src="js/modules/app-shell.js?v=11.1.2"></script>
+<script src="js/modules/app-globals.js?v=11.1.3"></script>
+<script src="js/modules/app-core.js?v=11.1.3"></script>
+<script src="js/modules/app-access.js?v=11.1.3"></script>
+<script src="js/modules/app-hr.js?v=11.1.3"></script>
+<script src="js/modules/app-slip.js?v=11.1.3"></script>
+<script src="js/modules/app-reports.js?v=11.1.3"></script>
+<script src="js/modules/app-absensi.js?v=11.1.3"></script>
+<script src="js/modules/app-master.js?v=11.1.3"></script>
+<script src="js/modules/app-migrasi-pph.js?v=11.1.3"></script>
+<script src="js/modules/app-shell.js?v=11.1.3"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1125,13 +1127,17 @@ if(typeof exportCloudDatabaseBackup!=='function'){
     if(typeof toast==='function')toast(m);else alert(m);
   };
 }
+if(typeof switchBackupTab!=='function'){
+  window.switchBackupTab=function(){if(typeof toast==='function')toast('Tab backup belum siap — muat ulang halaman (Ctrl+F5)');};
+}
+if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 </script>
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
-<script src="js/cloud-tables.js?v=11.1.2"></script>
+<script src="js/cloud-tables.js?v=11.1.3"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=11.1.2"></script>
+<script src="js/cloud-sync.js?v=11.1.3"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
