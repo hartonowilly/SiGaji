@@ -17,6 +17,15 @@ function periodesFindById(id){
   var s=String(id).trim();
   return (periodes||[]).find(function(x){return String(x.id).trim()===s;})||null;
 }
+/** Urut kronologis Jan→Des menurut tanggal mulai periode (untuk dropdown). */
+function periodesSortedByStart(list){
+  return (list||periodes||[]).slice().sort(function(a,b){
+    var ak=typeof toIsoDate==='function'?toIsoDate(a.start):String(a.start||'');
+    var bk=typeof toIsoDate==='function'?toIsoDate(b.start):String(b.start||'');
+    if(ak&&bk&&ak!==bk)return ak.localeCompare(bk);
+    return String(a.nama||'').localeCompare(String(b.nama||''),'id');
+  });
+}
 const isHL=d=>hariLibur.some(l=>l.tgl===d);
 const namaHL=d=>{const l=hariLibur.find(x=>x.tgl===d);return l?l.nama:'';};
 function isHariLiburKerja(dow){const hk=perusahaan.hariKerja||6;return hk===5?(dow===0||dow===6):(dow===0);}

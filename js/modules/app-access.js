@@ -1330,8 +1330,12 @@ function sigajiParseModuleVersionsFromHtml(html){
   }catch(e){}
   return vers;
 }
+function sigajiExpectedDeployVersion(){
+  if(typeof window.SIGAJI_BUILD==='string'&&String(window.SIGAJI_BUILD).trim())return String(window.SIGAJI_BUILD).trim();
+  return typeof SIGAJI_MODULES_CACHE!=='undefined'?String(SIGAJI_MODULES_CACHE):'';
+}
 function sigajiVersionsMatchTarget(vers){
-  var tgt=typeof SIGAJI_MODULES_CACHE!=='undefined'?String(SIGAJI_MODULES_CACHE):'';
+  var tgt=sigajiExpectedDeployVersion();
   if(!tgt)return false;
   return vers.length===1&&vers[0]===tgt;
 }
@@ -1359,7 +1363,7 @@ function renderSysStatus(){
     var cloudOnly=!!window.sigajiCloudOnlyMode;
     var sbReady=!!window.sigajiSupabase;
     var storageMode=typeof window.SIGAJI_STORAGE_MODE!=='undefined'?String(window.SIGAJI_STORAGE_MODE||'').trim():'';
-    var targetVer=typeof SIGAJI_MODULES_CACHE!=='undefined'?String(SIGAJI_MODULES_CACHE):'?';
+    var targetVer=sigajiExpectedDeployVersion()||'?';
     var modVers=sigajiDetectModuleCacheVersions();
     var modVerTxt=modVers.length?modVers.join(', '):'-';
     var modOk=sigajiVersionsMatchTarget(modVers);
@@ -1379,7 +1383,7 @@ function renderSysStatus(){
     if(schemaStored!=null&&!schemaOk)schemaLbl+=' - buka app sekali untuk migrasi otomatis';
     var deployWarn=!modOk
       ?'<div id="sysstatus-deploy-warn" class="info-box" style="margin-bottom:.75rem;border-color:#f6d088;background:#fff8e6;color:#713f12">'
-        +'<strong>Deploy belum masuk ke situs ini.</strong> Browser masih memuat versi lama. Push <code>index.html</code> + <code>js/modules/*</code> ke folder <code>sigaji-app/</code> di GitHub, tunggu Netlify selesai, lalu Ctrl+F5. Target cache: <strong>'+escapeHtml(targetVer)+'</strong>.</div>'
+        +'<strong>Cache modul tidak seragam.</strong> Semua <code>js/modules/*.js?v=</code> harus sama. Target: <strong>'+escapeHtml(targetVer)+'</strong>. Push ke GitHub (branch <code>master</code>), tunggu Cloudflare deploy, lalu Ctrl+F5.</div>'
       :'<div id="sysstatus-deploy-warn" style="display:none"></div>';
     el.innerHTML=
       deployWarn
@@ -1400,7 +1404,7 @@ function renderSysStatus(){
       +row('Karyawan aktif',String(nKar))
       +row('User login',escapeHtml((CU.nama||'')+' ('+(CU.username||'')+')'))
       +'</tbody></table>'
-      +'<p style="font-size:11px;color:#6b7280;margin:.75rem 0 0;line-height:1.5">Baris <strong>index.html di server</strong> membaca file yang benar-benar di Netlify (bukan cache browser). Jika masih 11.0.2/11.0.4, file belum ter-push ke repo yang dipakai cemerlang.online.</p>'
+      +'<p style="font-size:11px;color:#6b7280;margin:.75rem 0 0;line-height:1.5">Baris <strong>index.html di server</strong> = isi file di Cloudflare (bukan cache browser). Harus sama dengan <code>SIGAJI_BUILD</code> di halaman ini ('+escapeHtml(targetVer)+').</p>'
       +'</div>';
     var srvEl=document.getElementById('sysstatus-server-index');
     if(srvEl){
@@ -1416,7 +1420,7 @@ function renderSysStatus(){
           var w=document.getElementById('sysstatus-deploy-warn');
           if(w){
             w.style.display='block';
-            w.innerHTML='<strong>index.html di Netlify masih lama.</strong> Server: <code>'+escapeHtml(txt)+'</code> — target: <strong>'+escapeHtml(targetVer)+'</strong>. Push ke <code>sigaji-app/index.html</code> di GitHub.';
+            w.innerHTML='<strong>index.html di server belum sama dengan aplikasi ini.</strong> Server: <code>'+escapeHtml(txt)+'</code> — diharapkan: <strong>'+escapeHtml(targetVer)+'</strong>. Push <code>index.html</code> + <code>js/modules/*?v='+escapeHtml(targetVer)+'</code> ke GitHub (master), redeploy Cloudflare.';
           }
           var rowCell=srvEl.closest('td');
           if(rowCell)rowCell.innerHTML=escapeHtml(txt)+' <span class="bdg b-warn" style="margin-left:8px">belum deploy</span>';

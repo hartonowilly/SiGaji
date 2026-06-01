@@ -356,7 +356,8 @@ function populateSelects(){
 }
 function renderPeriodeSelects(){
   var aktif = PA().id;
-  var opts = periodes
+  var sorted=typeof periodesSortedByStart==='function'?periodesSortedByStart():periodes;
+  var opts = sorted
     .map(function (p) {
       return '<option value="' + p.id + '">' + p.nama + '</option>';
     })
@@ -514,7 +515,7 @@ function renderAuditLog(){
   if(!wrap||!sel)return;
   var q=(document.getElementById('audit-q')&&document.getElementById('audit-q').value||'').toLowerCase();
   // isi opsi periode
-  var perList=['(Semua)'].concat((periodes||[]).map(function(p){return p.nama;}).sort());
+  var perList=['(Semua)'].concat((typeof periodesSortedByStart==='function'?periodesSortedByStart():periodes||[]).map(function(p){return p.nama;}));
   if(!sel.options.length){
     sel.innerHTML=perList.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('');
     sel.value='(Semua)';
