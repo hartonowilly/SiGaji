@@ -1,5 +1,27 @@
 # Deploy GitHub + Cloudflare — cek daftar email
 
+## Build gagal: `ENOENT package.json` di `/repo/`
+
+Log:
+
+```text
+npm error path /opt/buildhome/repo/package.json
+npm error enoent Could not read package.json
+```
+
+**Penyebab:** di GitHub, `package.json` ada di **`sigaji-app/package.json`**, bukan di root repo. Cloudflare **Root directory** masih kosong.
+
+**Perbaikan (Cloudflare dashboard):**
+
+1. **Workers & Pages** → proyek **sigaji** → **Settings** → **Build**
+2. **Root directory** → ketik: **`sigaji-app`** (tanpa slash)
+3. **Build command** → `npm install && npm run build`
+4. **Save** → **Deployments** → **Retry deployment**
+
+Jangan upload ZIP lewat GitHub web saja — pakai **`git push`** dari laptop agar `functions/`, `wrangler.toml`, `fn-api.js` ikut ter-upload.
+
+---
+
 ## Kenapa domain Active tapi email gagal?
 
 Biasanya **kode di GitHub ≠ kode di laptop**, atau **Functions `/api/` tidak ikut deploy**.
