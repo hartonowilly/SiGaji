@@ -12,7 +12,17 @@ Di **Netlify** tetap `/.netlify/functions/...`. Browser memilih prefix lewat `js
 
 ## Environment variables (Cloudflare Pages)
 
-**Settings → Environment variables** (Production dan Preview).
+**Workers & Pages → proyek → Settings → Environment variables** — tambahkan untuk **Production** (variabel dipakai saat **build** dan saat **Functions** jalan).
+
+| Nama | Wajib | Keterangan |
+|------|-------|------------|
+| `SIGAJI_SUPABASE_URL` | Ya | URL proyek Supabase |
+| `SIGAJI_SUPABASE_ANON_KEY` | Ya | Anon/public key → `js/config.js` (login browser) |
+| `SIGAJI_SUPABASE_SERVICE_ROLE_KEY` | Ya | Service role → Functions `/api/*` (rahasia) |
+| `SIGAJI_TENANT_KEY` | Opsional | Default `main` |
+| `SIGAJI_SITE_URL` | Disarankan | `https://sigaji.pages.dev/` — redirect undangan email |
+
+Ambil dari **Supabase → Project Settings → API**. Tanpa URL + anon key, `npm run build` gagal (atau deploy dengan config kosong — login/daftar tidak jalan).
 
 **Root directory** di Builds & deployments:
 
@@ -23,18 +33,9 @@ Di **Netlify** tetap `/.netlify/functions/...`. Browser memilih prefix lewat `js
 
 Commit terbaru memakai **root repo** — jangan isi `sigaji-app` (error: `Cannot find cwd: .../sigaji-app`).
 
-| Nama | Wajib | Keterangan |
-|------|-------|------------|
-| `SIGAJI_SUPABASE_URL` | Ya | URL proyek Supabase |
-| `SIGAJI_SUPABASE_SERVICE_ROLE_KEY` | Ya | Service role (rahasia, hanya server) |
-| `SIGAJI_TENANT_KEY` | Opsional | Default `main` |
-| `SIGAJI_SITE_URL` | Disarankan | `https://sigaji.pages.dev/` — redirect undangan/reset password |
-
-Nilai sama dengan yang dipakai di Netlify (`netlify.toml` / dashboard).
-
 ## Build
 
-- **Build command:** `npm run build` (atau kosong jika tidak perlu generate-config di CI)
+- **Build command:** `npm install && npm run build` (wajib env URL + anon di atas)
 - **nodejs_compat + output:** `wrangler.toml` di root repo (`pages_build_output_dir = "."`)
 - Dependencies: `@supabase/supabase-js` di `package.json` (di-bundle saat deploy Functions)
 
