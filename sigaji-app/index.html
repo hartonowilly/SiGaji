@@ -694,6 +694,26 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <p style="font-size:12px;color:#6b7280;margin:0">Memuat… tekan tombol Status jika kosong.</p>
     </div>
   </div>
+  <div class="card" style="border-left:4px solid #7c3aed">
+    <div class="ct" style="color:#5b21b6">&#128176; Migrasi Saldo PPh YTD (onboarding)</div>
+    <p style="font-size:12px;color:#374151;margin:0 0 .75rem 0">Untuk pelanggan mulai SiGaji tengah tahun: impor total <strong>bruto PPh</strong> dan <strong>PPh terpotong</strong> dari payroll manual (mis. Jan–Apr) per NIK. Dipakai rekonsiliasi Desember / resign. <strong>Jangan</strong> buat periode gaji bulan yang sama di app (hindari double).</p>
+    <div class="fg2" style="align-items:flex-end">
+      <div class="fg"><label>Tahun pajak</label><input type="number" id="migrasi-pph-tahun" min="2020" max="2099" style="max-width:120px" onchange="renderMigrasiPphSaldo()"></div>
+      <div class="fl gap1" style="flex-wrap:wrap">
+        <button type="button" class="btn btn-sm btn-s" onclick="exportMigrasiPphTemplate()">&#128196; Template Excel</button>
+        <button type="button" class="btn btn-sm btn-p" onclick="document.getElementById('inp-migrasi-pph-xlsx').click()">&#128229; Import Excel</button>
+        <input type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importMigrasiPphExcel(this)">
+        <button type="button" class="btn btn-sm btn-out" onclick="renderMigrasiPphSaldo()">&#8635;</button>
+        <button type="button" class="btn btn-sm btn-r" onclick="clearMigrasiPphSaldoTahun()">Hapus saldo tahun ini</button>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:.4rem;font-size:12px;margin:.5rem 0;cursor:pointer">
+      <input type="checkbox" id="migrasi-pph-buat-baru" checked style="accent-color:#1a56a0">
+      Buat profil karyawan baru jika NIK di Excel belum ada (gunakan NIK asli, mis. K0003 untuk Budi)
+    </label>
+    <div id="migrasi-pph-ringkasan" style="font-size:11px;color:#6b7280;margin-bottom:.5rem"></div>
+    <div id="migrasi-pph-tabel" style="max-height:280px;overflow:auto"></div>
+  </div>
   <div class="card" style="border-left:4px solid #5b21b6">
     <div class="ct" style="color:#5b21b6">&#128202; Status Migrasi Snapshot</div>
     <div id="migration-status" style="font-size:12px;color:#374151"></div>
@@ -1078,18 +1098,19 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=10.1.4"></script>
-<script src="js/storage.js?v=10.1.0"></script>
+<script src="js/constants.js?v=11.1.0"></script>
+<script src="js/storage.js?v=11.1.0"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/modules/app-globals.js?v=11.0.9"></script>
-<script src="js/modules/app-core.js?v=11.0.9"></script>
-<script src="js/modules/app-access.js?v=11.0.9"></script>
-<script src="js/modules/app-hr.js?v=11.0.9"></script>
-<script src="js/modules/app-slip.js?v=11.0.9"></script>
-<script src="js/modules/app-reports.js?v=11.0.9"></script>
-<script src="js/modules/app-absensi.js?v=11.0.9"></script>
-<script src="js/modules/app-master.js?v=11.0.9"></script>
-<script src="js/modules/app-shell.js?v=11.0.9"></script>
+<script src="js/modules/app-globals.js?v=11.1.0"></script>
+<script src="js/modules/app-core.js?v=11.1.0"></script>
+<script src="js/modules/app-access.js?v=11.1.0"></script>
+<script src="js/modules/app-hr.js?v=11.1.0"></script>
+<script src="js/modules/app-slip.js?v=11.1.0"></script>
+<script src="js/modules/app-reports.js?v=11.1.0"></script>
+<script src="js/modules/app-absensi.js?v=11.1.0"></script>
+<script src="js/modules/app-master.js?v=11.1.0"></script>
+<script src="js/modules/app-migrasi-pph.js?v=11.1.0"></script>
+<script src="js/modules/app-shell.js?v=11.1.0"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1101,9 +1122,9 @@ if(typeof exportCloudDatabaseBackup!=='function'){
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
-<script src="js/cloud-tables.js?v=11.0.9"></script>
+<script src="js/cloud-tables.js?v=11.1.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=11.0.9"></script>
+<script src="js/cloud-sync.js?v=11.1.0"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
