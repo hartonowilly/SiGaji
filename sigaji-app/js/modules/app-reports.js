@@ -279,7 +279,12 @@ function exportExcelRekonResign(){
         if(lastG&&lastG.reconciliation){
           var r=lastG.reconciliation;
           rows.push(['RINGKASAN REKONSILIASI (bulan terakhir: '+(stopP.nama||'-')+')']);
-          rows.push(['Total bruto YTD (Jan s.d. bulan sebelum terakhir)',Math.round(r.brutoYTD)]);
+          if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
+            rows.push(['Saldo migrasi (payroll manual)',Math.round(r.saldoAwalBruto)]);
+            rows.push(['PPh saldo migrasi',Math.round(r.saldoAwalPph)]);
+            if(r.saldoSdBulan)rows.push(['Saldo s/d bulan',r.saldoSdBulan]);
+          }
+          rows.push(['Total bruto YTD (kumulatif sebelum bulan terakhir)',Math.round(r.brutoYTD)]);
           rows.push(['Bruto bulan terakhir',Math.round(lastG.grossPPh)]);
           rows.push(['Total bruto setahun',Math.round(r.brutoTahunan)]);
           rows.push(['PPh tahunan (progresif Pasal 17)',Math.round(r.pphTahunan)]);

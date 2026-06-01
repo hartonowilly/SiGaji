@@ -271,11 +271,32 @@ function hitungPPhFinalPesangon(bruto){
   return Math.round(pph);
 }
 
-// Hitung total bruto karyawan dari periodes sebelumnya dalam tahun yg sama
+/** Saldo migrasi payroll manual (bruto PPh + PPh terpotong) per tahun — field k.pph_ytd_awal[tahun]. */
+function getPphYtdAwal(k,thn){
+  const aw=k&&k.pph_ytd_awal;
+  if(!aw||typeof aw!=='object')return{bruto:0,pph:0,sd_bulan:0};
+  const slot=aw[String(thn)];
+  if(!slot||typeof slot!=='object')return{bruto:0,pph:0,sd_bulan:0};
+  return{
+    bruto:Math.round(slot.bruto||0),
+    pph:Math.round(slot.pph||0),
+    sd_bulan:Math.min(12,Math.max(0,parseInt(slot.sd_bulan,10)||0))
+  };
+}
+function setPphYtdAwal(k,thn,bruto,pph,sdBulan){
+  if(!k)return;
+  if(!k.pph_ytd_awal||typeof k.pph_ytd_awal!=='object')k.pph_ytd_awal={};
+  const key=String(thn);
+  const b=Math.round(bruto||0),p=Math.round(pph||0);
+  if(b<=0&&p<=0&&!sdBulan){delete k.pph_ytd_awal[key];if(!Object.keys(k.pph_ytd_awal).length)delete k.pph_ytd_awal;return;}
+  k.pph_ytd_awal[key]={bruto:b,pph:p,sd_bulan:sdBulan?Math.min(12,Math.max(1,parseInt(sdBulan,10)||0)):undefined};
+}
+// Hitung total bruto karyawan dari saldo migrasi + periodes sebelumnya dalam tahun yg sama
 function getBrutoYTD(k,pNama){
   const p=periodes.find(x=>x.nama===pNama)||PA();
   const thn=new Date(p.bayar||p.end||p.start).getFullYear();
-  let totalBruto=0,totalPPh=0;
+  const saldo=getPphYtdAwal(k,thn);
+  let totalBruto=saldo.bruto,totalPPh=saldo.pph;
   periodes.forEach(function(per){
     const perThn=new Date(per.bayar||per.end||per.start).getFullYear();
     if(perThn!==thn||per.nama===pNama)return;
@@ -285,7 +306,7 @@ function getBrutoYTD(k,pNama){
     totalBruto+=g.grossPPh;
     totalPPh+=g.pph;
   });
-  return{totalBruto,totalPPh,thn};
+  return{totalBruto,totalPPh,thn,saldoAwal:saldo};
 }
 // Tunjangan variabel per periode (bonus, uang makan, dll.) — input HR di Proses Gaji
 function getTunjVarColumnsResolved(){
@@ -750,6 +771,11 @@ function hitungGaji(k,pNama){
     const tipeLabel=(p.tipe_periode==='desember')?'desember':(p.tipe_periode==='resign'||isStopReason)?'resign':p.tipe_periode;
     reconciliation={
       brutoYTD:ytd.totalBruto,pphYTD:ytd.totalPPh,
+      saldoAwalBruto:ytd.saldoAwal?ytd.saldoAwal.bruto:0,
+      saldoAwalPph:ytd.saldoAwal?ytd.saldoAwal.pph:0,
+      saldoSdBulan:ytd.saldoAwal?ytd.saldoAwal.sd_bulan:0,
+      brutoDariPeriode:Math.max(0,ytd.totalBruto-(ytd.saldoAwal?ytd.saldoAwal.bruto:0)),
+      pphDariPeriode:Math.max(0,ytd.totalPPh-(ytd.saldoAwal?ytd.saldoAwal.pph:0)),
       brutoTahunan,pphTahunan,
       pphBulanIni:selisih,
       lebihBayar:selisih<0?Math.abs(selisih):0,

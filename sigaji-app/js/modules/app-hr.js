@@ -924,7 +924,11 @@ function detailGaji(nik,pNama){
     const isLebih=r.lebihBayar>0;
     h+='<div style="background:'+(isLebih?'#e8f4de':'#fef3e2')+';border:1.5px solid '+(isLebih?'#2d6a0a':'#7d4800')+';border-radius:10px;padding:1rem;margin-top:.75rem">';
     h+='<div style="font-weight:800;color:'+(isLebih?'#2d6a0a':'#7d4800')+';margin-bottom:.5rem">&#9654; Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Masa Pajak Terakhir - Resign)':'(Desember - Progresif)')+'</div>';
-    h+='<div class="cr"><span>Total Bruto YTD (Jan s.d. bulan lalu)</span><span>'+fmt(r.brutoYTD)+'</span></div>';
+    if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
+      h+='<div class="cr" style="color:#1a56a0"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+' — bruto / PPh</span><span>'+fmt(r.saldoAwalBruto)+' / '+fmt(r.saldoAwalPph)+'</span></div>';
+      if(r.brutoDariPeriode>0||r.pphDariPeriode>0)h+='<div class="cr"><span>+ Dari periode SiGaji (sebelum bulan ini)</span><span>'+fmt(r.brutoDariPeriode)+' / '+fmt(r.pphDariPeriode)+'</span></div>';
+    }
+    h+='<div class="cr"><span>Total Bruto YTD (kumulatif sebelum bulan ini)</span><span>'+fmt(r.brutoYTD)+'</span></div>';
     h+='<div class="cr"><span>Bruto bulan ini</span><span>'+fmt(g.grossPPh)+'</span></div>';
     h+='<div class="cr bold"><span>Total Bruto Setahun</span><span>'+fmt(r.brutoTahunan)+'</span></div>';
     h+='<div class="cr" style="margin-top:6px"><span>PPh Tahunan (Progresif Pasal 17)</span><span>'+fmt(r.pphTahunan)+'</span></div>';

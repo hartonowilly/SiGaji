@@ -126,7 +126,16 @@ function showPg(pg){
   if(pg==='mycuti')renderMyCuti();
   if(pg==='myslip')loadMySlip();
   if(pg==='laporan'){applyLaporanSubtabVisibility();renderLaporan();}
-  if(pg==='backup'){if(typeof renderSysStatus==='function')renderSysStatus();sigajiUpdateCloudBackupUi();renderBackupRiwayat();renderMigrationStatus();renderAuditLog();}
+  if(pg==='backup'){
+    if(typeof renderSysStatus==='function')renderSysStatus();
+    sigajiUpdateCloudBackupUi();
+    renderBackupRiwayat();
+    renderMigrationStatus();
+    renderAuditLog();
+    var mY=document.getElementById('migrasi-pph-tahun');
+    if(mY&&!mY.value)mY.value=String(new Date().getFullYear());
+    if(typeof renderMigrasiPphSaldo==='function')renderMigrasiPphSaldo();
+  }
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
   if(pg==='pesangon')try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);toast('Modul Pesangon error — cek konsol (F12).');}

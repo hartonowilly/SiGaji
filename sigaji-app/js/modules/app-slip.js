@@ -36,7 +36,10 @@ function makeSlip(k,pNama){
   h+='<div class="cr"><span>Penghasilan Bruto bulan ini</span><span>'+fmt(g.grossPPh)+'</span></div>';
   if(g.reconciliation){
     const r=g.reconciliation;
-    h+='<div class="cr"><span>Bruto YTD (bulan sebelumnya)</span><span>'+fmt(r.brutoYTD)+'</span></div>';
+    if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
+      h+='<div class="cr" style="color:#1a56a0"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+'</span><span>'+fmt(r.saldoAwalBruto)+' / PPh '+fmt(r.saldoAwalPph)+'</span></div>';
+    }
+    h+='<div class="cr"><span>Bruto YTD (kumulatif sebelum bulan ini)</span><span>'+fmt(r.brutoYTD)+'</span></div>';
     h+='<div class="cr bold"><span>Total Bruto Setahun</span><span>'+fmt(r.brutoTahunan)+'</span></div>';
     h+='<div class="cr"><span>PPh Tahunan (Progresif)</span><span>'+fmt(r.pphTahunan)+'</span></div>';
     h+='<div class="cr"><span>PPh sudah dipotong YTD</span><span>- '+fmt(r.pphYTD)+'</span></div>';
@@ -288,7 +291,10 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   rowL('Penghasilan Bruto bulan ini',fmt(g.grossPPh));
   if(g.reconciliation){
     var r=g.reconciliation;
-    rowL('Bruto YTD (bulan sebelumnya)',fmt(r.brutoYTD));
+    if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
+      rowL('Saldo migrasi'+(r.saldoSdBulan?' s/d bln '+r.saldoSdBulan:''),fmt(r.saldoAwalBruto)+' (PPh '+fmt(r.saldoAwalPph)+')');
+    }
+    rowL('Bruto YTD (kumulatif sebelum bulan ini)',fmt(r.brutoYTD));
     rowL('Total Bruto Setahun',fmt(r.brutoTahunan),true);
     rowL('PPh Tahunan (Progresif)',fmt(r.pphTahunan));
     rowM('PPh sudah dipotong YTD',r.pphYTD);
