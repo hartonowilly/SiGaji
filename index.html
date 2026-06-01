@@ -5,17 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5">
 <base href="/">
 <title>SiGaji v10 — Sistem Penggajian</title>
-<link rel="stylesheet" href="/css/styles.css?v=11.2.0">
+<link rel="stylesheet" href="/css/styles.css?v=11.2.2">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
 <script>
-/* API Functions: Cloudflare /api/ — Netlify /.netlify/functions/ (inline agar tidak bergantung fn-api.js terpisah) */
-window.sigajiFunctionUrl=window.sigajiFunctionUrl||function(n){
+/* API: Cloudflare /api/ — Netlify /.netlify/functions/ (inline; file js/fn-api.js opsional) */
+window.sigajiFunctionUrl=function(n){
   n=String(n||'').replace(/^\//,'');
   var h=(location&&location.hostname)||'';
   if(/\.netlify\.app$/i.test(h))return'/.netlify/functions/'+n;
   return'/api/'+n;
+};
+window.sigajiParseFunctionJson=async function(r){
+  var ct=(r.headers&&r.headers.get('content-type'))||'';
+  if(ct.indexOf('application/json')>=0)return r.json().catch(function(){return null;});
+  if(ct.indexOf('text/html')>=0||r.status===404)return{ok:false,error:'API tidak aktif — deploy /api/ + env SIGAJI_SUPABASE_* di Cloudflare'};
+  return r.json().catch(function(){return null;});
 };
 (function(){
   try{
@@ -1115,20 +1121,19 @@ window.sigajiFunctionUrl=window.sigajiFunctionUrl||function(n){
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.2.0"></script>
-<script src="/js/storage.js?v=11.2.0"></script>
+<script src="/js/constants.js?v=11.2.2"></script>
+<script src="/js/storage.js?v=11.2.2"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/fn-api.js?v=11.2.0"></script>
-<script src="/js/modules/app-globals.js?v=11.2.0"></script>
-<script src="/js/modules/app-core.js?v=11.2.0"></script>
-<script src="/js/modules/app-access.js?v=11.2.1"></script>
-<script src="/js/modules/app-hr.js?v=11.2.0"></script>
-<script src="/js/modules/app-slip.js?v=11.2.0"></script>
-<script src="/js/modules/app-reports.js?v=11.2.0"></script>
-<script src="/js/modules/app-absensi.js?v=11.2.0"></script>
-<script src="/js/modules/app-master.js?v=11.2.0"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.2.0"></script>
-<script src="/js/modules/app-shell.js?v=11.2.0"></script>
+<script src="/js/modules/app-globals.js?v=11.2.2"></script>
+<script src="/js/modules/app-core.js?v=11.2.2"></script>
+<script src="/js/modules/app-access.js?v=11.2.2"></script>
+<script src="/js/modules/app-hr.js?v=11.2.2"></script>
+<script src="/js/modules/app-slip.js?v=11.2.2"></script>
+<script src="/js/modules/app-reports.js?v=11.2.2"></script>
+<script src="/js/modules/app-absensi.js?v=11.2.2"></script>
+<script src="/js/modules/app-master.js?v=11.2.2"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.2.2"></script>
+<script src="/js/modules/app-shell.js?v=11.2.2"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1144,9 +1149,9 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 <script src="/js/pesangon.js?v=10.0.0"></script>
 <script src="/js/config.js?v=10.0.0"></script>
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
-<script src="/js/cloud-tables.js?v=11.2.0"></script>
+<script src="/js/cloud-tables.js?v=11.2.2"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.2.0"></script>
+<script src="/js/cloud-sync.js?v=11.2.2"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
@@ -1324,6 +1329,30 @@ async function loadRegRequests(){
   }catch(e){
     console.error('loadRegRequests',e);
     toast('Gagal memuat permintaan');
+  }
+}
+async function decideRegReq(id,action){
+  try{
+    if(!id)return;
+    if(action==='reject'&&!confirm('Tolak permintaan ini?'))return;
+    if(action==='approve'&&!confirm('Setujui dan kirim undangan email reset password?'))return;
+    var t=typeof getCloudAccessToken==='function'?await getCloudAccessToken():'';
+    if(!t){toast('Belum login awan');return;}
+    toast(action==='approve'?'Menyetujui...':'Menolak...');
+    var decideApi='/api/auth-registration-decide';
+    try{if(/\.netlify\.app$/i.test(location.hostname||''))decideApi='/.netlify/functions/auth-registration-decide';}catch(e){}
+    var r=await fetch(decideApi,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+t},body:JSON.stringify({id:id,action:action})});
+    var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(function(){return null;});
+    if(!r.ok||!j||!j.ok){
+      var err=(j&&j.error)||'Gagal memproses';
+      if(/Missing env|SERVICE_ROLE|Forbidden/i.test(err))err+=' — cek SIGAJI_SUPABASE_SERVICE_ROLE_KEY di Cloudflare Pages';
+      toast(err);return;
+    }
+    toast(action==='approve'?'Approved. Email undangan dikirim (atau user sudah ada).':'Rejected.');
+    loadRegRequests();
+  }catch(e){
+    console.error('decideRegReq',e);
+    toast('Gagal memproses');
   }
 }
 </script>

@@ -114,7 +114,7 @@ async function hapusUser(i){
     try{
       var t=await getCloudAccessToken();
       if(t){
-        var r=await fetch('/.netlify/functions/auth-delete-user',{
+        var r=await fetch(sigajiFunctionUrl('auth-delete-user'),{
           method:'POST',
           headers:{'content-type':'application/json','authorization':'Bearer '+t},
           body:JSON.stringify({email:email})
@@ -458,7 +458,7 @@ async function getCloudAccessToken(){
 async function telegramCreateLinkCode(nik){
   const t=await getCloudAccessToken();
   if(!t){toast('Belum login awan / sesi tidak ada');return null;}
-  const r=await fetch('/.netlify/functions/telegram-create-link',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,ttlMin:30})});
+  const r=await fetch(sigajiFunctionUrl('telegram-create-link'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,ttlMin:30})});
   const j=await r.json().catch(()=>null);
   if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal buat kode Telegram');return null;}
   return j;
@@ -468,7 +468,7 @@ async function telegramCreateLinkCode(nik){
 async function telegramSendSlipPdf(nik,filename,caption,pdfBase64){
   const t=await getCloudAccessToken();
   if(!t){toast('Belum login awan / sesi tidak ada');return false;}
-  const r=await fetch('/.netlify/functions/telegram-send-slip',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,filename,caption,pdfBase64})});
+  const r=await fetch(sigajiFunctionUrl('telegram-send-slip'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,filename,caption,pdfBase64})});
   const j=await r.json().catch(()=>null);
   if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal kirim slip Telegram');return false;}
   return true;
@@ -870,7 +870,7 @@ async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik)
     toast('Belum login awan / sesi tidak ada');
     return false;
   }
-  var r = await fetch('/.netlify/functions/slip-email-send', {
+  var r = await fetch(sigajiFunctionUrl('slip-email-send'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + t },
     body: JSON.stringify({ to: to, subject: subject, text: bodyText, filename: filename, pdfBase64: pdfBase64, nik: nik || '' }),
