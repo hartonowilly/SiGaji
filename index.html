@@ -4,11 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5">
 <title>SiGaji v10 — Sistem Penggajian</title>
-<link rel="stylesheet" href="css/styles.css?v=11.1.7">
+<link rel="stylesheet" href="css/styles.css?v=11.1.8">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
 <script>
+/* API Functions: Cloudflare /api/ — Netlify /.netlify/functions/ (inline agar tidak bergantung fn-api.js terpisah) */
+window.sigajiFunctionUrl=window.sigajiFunctionUrl||function(n){
+  n=String(n||'').replace(/^\//,'');
+  var h=(location&&location.hostname)||'';
+  if(/\.netlify\.app$/i.test(h))return'/.netlify/functions/'+n;
+  return'/api/'+n;
+};
 (function(){
   try{
     var mqNarrow=window.matchMedia('(max-width:900px)').matches;
@@ -1107,20 +1114,20 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=11.1.7"></script>
-<script src="js/storage.js?v=11.1.7"></script>
+<script src="js/constants.js?v=11.1.8"></script>
+<script src="js/storage.js?v=11.1.8"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/fn-api.js?v=11.1.7"></script>
-<script src="js/modules/app-globals.js?v=11.1.7"></script>
-<script src="js/modules/app-core.js?v=11.1.7"></script>
-<script src="js/modules/app-access.js?v=11.1.7"></script>
-<script src="js/modules/app-hr.js?v=11.1.7"></script>
-<script src="js/modules/app-slip.js?v=11.1.7"></script>
-<script src="js/modules/app-reports.js?v=11.1.7"></script>
-<script src="js/modules/app-absensi.js?v=11.1.7"></script>
-<script src="js/modules/app-master.js?v=11.1.7"></script>
-<script src="js/modules/app-migrasi-pph.js?v=11.1.7"></script>
-<script src="js/modules/app-shell.js?v=11.1.7"></script>
+<script src="js/fn-api.js?v=11.1.8"></script>
+<script src="js/modules/app-globals.js?v=11.1.8"></script>
+<script src="js/modules/app-core.js?v=11.1.8"></script>
+<script src="js/modules/app-access.js?v=11.1.8"></script>
+<script src="js/modules/app-hr.js?v=11.1.8"></script>
+<script src="js/modules/app-slip.js?v=11.1.8"></script>
+<script src="js/modules/app-reports.js?v=11.1.8"></script>
+<script src="js/modules/app-absensi.js?v=11.1.8"></script>
+<script src="js/modules/app-master.js?v=11.1.8"></script>
+<script src="js/modules/app-migrasi-pph.js?v=11.1.8"></script>
+<script src="js/modules/app-shell.js?v=11.1.8"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1136,9 +1143,9 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
-<script src="js/cloud-tables.js?v=11.1.7"></script>
+<script src="js/cloud-tables.js?v=11.1.8"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=11.1.7"></script>
+<script src="js/cloud-sync.js?v=11.1.8"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>

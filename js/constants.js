@@ -170,4 +170,4 @@ const SCHEMA_VERSION=13;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.1.7';
+const SIGAJI_MODULES_CACHE='11.1.8';

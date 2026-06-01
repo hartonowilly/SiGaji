@@ -374,7 +374,9 @@ async function submitRegisterRequest(){
     var nik=(document.getElementById('reg-nik')&&document.getElementById('reg-nik').value||'').trim();
     if(!email||email.indexOf('@')<0){toast('Email tidak valid.');return;}
     toast('Mengirim permintaan...');
-    const r=await fetch(sigajiFunctionUrl('auth-register-request'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,nama,nik})});
+    var regApi='/api/auth-register-request';
+    try{var rh=location.hostname||'';if(/\.netlify\.app$/i.test(rh))regApi='/.netlify/functions/auth-register-request';}catch(e){}
+    const r=await fetch(regApi,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,nama,nik})});
     const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal mengirim permintaan');return;}
     closeModal('m-register');
