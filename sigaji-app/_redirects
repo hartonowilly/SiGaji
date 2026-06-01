@@ -1,0 +1,4 @@
+# Cloudflare Pages / Netlify — paksa HTTPS
+http://www.cemerlang.online/*   https://www.cemerlang.online/:splat   301!
+https://cemerlang.online/*      https://www.cemerlang.online/:splat  301!
+http://cemerlang.online/*       https://www.cemerlang.online/:splat  301!

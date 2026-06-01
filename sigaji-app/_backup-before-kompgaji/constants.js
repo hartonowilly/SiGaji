@@ -1,53 +1,5 @@
 const fmtDate=d=>{if(!d||d==='-')return'-';const p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;};
 const fmt=n=>{const v=Math.round(n);if(isNaN(v))return'Rp 0';const abs=Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(v<0?'-Rp ':'Rp ')+abs;};
-/** Parse teks input rupiah (1.500.000 atau 1500000) → angka bulat. */
-function parseRpInput(val){
-  if(val==null||val==='')return 0;
-  var s=String(val).trim().replace(/Rp/gi,'').replace(/\s/g,'');
-  if(s.indexOf(',')>=0){
-    var p=s.split(',');
-    s=p[0].replace(/\./g,'')+(p[1]?'.'+p[1].replace(/\./g,''):'');
-    var f=parseFloat(s);
-    return isNaN(f)?0:Math.max(0,Math.round(f));
-  }
-  s=s.replace(/\./g,'');
-  var n=parseInt(s,10);
-  return isNaN(n)?0:Math.max(0,n);
-}
-/** Format angka untuk kotak input (pemisah ribuan titik). */
-function formatRpInputNum(n){
-  var v=Math.max(0,Math.round(Number(n)||0));
-  return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-}
-/** Pasang format rupiah pada input teks (class inp-rp atau data-rp="1"). */
-function sigajiBindRpInputs(root){
-  var scope=root||document;
-  scope.querySelectorAll('input.inp-rp,input[data-rp="1"]').forEach(function(inp){
-    if(inp.dataset.rpBound==='1')return;
-    inp.dataset.rpBound='1';
-    inp.setAttribute('inputmode','numeric');
-    inp.setAttribute('autocomplete','off');
-    if(inp.type==='number')inp.type='text';
-    if(!inp.dataset.rpEditing){
-      var init=inp.value;
-      if(init!==''&&init!=null)inp.value=formatRpInputNum(parseRpInput(init));
-    }
-    inp.addEventListener('focus',function(){
-      inp.dataset.rpEditing='1';
-      inp.value=String(parseRpInput(inp.value)||'');
-      try{inp.select();}catch(e){}
-    });
-    inp.addEventListener('blur',function(){
-      delete inp.dataset.rpEditing;
-      var n=parseRpInput(inp.value);
-      inp.value=formatRpInputNum(n);
-      inp.dataset.rpValue=String(n);
-      try{inp.dispatchEvent(new Event('change',{bubbles:true}));}catch(e2){
-        if(typeof Event==='function')inp.dispatchEvent(new Event('change'));
-      }
-    });
-  });
-}
 /** Nilai rupiah ke kata Indonesia (untuk terbilang slip) */
 function terbilangRupiah(n){
   const num=Math.floor(Math.abs(Number(n)||0));
@@ -91,40 +43,37 @@ const PTKP_LBL={TK0:'TK/0',TK1:'TK/1',TK2:'TK/2',TK3:'TK/3',K0:'K/0',K1:'K/1',K2
 const BPJS_DEF={'kes-prs':{pct:4,basis:12e6,lbl:'BPJS Kes Perusahaan (4%)'},'kes-kar':{pct:1,basis:12e6,lbl:'BPJS Kes Karyawan (1%)'},'jht-prs':{pct:3.7,basis:null,lbl:'JHT Perusahaan (3,7%)'},'jht-kar':{pct:2,basis:null,lbl:'JHT Karyawan (2%)'},'jp-prs':{pct:2,basis:9559600,lbl:'JP Perusahaan (2%)'},'jp-kar':{pct:1,basis:9559600,lbl:'JP Karyawan (1%)'},'jkk-prs':{pct:0.24,basis:null,lbl:'JKK Perusahaan (0,24%)'},'jkm-prs':{pct:0.3,basis:null,lbl:'JKM Perusahaan (0,3%)'}};
 const TUNJ_TYPES={tetap:'Tetap (BPJS+THR+PPh+TH)',tetap_no_bpjs:'Tetap Excl.BPJS',tidak_tetap:'Tidak Tetap',harian_exclude:'Harian Excl.TH'};
 // Sub-tab permissions: moduleId.subtabId
+// Contoh: 'karyawan.gaji' = akses tab Gaji & Tunjangan di modul karyawan
 const SUBTABS={
-  karyawan:['info'],
-  kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
-  absensi:['kalender','cuti'],
-  master:['prs','periode','umk','libur','potongan','ter'],
-  laporan:['rekap','pph'],
+  karyawan:['info','gaji','bpjs','natura','pphret','ring'],
+  absensi:['kalender','cuti','lembur'],
+  master:['prs','periode','libur','potongan','ter'],
   approval:['pend','hist'],
 };
 const SUBTAB_LBL={
-  'karyawan.info':'Info & Jabatan',
-  'kompgaji.gaji':'Gaji & Tunjangan','kompgaji.tunjvar':'Tunjangan Variabel','kompgaji.bpjs':'BPJS','kompgaji.natura':'Natura',
-  'kompgaji.pphret':'PPh Return','kompgaji.ring':'Ringkasan',
+  'karyawan.info':'Info & Jabatan','karyawan.gaji':'Gaji & Tunjangan',
+  'karyawan.bpjs':'BPJS','karyawan.natura':'Natura',
+  'karyawan.pphret':'PPh Return','karyawan.ring':'Ringkasan',
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
-  'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR','master.umk':'UMK',
+  'absensi.lembur':'Lembur',
+  'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
-  'laporan.rekap':'Rekap Penggajian','laporan.pph':'PPh 21 & Bukti Potong',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
 };
-/** UI ringkas UKM: tab payroll/master jarang dipakai disembunyikan (bisa dibuka). */
-const SIGAJI_UI_SIMPLE=true;
 const MODULES=[
   {id:'dashboard',lbl:'Dashboard',icon:'&#9632;',sec:'Utama'},
   {id:'notifikasi',lbl:'Notifikasi',icon:'&#128276;',sec:'Utama'},
-  {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info']},
-  {id:'absensi',lbl:'Absensi & Cuti',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti']},
-  {id:'kompgaji',lbl:'Komponen Gaji',icon:'&#128178;',sec:'Penggajian',subtabs:['gaji','tunjvar','bpjs','natura','pphret','ring']},
-  {id:'lembur',lbl:'Lembur',icon:'&#9203;',sec:'THR & Lembur'},
-  {id:'thr',lbl:'THR',icon:'&#127873;',sec:'THR & Lembur'},
-  {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'Penggajian'},
+  {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info','gaji','bpjs','natura','pphret','ring']},
+  {id:'absensi',lbl:'Absensi, Cuti & Lembur',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti','lembur']},
+  {id:'thr',lbl:'THR',icon:'&#127873;',sec:'SDM'},
+  {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'SDM'},
   {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
+  {id:'approval',lbl:'Approval',icon:'&#10003;',sec:'Penggajian',subtabs:['pend','hist']},
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
-  {id:'laporan',lbl:'Laporan & PPh',icon:'&#128196;',sec:'Laporan',subtabs:['rekap','pph']},
-  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter']},
-  {id:'backup',lbl:'Backup & Sistem',icon:'&#128190;',sec:'Pengaturan',adminOnly:true},
+  {id:'pph',lbl:'PPh 21',icon:'&#128200;',sec:'Laporan'},
+  {id:'laporan',lbl:'Rekap',icon:'&#128196;',sec:'Laporan'},
+  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','libur','potongan','ter']},
+  {id:'backup',lbl:'Backup & Import',icon:'&#128190;',sec:'Pengaturan'},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
   {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
   {id:'mycuti',lbl:'Cuti Saya',icon:'&#127774;',sec:'Saya'},
@@ -166,8 +115,4 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=13;
-/** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
-const SIGAJI_APP_LABEL='SiGaji v10';
-/** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.2.0';
+const SCHEMA_VERSION=9;

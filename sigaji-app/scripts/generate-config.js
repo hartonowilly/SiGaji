@@ -10,14 +10,42 @@ const outPath = path.join(__dirname, '..', 'js', 'config.js');
 
 const url = (process.env.SIGAJI_SUPABASE_URL || '').trim();
 const anon = (process.env.SIGAJI_SUPABASE_ANON_KEY || '').trim();
+const isCfPages =
+  /^1|true$/i.test(String(process.env.CF_PAGES || '')) || !!process.env.CF_PAGES_URL;
+
+function writeStubConfig(reason) {
+  const stub = [
+    '// ' + reason,
+    '// Isi SIGAJI_SUPABASE_URL + SIGAJI_SUPABASE_ANON_KEY di Cloudflare/Netlify → deploy ulang.',
+    "window.SIGAJI_SUPABASE_URL = '';",
+    "window.SIGAJI_SUPABASE_ANON_KEY = '';",
+    "window.SIGAJI_TENANT_KEY = '';",
+    'window.SIGAJI_MAX_EMPLOYEES = 0;',
+    "window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL = '';",
+    "window.SIGAJI_STORAGE_MODE = 'dual';",
+    'window.SIGAJI_RESUME_SESSION_ON_LOAD = false;',
+    'window.SIGAJI_IDLE_LOGOUT_MINUTES = 30;',
+    '',
+  ].join('\n');
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, stub, 'utf8');
+}
 
 if (!url || !anon) {
   if (fs.existsSync(outPath)) {
     console.log('generate-config: lewati (env kosong, js/config.js sudah ada — mode lokal).');
     process.exit(0);
   }
+  if (isCfPages) {
+    console.warn(
+      'generate-config: Cloudflare Pages — SIGAJI_SUPABASE_URL / SIGAJI_SUPABASE_ANON_KEY belum diset di Environment variables.'
+    );
+    console.warn('generate-config: build lanjut dengan config kosong; login awan & daftar email tidak jalan sampai env diisi.');
+    writeStubConfig('Placeholder — isi env Cloudflare Pages lalu deploy ulang');
+    process.exit(0);
+  }
   console.error(
-    'generate-config: wajib set SIGAJI_SUPABASE_URL dan SIGAJI_SUPABASE_ANON_KEY (Netlify env) atau buat js/config.js dari config.example.js'
+    'generate-config: wajib set SIGAJI_SUPABASE_URL dan SIGAJI_SUPABASE_ANON_KEY (Netlify/Cloudflare env) atau buat js/config.js dari config.example.js'
   );
   process.exit(1);
 }

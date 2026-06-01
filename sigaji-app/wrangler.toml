@@ -1,0 +1,6 @@
+# Cloudflare Pages — app di ROOT repo (bukan subfolder sigaji-app/)
+# Lihat docs/CLOUDFLARE_FUNCTIONS.md untuk env variables.
+name = "sigaji"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "."

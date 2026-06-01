@@ -1,0 +1,41 @@
+# =============================================================================
+# Pakai isi file ini sebagai netlify.toml di ROOT repo GitHub (hartonowilly/SiGaji)
+# ketika struktur GitHub seperti ini:
+#
+#   SiGaji/                 ← root repo (netlify.toml di sini)
+#     sigaji-app/
+#       index.html
+#       package.json
+#       netlify/functions/
+#
+# Cara: salin semua isi bawah ini → commit sebagai netlify.toml di ROOT GitHub
+# (bukan hanya di dalam folder sigaji-app).
+# =============================================================================
+
+[build]
+  base = "sigaji-app"
+  command = "npm install && node scripts/generate-config.js"
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate, max-age=0"

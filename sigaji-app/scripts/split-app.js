@@ -12,7 +12,7 @@ const outDir = path.join(root, 'js', 'modules');
 const lines = fs.readFileSync(src, 'utf8').split(/\r?\n/);
 
 const chunks = [
-  { file: 'app-globals.js', start: 1, end: 0, header: '/* Variabel global modul UI (muat pertama). */\nvar cpNik=null;\nvar bmState={};\n' },
+  { file: 'app-globals.js', start: 1, end: 0, header: '/* Slot modul pertama — cpNik/bmState/CU hanya di js/storage.js (jangan redeklarasi). */\n' },
   { file: 'app-core.js', start: 1, end: 813, header: '/* SiGaji — inti: helper, snapshot, hitung gaji, BPJS, THR calc */\n' },
   { file: 'app-access.js', start: 814, end: 2065, header: '/* SiGaji — hak akses, user, branding, login */\n' },
   { file: 'app-hr.js', start: 2066, end: 2977, header: '/* SiGaji — dashboard, karyawan, komponen gaji, proses gaji */\n' },

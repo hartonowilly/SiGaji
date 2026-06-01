@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const { json, requireEnv, getTenantKey } = require('./_shared');
+const { json, requireEnv, getTenantKey, getSiteUrl } = require('./_shared');
 
 function sbAdmin() {
   const url = requireEnv('SIGAJI_SUPABASE_URL');
@@ -25,13 +25,6 @@ function sanitizeNama(nama, fallbackEmail) {
   const t = String(nama || '').trim();
   if (t) return t.slice(0, 80);
   return String(fallbackEmail || '').split('@')[0].slice(0, 80) || 'User';
-}
-
-function getSiteUrl(event) {
-  const proto = String(event.headers['x-forwarded-proto'] || 'https').split(',')[0].trim() || 'https';
-  const host = String(event.headers.host || '').trim();
-  if (!host) return '';
-  return `${proto}://${host}/`;
 }
 
 exports.handler = async (event) => {

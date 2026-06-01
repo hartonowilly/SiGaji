@@ -1,0 +1,20 @@
+BACKUP SEBELUM PEMISAHAN MODUL KOMPONEN GAJI
+=============================================
+
+Tanggal backup: otomatis saat refactoring
+
+File backup (salinan asli):
+  - index.html
+  - js/app.js
+  - js/constants.js
+  - js/storage.js
+
+CARA MENGEMBALIKAN KE VERSI LAMA:
+1. Salin kebalikan 4 file di atas dari folder ini ke folder sigaji-app (timpa file yang ada).
+2. Refresh browser (Ctrl+F5).
+3. Data karyawan di localStorage TIDAK berubah — hanya tampilan/struktur modul.
+
+CATATAN:
+- Jika perubahan baru BERHASIL dan Anda sudah export backup JSON dari modul Backup & Import,
+  backup JSON itu tetap bisa di-import karena struktur data karyawan sama.
+- Folder backup ini aman dihapus setelah Anda yakin versi baru sudah OK.

@@ -1,4 +1,18 @@
 /* SiGaji — hak akses, user, branding, login */
+if(typeof sigajiFunctionUrl!=='function'){
+  window.sigajiFunctionUrl=function(name){
+    var h=(location&&location.hostname)||'';
+    var pre=/\.netlify\.app$/i.test(h)?'/.netlify/functions':(/cemerlang\.online$/i.test(h)||/\.pages\.dev$/i.test(h)?'/api':'/api');
+    return pre+'/'+String(name||'').replace(/^\//,'');
+  };
+}
+if(typeof sigajiParseFunctionJson!=='function'){
+  window.sigajiParseFunctionJson=function(r){
+    var ct=(r.headers&&r.headers.get('content-type'))||'';
+    if(ct.indexOf('application/json')>=0)return r.json().catch(function(){return null;});
+    return Promise.resolve({ok:false,error:'API tidak aktif (deploy /api/ terbaru belum termuat — Ctrl+F5)'});
+  };
+}
 // ── PERMISSIONS & SIDEBAR ────────────────────────
 function canAccessModule(mid){
   if(!CU)return false;
@@ -196,8 +210,8 @@ async function loadRegRequests(){
     var t=await getCloudAccessToken();
     if(!t){toast('Belum login awan');return;}
     var host=document.getElementById('reg-req-list');if(host)host.innerHTML='Memuat...';
-    var r=await fetch('/.netlify/functions/auth-registration-list?status=pending',{headers:{'authorization':'Bearer '+t}});
-    var j=await r.json().catch(()=>null);
+    var r=await fetch(sigajiFunctionUrl('auth-registration-list')+'?status=pending',{headers:{'authorization':'Bearer '+t}});
+    var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memuat');if(host)host.innerHTML='';return;}
     var items=j.items||[];
     if(!host)return;
@@ -234,12 +248,12 @@ async function decideRegReq(id,action){
     var t=await getCloudAccessToken();
     if(!t){toast('Belum login awan');return;}
     toast(action==='approve'?'Menyetujui...':'Menolak...');
-    var r=await fetch('/.netlify/functions/auth-registration-decide',{
+    var r=await fetch(sigajiFunctionUrl('auth-registration-decide'),{
       method:'POST',
       headers:{'content-type':'application/json','authorization':'Bearer '+t},
       body:JSON.stringify({id:id,action:action})
     });
-    var j=await r.json().catch(()=>null);
+    var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal memproses');return;}
     toast(action==='approve'?'Approved. Email undangan dikirim (atau user sudah ada).':'Rejected.');
     loadRegRequests();
@@ -360,8 +374,10 @@ async function submitRegisterRequest(){
     var nik=(document.getElementById('reg-nik')&&document.getElementById('reg-nik').value||'').trim();
     if(!email||email.indexOf('@')<0){toast('Email tidak valid.');return;}
     toast('Mengirim permintaan...');
-    const r=await fetch('/.netlify/functions/auth-register-request',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,nama,nik})});
-    const j=await r.json().catch(()=>null);
+    var regApi='/api/auth-register-request';
+    try{var rh=location.hostname||'';if(/\.netlify\.app$/i.test(rh))regApi='/.netlify/functions/auth-register-request';}catch(e){}
+    const r=await fetch(regApi,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,nama,nik})});
+    const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal mengirim permintaan');return;}
     closeModal('m-register');
     toast('Permintaan dikirim. Tunggu persetujuan Admin/HRD.');
