@@ -109,9 +109,78 @@ if(typeof window!=='undefined'){
   window.sigajiOpenNavDrawer=sigajiOpenNavDrawer;
   window.sigajiToggleNavDrawer=sigajiToggleNavDrawer;
 }
+function refreshBackupTabContent(tid){
+  tid=tid||'bk-cadangan';
+  if(tid==='bk-cadangan'){
+    if(typeof renderMigrationStatus==='function')renderMigrationStatus();
+    if(typeof renderBackupRiwayat==='function')renderBackupRiwayat();
+    if(typeof renderAuditLog==='function')renderAuditLog();
+    try{if(typeof sigajiUpdateCloudBackupUi==='function')sigajiUpdateCloudBackupUi();}catch(e){}
+  }else if(tid==='bk-saldo'){
+    var mY=document.getElementById('migrasi-pph-tahun');
+    if(mY&&!mY.value)mY.value=String(new Date().getFullYear());
+    if(typeof renderMigrasiPphSaldo==='function')renderMigrasiPphSaldo();
+  }else if(tid==='bk-ringkas'){
+    if(typeof renderSysStatus==='function')renderSysStatus();
+  }
+}
+function switchBackupTab(el,tid){
+  if(!tid)return;
+  var bar=document.getElementById('backup-tabs');
+  if(bar){
+    bar.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    if(el&&el.classList)el.classList.add('active');
+    else{
+      var match=bar.querySelector('.tab[data-bktab="'+tid+'"]');
+      if(match)match.classList.add('active');
+    }
+  }
+  ['bk-cadangan','bk-saldo','bk-ringkas'].forEach(function(id){
+    var d=document.getElementById(id);
+    if(d)d.style.display=id===tid?'block':'none';
+  });
+  try{sessionStorage.setItem('sigaji_backup_tab',tid);}catch(e){}
+  refreshBackupTabContent(tid);
+}
+function bindBackupTabsOnce(){
+  var bar=document.getElementById('backup-tabs');
+  if(!bar||bar.dataset.bound==='1')return;
+  bar.dataset.bound='1';
+  bar.addEventListener('click',function(ev){
+    var t=ev.target&&ev.target.closest?ev.target.closest('[data-bktab]'):null;
+    if(!t||!bar.contains(t))return;
+    ev.preventDefault();
+    switchBackupTab(t,t.getAttribute('data-bktab'));
+  });
+}
+function initBackupPageTabs(){
+  bindBackupTabsOnce();
+  var ids=['bk-cadangan','bk-saldo','bk-ringkas'];
+  var tid='bk-cadangan';
+  try{var s=sessionStorage.getItem('sigaji_backup_tab');if(s&&ids.indexOf(s)>=0)tid=s;}catch(e){}
+  var bar=document.getElementById('backup-tabs');
+  if(bar){
+    var tabs=bar.querySelectorAll('.tab');
+    var idx=ids.indexOf(tid);
+    if(idx<0)idx=0;
+    tid=ids[idx];
+    tabs.forEach(function(t,i){t.classList.toggle('active',i===idx);});
+  }
+  ids.forEach(function(id){
+    var d=document.getElementById(id);
+    if(d)d.style.display=id===tid?'block':'none';
+  });
+  refreshBackupTabContent(tid);
+}
+if(typeof window!=='undefined'){
+  window.switchBackupTab=switchBackupTab;
+  window.initBackupPageTabs=initBackupPageTabs;
+  window.refreshBackupTabContent=refreshBackupTabContent;
+  window.bindBackupTabsOnce=bindBackupTabsOnce;
+}
 function showPg(pg){
   if(pg==='pph'){showPg('laporan');setTimeout(function(){var t=document.querySelector('#pg-laporan .tab[data-laptab="pph"]');if(t)switchLaporanTab(t,'lap-tab-pph');},80);return;}
-  if(pg==='sysstatus'){showPg('backup');return;}
+  if(pg==='sysstatus'){showPg('backup');setTimeout(function(){switchBackupTab(null,'bk-ringkas');},50);return;}
   if(!canAccess(pg)){toast('Tidak punya akses ke modul ini');return;}
   sigajiCloseNavDrawer();
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active');});
@@ -126,10 +195,7 @@ function showPg(pg){
   if(pg==='mycuti')renderMyCuti();
   if(pg==='myslip')loadMySlip();
   if(pg==='laporan'){applyLaporanSubtabVisibility();renderLaporan();}
-  if(pg==='backup'){
-    if(typeof initBackupPageTabs==='function')initBackupPageTabs();
-    else if(typeof refreshBackupTabContent==='function')refreshBackupTabContent('bk-cadangan');
-  }
+  if(pg==='backup'){setTimeout(function(){initBackupPageTabs();},0);}
   if(pg==='users'){renderUsers();renderPermMatrix();}
   if(pg==='approval')applyApprovalSubtabVisibility();
   if(pg==='pesangon')try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);toast('Modul Pesangon error — cek konsol (F12).');}
