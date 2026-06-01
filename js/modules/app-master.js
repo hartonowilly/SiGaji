@@ -457,8 +457,8 @@ async function exportCloudDatabaseBackup(){
       return;
     }
     if(location.protocol==='file:'){
-      toast('Backup cloud butuh situs Netlify (https), bukan file:// lokal');
-      if(inf)inf.textContent='Buka lewat https://…netlify.app';
+      toast('Backup cloud butuh situs https (Cloudflare), bukan file:// lokal');
+      if(inf)inf.textContent='Buka lewat https://www.cemerlang.online';
       return;
     }
     var sess=await window.sigajiSupabase.auth.getSession();
@@ -469,14 +469,16 @@ async function exportCloudDatabaseBackup(){
     }
     var ex=document.getElementById('backup-exclude-logo');
     var q=ex&&ex.checked?'?exclude_logo=1':'';
-    var apiUrl='/.netlify/functions/backup-database-export'+q;
+    var apiBase=typeof sigajiFunctionUrl==='function'?sigajiFunctionUrl('backup-database-export'):'/api/backup-database-export';
+    var apiUrl=apiBase+q;
     if(inf)inf.textContent='Menghubungi server backup…';
     var r=await fetch(apiUrl,{headers:{authorization:'Bearer '+sess.data.session.access_token}});
     var text=await r.text();
     if(!r.ok){
       var errMsg=text;
       try{var ej=JSON.parse(text);if(ej&&ej.error)errMsg=ej.error;}catch(eJ){}
-      if(r.status===404)errMsg='Fungsi Netlify belum ada — deploy netlify/functions/backup-database-export.js';
+      if(r.status===404)errMsg='API backup belum deploy — push functions/api/backup-database-export.js + env Cloudflare';
+      else if(/<html/i.test(text))errMsg='API mengembalikan HTML (bukan JSON) — cek /api/backup-database-export di deploy';
       toast('Gagal: '+errMsg);
       if(inf)inf.textContent='Error: '+errMsg;
       return;

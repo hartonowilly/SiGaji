@@ -7,6 +7,7 @@ SiGaji di **Cloudflare Pages** memakai prefix **`/api/`** (bukan `/netlify/funct
 | `/api/auth-register-request` | POST — permintaan daftar (publik) |
 | `/api/auth-registration-list` | GET — daftar pending (Admin/HRD + Bearer) |
 | `/api/auth-registration-decide` | POST — approve/reject + undangan Supabase |
+| `/api/backup-database-export` | GET — unduh backup DB cloud (Admin/HRD + Bearer), query `?exclude_logo=1` opsional |
 
 Di **Netlify** tetap `/.netlify/functions/...`. Browser memilih prefix lewat `js/fn-api.js` (`*.pages.dev`, `*.cemerlang.online` → `/api`).
 
