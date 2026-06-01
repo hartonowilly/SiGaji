@@ -23,6 +23,25 @@ window.sigajiParseFunctionJson=async function(r){
   if(ct.indexOf('text/html')>=0||r.status===404)return{ok:false,error:'API tidak aktif — deploy /api/ + env SIGAJI_SUPABASE_* di Cloudflare'};
   return r.json().catch(function(){return null;});
 };
+window.SIGAJI_BUILD='11.2.2';
+(function(){
+  var h=(location&&location.hostname)||'';
+  if(!/\.pages\.dev$/i.test(h)&&!/cemerlang\.online$/i.test(h))return;
+  var _fetch=window.fetch;
+  window.fetch=function(input,init){
+    var url=input;
+    if(typeof input==='string'){
+      if(input.indexOf('/.netlify/functions/')>=0)url=input.replace('/.netlify/functions/','/api/');
+    }else if(input&&typeof input==='object'&&input.url){
+      var u=String(input.url);
+      if(u.indexOf('/.netlify/functions/')>=0){
+        url=new Request(u.replace('/.netlify/functions/','/api/'),input);
+        return _fetch.call(this,url,init);
+      }
+    }
+    return _fetch.call(this,url,init);
+  };
+})();
 (function(){
   try{
     var mqNarrow=window.matchMedia('(max-width:900px)').matches;
