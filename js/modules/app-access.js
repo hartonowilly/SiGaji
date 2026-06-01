@@ -459,8 +459,8 @@ async function telegramCreateLinkCode(nik){
   const t=await getCloudAccessToken();
   if(!t){toast('Belum login awan / sesi tidak ada');return null;}
   const r=await fetch(sigajiFunctionUrl('telegram-create-link'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,ttlMin:30})});
-  const j=await r.json().catch(()=>null);
-  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal buat kode Telegram');return null;}
+  const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
+  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal buat kode Telegram (deploy /api/telegram-create-link)');return null;}
   return j;
 }
 
@@ -469,8 +469,8 @@ async function telegramSendSlipPdf(nik,filename,caption,pdfBase64){
   const t=await getCloudAccessToken();
   if(!t){toast('Belum login awan / sesi tidak ada');return false;}
   const r=await fetch(sigajiFunctionUrl('telegram-send-slip'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,filename,caption,pdfBase64})});
-  const j=await r.json().catch(()=>null);
-  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal kirim slip Telegram');return false;}
+  const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
+  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal kirim slip Telegram (deploy /api/telegram-send-slip)');return false;}
   return true;
 }
 
@@ -875,11 +875,10 @@ async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik)
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + t },
     body: JSON.stringify({ to: to, subject: subject, text: bodyText, filename: filename, pdfBase64: pdfBase64, nik: nik || '' }),
   });
-  var j = await r.json().catch(function () {
-    return null;
-  });
+  var j = typeof sigajiParseFunctionJson === 'function' ? await sigajiParseFunctionJson(r) : await r.json().catch(function () { return null; });
   if (!r.ok || !j || !j.ok) {
     var errMsg = (j && j.error) || ('Gagal kirim slip email (HTTP ' + r.status + ')');
+    if (r.status === 404) errMsg = 'API email belum deploy — push functions/api/slip-email-send.js';
     toast(errMsg);
     return false;
   }

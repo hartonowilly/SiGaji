@@ -8,6 +8,9 @@ SiGaji di **Cloudflare Pages** memakai prefix **`/api/`** (bukan `/netlify/funct
 | `/api/auth-registration-list` | GET — daftar pending (Admin/HRD + Bearer) |
 | `/api/auth-registration-decide` | POST — approve/reject + undangan Supabase |
 | `/api/backup-database-export` | GET — unduh backup DB cloud (Admin/HRD + Bearer), query `?exclude_logo=1` opsional |
+| `/api/slip-email-send` | POST — kirim slip PDF lewat SMTP (Admin/HRD + Bearer) |
+| `/api/telegram-send-slip` | POST — kirim slip PDF ke Telegram (Admin/HRD + Bearer) |
+| `/api/telegram-create-link` | POST — buat kode link Telegram untuk NIK |
 
 Di **Netlify** tetap `/.netlify/functions/...`. Browser memilih prefix lewat `js/fn-api.js` (`*.pages.dev`, `*.cemerlang.online` → `/api`).
 
@@ -21,9 +24,16 @@ Di **Netlify** tetap `/.netlify/functions/...`. Browser memilih prefix lewat `js
 | `SIGAJI_SUPABASE_ANON_KEY` | Ya | Anon/public key → `js/config.js` (login browser) |
 | `SIGAJI_SUPABASE_SERVICE_ROLE_KEY` | Ya | Service role → Functions `/api/*` (rahasia) |
 | `SIGAJI_TENANT_KEY` | Opsional | Default `main` |
-| `SIGAJI_SITE_URL` | Disarankan | `https://sigaji.pages.dev/` — redirect undangan email |
+| `SIGAJI_SITE_URL` | Disarankan | `https://www.cemerlang.online/` — redirect undangan email |
+| `SIGAJI_SMTP_HOST` | Untuk email slip | `smtp.hostinger.com` |
+| `SIGAJI_SMTP_PORT` | Opsional | `587` |
+| `SIGAJI_SMTP_SECURE` | Opsional | `false` (port 587) |
+| `SIGAJI_SMTP_USER` | Untuk email slip | email mailbox Hostinger |
+| `SIGAJI_SMTP_PASS` | Untuk email slip | password mailbox |
+| `SIGAJI_SMTP_FROM` | Opsional | `SiGaji HR <admin@...>` |
+| `SIGAJI_TELEGRAM_BOT_TOKEN` | Untuk Telegram slip | token dari @BotFather |
 
-Ambil dari **Supabase → Project Settings → API**. Tanpa URL + anon key, `npm run build` gagal (atau deploy dengan config kosong — login/daftar tidak jalan).
+Ambil dari **Supabase → Project Settings → API**. Detail SMTP: `docs/SLIP_EMAIL_SMTP.md`. Tanpa URL + anon key, `npm run build` gagal (atau deploy dengan config kosong — login/daftar tidak jalan).
 
 **Root directory** di Builds & deployments:
 

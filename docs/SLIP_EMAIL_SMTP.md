@@ -1,10 +1,10 @@
 # Kirim slip gaji massal lewat email
 
-SiGaji mengirim PDF slip dari **server Netlify** (bukan `mailto:` di laptop). Email dikirim lewat SMTP Hostinger, misalnya `admin@cemerlang.online`.
+SiGaji mengirim PDF slip dari **server Cloudflare Pages** (`/api/slip-email-send`), bukan `mailto:` di laptop. Email dikirim lewat SMTP Hostinger, misalnya `admin@cemerlang.online`.
 
-## 1. Netlify — environment variables
+## 1. Cloudflare Pages — environment variables
 
-Site settings → Environment variables:
+**Workers & Pages → proyek → Settings → Environment variables** (Production):
 
 | Variable | Contoh |
 |----------|--------|

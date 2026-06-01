@@ -16,6 +16,31 @@ export function requireEnv(env, name) {
   return String(v).trim();
 }
 
+export function envStr(env, name, fallback) {
+  const v = env && env[name];
+  if (v === undefined || v === null || String(v).trim() === '') return fallback;
+  return String(v).trim();
+}
+
+export function randomCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
+}
+
+export function extractStartCode(text) {
+  if (!text) return '';
+  const t = String(text).trim();
+  const m = t.match(/^\/start(?:@\w+)?\s+([A-Z2-9]{6,12})$/i);
+  if (m) return String(m[1]).toUpperCase();
+  const m2 = t.match(/^([A-Z2-9]{6,12})$/i);
+  if (m2) return String(m2[1]).toUpperCase();
+  return '';
+}
+
 export function getTenantKey(env) {
   const t = env && env.SIGAJI_TENANT_KEY;
   return (t && String(t).trim()) || 'main';
