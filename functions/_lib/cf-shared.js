@@ -170,6 +170,19 @@ export function pdfBase64ToBytes(pdfBase64) {
   return out;
 }
 
+/** Cloudflare Workers tidak bisa TCP ke smtp.hostinger.com (proxy request failed). */
+export function isCloudflareSmtpBlocked(msg) {
+  return /proxy request failed|cannot connect to the specified address/i.test(String(msg || ''));
+}
+
+export function smtpFixHint(env) {
+  if (envStr(env, 'SIGAJI_EMAIL_RELAY_URL', '')) return 'relay';
+  if (envStr(env, 'SIGAJI_RESEND_API_KEY', '') || envStr(env, 'SIGAJI_EMAIL_PROVIDER', '').toLowerCase() === 'resend') {
+    return 'resend';
+  }
+  return 'relay_or_resend';
+}
+
 export function friendlySmtpError(e) {
   const msg = (e && (e.message || e.response)) || String(e);
   const name = e && e.name;
@@ -181,15 +194,21 @@ export function friendlySmtpError(e) {
     );
   }
   if (name === 'SmtpAuthError' || code === 'EAUTH' || /535|authentication failed|invalid login|auth/i.test(msg)) {
-    return 'Login SMTP ditolak — periksa SIGAJI_SMTP_USER dan SIGAJI_SMTP_PASS di Cloudflare (password mailbox Hostinger penuh).';
+    return 'Login SMTP ditolak — periksa SIGAJI_SMTP_USER dan SIGAJI_SMTP_PASS (password mailbox Hostinger penuh).';
+  }
+  if (isCloudflareSmtpBlocked(msg)) {
+    return (
+      'Cloudflare tidak bisa konek ke SMTP Hostinger (bukan salah password). ' +
+      'Pakai relay Netlify (SIGAJI_EMAIL_PROVIDER=relay) atau Resend HTTP (SIGAJI_EMAIL_PROVIDER=resend). ' +
+      'Lihat docs/SLIP_EMAIL_SMTP.md bagian Cloudflare.'
+    );
   }
   if (
     name === 'SmtpConnectionError' ||
     /ETIMEDOUT|ESOCKET|ECONNREFUSED|ETIMEOUT|connect|socket|tcp/i.test(msg)
   ) {
     return (
-      'Tidak bisa konek ke SMTP dari Cloudflare. Hostinger: smtp.hostinger.com port 587 + SIGAJI_SMTP_SECURE=false, ' +
-      'atau port 465 + SIGAJI_SMTP_SECURE=true.'
+      'Tidak bisa konek ke SMTP dari server. Di Cloudflare + Hostinger biasanya perlu relay Netlify atau Resend, bukan SMTP langsung.'
     );
   }
   if (/nodemailer|node:net|node:tls|Cannot find module|No such module/i.test(msg)) {

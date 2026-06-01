@@ -10,6 +10,8 @@ import {
   smtpConnectProfiles,
   pdfBase64ToBytes,
   friendlySmtpError,
+  isCloudflareSmtpBlocked,
+  smtpFixHint,
 } from '../_lib/cf-shared.js';
 
 function smtpFromAddress(env) {
@@ -24,6 +26,7 @@ async function sendSlipViaSmtp(env, { to, subject, text, filename, pdfBase64 }) 
   if (!pdfBytes.length) throw new Error('pdfBase64 kosong atau tidak valid');
 
   const profiles = smtpConnectProfiles(env);
+  const attempts = [];
   let lastErr;
   for (const profile of profiles) {
     let mailer;
@@ -45,11 +48,20 @@ async function sendSlipViaSmtp(env, { to, subject, text, filename, pdfBase64 }) 
       return { ...result, smtpProfile: profile.label };
     } catch (e) {
       lastErr = e;
+      attempts.push({
+        label: profile.label,
+        name: e && e.name,
+        error: (e && e.message) || String(e),
+      });
       const msg = (e && e.message) || '';
       const retryable =
         (e && e.name === 'SmtpConnectionError') ||
         /ETIMEDOUT|ESOCKET|ECONNREFUSED|ETIMEOUT|connect|socket/i.test(msg);
-      if (!retryable) throw e;
+      if (!retryable) {
+        const err = e instanceof Error ? e : new Error(msg || 'SMTP gagal');
+        err.smtpAttempts = attempts;
+        throw err;
+      }
     } finally {
       if (mailer) {
         try {
@@ -60,7 +72,27 @@ async function sendSlipViaSmtp(env, { to, subject, text, filename, pdfBase64 }) 
       }
     }
   }
-  throw lastErr || new Error('SMTP gagal (semua profil)');
+  const err = lastErr instanceof Error ? lastErr : new Error((lastErr && lastErr.message) || 'SMTP gagal (semua profil)');
+  err.smtpAttempts = attempts;
+  throw err;
+}
+
+/** Kirim lewat URL relay (mis. Netlify nodemailer) — SIGAJI_EMAIL_RELAY_URL */
+async function sendSlipViaRelay(env, authHeader, bodyObj) {
+  const relay = requireEnv(env, 'SIGAJI_EMAIL_RELAY_URL');
+  const r = await fetch(relay, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: authHeader || '',
+    },
+    body: JSON.stringify(bodyObj),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j || !j.ok) {
+    throw new Error((j && j.error) || 'Relay email gagal HTTP ' + r.status);
+  }
+  return { ...j, provider: 'relay' };
 }
 
 /** Opsional: kirim lewat Resend HTTP API (tanpa SMTP TCP). */
@@ -114,12 +146,13 @@ export async function onRequestPost({ request, env }) {
     }
     if (!pdfBase64) return jsonResponse(400, { ok: false, error: 'pdfBase64 required' }, request);
 
-    const payload = { to, subject, text, filename, pdfBase64 };
+    const payload = { to, subject, text, filename, pdfBase64, nik: nik || undefined };
+    const authHeader = request.headers.get('authorization') || '';
+    const provider = envStr(env, 'SIGAJI_EMAIL_PROVIDER', '').toLowerCase();
     let info;
-    const useResend =
-      envStr(env, 'SIGAJI_EMAIL_PROVIDER', '').toLowerCase() === 'resend' ||
-      !!envStr(env, 'SIGAJI_RESEND_API_KEY', '');
-    if (useResend) {
+    if (provider === 'relay' || envStr(env, 'SIGAJI_EMAIL_RELAY_URL', '')) {
+      info = await sendSlipViaRelay(env, authHeader, payload);
+    } else if (provider === 'resend' || envStr(env, 'SIGAJI_RESEND_API_KEY', '')) {
       info = await sendSlipViaResend(env, payload);
     } else {
       info = await sendSlipViaSmtp(env, payload);
@@ -158,6 +191,18 @@ export async function onRequestPost({ request, env }) {
     if (/Forbidden|Invalid auth|Missing Authorization/i.test(raw)) {
       return jsonResponse(403, { ok: false, error: raw }, request);
     }
-    return jsonResponse(500, { ok: false, error: friendlySmtpError(e), detail: raw }, request);
+    const blocked = isCloudflareSmtpBlocked(raw);
+    return jsonResponse(
+      500,
+      {
+        ok: false,
+        error: friendlySmtpError(e),
+        detail: raw,
+        smtpAttempts: e && e.smtpAttempts,
+        cloudflareSmtpBlocked: blocked,
+        fix: blocked ? smtpFixHint(env) : undefined,
+      },
+      request
+    );
   }
 }

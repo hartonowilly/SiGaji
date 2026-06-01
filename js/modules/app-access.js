@@ -444,6 +444,7 @@ function doUpdatePassword(){
 if(typeof window!=='undefined'){
   window.sigajiApplyCloudLoginUi=sigajiApplyCloudLoginUi;
   window.sigajiIsCloudConfigured=sigajiIsCloudConfigured;
+  window.sigajiEmailSmtpPing=sigajiEmailSmtpPing;
 }
 
 async function getCloudAccessToken(){
@@ -688,10 +689,14 @@ function renderSlipSendBatchChecklist(forceReload){
   var card = document.getElementById('slip-send-batch');
   var hint = document.getElementById('slip-tg-hint');
   if (hint) {
-    hint.style.display =
-      CU && (CU.role === 'Admin' || CU.role === 'HRD') && typeof sigajiIsCloudConfigured === 'function' && sigajiIsCloudConfigured()
-        ? 'block'
-        : 'none';
+    var showHint =
+      CU && (CU.role === 'Admin' || CU.role === 'HRD') && typeof sigajiIsCloudConfigured === 'function' && sigajiIsCloudConfigured();
+    hint.style.display = showHint ? 'block' : 'none';
+    var cfHint = document.getElementById('slip-email-cf-hint');
+    if (cfHint) {
+      var h = typeof location !== 'undefined' && location.hostname ? location.hostname : '';
+      cfHint.style.display = showHint && (/cemerlang\.online$/i.test(h) || /\.pages\.dev$/i.test(h)) ? 'inline' : 'none';
+    }
   }
   if (!wrap || !card) return;
   if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
@@ -863,6 +868,41 @@ function buildSlipEmailText(k, p, isThr) {
   );
 }
 
+function formatSlipEmailApiError(j, status) {
+  var errMsg = (j && j.error) || ('Gagal kirim slip email (HTTP ' + status + ')');
+  if (j && j.detail && String(j.detail) !== String(j.error)) errMsg += ' — ' + j.detail;
+  if (j && j.smtpAttempts && j.smtpAttempts.length) {
+    errMsg +=
+      ' [' +
+      j.smtpAttempts
+        .map(function (a) {
+          return (a.label || '?') + ': ' + (a.error || a.name || 'gagal');
+        })
+        .join('; ') +
+      ']';
+  }
+  if (status === 404) errMsg = 'API email belum deploy — push functions/api/slip-email-send.js';
+  return errMsg;
+}
+
+/** Tes koneksi SMTP di server (tanpa kirim email). Panggil dari Console: sigajiEmailSmtpPing() */
+async function sigajiEmailSmtpPing() {
+  var t = await getCloudAccessToken();
+  if (!t) {
+    toast('Belum login awan');
+    return null;
+  }
+  var r = await fetch(sigajiFunctionUrl('slip-email-ping'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + t },
+  });
+  var j = typeof sigajiParseFunctionJson === 'function' ? await sigajiParseFunctionJson(r) : await r.json().catch(function () { return null; });
+  console.log('slip-email-ping', j);
+  if (j && j.ok) toast('SMTP OK — ' + (j.attempts && j.attempts[0] && j.attempts[0].label));
+  else toast((j && j.error) || formatSlipEmailApiError(j, r.status) || 'Tes SMTP gagal');
+  return j;
+}
+
 /** Kirim satu slip PDF ke email karyawan (HRD/Admin, SMTP server). */
 async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik) {
   var t = await getCloudAccessToken();
@@ -877,9 +917,7 @@ async function emailSendSlipPdf(to, subject, bodyText, filename, pdfBase64, nik)
   });
   var j = typeof sigajiParseFunctionJson === 'function' ? await sigajiParseFunctionJson(r) : await r.json().catch(function () { return null; });
   if (!r.ok || !j || !j.ok) {
-    var errMsg = (j && j.error) || ('Gagal kirim slip email (HTTP ' + r.status + ')');
-    if (j && j.detail && String(j.detail) !== String(j.error)) errMsg += ' (' + j.detail + ')';
-    if (r.status === 404) errMsg = 'API email belum deploy — push functions/api/slip-email-send.js';
+    var errMsg = formatSlipEmailApiError(j, r.status);
     console.error('slip-email-send', r.status, j);
     toast(errMsg);
     return false;
