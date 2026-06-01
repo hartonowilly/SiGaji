@@ -368,7 +368,6 @@ window.SIGAJI_BUILD='11.2.2';
     </div>
     <div id="slip-tg-hint" style="display:none;font-size:11px;color:#1565a8;margin:.5rem 0 .75rem;padding:.5rem .75rem;background:#e8f4fc;border-radius:8px;border:1px solid #b8d9f0;line-height:1.55">
       <strong>Kirim massal:</strong> centang karyawan lalu tombol Telegram atau Email.
-      <span id="slip-email-cf-hint" style="display:none"><br><strong>Email di Cloudflare:</strong> SMTP Hostinger langsung sering gagal (<em>proxy request failed</em>). Set <code style="font-size:10px">SIGAJI_EMAIL_PROVIDER=relay</code> + URL Netlify, atau <code style="font-size:10px">resend</code> — lihat <code style="font-size:10px">docs/SLIP_EMAIL_SMTP.md</code>.</span>
     </div>
     <div id="slip-send-batch" style="display:none">
       <div class="card" style="border-left:4px solid #1a56a0;box-shadow:0 1px 8px rgba(26,86,160,.1)">
@@ -378,7 +377,6 @@ window.SIGAJI_BUILD='11.2.2';
           <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(false)">Kosongkan</button>
           <button type="button" class="btn btn-sm btn-out" onclick="renderSlipSendBatchChecklist(true)">&#8635; Segarkan status</button>
           <button type="button" class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" onclick="sendSlipEmailBatch()">Kirim email terpilih</button>
-          <button type="button" class="btn btn-sm btn-out" onclick="sigajiEmailSmtpPing()">Tes SMTP</button>
           <button type="button" class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
         </div>
         <div id="slip-send-batch-wrap"></div>

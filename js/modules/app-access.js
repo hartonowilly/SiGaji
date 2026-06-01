@@ -692,11 +692,6 @@ function renderSlipSendBatchChecklist(forceReload){
     var showHint =
       CU && (CU.role === 'Admin' || CU.role === 'HRD') && typeof sigajiIsCloudConfigured === 'function' && sigajiIsCloudConfigured();
     hint.style.display = showHint ? 'block' : 'none';
-    var cfHint = document.getElementById('slip-email-cf-hint');
-    if (cfHint) {
-      var h = typeof location !== 'undefined' && location.hostname ? location.hostname : '';
-      cfHint.style.display = showHint && (/cemerlang\.online$/i.test(h) || /\.pages\.dev$/i.test(h)) ? 'inline' : 'none';
-    }
   }
   if (!wrap || !card) return;
   if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
