@@ -53,7 +53,9 @@ URL itu untuk **API** (JSON), bukan UI. Jika Cloudflare mengembalikan `index.htm
 - **Aplikasi:** `https://www.cemerlang.online/` (pakai `/` di akhir)
 - **Cek JSON:** tab baru → `https://www.cemerlang.online/api/health` → harus hanya teks `{"ok":true,"service":"sigaji-api"}` (bukan form login)
 
-Di **Pages → Settings**, matikan **Single Page Application** / “serve index.html on 404” jika `/api/*` ikut dapat HTML.
+**Tidak ada** menu “matikan SPA” di Cloudflare Settings. Pages otomatis mode SPA jika **tidak ada** file `404.html` di root deploy — semua URL tidak dikenal dilayani `index.html` (termasuk `/api/health` → SyntaxError JSON).
+
+**Solusi:** commit file `404.html` di root proyek (sudah ada di repo). Setelah deploy, URL asing dapat 404, bukan halaman login penuh. Agar `/api/*` mengembalikan JSON, tetap wajib folder `functions/api/` + `wrangler.toml` di Git.
 
 ## Uji setelah deploy Success
 
