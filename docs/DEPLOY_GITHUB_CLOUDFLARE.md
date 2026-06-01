@@ -14,7 +14,9 @@ Harus ada (di folder yang dipakai Cloudflare):
 - `index.html` dengan script `submitRegisterRequest` + `/api/`
 - `js/fn-api.js`
 
-Commit **"Add files via upload"** lama sering **tidak** berisi `functions/api/` → daftar email gagal (405 ke `/.netlify/functions/`).
+Commit **"Add files via upload"** lama sering **tidak** berisi `functions/api/` → `/api/health` mengembalikan **HTML** → `fetch().json()` SyntaxError.
+
+**Sementara Functions belum deploy:** jalankan `sql/supabase_registration_anon_insert.sql` di Supabase — daftar email lewat klien Supabase (versi `index.html` terbaru).
 
 ---
 
@@ -44,9 +46,18 @@ Jika repo GitHub memakai subfolder `sigaji-app/`, clone repo lalu **salin seluru
 
 ---
 
+## Jangan buka `/api/health` sebagai “halaman app”
+
+URL itu untuk **API** (JSON), bukan UI. Jika Cloudflare mengembalikan `index.html` di `/api/health`, browser memuat script dari `/api/js/...` → halaman tanpa CSS (`NS_ERROR_CORRUPTED_CONTENT`).
+
+- **Aplikasi:** `https://www.cemerlang.online/` (pakai `/` di akhir)
+- **Cek JSON:** tab baru → `https://www.cemerlang.online/api/health` → harus hanya teks `{"ok":true,"service":"sigaji-api"}` (bukan form login)
+
+Di **Pages → Settings**, matikan **Single Page Application** / “serve index.html on 404” jika `/api/*` ikut dapat HTML.
+
 ## Uji setelah deploy Success
 
-1. `https://www.cemerlang.online/api/health` → JSON `{"ok":true,...}`
+1. `https://www.cemerlang.online/api/health` → JSON `{"ok":true,...}` (bukan halaman login)
 2. F12 → Daftar Email → `POST .../api/auth-register-request` (bukan `/.netlify/functions/`)
 3. View Page Source → cari teks `/api/auth-register-request` di bagian bawah `index.html`
 
