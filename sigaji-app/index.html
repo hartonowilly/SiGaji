@@ -686,90 +686,97 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 <!-- BACKUP & SISTEM (Admin) -->
 <div class="pg" id="pg-backup">
-  <div class="ph"><div><div class="pt">Backup &amp; Sistem</div><div class="pst">Status deploy, cadangan, import — Administrator</div></div>
-    <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Status</button></div>
-  <div id="sysstatus-panel" style="margin-bottom:1rem">
-    <div class="card" style="border-left:4px solid #9ca3af">
-      <div class="ct" style="color:#6b7280">Status sistem</div>
-      <p style="font-size:12px;color:#6b7280;margin:0">Memuat… tekan tombol Status jika kosong.</p>
-    </div>
+  <div class="ph"><div><div class="pt">Backup &amp; Sistem</div><div class="pst">Backup data, migrasi pajak, status deploy</div></div></div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchBackupTab(this,'bk-cadangan')">&#128190; Backup</div>
+    <div class="tab" onclick="switchBackupTab(this,'bk-saldo')">&#128176; Saldo PPh</div>
+    <div class="tab" onclick="switchBackupTab(this,'bk-ringkas')">&#128202; Ringkasan</div>
   </div>
-  <div class="card" style="border-left:4px solid #7c3aed">
-    <div class="ct" style="color:#5b21b6">&#128176; Migrasi Saldo PPh YTD (onboarding)</div>
-    <p style="font-size:12px;color:#374151;margin:0 0 .75rem 0">Untuk pelanggan mulai SiGaji tengah tahun: impor total <strong>bruto PPh</strong> dan <strong>PPh terpotong</strong> dari payroll manual (mis. Jan–Apr) per NIK. Dipakai rekonsiliasi Desember / resign. <strong>Jangan</strong> buat periode gaji bulan yang sama di app (hindari double).</p>
-    <div class="fg2" style="align-items:flex-end">
-      <div class="fg"><label>Tahun pajak</label><input type="number" id="migrasi-pph-tahun" min="2020" max="2099" style="max-width:120px" onchange="renderMigrasiPphSaldo()"></div>
-      <div class="fl gap1" style="flex-wrap:wrap">
-        <button type="button" class="btn btn-sm btn-s" onclick="exportMigrasiPphTemplate()">&#128196; Template Excel</button>
-        <button type="button" class="btn btn-sm btn-p" onclick="document.getElementById('inp-migrasi-pph-xlsx').click()">&#128229; Import Excel</button>
-        <input type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importMigrasiPphExcel(this)">
-        <button type="button" class="btn btn-sm btn-out" onclick="renderMigrasiPphSaldo()">&#8635;</button>
-        <button type="button" class="btn btn-sm btn-r" onclick="clearMigrasiPphSaldoTahun()">Hapus saldo tahun ini</button>
+  <div id="bk-cadangan">
+    <div class="card" style="border-left:4px solid #5b21b6">
+      <div class="ct" style="color:#5b21b6">Snapshot periode</div>
+      <div id="migration-status" style="font-size:12px;color:#374151"></div>
+    </div>
+    <div class="card" style="border-left:4px solid #2d6a0a">
+      <div class="ct" style="color:#2d6a0a">Export backup</div>
+      <div class="fg2">
+        <div class="fg"><label>Nama file</label><input id="backup-filename" value="SiGaji_Backup"></div>
+        <div class="fg"><label>Catatan</label><input id="backup-catatan" placeholder="Opsional"></div>
+      </div>
+      <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
+        <button class="btn btn-g" onclick="exportBackup()">&#128190; Download .json</button>
+        <button type="button" class="btn btn-p" id="btn-cloud-db-export" onclick="exportCloudDatabaseBackup()">&#9729; Backup cloud</button>
+        <button class="btn btn-sm btn-out" onclick="exportCSVAll()">&#128196; CSV</button>
+      </div>
+      <label id="backup-exclude-logo-wrap" class="backup-exclude-logo-wrap" style="display:flex;align-items:center;gap:.4rem;margin-top:.5rem;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="backup-exclude-logo" checked style="width:16px;height:16px;accent-color:#1a56a0">
+        Backup cloud tanpa logo (file lebih kecil)
+      </label>
+      <div id="backup-info" class="mt1" style="font-size:11px;color:#6b7280"></div>
+    </div>
+    <div class="card" style="border-left:4px solid #1a56a0">
+      <div class="ct" style="color:#1a56a0">Import backup</div>
+      <div class="logo-drop" onclick="document.getElementById('import-file-input').click()" style="padding:1rem">
+        <input type="file" id="import-file-input" accept=".json" onchange="readImportFile(this)">
+        <div style="font-size:20px;margin-bottom:4px">&#128229;</div>
+        <div style="font-size:12px;font-weight:700;color:#1a56a0">Pilih file .json</div>
+      </div>
+      <div id="import-preview" style="display:none">
+        <div id="import-info" class="info-box info-blue mt1"></div>
+        <div class="fg">
+          <label>Mode</label>
+          <select id="import-mode">
+            <option value="merge">Gabung (Merge)</option>
+            <option value="overwrite">Timpa (Overwrite)</option>
+          </select>
+        </div>
+        <div style="margin-bottom:.75rem"><label style="font-size:10px;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">Komponen:</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem" id="import-checklist"></div>
+        </div>
+        <button class="btn btn-p" onclick="eksekusiImport()">&#128229; Import</button>
       </div>
     </div>
-    <label style="display:flex;align-items:center;gap:.4rem;font-size:12px;margin:.5rem 0;cursor:pointer">
-      <input type="checkbox" id="migrasi-pph-buat-baru" checked style="accent-color:#1a56a0">
-      Buat profil karyawan baru jika NIK di Excel belum ada (gunakan NIK asli, mis. K0003 untuk Budi)
-    </label>
-    <div id="migrasi-pph-ringkasan" style="font-size:11px;color:#6b7280;margin-bottom:.5rem"></div>
-    <div id="migrasi-pph-tabel" style="max-height:280px;overflow:auto"></div>
-  </div>
-  <div class="card" style="border-left:4px solid #5b21b6">
-    <div class="ct" style="color:#5b21b6">&#128202; Status Migrasi Snapshot</div>
-    <div id="migration-status" style="font-size:12px;color:#374151"></div>
-  </div>
-  <div class="card" style="border-left:4px solid #111827">
-    <div class="ct" style="color:#111827">&#128221; Audit Trail (Perubahan Payroll)</div>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem">
-      <select id="audit-periode" style="width:auto;padding:6px 10px;border:1.5px solid #dde1e9;border-radius:8px;font-size:12px;font-family:inherit;outline:none" onchange="renderAuditLog()"></select>
-      <input id="audit-q" placeholder="Cari (NIK/Nama/aksi)..." style="width:240px" oninput="renderAuditLog()">
-      <button class="btn btn-sm btn-out" onclick="renderAuditLog()">&#8635; Refresh</button>
+    <div class="card">
+      <div class="ct">Riwayat backup <button class="btn btn-sm btn-out" onclick="renderBackupRiwayat()">&#8635;</button></div>
+      <div id="backup-riwayat"></div>
     </div>
-    <div id="audit-log" style="max-height:260px;overflow:auto;border:1px solid var(--bd);border-radius:10px;background:#fff"></div>
-    <div style="font-size:10px;color:#6b7280;margin-top:.5rem">Audit trail tersimpan di database lokal/cloud (jika aktif). Disarankan kunci periode setelah closing.</div>
-  </div>
-  <div class="card" style="border-left:4px solid #2d6a0a">
-    <div class="ct" style="color:#2d6a0a">&#128190; Export / Backup Data</div>
-    <div class="fg2">
-      <div class="fg"><label>Nama File</label><input id="backup-filename" value="SiGaji_Backup"></div>
-      <div class="fg"><label>Catatan (opsional)</label><input id="backup-catatan" placeholder="Backup sebelum tutup bulan"></div>
-    </div>
-    <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
-      <button class="btn btn-g" onclick="exportBackup()">&#128190; Download Backup (.json)</button>
-      <button type="button" class="btn btn-p" id="btn-cloud-db-export" onclick="exportCloudDatabaseBackup()">&#9729; Unduh backup database (cloud)</button>
-      <button class="btn btn-sm btn-out" onclick="exportCSVAll()">&#128196; Export CSV</button>
-    </div>
-    <label id="backup-exclude-logo-wrap" class="backup-exclude-logo-wrap" style="display:flex;align-items:center;gap:.4rem;margin-top:.5rem;font-size:12px;cursor:pointer">
-      <input type="checkbox" id="backup-exclude-logo" checked style="width:16px;height:16px;accent-color:#1a56a0">
-      Kecilkan file: jangan sertakan logo (base64) di backup cloud
-    </label>
-    <div id="backup-info" class="mt1" style="font-size:11px;color:#6b7280"></div>
-  </div>
-  <div class="card" style="border-left:4px solid #1a56a0">
-    <div class="ct" style="color:#1a56a0">&#128229; Import Data dari File Backup</div>
-    <div class="logo-drop" onclick="document.getElementById('import-file-input').click()" style="padding:1rem">
-      <input type="file" id="import-file-input" accept=".json" onchange="readImportFile(this)">
-      <div style="font-size:20px;margin-bottom:4px">&#128229;</div>
-      <div style="font-size:12px;font-weight:700;color:#1a56a0">Klik untuk pilih file .json</div>
-    </div>
-    <div id="import-preview" style="display:none">
-      <div id="import-info" class="info-box info-blue mt1"></div>
-      <div class="fg">
-        <label>Mode Import</label>
-        <select id="import-mode">
-          <option value="merge">Gabung (Merge)</option>
-          <option value="overwrite">Timpa (Overwrite)</option>
-        </select>
+    <div class="card" style="border-left:4px solid #111827">
+      <div class="ct" style="color:#111827">Audit payroll</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem">
+        <select id="audit-periode" style="width:auto;padding:6px 10px;border:1.5px solid #dde1e9;border-radius:8px;font-size:12px;font-family:inherit;outline:none" onchange="renderAuditLog()"></select>
+        <input id="audit-q" placeholder="Cari NIK / nama / aksi…" style="width:220px" oninput="renderAuditLog()">
+        <button class="btn btn-sm btn-out" onclick="renderAuditLog()">&#8635;</button>
       </div>
-      <div style="margin-bottom:.75rem"><label style="font-size:10px;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">Pilih komponen:</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem" id="import-checklist"></div>
-      </div>
-      <button class="btn btn-p" onclick="eksekusiImport()">&#128229; Eksekusi Import</button>
+      <div id="audit-log" style="max-height:220px;overflow:auto;border:1px solid var(--bd);border-radius:10px;background:#fff"></div>
     </div>
   </div>
-  <div class="card">
-    <div class="ct">&#128338; Riwayat Backup <button class="btn btn-sm btn-out" onclick="renderBackupRiwayat()">&#8635;</button></div>
-    <div id="backup-riwayat"></div>
+  <div id="bk-saldo" style="display:none">
+    <div class="card" style="border-left:4px solid #7c3aed">
+      <div class="ct" style="color:#5b21b6">Saldo PPh YTD (migrasi onboarding)</div>
+      <p style="font-size:12px;color:#374151;margin:0 0 .75rem 0">Impor total <strong>bruto PPh</strong> dan <strong>PPh terpotong</strong> dari payroll manual per NIK (mis. Jan–Apr). Untuk rekonsiliasi Desember / resign. Jangan buat periode gaji bulan yang sama di app.</p>
+      <div class="fg2" style="align-items:flex-end">
+        <div class="fg"><label>Tahun pajak</label><input type="number" id="migrasi-pph-tahun" min="2020" max="2099" style="max-width:120px" onchange="renderMigrasiPphSaldo()"></div>
+        <div class="fl gap1" style="flex-wrap:wrap">
+          <button type="button" class="btn btn-sm btn-s" onclick="exportMigrasiPphTemplate()">&#128196; Template</button>
+          <button type="button" class="btn btn-sm btn-p" onclick="document.getElementById('inp-migrasi-pph-xlsx').click()">&#128229; Import Excel</button>
+          <input type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importMigrasiPphExcel(this)">
+          <button type="button" class="btn btn-sm btn-out" onclick="renderMigrasiPphSaldo()">&#8635;</button>
+          <button type="button" class="btn btn-sm btn-r" onclick="clearMigrasiPphSaldoTahun()">Hapus saldo tahun</button>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:12px;margin:.5rem 0;cursor:pointer">
+        <input type="checkbox" id="migrasi-pph-buat-baru" checked style="accent-color:#1a56a0">
+        Buat profil baru jika NIK belum ada (pakai NIK asli, mis. K0003)
+      </label>
+      <div id="migrasi-pph-ringkasan" style="font-size:11px;color:#6b7280;margin-bottom:.5rem"></div>
+      <div id="migrasi-pph-tabel" style="max-height:min(420px,55vh);overflow:auto"></div>
+    </div>
+  </div>
+  <div id="bk-ringkas" style="display:none">
+    <div class="fl gap1" style="justify-content:flex-end;margin-bottom:.5rem">
+      <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Perbarui</button>
+    </div>
+    <div id="sysstatus-panel"></div>
   </div>
 </div>
 
@@ -1098,19 +1105,19 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="js/constants.js?v=11.1.0"></script>
-<script src="js/storage.js?v=11.1.0"></script>
+<script src="js/constants.js?v=11.1.2"></script>
+<script src="js/storage.js?v=11.1.2"></script>
 <script src="js/ptkp.js?v=10.0.0"></script>
-<script src="js/modules/app-globals.js?v=11.1.0"></script>
-<script src="js/modules/app-core.js?v=11.1.0"></script>
-<script src="js/modules/app-access.js?v=11.1.0"></script>
-<script src="js/modules/app-hr.js?v=11.1.0"></script>
-<script src="js/modules/app-slip.js?v=11.1.0"></script>
-<script src="js/modules/app-reports.js?v=11.1.0"></script>
-<script src="js/modules/app-absensi.js?v=11.1.0"></script>
-<script src="js/modules/app-master.js?v=11.1.0"></script>
-<script src="js/modules/app-migrasi-pph.js?v=11.1.0"></script>
-<script src="js/modules/app-shell.js?v=11.1.0"></script>
+<script src="js/modules/app-globals.js?v=11.1.2"></script>
+<script src="js/modules/app-core.js?v=11.1.2"></script>
+<script src="js/modules/app-access.js?v=11.1.2"></script>
+<script src="js/modules/app-hr.js?v=11.1.2"></script>
+<script src="js/modules/app-slip.js?v=11.1.2"></script>
+<script src="js/modules/app-reports.js?v=11.1.2"></script>
+<script src="js/modules/app-absensi.js?v=11.1.2"></script>
+<script src="js/modules/app-master.js?v=11.1.2"></script>
+<script src="js/modules/app-migrasi-pph.js?v=11.1.2"></script>
+<script src="js/modules/app-shell.js?v=11.1.2"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1122,9 +1129,9 @@ if(typeof exportCloudDatabaseBackup!=='function'){
 <script src="js/pesangon.js?v=10.0.0"></script>
 <script src="js/config.js?v=10.0.0"></script>
 <script src="js/cloud-branding.js?v=10.0.0"></script>
-<script src="js/cloud-tables.js?v=11.1.0"></script>
+<script src="js/cloud-tables.js?v=11.1.2"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="js/cloud-sync.js?v=11.1.0"></script>
+<script src="js/cloud-sync.js?v=11.1.2"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
