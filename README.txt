@@ -13,7 +13,8 @@ css/styles.css Semua gaya
 js/constants.js Konstanta: TER, MODULES, PTKP default, SCHEMA_VERSION
 js/storage.js   localStorage, migrasi skema, variabel aplikasi, saveAll
 js/ptkp.js      Helper nilai PTKP dari Master Perusahaan
-js/app.js       Sisanya (UI, hitung gaji, laporan, dll.)
+js/modules/     UI & logika (pecah dari app.js): core, access, hr, slip, reports, absensi, master, shell
+js/app.legacy.js  Arsip monolit lama (referensi); jangan muat di index.html
 
 Skema data (schemaVersion)
 ----------------------------

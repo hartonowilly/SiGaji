@@ -9,7 +9,8 @@ Site settings → Environment variables:
 | Variable | Contoh |
 |----------|--------|
 | `SIGAJI_SMTP_HOST` | `smtp.hostinger.com` |
-| `SIGAJI_SMTP_PORT` | `465` (SSL) atau `587` (TLS) |
+| `SIGAJI_SMTP_PORT` | `587` (disarankan) atau `465` |
+| `SIGAJI_SMTP_SECURE` | kosong/auto, atau `false` untuk port 587, `true` untuk 465 |
 | `SIGAJI_SMTP_USER` | `admin@cemerlang.online` |
 | `SIGAJI_SMTP_PASS` | password mailbox Hostinger |
 | `SIGAJI_SMTP_FROM` | `SiGaji HR <admin@cemerlang.online>` (opsional) |
@@ -24,7 +25,7 @@ Jalankan `sql/supabase_sigaji_slip_email_sent.sql`, lalu baris grant di `sql/sup
 
 ## 3. Di aplikasi
 
-Menu **Slip Gaji** → bagian **Kirim slip ke email** → centang karyawan (email harus terisi di profil) → **Kirim email terpilih**.
+Menu **Slip Gaji** → tabel **Kirim slip ke banyak karyawan** (urut NIK) → centang → **Kirim email terpilih** (email harus terisi di profil).
 
 Periode ber-THR + jenis slip **Gaji bulanan**: bisa mengirim slip gaji lalu slip THR (dua email) jika eligible.
 

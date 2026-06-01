@@ -2,7 +2,7 @@
 # Situs hanya menyajikan file; data tetap di localStorage per perangkat/browser.
 
 [build]
-  command = "npm install && npm run build"
+  command = "npm install && node scripts/generate-config.js"
   publish = "."
 
 [functions]

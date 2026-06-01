@@ -1,0 +1,4 @@
+# Cloudflare Pages — Functions butuh Node.js compat untuk @supabase/supabase-js
+name = "sigaji"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]

@@ -1,19 +1,41 @@
-  # =============================================================================
-  # PAKAI FILE INI kalau di GitHub struktur Anda:
-  #   repo-github/
-  #     sigaji-app/
-  #       index.html
-  #       css/
-  #       js/
-  #
-  # LANGKAH:
-  # 1) Salin SELURUH isi file ini ke:  netlify.toml  (nama persis)
-  # 2) Taruh netlify.toml itu di ROOT repo GitHub — sejajar dengan folder sigaji-app
-  #    (BUKAN di dalam folder sigaji-app)
-  # 3) Commit & push, lalu tunggu deploy Netlify selesai.
-  #
-  # Kalau nama folder di GitHub bukan "sigaji-app", ganti nilai publish di bawah.
-  # =============================================================================
+# =============================================================================
+# Pakai isi file ini sebagai netlify.toml di ROOT repo GitHub (hartonowilly/SiGaji)
+# ketika struktur GitHub seperti ini:
+#
+#   SiGaji/                 ← root repo (netlify.toml di sini)
+#     sigaji-app/
+#       index.html
+#       package.json
+#       netlify/functions/
+#
+# Cara: salin semua isi bawah ini → commit sebagai netlify.toml di ROOT GitHub
+# (bukan hanya di dalam folder sigaji-app).
+# =============================================================================
 
-  [build]
-    publish = "sigaji-app"
+[build]
+  base = "sigaji-app"
+  command = "npm install && node scripts/generate-config.js"
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate, max-age=0"

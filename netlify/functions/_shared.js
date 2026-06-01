@@ -54,5 +54,41 @@ function extractStartCode(text) {
   return '';
 }
 
-module.exports = { json, requireEnv, getTenantKey, getSiteUrl, randomCode, extractStartCode };
+/** Users untuk cek role: sigaji_store (tabel) lalu fallback sigaji_cloud.payload.users */
+async function loadUsersForAuth(sb, tenant) {
+  const { data: storeRow, error: se } = await sb
+    .from('sigaji_store')
+    .select('data')
+    .eq('tenant_key', tenant)
+    .eq('store_key', 'users')
+    .maybeSingle();
+  if (!se && storeRow && storeRow.data && Array.isArray(storeRow.data)) return storeRow.data;
+  const { data: row, error: re } = await sb.from('sigaji_cloud').select('payload').eq('tenant_key', tenant).maybeSingle();
+  if (re) throw re;
+  return (row && row.payload && row.payload.users) || [];
+}
+
+async function assertCallerIsHrdOrAdmin(sb, jwt, tenant) {
+  if (!jwt) throw new Error('Missing Authorization bearer token');
+  const { data: u, error: ue } = await sb.auth.getUser(jwt);
+  if (ue || !u || !u.user) throw new Error('Invalid auth token');
+  const users = await loadUsersForAuth(sb, tenant);
+  const me = users.find(
+    (x) => x && x.email && String(x.email).toLowerCase() === String(u.user.email || '').toLowerCase()
+  );
+  const role = me && me.role;
+  if (role !== 'Admin' && role !== 'HRD') throw new Error('Forbidden — hanya Admin/HRD');
+  return { user: u.user, role };
+}
+
+module.exports = {
+  json,
+  requireEnv,
+  getTenantKey,
+  getSiteUrl,
+  randomCode,
+  extractStartCode,
+  loadUsersForAuth,
+  assertCallerIsHrdOrAdmin,
+};
 

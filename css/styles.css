@@ -76,8 +76,10 @@ tr:hover td{background:#f8f9fc}
 .gap1{gap:.4rem}.gap2{gap:.65rem}
 .mb1{margin-bottom:.4rem}.mb2{margin-bottom:.75rem}.mt1{margin-top:.4rem}.mt2{margin-top:.75rem}
 .tabs{display:flex;border-bottom:2px solid var(--bd);margin-bottom:.9rem;flex-wrap:wrap}
-.tab{padding:7px 14px;cursor:pointer;font-size:12px;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab{padding:7px 14px;cursor:pointer;font-size:12px;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
 .tab.active{color:#1a56a0;border-bottom-color:#1a56a0}
+#pg-backup .backup-tabs-bar{position:relative;z-index:5;background:#fff;margin-bottom:.75rem}
+#pg-backup .backup-tab-panels{position:relative;z-index:1}
 .pr-row-info{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
 .pph-box{background:#e8f0fb;border-radius:8px;padding:.85rem;margin-top:.6rem}
 .pph-box-tit{font-weight:700;font-size:12px;color:#1a56a0;border-top:1.5px solid #b8d0f0;margin-top:5px;padding-top:5px;display:flex;justify-content:space-between}

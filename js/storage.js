@@ -41,6 +41,35 @@ function migrateRolePerms(r){
     });
   });
 }
+/** Menu digabung: PPh→laporan, Status→backup (Admin). THR tetap modul sendiri. */
+function migrateUiMenuMerge(r){
+  if(!r||typeof r!=='object')return;
+  Object.keys(r).forEach(function(roleName){
+    if(roleName==='Admin')return;
+    var p=r[roleName];
+    if(!Array.isArray(p))return;
+    if(p.indexOf('pph')>=0){
+      if(p.indexOf('laporan')<0)p.push('laporan');
+      if(p.indexOf('laporan.pph')<0)p.push('laporan.pph');
+    }
+    if(p.indexOf('laporan')>=0&&p.indexOf('laporan.rekap')<0)p.push('laporan.rekap');
+    if((p.indexOf('lembur')>=0||p.indexOf('slip')>=0||p.indexOf('penggajian')>=0)&&p.indexOf('thr')<0)p.push('thr');
+    r[roleName]=p.filter(function(x){return x!=='pph'&&x!=='sysstatus';});
+  });
+}
+function migrateRoleV11(r){
+  if(!r||typeof r!=='object')return;
+  Object.keys(r).forEach(function(roleName){
+    if(roleName==='Admin')return;
+    var p=r[roleName];
+    if(!Array.isArray(p))return;
+    if(p.indexOf('absensi.lembur')>=0&&p.indexOf('lembur')<0)p.push('lembur');
+    if(p.indexOf('kompgaji')>=0&&p.indexOf('kompgaji.tunjvar')<0)p.push('kompgaji.tunjvar');
+    r[roleName]=p.filter(function(x){
+      return x!=='absensi.lembur'&&x!=='approval'&&x!=='approval.pend'&&x!=='approval.hist';
+    });
+  });
+}
 if(typeof window!=='undefined')window.sigajiMigrateRolePerms=migrateRolePerms;
 function migrateStorage(db){
   if(!db||typeof db!=='object')return db;
@@ -119,9 +148,33 @@ function migrateStorage(db){
     }
     v=10;
   }
+  if(v<11){
+    if(db.roles){
+      migrateRoleV11(db.roles);
+      migrateRolePerms(db.roles);
+    }
+    v=11;
+  }
+  if(v<12){
+    db.perusahaan=db.perusahaan||{};
+    if(db.perusahaan.umk===undefined||typeof db.perusahaan.umk!=='object')db.perusahaan.umk={};
+    if(db.roles){
+      migrateRolePerms(db.roles);
+      if(db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('master.umk')<0)db.roles.HRD.push('master.umk');
+    }
+    v=12;
+  }
+  if(v<13){
+    (Array.isArray(db.karyawan)?db.karyawan:[]).forEach(function(k){
+      if(!k||typeof k!=='object')return;
+      if(k.pph_ytd_awal!==undefined&&typeof k.pph_ytd_awal!=='object')delete k.pph_ytd_awal;
+    });
+    v=13;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
+  if(db.roles)migrateUiMenuMerge(db.roles);
   if(db.karSnapshot===undefined)db.karSnapshot={};
   if(db.auditLog===undefined)db.auditLog=[];
   return db;
@@ -211,9 +264,9 @@ let lembur=LS('lembur',{});
 let prorata=LS('prorata',{});
 let approvals=LS('approvals',[]);
 let notifikasi=LS('notifikasi',[]);
-let perusahaan=LS('perusahaan',{nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,ptkp_nilai:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}});
+let perusahaan=LS('perusahaan',{nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,ptkp_nilai:{},umk:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}});
 let users=LS('users',[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}]);
-let roles=LS('roles',{Admin:MODULES.map(m=>m.id),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.bpjs','kompgaji.ring','absensi.kalender','absensi.cuti','absensi.lembur','master.prs','master.periode','master.libur','master.potongan','master.ter','approval.pend','approval.hist','thr','pesangon','kompgaji','penggajian','slip','pph','laporan'],Karyawan:['myslip','mycuti','notifikasi']});
+let roles=LS('roles',{Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','slip','laporan','laporan.rekap','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi']});
 let thrManual=LS('thrManual',{});
 let tunjVarBulan=LS('tunjVarBulan',{});
 let tunjVarLabels=LS('tunjVarLabels',{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'});
