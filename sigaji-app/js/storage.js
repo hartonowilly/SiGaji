@@ -164,6 +164,13 @@ function migrateStorage(db){
     }
     v=12;
   }
+  if(v<13){
+    (Array.isArray(db.karyawan)?db.karyawan:[]).forEach(function(k){
+      if(!k||typeof k!=='object')return;
+      if(k.pph_ytd_awal!==undefined&&typeof k.pph_ytd_awal!=='object')delete k.pph_ytd_awal;
+    });
+    v=13;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
