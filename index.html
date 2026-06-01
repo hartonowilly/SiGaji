@@ -1167,6 +1167,24 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 </script>
 <script src="/js/pesangon.js?v=10.0.0"></script>
 <script src="/js/config.js?v=10.0.0"></script>
+<script>
+(function(){
+  function showConfigWarn(){
+    if((window.SIGAJI_SUPABASE_URL||'').trim()&&(window.SIGAJI_SUPABASE_ANON_KEY||'').trim())return;
+    var h=document.getElementById('cloud-login-hint');
+    if(!h)return;
+    h.style.display='block';
+    h.style.color='#991b1b';
+    h.style.background='#fef2f2';
+    h.style.borderColor='#fecaca';
+    h.innerHTML='<strong>Login awan belum aktif.</strong> Di Cloudflare Pages → Settings → Environment variables, isi '
+      +'<code>SIGAJI_SUPABASE_URL</code> dan <code>SIGAJI_SUPABASE_ANON_KEY</code>, lalu set Build command: '
+      +'<code>npm install &amp;&amp; npm run build</code> dan deploy ulang.';
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',showConfigWarn);
+  else showConfigWarn();
+})();
+</script>
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
 <script src="/js/cloud-tables.js?v=11.2.2"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>

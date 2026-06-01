@@ -32,16 +32,15 @@ function writeStubConfig(reason) {
 }
 
 if (!url || !anon) {
+  if (isCfPages) {
+    console.error(
+      'generate-config: Cloudflare Pages — wajib set SIGAJI_SUPABASE_URL dan SIGAJI_SUPABASE_ANON_KEY di Settings → Environment variables (Production).'
+    );
+    writeStubConfig('Placeholder — isi env Cloudflare Pages lalu deploy ulang');
+    process.exit(1);
+  }
   if (fs.existsSync(outPath)) {
     console.log('generate-config: lewati (env kosong, js/config.js sudah ada — mode lokal).');
-    process.exit(0);
-  }
-  if (isCfPages) {
-    console.warn(
-      'generate-config: Cloudflare Pages — SIGAJI_SUPABASE_URL / SIGAJI_SUPABASE_ANON_KEY belum diset di Environment variables.'
-    );
-    console.warn('generate-config: build lanjut dengan config kosong; login awan & daftar email tidak jalan sampai env diisi.');
-    writeStubConfig('Placeholder — isi env Cloudflare Pages lalu deploy ulang');
     process.exit(0);
   }
   console.error(
