@@ -12,7 +12,16 @@ Di **Netlify** tetap `/.netlify/functions/...`. Browser memilih prefix otomatis 
 
 ## Environment variables (Cloudflare Pages)
 
-**Settings → Environment variables** (Production dan Preview), **Root directory** = `sigaji-app`:
+**Settings → Environment variables** (Production dan Preview).
+
+**Root directory** di Builds & deployments:
+
+| Struktur GitHub | Root directory Cloudflare |
+|-----------------|---------------------------|
+| `index.html` langsung di root repo (push dari folder `sigaji-app` lokal) | **kosong** `/` |
+| `SiGaji/sigaji-app/index.html` (monorepo) | `sigaji-app` |
+
+Commit terbaru memakai **root repo** — jangan isi `sigaji-app` (error: `Cannot find cwd: .../sigaji-app`).
 
 | Nama | Wajib | Keterangan |
 |------|-------|------------|
@@ -26,7 +35,7 @@ Nilai sama dengan yang dipakai di Netlify (`netlify.toml` / dashboard).
 ## Build
 
 - **Build command:** `npm run build` (atau kosong jika tidak perlu generate-config di CI)
-- **nodejs_compat:** `wrangler.toml` di root `sigaji-app`
+- **nodejs_compat + output:** `wrangler.toml` di root repo (`pages_build_output_dir = "."`)
 - Dependencies: `@supabase/supabase-js` di `package.json` (di-bundle saat deploy Functions)
 
 ## Supabase
