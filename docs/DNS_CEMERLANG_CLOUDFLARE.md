@@ -10,16 +10,27 @@ Penyebab: **DNS record berbeda** untuk `www` vs **apex** (`@`).
 
 ---
 
-## 1. Cloudflare Pages — tambah domain apex
+## 1. Cloudflare Pages — custom domain
 
-**Workers & Pages → sigaji → Custom domains → Set up a custom domain**
+### `www.cemerlang.online` (sudah jalan)
 
-Tambahkan **keduanya** (jika belum):
+DNS di **Hostinger** cukup **CNAME** `www` → `sigaji.pages.dev`. Cloudflare Pages langsung **Active** — tidak perlu pindah DNS.
 
-- `www.cemerlang.online`
-- `cemerlang.online`
+### `cemerlang.online` (tanpa www) — layar “Transfer DNS management”
 
-Tunggu status **Active** untuk keduanya.
+Kalau saat menambah apex Cloudflare menawarkan **Begin DNS transfer**, itu **normal**: DNS domain masih di **Hostinger**, bukan di zona Cloudflare. Untuk root/apex, Pages sering minta **seluruh DNS** pindah ke Cloudflare.
+
+**Anda tidak wajib** klik “Begin DNS transfer” kecuali mau mengelola semua DNS (MX email, dll.) di Cloudflare.
+
+**Disarankan (DNS tetap di Hostinger):**
+
+1. **Jangan** tambahkan `cemerlang.online` di Pages (batal / tutup wizard transfer).
+2. Di **Hostinger → Redirects**: `cemerlang.online` → `https://www.cemerlang.online` (301).
+3. Hanya **`www.cemerlang.online`** sebagai custom domain di Pages (status Active).
+
+Pengguna yang ketik `cemerlang.online` tetap sampai ke SiGaji lewat redirect ke www.
+
+**Opsional** — mau apex tanpa transfer penuh: di Hostinger, jika ada **ALIAS/CNAME** untuk `@`, arahkan ke `sigaji.pages.dev` (lihat opsi B di bawah). Tidak semua panel Hostinger mendukung CNAME di root.
 
 ---
 
@@ -40,26 +51,55 @@ Jangan hapus record **email** (MX, TXT DKIM) kecuali Anda paham dampaknya.
 
 ### Arahkan apex ke Cloudflare Pages
 
-**Opsi A — Redirect di Hostinger (paling mudah)**
+**Opsi A — Redirect di Hostinger (DNS saja, tanpa hosting)**
 
-1. **Domains → Redirects** (atau Domain redirect)  
-2. `cemerlang.online` → `https://www.cemerlang.online` — **Permanent (301)**
+Menu **bukan** “Redirect your domain → Custom / Facebook” (itu sering error *cannot redirect to itself*).
 
-Lalu di DNS, pastikan **www** tetap:
+Langkah di **hPanel**:
+
+1. **Domains** (sidebar) → **Domain portfolio** → klik **Manage** di `cemerlang.online`
+2. Buka **DNS / Nameservers**
+3. Pilih tab **Redirects** (bukan hanya daftar DNS records)
+4. Isi:
+   - **Redirect from:** otomatis `cemerlang.online` (jangan isi www di sini)
+   - **Redirect to:** `https://www.cemerlang.online` (huruf **https**, jangan `:tps`)
+   - **Redirect type:** **Permanent (301)**
+5. **Create redirect**
+
+Domain harus memakai **nameserver Hostinger** (bukan nameserver lain), kalau tidak tab Redirects tidak jalan.
+
+Jika tab **Redirects** tidak ada: lewat **Opsi B** (ALIAS) atau cukup pakai `www` saja.
+
+Lalu di **DNS records**, pastikan **www** tetap:
 
 | Tipe | Nama | Nilai |
 |------|------|--------|
 | CNAME | www | `sigaji.pages.dev` |
 
-**Opsi B — Apex langsung ke Cloudflare**
+**Opsi B — Apex lewat DNS (tanpa menu Redirect)**
 
-Jika Hostinger mendukung **ALIAS/CNAME** untuk root:
+Di **DNS / Nameservers → DNS records** (Hostinger):
 
-| Tipe | Nama | Nilai |
+1. **Hapus** record **A** / **CNAME** lama untuk **@** yang ke Netlify.
+2. **Tambah** record (Hostinger sering menampilkan sebagai **ALIAS** setelah disimpan):
+
+| Tipe (pilih di dropdown) | Nama (Host) | Target / Points to |
+|--------------------------|-------------|---------------------|
+| **CNAME** | **@** | `sigaji.pages.dev` |
+
+Di Hostinger, CNAME dengan nama **@** kadang disimpan sebagai **ALIAS** — itu normal.
+
+3. Record **www** tetap:
+
+| Tipe | Nama | Target |
 |------|------|--------|
-| CNAME | @ | `sigaji.pages.dev` |
+| CNAME | www | `sigaji.pages.dev` |
 
-Atau ikuti IP yang ditampilkan Cloudflare saat menambah custom domain `cemerlang.online`.
+SSL apex bisa tetap bermasalah sampai custom domain `cemerlang.online` Active di Cloudflare Pages; kalau ribet, cukup **Opsi A** atau hanya pakai **www**.
+
+**Opsi C — Tidak atur apex**
+
+Hanya promosikan **`https://www.cemerlang.online`**. SiGaji sudah jalan di www.
 
 ---
 
