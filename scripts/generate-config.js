@@ -8,6 +8,27 @@ const path = require('path');
 
 const outPath = path.join(__dirname, '..', 'js', 'config.js');
 
+function copySupabaseVendor() {
+  const src = path.join(
+    __dirname,
+    '..',
+    'node_modules',
+    '@supabase',
+    'supabase-js',
+    'dist',
+    'umd',
+    'supabase.js'
+  );
+  const dest = path.join(__dirname, '..', 'js', 'vendor', 'supabase.js');
+  if (!fs.existsSync(src)) {
+    console.warn('copy-supabase-vendor: lewati — jalankan npm install lalu npm run build');
+    return;
+  }
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  console.log('copy-supabase-vendor: wrote js/vendor/supabase.js');
+}
+
 const url = (process.env.SIGAJI_SUPABASE_URL || '').trim();
 const anon = (process.env.SIGAJI_SUPABASE_ANON_KEY || '').trim();
 const isCfPages =
@@ -37,15 +58,18 @@ if (!url || !anon) {
       'generate-config: Cloudflare Pages — wajib set SIGAJI_SUPABASE_URL dan SIGAJI_SUPABASE_ANON_KEY di Settings → Environment variables (Production).'
     );
     writeStubConfig('Placeholder — isi env Cloudflare Pages lalu deploy ulang');
+    copySupabaseVendor();
     process.exit(1);
   }
   if (fs.existsSync(outPath)) {
     console.log('generate-config: lewati (env kosong, js/config.js sudah ada — mode lokal).');
+    copySupabaseVendor();
     process.exit(0);
   }
   console.error(
     'generate-config: wajib set SIGAJI_SUPABASE_URL dan SIGAJI_SUPABASE_ANON_KEY (Netlify/Cloudflare env) atau buat js/config.js dari config.example.js'
   );
+  copySupabaseVendor();
   process.exit(1);
 }
 
@@ -94,3 +118,4 @@ const content = [
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, content, 'utf8');
 console.log('generate-config: wrote js/config.js');
+copySupabaseVendor();

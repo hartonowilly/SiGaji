@@ -17,6 +17,58 @@
   var clientReady = false;
   /** Promise selesai saat klien Supabase siap (atau gagal). */
   var bootPromise;
+  var SUPABASE_VENDOR_VER = '2.105.4';
+
+  /** Muat UMD (same-origin) — bukan dynamic import esm.sh (diblokir CSP). */
+  function loadSupabaseLibrary() {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      return Promise.resolve(window.supabase);
+    }
+    var urls = [
+      '/js/vendor/supabase.js?v=' + SUPABASE_VENDOR_VER,
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@' +
+        SUPABASE_VENDOR_VER +
+        '/dist/umd/supabase.js',
+    ];
+    return new Promise(function (resolve, reject) {
+      var i = 0;
+      function tryNext() {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+          resolve(window.supabase);
+          return;
+        }
+        if (i >= urls.length) {
+          reject(new Error('Pustaka Supabase tidak tersedia — deploy ulang (npm run build) atau cek /js/vendor/supabase.js'));
+          return;
+        }
+        var src = urls[i++];
+        var existing = document.querySelector('script[data-sigaji-supabase="' + src + '"]');
+        if (existing) {
+          existing.addEventListener('load', function () {
+            if (window.supabase && window.supabase.createClient) resolve(window.supabase);
+            else tryNext();
+          });
+          existing.addEventListener('error', tryNext);
+          return;
+        }
+        var s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.crossOrigin = 'anonymous';
+        s.setAttribute('data-sigaji-supabase', src);
+        s.onload = function () {
+          if (window.supabase && typeof window.supabase.createClient === 'function') resolve(window.supabase);
+          else tryNext();
+        };
+        s.onerror = function () {
+          s.remove();
+          tryNext();
+        };
+        document.head.appendChild(s);
+      }
+      tryNext();
+    });
+  }
 
   function isMissingTenantKeyColumn(err) {
     if (!err) return false;
@@ -66,7 +118,7 @@
       .catch(function (e) {
         console.error('Sigaji cloud boot:', e);
         toastSafe(
-          'Gagal memuat Supabase (sering karena jaringan / esm.sh diblokir). Coba refresh, matikan pemblokir iklan, atau koneksi lain. Buka F12 → Console untuk detail.'
+          'Gagal memuat Supabase. Coba refresh (Ctrl+F5), pastikan deploy terbaru (npm run build), atau buka F12 → Console.'
         );
       });
   }
@@ -127,8 +179,8 @@
     })();
 
     try {
-      var mod = await import('https://esm.sh/@supabase/supabase-js@2');
-      window.sigajiSupabase = mod.createClient(url, key, {
+      var lib = await loadSupabaseLibrary();
+      window.sigajiSupabase = lib.createClient(url, key, {
         auth: {
           persistSession: true,
           storage: window.localStorage,
@@ -261,7 +313,7 @@
         toastSafe(
           'Login awan gagal: ' +
             m +
-            '. Cek jaringan, blokir iklan (esm.sh), dan konsol F12. Data lokal tidak diubah jika login tidak selesai.'
+            '. Cek jaringan dan konsol F12. Data lokal tidak diubah jika login tidak selesai.'
         );
       });
   }
