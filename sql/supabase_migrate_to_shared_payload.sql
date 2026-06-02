@@ -28,6 +28,10 @@ drop policy if exists "sigaji_cloud_select_own" on public.sigaji_cloud;
 drop policy if exists "sigaji_cloud_insert_own" on public.sigaji_cloud;
 drop policy if exists "sigaji_cloud_update_own" on public.sigaji_cloud;
 drop policy if exists "sigaji_cloud_delete_own" on public.sigaji_cloud;
+drop policy if exists "sigaji_shared_select" on public.sigaji_cloud;
+drop policy if exists "sigaji_shared_insert" on public.sigaji_cloud;
+drop policy if exists "sigaji_shared_update" on public.sigaji_cloud;
+drop policy if exists "sigaji_shared_delete" on public.sigaji_cloud;
 
 -- Semua user yang sudah login Supabase Auth boleh baca/tulis payload utama
 create policy "sigaji_shared_select"

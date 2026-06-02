@@ -171,6 +171,18 @@ function migrateStorage(db){
     });
     v=13;
   }
+  if(v<14){
+    if(typeof sigajiMigrateKaryawanTipeKerja==='function')sigajiMigrateKaryawanTipeKerja(db.karyawan);
+    else if(Array.isArray(db.karyawan)){
+      db.karyawan.forEach(function(k){
+        if(!k||typeof k!=='object')return;
+        if(k.tipe_kerja==='tidak_tetap'||k.tipe_kerja==='tetap')return;
+        var n=String(k.nik||'').trim().toUpperCase();
+        k.tipe_kerja=/^NT\d/.test(n)?'tidak_tetap':'tetap';
+      });
+    }
+    v=14;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');

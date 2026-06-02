@@ -4,7 +4,7 @@ Panduan standar agar setup klien baru **1–2 jam**, tanpa mengulang migrasi Net
 
 **Prinsip:** satu platform deploy (**Cloudflare Pages**), email slip (**Resend**), DNS web/email di **panel DNS klien** (Hostinger OK — Cloudflare DNS tidak wajib).
 
-Lihat juga: `KUOTA_LISENSI_PENJUAL.md`, `CLOUDFLARE_FUNCTIONS.md`, `SLIP_EMAIL_SMTP.md`, `REPO_PUBLIK_DAN_CONFIG.md`.
+Lihat juga: **`MULTI_TENANT_HOSTED.md`** (1 Supabase, tenant ke-2), **`README-FORK.md`** (repo per PT), `KUOTA_LISENSI_PENJUAL.md`, `CLOUDFLARE_FUNCTIONS.md`, `SLIP_EMAIL_SMTP.md`, `REPO_PUBLIK_DAN_CONFIG.md`.
 
 ---
 

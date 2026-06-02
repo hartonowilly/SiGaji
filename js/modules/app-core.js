@@ -363,14 +363,10 @@ function sortKaryawanByNik(list){
     return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
   });
 }
-/** NIK baru = angka terbesar yang pernah dipakai + 1 (tidak mengisi lubang K0015 resign/hapus). */
-function nextNikOtomatis(){
-  var maxNum=0;
-  karyawan.forEach(function(k){
-    var m=String(k.nik||'').match(/(\d+)/);
-    if(m){var n=parseInt(m[1],10);if(!isNaN(n)&&n>maxNum)maxNum=n;}
-  });
-  return 'K'+String(maxNum+1).padStart(4,'0');
+/** NIK baru per tipe: Kxxxx (tetap) atau NTxxxx (tidak tetap). */
+function nextNikOtomatis(tipe){
+  if(typeof sigajiNextNik==='function')return sigajiNextNik(tipe||'tetap');
+  return 'K0001';
 }
 function karyawanListPeriode(p){
   return sortKaryawanByNik(karyawan.filter(function(k){return karyawanInPeriode(k,p);}));

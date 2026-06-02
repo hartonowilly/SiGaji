@@ -1,6 +1,7 @@
 # Kuota karyawan — hanya penjual yang mengatur
 
-Setup klien PT baru (deploy, DNS, Resend): **`ONBOARDING_KLIEN_PT.md`**.
+Setup klien PT baru (deploy, DNS, Resend): **`ONBOARDING_KLIEN_PT.md`**.  
+Multi-tenant & tenant ke-2 di Supabase yang sama: **`MULTI_TENANT_HOSTED.md`** + `sql/supabase_tenant_add.sql`.
 
 
 Admin perusahaan **pelanggan** tidak bisa mengubah kuota di aplikasi. Mereka hanya melihat badge (mis. `Basic · 18 / 20`).

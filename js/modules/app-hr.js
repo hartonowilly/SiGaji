@@ -1,4 +1,39 @@
 /* SiGaji — dashboard, karyawan, komponen gaji, proses gaji */
+var karFilterTipe = '';
+
+function karMatchesTipeFilter(k) {
+  if (!karFilterTipe) return true;
+  var t =
+    typeof sigajiNormalizeKarTipe === 'function' ? sigajiNormalizeKarTipe(k.tipe_kerja, k) : 'tetap';
+  return t === karFilterTipe;
+}
+
+function setKarFilterTipe(v) {
+  karFilterTipe = v || '';
+  renderKar();
+}
+
+function onSpTipeKerjaChange() {
+  var sel = document.getElementById('sp-tipe-kerja-f');
+  var hint = document.getElementById('sp-nik-hint');
+  var inp = document.getElementById('sp-nik-f');
+  if (!sel) return;
+  var tipe = sel.value || 'tetap';
+  var pfx = typeof sigajiNikPrefixForTipe === 'function' ? sigajiNikPrefixForTipe(tipe) : tipe === 'tidak_tetap' ? 'NT' : 'K';
+  if (hint) {
+    hint.textContent =
+      'Format: ' + pfx + '0001 — terpisah dari ' + (tipe === 'tidak_tetap' ? 'K (tetap)' : 'NT (tidak tetap)');
+  }
+  var k = cpNik ? karyawan.find(function (x) { return x.nik === cpNik; }) : null;
+  if (k && k._new && inp && typeof sigajiNextNik === 'function') {
+    inp.value = sigajiNextNik(tipe);
+    k.nik = inp.value;
+    k.tipe_kerja = tipe;
+    var spNik = document.getElementById('sp-nik');
+    if (spNik) spNik.textContent = k.nik;
+  }
+}
+
 // ── DASHBOARD ───────────────────────────────────
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
@@ -30,12 +65,16 @@ function karRowHtml(k,no){
   const sCls=s<=0?'b-err':s<=3?'b-warn':'b-teal';
   const sLbl=s+'/'+kuotaCut;
   const stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
+  const tipe=typeof sigajiNormalizeKarTipe==='function'?sigajiNormalizeKarTipe(k.tipe_kerja,k):'tetap';
+  const tipeLbl=typeof sigajiKarTipeLabel==='function'?sigajiKarTipeLabel(tipe):(tipe==='tidak_tetap'?'Tidak Tetap':'Tetap');
+  const tipeCls=tipe==='tidak_tetap'?'b-warn':'b-teal';
+  const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span>`;
   const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out" onclick="openTelegramModalForNik('${k.nik}')">Telegram</button>`:'';
-  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280">${k.nik}</div></div></div></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td><td><span class="bdg b-info">${k.ptkp}</span></td><td><span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
+  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280;font-family:monospace">${k.nik}</div></div></div></td><td><span class="bdg ${tipeCls}">${tipeLbl}</span></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td><td><span class="bdg b-info">${k.ptkp}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   const p=PA();
-  const list=karyawanListPeriode(p);
+  const list=karyawanListPeriode(p).filter(karMatchesTipeFilter);
   const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Data profil SDM';
   try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}
   const tb=document.getElementById('tb-kar');if(!tb)return;
@@ -43,7 +82,7 @@ function renderKar(){
 }
 function filterKar(q){
   const p=PA();
-  const r=sortKaryawanByNik(karyawanListPeriode(p).filter(function(k){
+  const r=sortKaryawanByNik(karyawanListPeriode(p).filter(karMatchesTipeFilter).filter(function(k){
     return (k.nama+k.nik+k.jabatan+k.dept).toLowerCase().includes(q.toLowerCase());
   }));
   document.getElementById('kar-count').textContent=r.length+' ditampilkan';
@@ -77,7 +116,15 @@ function filterKompgaji(q){
   document.getElementById('tb-kompgaji').innerHTML=r.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
 }
 function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
-function openNewKar(){if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;const nik=nextNikOtomatis();karyawan.push({nik,nama:'Karyawan Baru',dept:'Operasional',jabatan:'Staff',status:'Tetap',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',jk:'L',agama:'Islam',ktp:'',npwp:'',hp:'',email:'',alamat:'',atasan:'',lokasi:'',bank:'BCA',norek:'',reknam:'',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{'kes-prs':true,'kes-kar':true,'jht-prs':true,'jht-kar':true,'jp-prs':true,'jp-kar':true,'jkk-prs':true,'jkm-prs':true},bpjs_manual:{},natura:[],pph_return:{nilai:0,ket:''}});saveAll();renderKar();populateSelects();openPanel(nik);toast('Karyawan baru dibuat');}
+function openNewKar(tipe){
+  if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}
+  if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;
+  tipe=(tipe==='tidak_tetap')?'tidak_tetap':'tetap';
+  var sk=typeof sigajiNewKaryawanSkeleton==='function'?sigajiNewKaryawanSkeleton(tipe):{nik:nextNikOtomatis(tipe),tipe_kerja:tipe,nama:'Karyawan Baru',status:'Tetap',dept:'Operasional',jabatan:'Staff',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{},natura:[],pph_return:{nilai:0,ket:''},_new:true};
+  karyawan.push(sk);
+  saveAll();renderKar();populateSelects();openPanel(sk.nik);
+  toast((tipe==='tidak_tetap'?'Pegawai tidak tetap':'Pegawai tetap')+' '+sk.nik+' dibuat');
+}
 // ── SLIDE PANEL KARYAWAN (profil SDM) ──────────
 function openPanel(nik){
   if(!canAccessModule('karyawan')){toast('Tidak punya akses modul Master Karyawan');return;}
@@ -87,7 +134,11 @@ function openPanel(nik){
   const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??'';};
   const isNew=k._new;
   if(isNew)delete k._new;
+  var tipe=typeof sigajiNormalizeKarTipe==='function'?sigajiNormalizeKarTipe(k.tipe_kerja,k):'tetap';
+  k.tipe_kerja=tipe;
+  var tipeEl=document.getElementById('sp-tipe-kerja-f');if(tipeEl)tipeEl.value=tipe;
   sv('sp-nik-f',k.nik);sv('sp-nama-f',isNew?'':k.nama);sv('sp-jk-f',k.jk);sv('sp-agama-f',k.agama);
+  onSpTipeKerjaChange();
   sv('sp-ktp-f',isNew?'':k.ktp);sv('sp-npwp-f',isNew?'':k.npwp);sv('sp-hp-f',isNew?'':k.hp);sv('sp-email-f',isNew?'':k.email);sv('sp-alamat-f',isNew?'':k.alamat);
   sv('sp-dept-f',k.dept);sv('sp-jabatan-f',isNew?'':k.jabatan);sv('sp-status-f',k.status);sv('sp-masuk-f',isNew?'':k.masuk);sv('sp-berhenti-f',k.tgl_berhenti||'');
   populatePhkAlasanSelect();
@@ -236,6 +287,11 @@ function simpanKarPanel(){
   const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;
   const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
   const oldNik=k.nik,newNik=gv('sp-nik-f').trim()||k.nik;
+  var tipeKerja=gv('sp-tipe-kerja-f')||'tetap';
+  if(typeof sigajiValidateKarNik==='function'){
+    var vNik=sigajiValidateKarNik(newNik,tipeKerja,oldNik);
+    if(!vNik.ok){toast(vNik.msg);return;}
+  }
   var tbh=gv('sp-berhenti-f').trim();
   var phkAl=document.getElementById('sp-phk-alasan');
   if(tbh){
@@ -246,7 +302,7 @@ function simpanKarPanel(){
     delete k.tgl_berhenti;
     delete k.phk;
   }
-  Object.assign(k,{nik:newNik,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
+  Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
   renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();toast('Profil '+k.nama+' disimpan');

@@ -157,15 +157,23 @@ window.SIGAJI_BUILD='11.2.3';
 <!-- MASTER KARYAWAN -->
 <div class="pg" id="pg-karyawan">
   <div class="ph"><div><div class="pt">Master Karyawan</div></div>
-  <button class="btn btn-sm btn-p" onclick="openNewKar()">+ Tambah Karyawan</button></div>
+  <div class="fl gap1" style="flex-wrap:wrap">
+  <button class="btn btn-sm btn-p" onclick="openNewKar('tetap')">+ Pegawai Tetap</button>
+  <button class="btn btn-sm btn-out" onclick="openNewKar('tidak_tetap')">+ Pegawai Tidak Tetap</button>
+  </div></div>
   <div class="card">
     <div class="flb mb2">
       <input type="text" class="inp-search" placeholder="Cari nama, NIK, dept..." oninput="filterKar(this.value)">
+      <select id="kar-filter-tipe" class="inp-search" style="max-width:11rem;padding:.45rem .6rem" onchange="setKarFilterTipe(this.value)">
+        <option value="">Semua tipe</option>
+        <option value="tetap">Pegawai tetap (K…)</option>
+        <option value="tidak_tetap">Tidak tetap (NT…)</option>
+      </select>
       <span class="bdg b-info" id="kar-quota-badge" style="font-size:11px"></span>
       <span style="font-size:11px;color:#6b7280" id="kar-count"></span>
     </div>
     <div style="overflow-x:auto">
-    <table><thead><tr id="kar-thead-row"><th>No</th><th>Karyawan</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
+    <table><thead><tr id="kar-thead-row"><th>No</th><th>Karyawan</th><th>Tipe</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
     <tbody id="tb-kar"></tbody></table></div>
   </div>
 </div>
@@ -839,7 +847,15 @@ window.SIGAJI_BUILD='11.2.3';
     <div id="sp-info">
       <div class="stit">Identitas Karyawan</div>
       <div class="fg2">
-        <div class="fg"><label>NIK</label><input id="sp-nik-f"></div>
+        <div class="fg"><label>Tipe pegawai</label>
+          <select id="sp-tipe-kerja-f" onchange="onSpTipeKerjaChange()">
+            <option value="tetap">Pegawai Tetap — NIK diawali K</option>
+            <option value="tidak_tetap">Pegawai Tidak Tetap — NIK diawali NT</option>
+          </select>
+        </div>
+        <div class="fg"><label>NIK (ID sistem)</label><input id="sp-nik-f" title="Tetap: K0001 | Tidak tetap: NT0001">
+          <div id="sp-nik-hint" style="font-size:10px;color:#6b7280;margin-top:.25rem"></div>
+        </div>
         <div class="fg ff"><label>Nama Lengkap</label><input id="sp-nama-f" oninput="onNamaChange()"></div>
         <div class="fg"><label>Jenis Kelamin</label><select id="sp-jk-f"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
         <div class="fg"><label>Agama</label><select id="sp-agama-f"><option>Islam</option><option>Kristen</option><option>Katolik</option><option>Hindu</option><option>Buddha</option></select></div>
@@ -1143,13 +1159,14 @@ window.SIGAJI_BUILD='11.2.3';
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.2.3"></script>
+<script src="/js/constants.js?v=11.2.5"></script>
+<script src="/js/karyawan-tipe.js?v=11.2.5"></script>
 <script src="/js/storage.js?v=11.2.3"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
 <script src="/js/modules/app-globals.js?v=11.2.3"></script>
-<script src="/js/modules/app-core.js?v=11.2.3"></script>
+<script src="/js/modules/app-core.js?v=11.2.5"></script>
 <script src="/js/modules/app-access.js?v=11.2.3"></script>
-<script src="/js/modules/app-hr.js?v=11.2.3"></script>
+<script src="/js/modules/app-hr.js?v=11.2.5"></script>
 <script src="/js/modules/app-slip.js?v=11.2.3"></script>
 <script src="/js/modules/app-reports.js?v=11.2.3"></script>
 <script src="/js/modules/app-absensi.js?v=11.2.3"></script>

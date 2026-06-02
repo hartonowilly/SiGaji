@@ -19,7 +19,7 @@
     if (!sb) return null;
 
     try {
-      var rpc = await sb.rpc('sigaji_get_login_branding');
+      var rpc = await sb.rpc('sigaji_get_login_branding', { p_tenant_key: TK });
       if (!rpc.error) {
         var b = pickBranding(rpc.data);
         if (b) return b;
