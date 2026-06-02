@@ -142,7 +142,11 @@
       if(!start||!cutoff)return true; // fallback: jika periode tidak tersedia, tampilkan seperti sebelumnya
       return t>=start&&t<=cutoff;
     });
-    list.sort(function(a,b){return String(b.tgl_berhenti).localeCompare(String(a.tgl_berhenti));});
+    list.sort(function(a,b){
+      var d=String(b.tgl_berhenti).localeCompare(String(a.tgl_berhenti));
+      if(d!==0)return d;
+      return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
+    });
     if(!list.length){
       tb.innerHTML='<tr><td colspan="7" style="padding:1rem;color:#6b7280;font-size:12px">Tidak ada karyawan berhenti pada periode aktif. (Cek Periode Aktif di Master → Periode Gaji & THR)</td></tr>';
       selNik=null;renderDetail();return;

@@ -61,7 +61,8 @@ function renderAbsensi(){
   if(infoEl){infoEl.style.display='block';infoEl.textContent=hdrSub;}
   var adaSelTerkunci=CU&&CU.role!=='Admin'&&days.some(function(x){return !canEditDataPadaTanggalIso(x.date);});
   var roBanner=adaSelTerkunci?'<div class="info-box info-amber" style="font-size:11px;margin-bottom:.65rem">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
-  karyawan.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
+  var listKar=typeof karyawanListPeriode==='function'?karyawanListPeriode(pAbs):sortKaryawanByNik(karyawan||[]);
+  listKar.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
   var AB_NO=44,AB_NAME=272,AB_JAB_L=AB_NO+AB_NAME;
   var prevMY='';
   var html='<table style="border-collapse:collapse;font-size:11px;min-width:max-content;width:100%"><thead><tr style="background:#1e2330;color:#fff">'
@@ -81,7 +82,7 @@ function renderAbsensi(){
       +(showMon?'<div style="font-size:8px;opacity:.85">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
   });
   html+='<th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px;border-left:2px solid #374151">H</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">C</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">S</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">I</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">A</th></tr></thead><tbody>';
-  karyawan.forEach(function(k,ki){
+  listKar.forEach(function(k,ki){
     var rb=ki%2===0?'#fff':'#f8f9fc';
     html+='<tr style="background:'+rb+'"><td style="position:sticky;left:0;z-index:3;background:'+rb+';padding:5px 6px;text-align:center;font-weight:800;color:#9ca3af;border-right:1px solid #e5e7eb;border-bottom:1px solid #f3f4f6;box-shadow:1px 0 0 #e5e7eb">'+(ki+1)+'</td><td style="position:sticky;left:'+AB_NO+'px;z-index:3;background:'+rb+';padding:5px 10px;font-weight:700;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:'+AB_NAME+'px;width:'+AB_NAME+'px;max-width:320px;box-shadow:1px 0 0 #e5e7eb;vertical-align:middle"><div style="display:flex;align-items:flex-start;gap:6px"><div style="width:24px;height:24px;border-radius:50%;background:#e8f0fb;color:#1a56a0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;margin-top:2px">'+ini(k.nama)+'</div><div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:700;line-height:1.25;word-break:break-word;white-space:normal">'+escapeHtml(k.nama)+'</div><div style="font-size:10px;color:#9ca3af;word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td style="position:sticky;left:'+AB_JAB_L+'px;z-index:3;background:'+rb+';padding:5px 8px;font-size:11px;color:#6b7280;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:112px;box-shadow:1px 0 0 #e5e7eb">'+(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
@@ -128,10 +129,10 @@ function renderCutiRekap(){
   const cb=countCutiBersamaTrackingYear(yr);
   // Tracking cuti = rekap tahunan (tidak terpengaruh periode gaji). Filter: karyawan aktif / belum berhenti sebelum tahun tsb.
   const yearStart=String(yr)+'-01-01';
-  var list=(karyawan||[]).filter(function(k){
+  var list=sortKaryawanByNik((karyawan||[]).filter(function(k){
     var t=toIsoDate(k&&k.tgl_berhenti);
     return !t||t>=yearStart;
-  });
+  }));
   if(!list.length){
     tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan aktif untuk tahun ini.</td></tr>';
     return;
@@ -162,7 +163,8 @@ function addLemburForKar(){const sel=document.getElementById('lembur-kar-sel');c
 function renderLemburList(){
   const el=document.getElementById('lembur-list');if(!el)return;
   var num=0;
-  el.innerHTML=karyawan.map(function(k){
+  var listLem=sortKaryawanByNik(karyawan||[]);
+  el.innerHTML=listLem.map(function(k){
     const ld=lembur[k.nik]||[];const upj=k.gapok/173;if(!ld.length)return'';
     num++;
     return '<div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:12px;margin-bottom:.4rem;color:#1a56a0">'+num+'. '+k.nama+'</div>'

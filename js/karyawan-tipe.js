@@ -151,4 +151,15 @@
   window.sigajiKarTipeLabel = labelTipe;
   window.sigajiNewKaryawanSkeleton = newKaryawanSkeleton;
   window.sigajiMigrateKaryawanTipeKerja = migrateKaryawanTipeKerja;
+
+  /** Urutan daftar karyawan: NIK (K0001, K0002, NT0001, …), bukan abjad nama. */
+  function sortKaryawanByNik(list) {
+    return (list || []).slice().sort(function (a, b) {
+      return String(a.nik || '').localeCompare(String(b.nik || ''), 'id', {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+  }
+  window.sigajiSortKaryawanByNik = sortKaryawanByNik;
 })();

@@ -68,9 +68,7 @@ function renderMigrasiPphSaldo(){
   var wrap=document.getElementById('migrasi-pph-tabel');
   if(!wrap)return;
   var thn=migrasiPphTahunUi();
-  var list=karyawan.slice().sort(function(a,b){
-    return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
-  });
+  var list=typeof sortKaryawanByNik==='function'?sortKaryawanByNik(karyawan||[]):karyawan.slice();
   var withSaldo=0;
   list.forEach(function(k){
     var s=getPphYtdAwal(k,thn);
@@ -114,7 +112,7 @@ function exportMigrasiPphTemplate(){
       ['K0001','Contoh Aktif','Aktif','',''+thn+'-04','48000000','1200000','TK/0','5000000'],
       ['K0003','Contoh Budi','Resign',''+thn+'-03-31','3','36000000','900000','K/0','5500000']
     ];
-    karyawan.forEach(function(k){
+    sortKaryawanByNik(karyawan||[]).forEach(function(k){
       var s=getPphYtdAwal(k,thn);
       if(s.bruto<=0&&s.pph<=0&&!String(k.tgl_berhenti||'').trim())return;
       aoa.push([

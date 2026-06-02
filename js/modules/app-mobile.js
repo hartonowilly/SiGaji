@@ -155,7 +155,7 @@ async function editMobileLocation(id){
 }
 // ── HRD: Penugasan ──────────────────────────────
 function mobKarSelectHtml(selectedNik){
-  var list=(karyawan||[]).slice().sort(function(a,b){return String(a.nama||'').localeCompare(String(b.nama||''));});
+  var list=typeof sortKaryawanByNik==='function'?sortKaryawanByNik(karyawan||[]):(karyawan||[]).slice();
   var opts='<option value="">-- Pilih karyawan --</option>';
   list.forEach(function(k){
     if(!k||!k.nik)return;

@@ -191,6 +191,12 @@ function migrateStorage(db){
     }
     v=15;
   }
+  if(v<16){
+    if(Array.isArray(db.karyawan)&&typeof sigajiSortKaryawanByNik==='function'){
+      db.karyawan=sigajiSortKaryawanByNik(db.karyawan);
+    }
+    v=16;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
@@ -276,6 +282,7 @@ function dbSave(o){
 }
 function LS(k,d){const db=dbLoad();return db&&db[k]!==undefined?db[k]:d;}
 let karyawan=LS('karyawan',[]);
+if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan);
 let periodes=LS('periodes',[]);
 let hariLibur=LS('hariLibur',[]);
 let masterCuti=LS('masterCuti',{kuota:12,carryover:'no',cbPotong:true});
@@ -314,6 +321,7 @@ function markRecoveryBackup(tag){
 }
 function saveAll(){
   try{
+    if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan||[]);
     dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,license:tenantLicense});
   }catch(e){console.error('saveAll error:',e);}
   try{
@@ -351,7 +359,9 @@ function applyDbFromCloudPayload(payload){
   }
   window.sigajiApplyingCloud=true;
   try{
-    if(Array.isArray(o.karyawan))karyawan=o.karyawan;
+    if(Array.isArray(o.karyawan)){
+      karyawan=typeof sigajiSortKaryawanByNik==='function'?sigajiSortKaryawanByNik(o.karyawan):o.karyawan;
+    }
     if(Array.isArray(o.periodes))periodes=o.periodes;
     if(Array.isArray(o.hariLibur))hariLibur=o.hariLibur;
     if(o.masterCuti&&typeof o.masterCuti==='object')masterCuti=o.masterCuti;

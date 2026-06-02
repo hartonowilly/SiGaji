@@ -167,7 +167,7 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=15;
+const SCHEMA_VERSION=16;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */

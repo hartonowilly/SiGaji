@@ -24,7 +24,7 @@ function renderPPH(){
   var selK=document.getElementById('a1-kar');
   if(selK){
     var prev=selK.value;
-    selK.innerHTML='<option value="">-- Pilih karyawan --</option>'+karyawan.map(function(k){return '<option value="'+k.nik+'">'+k.nik+' — '+k.nama+'</option>';}).join('');
+    selK.innerHTML='<option value="">-- Pilih karyawan --</option>'+sortKaryawanByNik(karyawan||[]).map(function(k){return '<option value="'+k.nik+'">'+k.nik+' — '+k.nama+'</option>';}).join('');
     if(prev&&karyawan.some(function(k){return k.nik===prev;}))selK.value=prev;
   }
 }
@@ -222,11 +222,11 @@ function getPeriodesResignTahun(k){
   }).sort(function(a,b){return String(a.bayar||'').localeCompare(String(b.bayar||''));});
 }
 function karyawanEligibleRekonResign(){
-  return karyawan.filter(function(k){
+  return sortKaryawanByNik(karyawan.filter(function(k){
     var t=String(k.tgl_berhenti||'').trim();
     var a=(k.phk&&k.phk.alasan)?String(k.phk.alasan).trim():'';
     return t&&a&&findPeriodeForTglBerhenti(k);
-  });
+  }));
 }
 function phkAlasanLbl(k){
   var id=(k.phk&&k.phk.alasan)||'';
@@ -335,7 +335,7 @@ function exportExcelRekonResign(){
 /** Excel: kertas kerja PPh 21 & THP — per karyawan, periode aktif */
 function exportExcelKertasKerjaPPh(){
   var p=PA();
-  var list=karyawan.filter(function(k){return karyawanInPeriode(k,p);});
+  var list=sortKaryawanByNik(karyawan.filter(function(k){return karyawanInPeriode(k,p);}));
   if(!list.length){toast('Belum ada karyawan untuk periode aktif');return;}
   ensureXLSX(function(){
     try{
@@ -459,7 +459,7 @@ function renderTHR(){
   const lbl=document.getElementById('thr-hari-lbl');if(lbl)lbl.textContent=hari;
   let total=0,eligible=0;const p=PA();const periodeAdaTHR=!!p.thr_aktif;
   const pNama=p.nama;
-  document.getElementById('tb-thr').innerHTML=karyawan.map(function(k,idx){
+  document.getElementById('tb-thr').innerHTML=sortKaryawanByNik(karyawan||[]).map(function(k,idx){
     const t=hitungTHRBruto(k,pNama);const isE=t.eligible;if(isE){total+=t.nilai;eligible++;}
     const mb=Math.floor(t.mb/12)+'thn '+t.mb%12+'bln';
     const g=isE&&periodeAdaTHR?hitungGaji(k,pNama):null;const pphEst=g?g.pphAtasThr:0;

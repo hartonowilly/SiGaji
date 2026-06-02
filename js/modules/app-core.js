@@ -359,9 +359,13 @@ function karyawanInPeriode(k,p){
   return t>=String(p.start);
 }
 function sortKaryawanByNik(list){
-  return list.slice().sort(function(a,b){
+  if(typeof sigajiSortKaryawanByNik==='function')return sigajiSortKaryawanByNik(list);
+  return (list||[]).slice().sort(function(a,b){
     return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
   });
+}
+function karyawanSortedAll(){
+  return sortKaryawanByNik(karyawan||[]);
 }
 /** NIK baru per tipe: Kxxxx (tetap) atau NTxxxx (tidak tetap). */
 function nextNikOtomatis(tipe){

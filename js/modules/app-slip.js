@@ -532,7 +532,7 @@ function exportAllTHRPDF(){
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
   const p=periodesFindById(pid)||PA();
   if(!p.thr_aktif){toast('Periode ini tidak ada THR');return;}
-  karyawan.forEach(function(k){if(hitungTHRBruto(k).eligible)generateTHRPDF(k,p);});
+  sortKaryawanByNik(karyawan||[]).forEach(function(k){if(hitungTHRBruto(k).eligible)generateTHRPDF(k,p);});
   toast('PDF THR semua karyawan diunduh');
 }
 // ── PDF GENERATORS ────────────────────────────────

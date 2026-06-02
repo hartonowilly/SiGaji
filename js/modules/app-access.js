@@ -65,7 +65,7 @@ function openUserModal(idx=-1){
   document.getElementById('u-nama').value=u.nama||'';
   document.getElementById('u-aktif').checked=u.aktif!==false;
   const rs=document.getElementById('u-role');rs.innerHTML=Object.keys(roles).map(r=>`<option value="${r}">${r}</option>`).join('');rs.value=u.role||'HRD';
-  const ns=document.getElementById('u-nik');ns.innerHTML='<option value="">-- Tidak tertaut --</option>'+karyawan.map(k=>`<option value="${k.nik}">${k.nik} &#8212; ${k.nama}</option>`).join('');ns.value=u.nik||'';
+  const ns=document.getElementById('u-nik');ns.innerHTML='<option value="">-- Tidak tertaut --</option>'+sortKaryawanByNik(karyawan||[]).map(k=>`<option value="${k.nik}">${k.nik} &#8212; ${k.nama}</option>`).join('');ns.value=u.nik||'';
   openModal('m-user');
 }
 function simpanUser(){
