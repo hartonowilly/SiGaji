@@ -7,8 +7,8 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/css/styles.css?v=11.3.0">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.3.0">
+<link rel="stylesheet" href="/css/styles.css?v=11.3.2">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.3.2">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -26,7 +26,7 @@ window.sigajiParseFunctionJson=async function(r){
   if(ct.indexOf('text/html')>=0||r.status===404)return{ok:false,error:'API tidak aktif — deploy /api/ + env SIGAJI_SUPABASE_* di Cloudflare'};
   return r.json().catch(function(){return null;});
 };
-window.SIGAJI_BUILD='11.3.0';
+window.SIGAJI_BUILD='11.3.2';
 (function(){
   var h=(location&&location.hostname)||'';
   if(!/\.pages\.dev$/i.test(h)&&!/cemerlang\.online$/i.test(h))return;
@@ -731,11 +731,11 @@ window.SIGAJI_BUILD='11.3.0';
 
 <!-- BACKUP & SISTEM (Admin) -->
 <div class="pg" id="pg-backup">
-  <div class="ph"><div><div class="pt">Backup &amp; Sistem</div><div class="pst">Backup data, migrasi pajak, status deploy</div></div></div>
+  <div class="ph"><div><div class="pt">Backup &amp; Sistem</div><div class="pst">Cadangan data, saldo PPh, reset data, dan status deploy</div></div></div>
   <div class="tabs backup-tabs-bar" id="backup-tabs" role="tablist">
     <div class="tab active" role="tab" data-bktab="bk-cadangan" tabindex="0">&#128190; Backup</div>
     <div class="tab" role="tab" data-bktab="bk-saldo" tabindex="0">&#128176; Saldo PPh</div>
-    <div class="tab" role="tab" data-bktab="bk-ringkas" tabindex="0">&#128202; Ringkasan</div>
+    <div class="tab" role="tab" data-bktab="bk-ringkas" tabindex="0">&#9881; Sistem</div>
   </div>
   <div class="backup-tab-panels">
   <div id="bk-cadangan">
@@ -819,10 +819,18 @@ window.SIGAJI_BUILD='11.3.0';
     </div>
   </div>
   <div id="bk-ringkas" style="display:none">
-    <div class="fl gap1" style="justify-content:flex-end;margin-bottom:.5rem">
-      <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Perbarui</button>
+    <div class="card card-danger-zone">
+      <div class="ct" style="color:#9b2121">&#9888; Reset semua data</div>
+      <p class="danger-zone-desc">Menghapus seluruh karyawan, periode, gaji, dan pengaturan di browser ini. <strong>Export backup JSON</strong> di tab Backup terlebih dahulu. Tidak dapat dibatalkan.</p>
+      <button type="button" class="btn btn-r btn-sm" onclick="openResetModal()">Reset semua data…</button>
     </div>
-    <div id="sysstatus-panel"></div>
+    <div class="card">
+      <div class="flb mb2">
+        <div class="ct" style="margin:0;border:0;padding:0">Status deploy &amp; versi</div>
+        <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Perbarui</button>
+      </div>
+      <div id="sysstatus-panel"></div>
+    </div>
   </div>
   </div>
 </div>
@@ -1106,18 +1114,35 @@ window.SIGAJI_BUILD='11.3.0';
   </div>
 </div>
 
+<!-- MODAL KONFIRMASI -->
+<div class="mbd" id="m-confirm" onclick="if(event.target===this)sigajiConfirmClose(false)">
+  <div class="modal modal-sm modal-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <button type="button" class="mclose" onclick="sigajiConfirmClose(false)" aria-label="Tutup">&times;</button>
+    <div class="mtit" id="confirm-title">Konfirmasi</div>
+    <p id="confirm-body" class="confirm-body"></p>
+    <div class="mfoot">
+      <button type="button" class="btn btn-sm btn-out" id="confirm-cancel" onclick="sigajiConfirmClose(false)">Batal</button>
+      <button type="button" class="btn btn-sm btn-p" id="confirm-ok" onclick="sigajiConfirmClose(true)">Ya, lanjutkan</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RESET -->
 <div class="mbd" id="m-reset">
   <div class="modal modal-sm" style="border-top:4px solid #9b2121">
     <button class="mclose" onclick="closeModal('m-reset')">&times;</button>
     <div class="mtit" style="color:#9b2121">&#9888; Reset Semua Data</div>
-    <div class="info-box info-red">Menghapus semua data. Tidak bisa dibatalkan.</div>
+    <div class="info-box info-red">Menghapus <strong>semua</strong> karyawan, periode, gaji, dan pengaturan. Jika pakai cloud, data di Supabase ikut dikosongkan setelah simpan. Sudah unduh backup?</div>
+    <p id="reset-admin-hint" class="reset-admin-hint" style="font-size:11px;color:#6b7280;margin:0 0 .5rem"></p>
+    <div class="fg"><label style="color:#9b2121;font-weight:700">Password Admin (akun yang sedang login)</label>
+      <input type="password" id="reset-pw" autocomplete="current-password" placeholder="Password login Admin" style="border:2px solid #f5a3a3;border-radius:8px;padding:9px 12px;width:100%;font-family:inherit;font-size:13px;outline:none" oninput="updateResetButtonState()">
+    </div>
     <div class="fg"><label style="color:#9b2121;font-weight:700">Ketik RESET SEMUA DATA:</label>
-      <input id="reset-inp" placeholder="RESET SEMUA DATA" style="border:2px solid #f5a3a3;border-radius:8px;padding:9px 12px;width:100%;font-family:inherit;font-size:13px;outline:none" oninput="document.getElementById('btn-reset').disabled=this.value!=='RESET SEMUA DATA'">
+      <input id="reset-inp" placeholder="RESET SEMUA DATA" autocomplete="off" style="border:2px solid #f5a3a3;border-radius:8px;padding:9px 12px;width:100%;font-family:inherit;font-size:13px;outline:none" oninput="updateResetButtonState()">
     </div>
     <div class="mfoot">
       <button class="btn btn-sm btn-out" onclick="closeModal('m-reset')">Batal</button>
-      <button class="btn btn-sm btn-r" id="btn-reset" disabled onclick="execReset()">Reset</button>
+      <button class="btn btn-sm btn-r" id="btn-reset" disabled onclick="execReset()">Hapus semua data</button>
     </div>
   </div>
 </div>
@@ -1160,20 +1185,21 @@ window.SIGAJI_BUILD='11.3.0';
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.3.0"></script>
-<script src="/js/karyawan-tipe.js?v=11.3.0"></script>
-<script src="/js/storage.js?v=11.3.0"></script>
+<script src="/js/constants.js?v=11.3.2"></script>
+<script src="/js/sigaji-ui.js?v=11.3.2"></script>
+<script src="/js/karyawan-tipe.js?v=11.3.2"></script>
+<script src="/js/storage.js?v=11.3.2"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/modules/app-globals.js?v=11.3.0"></script>
-<script src="/js/modules/app-core.js?v=11.3.0"></script>
-<script src="/js/modules/app-access.js?v=11.3.0"></script>
-<script src="/js/modules/app-hr.js?v=11.3.0"></script>
-<script src="/js/modules/app-slip.js?v=11.3.0"></script>
-<script src="/js/modules/app-reports.js?v=11.3.0"></script>
-<script src="/js/modules/app-absensi.js?v=11.3.0"></script>
-<script src="/js/modules/app-master.js?v=11.3.0"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.3.0"></script>
-<script src="/js/modules/app-shell.js?v=11.3.0"></script>
+<script src="/js/modules/app-globals.js?v=11.3.2"></script>
+<script src="/js/modules/app-core.js?v=11.3.2"></script>
+<script src="/js/modules/app-access.js?v=11.3.2"></script>
+<script src="/js/modules/app-hr.js?v=11.3.2"></script>
+<script src="/js/modules/app-slip.js?v=11.3.2"></script>
+<script src="/js/modules/app-reports.js?v=11.3.2"></script>
+<script src="/js/modules/app-absensi.js?v=11.3.2"></script>
+<script src="/js/modules/app-master.js?v=11.3.2"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.3.2"></script>
+<script src="/js/modules/app-shell.js?v=11.3.2"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1210,7 +1236,7 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
 <script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.3.0"></script>
+<script src="/js/cloud-sync.js?v=11.3.2"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>

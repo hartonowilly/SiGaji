@@ -115,7 +115,7 @@ function filterKompgaji(q){
   const el=document.getElementById('kg-count');if(el)el.textContent=r.length+' ditampilkan';
   document.getElementById('tb-kompgaji').innerHTML=r.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
 }
-function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
+function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k)return;sigajiConfirm({title:'Hapus karyawan',message:'Apakah Anda yakin ingin menghapus karyawan "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi, lembur, dan data terkait ikut terhapus. Tindakan ini tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');});}
 function openNewKar(tipe){
   if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}
   if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;
@@ -307,7 +307,7 @@ function simpanKarPanel(){
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
   renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();toast('Profil '+k.nama+' disimpan');
 }
-function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k||!confirm('Hapus '+k.nama+'?'))return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');}
+function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;sigajiConfirm({title:'Hapus karyawan',message:'Apakah Anda yakin ingin menghapus karyawan "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi, lembur, dan data terkait ikut terhapus. Tindakan ini tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');});}
 function renderTunjPanel(k){
   const list=k.tunjangan||[];
   const nik=k.nik;

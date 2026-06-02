@@ -316,13 +316,67 @@ function switchPayrollSpTab(el,tid){
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 var tT;function toast(msg){var t=document.getElementById('toast9');if(!t){try{console.warn(msg);}catch(e){}return;}t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show');},3200);}
-function execReset(){
+function updateResetButtonState(){
+  var phrase=(document.getElementById('reset-inp')&&document.getElementById('reset-inp').value)||'';
+  var pw=(document.getElementById('reset-pw')&&document.getElementById('reset-pw').value)||'';
+  var btn=document.getElementById('btn-reset');
+  if(btn)btn.disabled=phrase!=='RESET SEMUA DATA'||pw.length<1;
+}
+function openResetModal(){
+  if(!CU||CU.role!=='Admin'){toast('Hanya Admin yang boleh reset semua data');return;}
+  var hint=document.getElementById('reset-admin-hint');
+  if(hint){
+    var cloudOn=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
+    var who=CU.nama||CU.username||'Admin';
+    hint.textContent=cloudOn&&CU.email
+      ?'Verifikasi: sandi login Supabase untuk '+who+' ('+CU.email+').'
+      :'Verifikasi: sandi login user Admin "'+(CU.username||'admin')+'" ('+who+').';
+  }
+  var inp=document.getElementById('reset-inp');
+  var pwEl=document.getElementById('reset-pw');
+  if(inp)inp.value='';
+  if(pwEl)pwEl.value='';
+  updateResetButtonState();
+  openModal('m-reset');
+  setTimeout(function(){var p=document.getElementById('reset-pw');if(p)p.focus();},80);
+}
+function runResetAllData(){
   karyawan=[];periodes=[];hariLibur=[];masterCuti={kuota:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
   perusahaan={nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,umk:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}};
   users=[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}];
   roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','slip','laporan','laporan.rekap','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi']};
   thrManual={};tunjVarBulan={};tunjVarLabels={v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'};tunjVarColumns=[{id:'v1',nama:'Bonus'},{id:'v2',nama:'Uang Makan'},{id:'v3',nama:'Lain-lain'}];localStorage.removeItem(DB_KEY);localStorage.removeItem('sigaji_universal');saveAll();closeModal('m-reset');renderSidebar();renderAll();updateNotifBadge();applyBranding();
-  document.getElementById('reset-inp').value='';document.getElementById('btn-reset').disabled=true;toast('Reset selesai');
+  var inp=document.getElementById('reset-inp');
+  var pwEl=document.getElementById('reset-pw');
+  if(inp)inp.value='';
+  if(pwEl)pwEl.value='';
+  updateResetButtonState();
+  toast('Semua data telah dihapus');
+}
+async function execReset(){
+  if(!CU||CU.role!=='Admin'){toast('Hanya Admin');return;}
+  var phrase=(document.getElementById('reset-inp')&&document.getElementById('reset-inp').value)||'';
+  var pw=(document.getElementById('reset-pw')&&document.getElementById('reset-pw').value)||'';
+  if(phrase!=='RESET SEMUA DATA'){toast('Ketik teks RESET SEMUA DATA dengan benar');return;}
+  if(!pw){toast('Masukkan password Admin');return;}
+  var btn=document.getElementById('btn-reset');
+  if(btn)btn.disabled=true;
+  toast('Memverifikasi password…');
+  var verifyFn=typeof verifyAdminPasswordForReset==='function'?verifyAdminPasswordForReset:(typeof window.verifyAdminPasswordForReset==='function'?window.verifyAdminPasswordForReset:null);
+  var ok=verifyFn?await verifyFn(pw):false;
+  if(!ok){
+    if(btn)updateResetButtonState();
+    toast('Password Admin salah atau akun bukan Admin');
+    return;
+  }
+  var go=typeof sigajiConfirm==='function'
+    ?await sigajiConfirm({title:'Hapus semua data',message:'Password Admin benar.\n\nLanjut hapus SEMUA karyawan, periode, gaji, dan pengaturan?',danger:true,okText:'Ya, hapus semua'})
+    :confirm('Password benar. Hapus SEMUA data?');
+  if(!go){
+    if(btn)updateResetButtonState();
+    return;
+  }
+  runResetAllData();
 }
 // ── LIBUR NASIONAL DATABASE ──────────────────────
 function getLiburNasionalTahun(yr){

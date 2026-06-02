@@ -677,3 +677,50 @@ button:focus-visible,
     grid-template-columns: 1fr;
   }
 }
+
+/* Modal konfirmasi */
+#m-confirm.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-confirm {
+  border-top: 4px solid var(--blue);
+  max-width: 420px;
+}
+.modal-confirm .mtit {
+  font-size: 1.05rem;
+  padding-bottom: 0.35rem;
+}
+.confirm-body {
+  margin: 0 0 1rem;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+/* Zona berbahaya — Backup & Sistem */
+.card-danger-zone {
+  border: 1px solid rgba(155, 33, 33, 0.25);
+  border-left: 4px solid #9b2121;
+  background: linear-gradient(135deg, #fff5f5 0%, #fff 55%);
+  margin-bottom: 1rem;
+}
+.danger-zone-desc {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  margin: 0 0 0.85rem;
+}
+.reset-admin-hint {
+  padding: 0.5rem 0.65rem;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+#pg-backup .backup-tabs-bar .tab[data-bktab="bk-ringkas"].active {
+  color: #7f1d1d;
+  border-color: #fecaca;
+  background: #fef2f2;
+}

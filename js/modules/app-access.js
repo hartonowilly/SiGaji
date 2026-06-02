@@ -42,7 +42,7 @@ function renderSidebar(){
   });
   let h='';Object.entries(secs).forEach(([sec,mods])=>{h+=`<div class="nsec">${sec}</div>`;mods.forEach(m=>{h+=`<div class="ni" data-pg="${m.id}" onclick="showPg('${m.id}')"><span class="nic">${m.icon}</span>${m.lbl}${m.id==='notifikasi'?'<span class="nbadge" id="nc-badge" style="display:none">0</span>':''}</div>`;});});
   document.getElementById('nav-dynamic').innerHTML=h;
-  document.getElementById('nav-bottom').innerHTML=CU.role==='Admin'?`<div class="ni danger" onclick="openModal('m-reset')"><span class="nic">&#9888;</span>Reset Semua Data</div>`:'';
+  document.getElementById('nav-bottom').innerHTML='';
 }
 // ── USER MANAGEMENT ──────────────────────────────
 function renderUsers(){
@@ -107,7 +107,7 @@ function simpanUser(){
 async function hapusUser(i){
   var u=users[i];
   if(!u)return;
-  if(!confirm('Hapus user '+u.username+'?'))return;
+  if(!(await sigajiConfirm({title:'Hapus user',message:'Apakah Anda yakin ingin menghapus user "'+(u.nama||u.username)+'" (@'+u.username+')?',danger:true,okText:'Ya, hapus'})))return;
   var email=(u.email?String(u.email).toLowerCase().trim():'');
   var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
   if(cloud&&email){
@@ -441,10 +441,28 @@ function doUpdatePassword(){
     }
   });
 }
+/** Verifikasi password Admin sebelum reset semua data (lokal: sandi user; cloud: signIn Supabase). */
+async function verifyAdminPasswordForReset(pw){
+  if(!CU||CU.role!=='Admin'||!pw)return false;
+  var cloudOn=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
+  if(cloudOn&&window.sigajiSupabase&&window.sigajiSupabase.auth){
+    var email=(CU.email||'').trim();
+    if(!email||email.indexOf('@')<0)return false;
+    try{
+      var r=await window.sigajiSupabase.auth.signInWithPassword({email:email,password:pw});
+      return !r.error;
+    }catch(e){return false;}
+  }
+  var u=users.find(function(x){
+    return x.username&&CU.username&&String(x.username).toLowerCase()===String(CU.username).toLowerCase()&&x.role==='Admin'&&x.aktif!==false;
+  });
+  return !!(u&&u.password===pw);
+}
 if(typeof window!=='undefined'){
   window.sigajiApplyCloudLoginUi=sigajiApplyCloudLoginUi;
   window.sigajiIsCloudConfigured=sigajiIsCloudConfigured;
   window.sigajiEmailSmtpPing=sigajiEmailSmtpPing;
+  window.verifyAdminPasswordForReset=verifyAdminPasswordForReset;
 }
 
 async function getCloudAccessToken(){
