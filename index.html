@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5">
 <base href="/">
 <title>SiGaji v10 — Sistem Penggajian</title>
-<link rel="stylesheet" href="/css/styles.css?v=11.2.2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/css/styles.css?v=11.2.3">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.2.3">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -23,7 +26,7 @@ window.sigajiParseFunctionJson=async function(r){
   if(ct.indexOf('text/html')>=0||r.status===404)return{ok:false,error:'API tidak aktif — deploy /api/ + env SIGAJI_SUPABASE_* di Cloudflare'};
   return r.json().catch(function(){return null;});
 };
-window.SIGAJI_BUILD='11.2.2';
+window.SIGAJI_BUILD='11.2.3';
 (function(){
   var h=(location&&location.hostname)||'';
   if(!/\.pages\.dev$/i.test(h)&&!/cemerlang\.online$/i.test(h))return;
@@ -157,7 +160,7 @@ window.SIGAJI_BUILD='11.2.2';
   <button class="btn btn-sm btn-p" onclick="openNewKar()">+ Tambah Karyawan</button></div>
   <div class="card">
     <div class="flb mb2">
-      <input type="text" placeholder="&#128269; Cari..." style="width:220px" oninput="filterKar(this.value)">
+      <input type="text" class="inp-search" placeholder="Cari nama, NIK, dept..." oninput="filterKar(this.value)">
       <span class="bdg b-info" id="kar-quota-badge" style="font-size:11px"></span>
       <span style="font-size:11px;color:#6b7280" id="kar-count"></span>
     </div>
@@ -1140,19 +1143,19 @@ window.SIGAJI_BUILD='11.2.2';
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.2.2"></script>
-<script src="/js/storage.js?v=11.2.2"></script>
+<script src="/js/constants.js?v=11.2.3"></script>
+<script src="/js/storage.js?v=11.2.3"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/modules/app-globals.js?v=11.2.2"></script>
-<script src="/js/modules/app-core.js?v=11.2.2"></script>
-<script src="/js/modules/app-access.js?v=11.2.2"></script>
-<script src="/js/modules/app-hr.js?v=11.2.2"></script>
-<script src="/js/modules/app-slip.js?v=11.2.2"></script>
-<script src="/js/modules/app-reports.js?v=11.2.2"></script>
-<script src="/js/modules/app-absensi.js?v=11.2.2"></script>
-<script src="/js/modules/app-master.js?v=11.2.2"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.2.2"></script>
-<script src="/js/modules/app-shell.js?v=11.2.2"></script>
+<script src="/js/modules/app-globals.js?v=11.2.3"></script>
+<script src="/js/modules/app-core.js?v=11.2.3"></script>
+<script src="/js/modules/app-access.js?v=11.2.3"></script>
+<script src="/js/modules/app-hr.js?v=11.2.3"></script>
+<script src="/js/modules/app-slip.js?v=11.2.3"></script>
+<script src="/js/modules/app-reports.js?v=11.2.3"></script>
+<script src="/js/modules/app-absensi.js?v=11.2.3"></script>
+<script src="/js/modules/app-master.js?v=11.2.3"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.2.3"></script>
+<script src="/js/modules/app-shell.js?v=11.2.3"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1186,9 +1189,9 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 })();
 </script>
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
-<script src="/js/cloud-tables.js?v=11.2.2"></script>
+<script src="/js/cloud-tables.js?v=11.2.3"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.2.2"></script>
+<script src="/js/cloud-sync.js?v=11.2.3"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>

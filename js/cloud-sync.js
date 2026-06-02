@@ -346,6 +346,21 @@
     return res.data && res.data.payload ? res.data.payload : null;
   }
 
+  async function refreshTenantLicenseFromCloud() {
+    var sb = window.sigajiSupabase;
+    if (!sb || !window.sigajiCloudTables || typeof window.sigajiCloudTables.fetchTenantLicenseMeta !== 'function') {
+      return;
+    }
+    var lic = await window.sigajiCloudTables.fetchTenantLicenseMeta(sb);
+    if (!lic) return;
+    if (typeof tenantLicense !== 'undefined') {
+      tenantLicense.maxEmployees = lic.maxEmployees;
+      tenantLicense.planLabel = lic.planLabel;
+    }
+    if (typeof window.sigajiApplyLicenseFromObject === 'function') window.sigajiApplyLicenseFromObject(lic);
+    if (typeof window.sigajiRenderLicenseQuotaUi === 'function') window.sigajiRenderLicenseQuotaUi();
+  }
+
   async function loadCloudPayloadIntoApp(uid) {
     var sb = window.sigajiSupabase;
 
@@ -354,6 +369,7 @@
         var fromTables = await window.sigajiCloudTables.tryLoadWithTables(sb, uid, fetchBlobPayload);
         if (fromTables && typeof window.applyDbFromCloudPayload === 'function') {
           window.applyDbFromCloudPayload(fromTables);
+          await refreshTenantLicenseFromCloud();
           return;
         }
       } catch (e) {
@@ -366,6 +382,7 @@
       if (payload && typeof window.applyDbFromCloudPayload === 'function') {
         window.applyDbFromCloudPayload(payload);
       }
+      await refreshTenantLicenseFromCloud();
     } catch (err) {
       console.error(err);
       var er = err.message || String(err.code || '') || 'Gagal membaca cloud';

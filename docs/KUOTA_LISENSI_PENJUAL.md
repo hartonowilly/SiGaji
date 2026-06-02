@@ -1,40 +1,63 @@
 # Kuota karyawan — hanya penjual yang mengatur
 
+Setup klien PT baru (deploy, DNS, Resend): **`ONBOARDING_KLIEN_PT.md`**.
+
+
 Admin perusahaan **pelanggan** tidak bisa mengubah kuota di aplikasi. Mereka hanya melihat badge (mis. `Basic · 18 / 20`).
 
-## 1. Supabase (paling mudah)
+## Di mana tampil di aplikasi?
 
-1. Jalankan SQL: `sql/supabase_tenant_license.sql` lalu `sql/supabase_tenant_license_vendor_only.sql`
-2. Table Editor → `sigaji_tenant_meta` → baris `tenant_key` = `main` (atau tenant klien):
+| Lokasi | Role | Yang terlihat |
+|--------|------|----------------|
+| **Master Karyawan** | Admin / HRD | Badge di kanan kotak cari: `Basic · 18 / 20 karyawan aktif` |
+| **Master Perusahaan → Profil Perusahaan** | Admin / HRD | Kartu **Informasi paket (kuota)** |
 
-| Kolom | Contoh |
-|--------|--------|
-| `max_employees` | `20` |
-| `plan_label` | `Basic` |
+Login **Karyawan** tidak melihat kuota. Setelah ubah di Supabase: login awan ulang + **Ctrl+F5**.
+
+## Kuota tidak muncul?
+
+1. Jalankan SQL tabel + lisensi (lihat §1 di bawah).
+2. Set kuota lewat **SQL Editor** (`sql/supabase_tenant_license_set_vendor.sql`) — **bukan** Table Editor (nilai balik NULL).
+3. Login **awan** (bukan hanya sandi lokal).
+4. Atau set `SIGAJI_MAX_EMPLOYEES=20` di Cloudflare env + redeploy.
+
+Cek di Console: `sigajiGetEffectiveMaxEmployees()` → harus > 0.
+
+## 1. Supabase — set kuota (bukan Table Editor)
+
+Trigger melindungi kuota: isi `20` di **Table Editor** → simpan → kembali **NULL** (disengaja, agar Admin PT tidak bisa naikkan sendiri).
+
+**Langkah:**
+
+1. Jalankan: `sql/supabase_tenant_license.sql`
+2. Jalankan ulang: `sql/supabase_tenant_license_vendor_only.sql` (versi terbaru — izinkan SQL Editor / `postgres`)
+3. Jalankan: **`sql/supabase_tenant_license_set_vendor.sql`** (sesuaikan `20` / `Basic` di file jika perlu)
+4. Verifikasi: `select tenant_key, max_employees, plan_label from sigaji_tenant_meta;`
 
 `NULL` / kosong pada `max_employees` = tidak dibatasi.
 
-## 2. Netlify Function (dari luar, otomatis)
+## 2. API license-set (Cloudflare atau Netlify)
 
-Environment variables di situs Netlify:
+Environment di **Cloudflare Pages** (atau Netlify):
 
 | Variable | Contoh |
 |----------|--------|
 | `SIGAJI_LICENSE_ADMIN_SECRET` | string rahasia panjang |
 | `SIGAJI_SUPABASE_URL` | (sudah ada) |
 | `SIGAJI_SUPABASE_SERVICE_ROLE_KEY` | (sudah ada) |
-| `SIGAJI_TENANT_KEY` | `main` |
 
 Contoh (PowerShell), ganti URL & secret:
 
 ```powershell
 $body = '{"maxEmployees":20,"planLabel":"Basic"}'
 Invoke-RestMethod -Method POST `
-  -Uri "https://cemerlang.online/.netlify/functions/license-set" `
+  -Uri "https://www.cemerlang.online/api/license-set" `
   -Headers @{ Authorization = "Bearer RAHASIA_ANDA" } `
   -ContentType "application/json" `
   -Body $body
 ```
+
+(Netlify lama: `/.netlify/functions/license-set`)
 
 ## 3. Saat deploy per klien (opsional)
 

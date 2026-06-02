@@ -395,6 +395,29 @@
     return assemblePayloadFromTables(sb);
   }
 
+  /** Baca kuota lisensi dari sigaji_tenant_meta (penjual) — terpisah dari blob sigaji_cloud. */
+  async function fetchTenantLicenseMeta(sb) {
+    try {
+      var ok = await tablesExist(sb);
+      if (!ok) return null;
+      var meta = await sb
+        .from('sigaji_tenant_meta')
+        .select('max_employees,plan_label')
+        .eq('tenant_key', TK)
+        .maybeSingle();
+      if (meta.error) throw meta.error;
+      if (!meta.data) return { maxEmployees: 0, planLabel: '' };
+      return {
+        maxEmployees:
+          meta.data.max_employees != null ? parseInt(meta.data.max_employees, 10) || 0 : 0,
+        planLabel: String(meta.data.plan_label || '').trim(),
+      };
+    } catch (e) {
+      console.warn('Sigaji fetchTenantLicenseMeta:', e);
+      return null;
+    }
+  }
+
   async function saveToTables(sb, payload) {
     await savePayloadToTables(sb, payload);
   }
@@ -460,6 +483,7 @@
     storageMode: storageMode,
     tablesExist: tablesExist,
     loadFromTables: loadFromTables,
+    fetchTenantLicenseMeta: fetchTenantLicenseMeta,
     saveToTables: saveToTables,
     migrateBlobToTables: migrateBlobToTables,
     tryLoadWithTables: tryLoadWithTables,

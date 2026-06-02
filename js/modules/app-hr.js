@@ -3,7 +3,14 @@
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
   const thrTag=p.thr_aktif?`<span style="background:#5b21b6;color:#fff;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px">&#127873; THR ${p.thr_nama||''}</span>`:'';
-  document.getElementById('pb-dash').innerHTML=`<div class="pb mb2"><div><div style="font-size:10px;opacity:.75">Periode Aktif</div><div style="font-size:18px;font-weight:800">${p.nama}${thrTag}</div><div style="font-size:11px;opacity:.8">${fmtDate(p.start)} &#8212; ${fmtDate(p.end)} | Bayar: ${fmtDate(p.bayar)}${p.thr_aktif?` | THR: ${fmtDate(p.thr_bayar||'-')}`:''}</div></div><div style="text-align:right"><div style="font-size:28px;font-weight:800">${hP}</div><div style="font-size:10px;opacity:.75">hari menuju penggajian</div></div></div>`;
+  document.getElementById('pb-dash').innerHTML=
+    '<div class="dash-hero">'+
+    '<div><div class="dash-hero-label">Periode aktif</div>'+
+    '<div class="dash-hero-title">'+p.nama+thrTag+'</div>'+
+    '<div class="dash-hero-meta">'+fmtDate(p.start)+' — '+fmtDate(p.end)+' · Bayar: '+fmtDate(p.bayar)+
+    (p.thr_aktif?' · THR: '+fmtDate(p.thr_bayar||'-'):'')+'</div></div>'+
+    '<div style="text-align:right"><div class="dash-hero-count">'+hP+'</div>'+
+    '<div class="dash-hero-count-lbl">hari menuju penggajian</div></div></div>';
   let tB=0,tP=0,tN=0,tT=0;const depts={};
   const list=karyawanListPeriode(p);
   ensureKarSnapshotPeriode(p.nama,list);
@@ -30,6 +37,7 @@ function renderKar(){
   const p=PA();
   const list=karyawanListPeriode(p);
   const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Data profil SDM';
+  try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}
   const tb=document.getElementById('tb-kar');if(!tb)return;
   tb.innerHTML=list.map((k,i)=>karRowHtml(k,i+1)).join('');
 }

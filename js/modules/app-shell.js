@@ -499,8 +499,9 @@ if(typeof window!=='undefined'){
     }
     var card = document.getElementById('lic-card');
     if (!card) return;
-    var showAdmin = typeof CU !== 'undefined' && CU && CU.role === 'Admin';
-    card.style.display = showAdmin ? '' : 'none';
+    var showLic =
+      typeof CU !== 'undefined' && CU && (CU.role === 'Admin' || CU.role === 'HRD');
+    card.style.display = showLic ? '' : 'none';
     var stat = document.getElementById('lic-stat');
     if (stat) {
       var mx = getEffectiveMaxEmployees();
