@@ -7,7 +7,7 @@
 | Supabase (tabel + Storage) | Anda sudah jalankan |
 | API `/api/mobile-*` | Sudah di deploy dengan SiGaji |
 | SiGaji web (HRD approve) | Tab Lokasi GPS & Pengajuan Cuti |
-| **APK Play Store** | **Belum** — project native belum dibuat |
+| **APK internal (Flutter)** | **Sudah** — project di folder `sigaji_mobile/` (build APK, bukan Play Store) |
 | **PWA “SiGaji Absen”** | **Sudah** di folder `mobile/` |
 
 Untuk kebutuhan operasional **sekarang**, pakai **PWA** (buka di Chrome Android, tambah ke layar utama). Perilaku sama dengan rencana app: login email Supabase, check-in/out foto+GPS, ajuan cuti/sakit.
@@ -38,7 +38,20 @@ HRD tetap approve di SiGaji web → **Absensi & Cuti → Pengajuan Cuti**.
 
 ---
 
-## APK native (Flutter / Kotlin) — fase berikutnya
+## APK Flutter (internal)
+
+Panduan build: [`sigaji_mobile/README.md`](../sigaji_mobile/README.md)
+
+```bash
+cd sigaji_mobile
+flutter create . --project-name sigaji_mobile --org com.sigaji   # sekali, jika perlu
+flutter pub get
+flutter build apk --release
+```
+
+APK: `sigaji_mobile/build/app/outputs/flutter-apk/app-release.apk`
+
+## APK native lanjutan (opsional)
 
 APK terpisah berguna jika Anda butuh:
 
@@ -77,7 +90,7 @@ Jika masih gagal, catat **teks error** di toast (mis. bucket belum ada, file max
 
 ## Ringkasan
 
-- **Sekarang:** pakai **`/mobile/`** sebagai “app Android” (PWA).
-- **Nanti:** APK native bisa dibangun di atas API yang sama; belum ada di repo ini.
+- **PWA cepat:** pakai **`/mobile/`** di Chrome Android.
+- **APK internal:** build dari **`sigaji_mobile/`** (Flutter).
 
 Jika upload foto error, kirim pesan error di toast — biasanya bucket/policy Storage.
