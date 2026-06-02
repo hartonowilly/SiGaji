@@ -39,15 +39,26 @@ function sigajiApplyLeaveLocal(nik,dateFrom,dateTo,status,worksSaturday){
   return dates;
 }
 async function sigajiUploadMobileFile(file,subfolder){
-  if(!file||!window.sigajiSupabase){toast('Upload butuh Supabase + bucket sigaji-mobile');return null;}
-  var tenant=(window.SIGAJI_TENANT_KEY||'main').trim()||'main';
-  var nik=(CU&&CU.nik)||'unknown';
-  var ext=(file.name&&file.name.indexOf('.')>=0)?file.name.split('.').pop():'jpg';
-  var path=tenant+'/'+subfolder+'/'+nik+'/'+Date.now()+'.'+ext;
-  var bucket='sigaji-mobile';
-  var up=await window.sigajiSupabase.storage.from(bucket).upload(path,file,{upsert:false});
-  if(up.error){toast('Upload gagal: '+(up.error.message||''));return null;}
-  return path;
+  if(!file)return null;
+  var t=typeof getCloudAccessToken==='function'?await getCloudAccessToken():'';
+  if(!t){toast('Login cloud diperlukan');return null;}
+  var fd=new FormData();
+  var name=file.name||'photo.jpg';
+  if(!/\.(jpe?g|png|webp|heic|pdf)$/i.test(name)){
+    name=(file.type||'').indexOf('pdf')>=0?'surat.pdf':'photo.jpg';
+  }
+  fd.append('file',file,name);
+  fd.append('subfolder',subfolder||'leave');
+  try{
+    var r=await fetch(sigajiMobileApiUrl('mobile-upload'),{method:'POST',headers:{authorization:'Bearer '+t},body:fd});
+    var j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(function(){return null;});
+    if(j&&j.ok&&j.path)return j.path;
+    toast('Upload gagal: '+((j&&j.error)||r.status));
+    return null;
+  }catch(e){
+    toast('Upload gagal: '+(e.message||e));
+    return null;
+  }
 }
 // ── HRD: Lokasi kerja ───────────────────────────
 async function renderMobileLocations(){

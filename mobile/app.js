@@ -155,11 +155,26 @@
     });
   }
   async function uploadPhoto(file, sub) {
-    var ext = (file.name && file.name.split('.').pop()) || 'jpg';
-    var path = tenantKey() + '/' + sub + '/' + me.nik + '/' + Date.now() + '.' + ext;
-    var up = await sb.storage.from('sigaji-mobile').upload(path, file, { upsert: false });
-    if (up.error) throw new Error(up.error.message || 'Upload gagal');
-    return path;
+    var t = await getToken();
+    if (!t) throw new Error('Sesi habis');
+    var fd = new FormData();
+    var name = file.name || 'photo.jpg';
+    if (!/\.(jpe?g|png|webp|heic|pdf)$/i.test(name)) {
+      var guess = (file.type || '').indexOf('pdf') >= 0 ? 'pdf' : 'jpg';
+      name = 'photo.' + guess;
+    }
+    fd.append('file', file, name);
+    fd.append('subfolder', sub || 'attendance');
+    var r = await fetch(apiUrl('mobile-upload'), {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + t },
+      body: fd,
+    });
+    var j = await parseJson(r);
+    if (j && j.ok && j.path) return j.path;
+    var err = (j && j.error) || 'Upload gagal (HTTP ' + r.status + ')';
+    if (r.status === 404) err = 'API mobile-upload belum deploy — push functions/api/mobile-upload.js';
+    throw new Error(err);
   }
   async function submitAttendance(eventType) {
     var fileIn = document.getElementById(eventType === 'check_out' ? 'photo-out' : 'photo-in');

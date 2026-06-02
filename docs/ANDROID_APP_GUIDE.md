@@ -63,14 +63,15 @@ Upload foto: Supabase Storage `sigaji-mobile/{tenant}/attendance/{nik}/...`
 
 ---
 
-## Storage policy (jika upload gagal)
+## Upload foto gagal — perbaikan (wajib)
 
-Di Supabase → Storage → `sigaji-mobile` → Policies, contoh untuk user terautentikasi:
+1. **Supabase SQL Editor** → jalankan **`sql/supabase_storage_sigaji_mobile.sql`** (bucket + policy).
+2. **Deploy ulang** Cloudflare (file baru `functions/api/mobile-upload.js`).
+3. Di HP: hard refresh `/mobile/` atau hapus cache Chrome.
 
-- **INSERT** path prefix `{tenant_key}/`
-- **SELECT** own tenant (atau authenticated read untuk HRD)
+Upload sekarang lewat **API server** (`/api/mobile-upload`), bukan langsung dari browser ke Storage — lebih andal di HP.
 
-Tanpa policy, PWA akan gagal upload foto.
+Jika masih gagal, catat **teks error** di toast (mis. bucket belum ada, file max 5 MB, NIK kosong).
 
 ---
 

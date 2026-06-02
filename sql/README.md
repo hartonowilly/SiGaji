@@ -30,6 +30,7 @@ Jalankan di **SQL Editor** berurutan:
 | `supabase_sigaji_slip_tg_sent.sql` | Riwayat Telegram slip |
 | `supabase_fix_slip_tg_sent_period_nama.sql` | Perbaikan data lama |
 | `supabase_sigaji_mobile_attendance.sql` | App Android: lokasi, check-in/out, pengajuan cuti |
+| `supabase_storage_sigaji_mobile.sql` | **Wajib untuk upload foto** — bucket + policy Storage |
 
 Spesifikasi app mobile: **[../docs/MOBILE_ATTENDANCE_APP.md](../docs/MOBILE_ATTENDANCE_APP.md)**.
 

@@ -16,6 +16,7 @@ SiGaji di **Cloudflare Pages** memakai prefix **`/api/`** (bukan `/netlify/funct
 | `/api/mobile-attendance` | POST — check-in / check-out / day_status (Bearer + NIK) |
 | `/api/mobile-leave` | GET pending (HRD); POST submit / decide / my_list |
 | `/api/mobile-locations` | GET lokasi & penugasan; POST simpan/hapus (HRD) |
+| `/api/mobile-upload` | POST multipart `file` + `subfolder` — upload foto (service role) |
 
 Di **Netlify** tetap `/.netlify/functions/...`. Browser memilih prefix lewat `js/fn-api.js` (`*.pages.dev`, `*.cemerlang.online` → `/api`).
 
