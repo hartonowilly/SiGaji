@@ -88,7 +88,7 @@ window.SIGAJI_BUILD='11.4.0';
   <div class="fg"><label id="lp-lbl">Password</label><input type="password" id="lp" value="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
   <label style="display:flex;align-items:center;gap:.5rem;margin:.25rem 0 .5rem;cursor:pointer;font-size:12px;color:#374151">
     <input type="checkbox" id="remember-username" style="width:16px;height:16px;accent-color:#1a56a0">
-    Ingat username
+    <span id="remember-username-lbl">Ingat email</span>
   </label>
   <div id="cloud-login-hint" style="display:none;font-size:11px;color:#5b4d3a;margin:0 0 .5rem;padding:.5rem .65rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;line-height:1.5"></div>
   <button class="btn btn-p btn-full" onclick="doLogin()">Masuk ke Sistem</button>
@@ -98,8 +98,7 @@ window.SIGAJI_BUILD='11.4.0';
     <button type="button" onclick="openRegisterModal()" style="background:none;border:none;color:#2d6a0a;cursor:pointer;font-size:11px;text-decoration:underline;padding:0">Daftar Email</button>
   </div>
   <div id="file-protocol-hint" style="display:none;margin-top:.85rem;padding:.65rem .85rem;background:#fff8e6;border:1px solid #f6d088;border-radius:8px;font-size:11px;line-height:1.55;color:#713f12">
-    <strong>Data terasa hilang?</strong> Anda membuka file lewat <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">file:///</code>. Browser menyimpan database per folder/path yang berbeda. <strong>Agar data tetap di satu tempat:</strong> jalankan aplikasi lewat server lokal (klik <code>start-sigaji.cmd</code> di folder ini, lalu buka alamat yang muncul, mis. <code>http://localhost:3333</code>), atau selalu buka <code>index.html</code> dari folder yang sama.<br><br>
-    <strong>Cadangan lokal (login awan / Supabase):</strong> tekan F12 → Application (Chrome) / Storage → Local Storage → situs Anda → salin nilai <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_db</code> atau <code style="background:#fdeccd;padding:1px 5px;border-radius:4px">sigaji_universal</code> ke file teks sebagai backup.
+    <strong>Jangan buka lewat file:///</strong> — gunakan alamat situs (mis. <code>https://www.cemerlang.online</code>) atau server lokal (<code>start-sigaji.cmd</code> → <code>http://localhost:3333</code>). SiGaji hanya mode <strong>online</strong> (login email Supabase).
   </div>
 </div>
 </div>
@@ -1195,22 +1194,22 @@ window.SIGAJI_BUILD='11.4.0';
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.4.4"></script>
+<script src="/js/constants.js?v=11.5.0"></script>
 <script src="/js/sigaji-ui.js?v=11.4.4"></script>
 <script src="/js/karyawan-tipe.js?v=11.4.4"></script>
 <script src="/js/storage.js?v=11.4.4"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
 <script src="/js/modules/app-globals.js?v=11.4.0"></script>
 <script src="/js/modules/app-core.js?v=11.4.4"></script>
-<script src="/js/modules/app-access.js?v=11.4.4"></script>
+<script src="/js/modules/app-access.js?v=11.5.0"></script>
 <script src="/js/modules/app-hr.js?v=11.4.4"></script>
 <script src="/js/modules/app-slip.js?v=11.4.4"></script>
 <script src="/js/modules/app-reports.js?v=11.4.4"></script>
 <script src="/js/modules/app-absensi.js?v=11.4.4"></script>
-<script src="/js/modules/app-mobile.js?v=11.4.4"></script>
+<script src="/js/modules/app-mobile.js?v=11.4.5"></script>
 <script src="/js/modules/app-master.js?v=11.4.4"></script>
 <script src="/js/modules/app-migrasi-pph.js?v=11.4.4"></script>
-<script src="/js/modules/app-shell.js?v=11.4.0"></script>
+<script src="/js/modules/app-shell.js?v=11.5.0"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1247,7 +1246,7 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
 <script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.4.0"></script>
+<script src="/js/cloud-sync.js?v=11.5.0"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>

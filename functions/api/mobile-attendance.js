@@ -10,9 +10,11 @@ import {
   workDateJakarta,
   matchGeofence,
   resolveAllowedLocations,
-  loadCloudPayload,
-  saveCloudPayload,
-  applyHadirFromAttendance,
+  clearHadirFromAttendance,
+  trySyncHadirFromAttendance,
+  attendanceDecideAllowedStatuses,
+  canRetryAttendanceEvent,
+  checkInBlocksCheckOut,
 } from '../_lib/mobile-shared.js';
 
 export async function onRequestOptions({ request }) {
@@ -82,38 +84,193 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
+async function fetchDayLogs(sb, tenant, nik, workDate) {
+  const { data: logs, error } = await sb
+    .from('sigaji_attendance_logs')
+    .select('id,event_type,validation_status,created_at')
+    .eq('tenant_key', tenant)
+    .eq('nik', nik)
+    .eq('work_date', workDate);
+  if (error) throw error;
+  const cin = (logs || []).find((x) => x.event_type === 'check_in') || null;
+  const cout = (logs || []).find((x) => x.event_type === 'check_out') || null;
+  return { cin, cout };
+}
+
+function dayStatusPayload(workDate, cin, cout) {
+  const canCheckIn = canRetryAttendanceEvent(cin);
+  const cinOk = checkInBlocksCheckOut(cin);
+  const canCheckOut = cinOk && (!cout || canRetryAttendanceEvent(cout));
+  const complete =
+    cinOk &&
+    cout &&
+    cout.validation_status !== 'rejected' &&
+    cin.validation_status === 'ok' &&
+    cout.validation_status === 'ok';
+  return {
+    ok: true,
+    work_date: workDate,
+    has_check_in: cinOk,
+    has_check_out: !!(cout && cout.validation_status !== 'rejected'),
+    check_in_status: cin ? cin.validation_status : null,
+    check_out_status: cout ? cout.validation_status : null,
+    can_check_in: canCheckIn,
+    can_check_out: canCheckOut,
+    check_out_required: true,
+    complete,
+    needs_hrd_review:
+      (cin && cin.validation_status === 'pending_review') ||
+      (cout && cout.validation_status === 'pending_review'),
+  };
+}
+
+function validateAttendanceGps(isMock, match, accuracyM) {
+  if (isMock) {
+    return {
+      reject: true,
+      code: 'mock_gps',
+      error:
+        'GPS tidak valid (terdeteksi mock/fake). Matikan aplikasi fake GPS lalu check-in ulang.',
+    };
+  }
+  if (!match) {
+    return {
+      reject: true,
+      code: 'outside_geofence',
+      error:
+        'Lokasi di luar radius penugasan. Dekati lokasi kerja yang ditetapkan HRD lalu coba lagi.',
+    };
+  }
+  let validationStatus = 'ok';
+  const flags = {};
+  if (accuracyM != null && accuracyM > 80) {
+    validationStatus = 'pending_review';
+    flags.low_accuracy = true;
+  }
+  return {
+    reject: false,
+    validationStatus,
+    locationId: match.location.id,
+    flags: Object.assign(flags, { distance_m: match.distanceM }),
+    locationNama: match.location.nama,
+  };
+}
+
 export async function onRequestPost({ request, env }) {
   try {
     const tenant = getTenantKey(env);
     const sb = createSbAdmin(env);
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    const ctx = await assertCallerWithNik(sb, jwt, tenant);
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || 'check_in').trim();
 
-    if (action === 'day_status') {
-      const workDate = body.work_date || workDateJakarta();
-      const { data: logs } = await sb
+    if (action === 'decide') {
+      const hrd = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+      const id = String(body.id || '').trim();
+      const decide = String(body.decide || '').trim();
+      const note = String(body.note || '').trim();
+      if (!id) return jsonResponse(400, { ok: false, error: 'id wajib' }, request);
+      if (decide !== 'approve' && decide !== 'reject') {
+        return jsonResponse(400, { ok: false, error: 'decide: approve|reject' }, request);
+      }
+
+      const { data: row, error: re } = await sb
         .from('sigaji_attendance_logs')
-        .select('event_type,validation_status,created_at')
+        .select('*')
         .eq('tenant_key', tenant)
-        .eq('nik', ctx.nik)
-        .eq('work_date', workDate);
-      const cin = (logs || []).find((x) => x.event_type === 'check_in');
-      const cout = (logs || []).find((x) => x.event_type === 'check_out');
+        .eq('id', id)
+        .maybeSingle();
+      if (re) throw re;
+      if (!row) return jsonResponse(404, { ok: false, error: 'Log tidak ditemukan' }, request);
+
+      const allowed = attendanceDecideAllowedStatuses();
+      if (!allowed.includes(row.validation_status)) {
+        return jsonResponse(
+          409,
+          {
+            ok: false,
+            error:
+              'Log sudah ' +
+              row.validation_status +
+              ' — hanya Review / Luar radius yang bisa diputuskan HRD',
+          },
+          request
+        );
+      }
+
+      const decidedAt = new Date().toISOString();
+      const reviewer = hrd.me.nama || hrd.me.username || 'HRD';
+      const newStatus = decide === 'approve' ? 'ok' : 'rejected';
+      const flags = Object.assign({}, row.flags || {}, {
+        review_note: note || null,
+        decided_at: decidedAt,
+        decided_by: hrd.user.id,
+        decided_by_name: reviewer,
+      });
+
+      const { error: ue } = await sb
+        .from('sigaji_attendance_logs')
+        .update({ validation_status: newStatus, flags })
+        .eq('id', id);
+      if (ue) return jsonResponse(500, { ok: false, error: ue.message }, request);
+
+      if (decide === 'reject' && row.event_type === 'check_in') {
+        const { data: cout } = await sb
+          .from('sigaji_attendance_logs')
+          .select('id,flags')
+          .eq('tenant_key', tenant)
+          .eq('nik', row.nik)
+          .eq('work_date', row.work_date)
+          .eq('event_type', 'check_out')
+          .maybeSingle();
+        if (cout) {
+          await sb
+            .from('sigaji_attendance_logs')
+            .update({
+              validation_status: 'rejected',
+              flags: Object.assign({}, cout.flags || {}, {
+                auto_rejected_with_check_in: true,
+                decided_at: decidedAt,
+                decided_by_name: reviewer,
+              }),
+            })
+            .eq('id', cout.id);
+        }
+      }
+
+      await clearHadirFromAttendance(sb, tenant, row.nik, row.work_date);
+      let syncedHadir = false;
+      if (decide === 'approve') {
+        syncedHadir = await trySyncHadirFromAttendance(
+          sb,
+          tenant,
+          row.nik,
+          row.work_date
+        );
+      }
+
       return jsonResponse(
         200,
         {
           ok: true,
-          work_date: workDate,
-          has_check_in: !!cin,
-          has_check_out: !!cout,
-          check_out_required: true,
-          complete: !!(cin && cout),
+          status: newStatus,
+          synced_hadir: syncedHadir,
+          message:
+            decide === 'approve'
+              ? 'Disetujui — absensi diperbarui jika check-in/out lengkap'
+              : 'Ditolak — karyawan dapat check-in ulang',
         },
         request
       );
+    }
+
+    const ctx = await assertCallerWithNik(sb, jwt, tenant);
+
+    if (action === 'day_status') {
+      const workDate = body.work_date || workDateJakarta();
+      const { cin, cout } = await fetchDayLogs(sb, tenant, ctx.nik, workDate);
+      return jsonResponse(200, dayStatusPayload(workDate, cin, cout), request);
     }
 
     const eventType = action === 'check_out' ? 'check_out' : 'check_in';
@@ -130,17 +287,43 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse(400, { ok: false, error: 'lat/lon invalid' }, request);
     }
 
+    const { cin, cout } = await fetchDayLogs(sb, tenant, ctx.nik, workDate);
+
     if (eventType === 'check_out') {
-      const { data: cin } = await sb
-        .from('sigaji_attendance_logs')
-        .select('id')
-        .eq('tenant_key', tenant)
-        .eq('nik', ctx.nik)
-        .eq('work_date', workDate)
-        .eq('event_type', 'check_in')
-        .maybeSingle();
-      if (!cin) {
-        return jsonResponse(409, { ok: false, error: 'Check-in belum ada — check-out wajib setelah check-in' }, request);
+      if (!checkInBlocksCheckOut(cin)) {
+        return jsonResponse(
+          409,
+          {
+            ok: false,
+            code: 'no_check_in',
+            error:
+              cin && cin.validation_status === 'rejected'
+                ? 'Check-in ditolak — lakukan check-in ulang dulu'
+                : 'Check-in belum ada — check-out wajib setelah check-in',
+          },
+          request
+        );
+      }
+      if (cout && !canRetryAttendanceEvent(cout)) {
+        return jsonResponse(
+          409,
+          { ok: false, error: 'Sudah check-out hari ini' },
+          request
+        );
+      }
+    } else {
+      if (cin && !canRetryAttendanceEvent(cin)) {
+        return jsonResponse(
+          409,
+          {
+            ok: false,
+            error:
+              cin.validation_status === 'pending_review'
+                ? 'Check-in menunggu review HRD'
+                : 'Sudah check-in hari ini',
+          },
+          request
+        );
       }
     }
 
@@ -154,23 +337,13 @@ export async function onRequestPost({ request, env }) {
     }
 
     const match = matchGeofence(lat, lon, locations);
-    let validationStatus = 'ok';
-    let locationId = null;
-    const flags = { accuracy_m: accuracyM, is_mock: isMock };
-    if (isMock) {
-      validationStatus = 'pending_review';
-      flags.mock_gps = true;
-    }
-    if (!match) {
-      validationStatus = 'outside_geofence';
-      flags.outside_geofence = true;
-    } else {
-      locationId = match.location.id;
-      flags.distance_m = match.distanceM;
-    }
-    if (accuracyM != null && accuracyM > 80) {
-      validationStatus = validationStatus === 'ok' ? 'pending_review' : validationStatus;
-      flags.low_accuracy = true;
+    const gps = validateAttendanceGps(isMock, match, accuracyM);
+    if (gps.reject) {
+      return jsonResponse(
+        422,
+        { ok: false, code: gps.code, error: gps.error, retry: true },
+        request
+      );
     }
 
     const row = {
@@ -178,15 +351,15 @@ export async function onRequestPost({ request, env }) {
       nik: ctx.nik,
       work_date: workDate,
       event_type: eventType,
-      location_id: locationId,
+      location_id: gps.locationId,
       lat,
       lon,
       accuracy_m: accuracyM,
       photo_path: photoPath,
       device_id: deviceId,
       is_mock: isMock,
-      validation_status: validationStatus,
-      flags,
+      validation_status: gps.validationStatus,
+      flags: Object.assign({ accuracy_m: accuracyM, is_mock: isMock }, gps.flags),
     };
 
     const { data: ins, error: ierr } = await sb
@@ -197,32 +370,41 @@ export async function onRequestPost({ request, env }) {
     if (ierr) return jsonResponse(500, { ok: false, error: ierr.message }, request);
 
     let syncedHadir = false;
-    if (validationStatus === 'ok' || validationStatus === 'pending_review') {
-      const payload = await loadCloudPayload(sb, tenant);
-      syncedHadir = await applyHadirFromAttendance(sb, tenant, payload, ctx.nik, workDate);
-      if (syncedHadir) await saveCloudPayload(sb, tenant, payload);
+    if (gps.validationStatus === 'ok') {
+      syncedHadir = await trySyncHadirFromAttendance(sb, tenant, ctx.nik, workDate);
+    } else if (gps.validationStatus === 'pending_review') {
+      await clearHadirFromAttendance(sb, tenant, ctx.nik, workDate);
     }
 
+    const msg =
+      gps.validationStatus === 'ok'
+        ? eventType === 'check_in'
+          ? 'Check-in tersimpan'
+          : 'Check-out tersimpan'
+        : 'Tersimpan — menunggu persetujuan HRD';
+
+    const after = await fetchDayLogs(sb, tenant, ctx.nik, workDate);
     return jsonResponse(
       200,
-      {
-        ok: true,
-        id: ins && ins.id,
-        event_type: eventType,
-        validation_status: validationStatus,
-        location_nama: match ? match.location.nama : null,
-        synced_hadir: syncedHadir,
-        message:
-          validationStatus === 'ok'
-            ? eventType === 'check_in'
-              ? 'Check-in tersimpan'
-              : 'Check-out tersimpan'
-            : 'Tersimpan — menunggu review HRD',
-      },
+      Object.assign(
+        {
+          ok: true,
+          id: ins && ins.id,
+          event_type: eventType,
+          validation_status: gps.validationStatus,
+          location_nama: gps.locationNama || null,
+          synced_hadir: syncedHadir,
+          message: msg,
+        },
+        dayStatusPayload(workDate, after.cin, after.cout)
+      ),
       request
     );
   } catch (e) {
     const msg = e.message || String(e);
+    if (/Forbidden|Invalid auth/i.test(msg)) {
+      return jsonResponse(403, { ok: false, error: msg }, request);
+    }
     if (/relation.*does not exist|sigaji_attendance/i.test(msg)) {
       return jsonResponse(
         503,

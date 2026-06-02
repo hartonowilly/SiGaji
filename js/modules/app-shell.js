@@ -444,7 +444,9 @@ setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_
 initLibnasYearSelect();
 if(typeof document!=='undefined'){
   function sigajiDomReady(){
-    if(typeof sigajiIsCloudConfigured==='function'&&!sigajiIsCloudConfigured())applyBranding();
+    if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();
+    else if(typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured())applyBranding();
+    else applyBranding();
     initRememberUsername();
     initSigajiNavDrawer();
   }
@@ -454,7 +456,8 @@ if(typeof document!=='undefined'){
 if(typeof window!=='undefined'){
   try{
     window.addEventListener('load',function(){
-      if(typeof sigajiIsCloudConfigured==='function'&&!sigajiIsCloudConfigured())applyBranding();
+      if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();
+      else applyBranding();
       initRememberUsername();initSigajiNavDrawer();
       if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(document.body);
     });

@@ -198,6 +198,14 @@ export function afterCheckinPairValid(checkInRow, checkOutRow) {
   return !!(checkInRow && checkOutRow);
 }
 
+export function attendancePairAllowsHadir(cin, cout) {
+  if (!cin || !cout) return false;
+  if (cin.validation_status === 'rejected' || cout.validation_status === 'rejected') {
+    return false;
+  }
+  return cin.validation_status === 'ok' && cout.validation_status === 'ok';
+}
+
 export async function applyHadirFromAttendance(sb, tenant, payload, nik, workDate) {
   const { data: logs } = await sb
     .from('sigaji_attendance_logs')
@@ -207,10 +215,38 @@ export async function applyHadirFromAttendance(sb, tenant, payload, nik, workDat
     .eq('work_date', workDate);
   const cin = (logs || []).find((x) => x.event_type === 'check_in');
   const cout = (logs || []).find((x) => x.event_type === 'check_out');
-  if (!cin || !cout) return false;
-  if (cin.validation_status === 'rejected' || cout.validation_status === 'rejected') return false;
+  if (!attendancePairAllowsHadir(cin, cout)) return false;
   if (!payload.absensi) payload.absensi = {};
   if (!payload.absensi[nik]) payload.absensi[nik] = {};
   payload.absensi[nik][workDate] = 'hadir';
   return true;
+}
+
+export async function clearHadirFromAttendance(sb, tenant, nik, workDate) {
+  const payload = await loadCloudPayload(sb, tenant);
+  if (!payload.absensi || !payload.absensi[nik]) return false;
+  if (payload.absensi[nik][workDate] !== 'hadir') return false;
+  delete payload.absensi[nik][workDate];
+  await saveCloudPayload(sb, tenant, payload);
+  return true;
+}
+
+export async function trySyncHadirFromAttendance(sb, tenant, nik, workDate) {
+  const payload = await loadCloudPayload(sb, tenant);
+  const changed = await applyHadirFromAttendance(sb, tenant, payload, nik, workDate);
+  if (changed) await saveCloudPayload(sb, tenant, payload);
+  return changed;
+}
+
+/** Status yang boleh di-approve/tolak HRD di web. */
+export function attendanceDecideAllowedStatuses() {
+  return ['pending_review', 'outside_geofence'];
+}
+
+export function canRetryAttendanceEvent(row) {
+  return !row || row.validation_status === 'rejected';
+}
+
+export function checkInBlocksCheckOut(cin) {
+  return !!(cin && cin.validation_status && cin.validation_status !== 'rejected');
 }

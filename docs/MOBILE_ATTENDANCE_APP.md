@@ -115,7 +115,10 @@ Constraint SQL: baris `sakit` tanpa `attachment_path` **ditolak insert**.
 - Geofence ke lokasi yang diizinkan hari itu
 - Kecepatan / loncat lokasi tidak masuk akal
 - EXIF foto vs GPS (opsional)
-- `pending_review` untuk kasus meragukan — HRD putuskan di web
+- **Luar radius** atau **GPS mock** → ditolak server (HTTP 422), **tidak** tersimpan; karyawan bisa langsung coba lagi
+- **Akurasi GPS rendah** (>80 m) → `pending_review` tersimpan; HRD **Setujui** / **Tolak** di web (Absensi → Lokasi GPS → log harian)
+- **Tolak** → status `rejected`, `hadir` di kalender dihapus; karyawan bisa check-in ulang
+- **Setujui** → status `ok`; jika check-in & check-out keduanya OK → `absensi[nik][tanggal] = hadir`
 
 Tidak ada jaminan 100% pada perangkat root; kombinasi server + review HRD yang realistis.
 
@@ -163,9 +166,9 @@ RLS Supabase: isolasi **tenant_key** saja; filter role di **API Cloudflare** + S
 
 | Method | Path | Role |
 |--------|------|------|
-| POST | `/api/attendance-checkin` | Karyawan+ |
-| POST | `/api/attendance-checkout` | Karyawan+ |
-| GET | `/api/attendance-day-status` | Karyawan+ |
+| POST | `/api/mobile-attendance` | Karyawan: `check_in`, `check_out`, `day_status` |
+| POST | `/api/mobile-attendance` | HRD: `action=decide` + `approve` \| `reject` |
+| GET | `/api/mobile-attendance?work_date=` | HRD: log check-in/out |
 | POST | `/api/leave-request` | Karyawan+ |
 | POST | `/api/leave-decide` | Admin, HRD |
 | CRUD | `/api/work-locations` | Admin, HRD |

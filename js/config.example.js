@@ -16,6 +16,9 @@ window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL = '';
 /** Penyimpanan cloud: 'dual' (tabel + cadangan blob, disarankan), 'tables', atau 'blob' (lama). Butuh sql/supabase_sigaji_tables_v11.sql */
 window.SIGAJI_STORAGE_MODE = 'dual';
 /** Hanya di Netlify Environment (bukan config.js browser): SIGAJI_SITE_URL=https://cemerlang.online */
-window.SIGAJI_RESUME_SESSION_ON_LOAD = false;
+/** true = setelah refresh (F5) tetap masuk jika sesi Supabase masih valid. Wajib true untuk produksi cloud. */
+window.SIGAJI_RESUME_SESSION_ON_LOAD = true;
 /** Menit tanpa aktivitas → logout otomatis (0 = nonaktif). */
 window.SIGAJI_IDLE_LOGOUT_MINUTES = 30;
+/** true = tidak ada mode lokal (wajib Supabase). */
+window.SIGAJI_CLOUD_ONLY_MODE = true;

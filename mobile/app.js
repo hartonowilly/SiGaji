@@ -115,6 +115,15 @@
     await refreshDayStatus();
     showScreen('screen-home');
   }
+  function statusLbl(st) {
+    var map = {
+      ok: 'OK',
+      pending_review: 'Menunggu HRD',
+      rejected: 'Ditolak — ulangi',
+      outside_geofence: 'Luar radius',
+    };
+    return map[st] || st || '';
+  }
   async function refreshDayStatus() {
     var el = document.getElementById('day-status');
     if (!el) return;
@@ -125,12 +134,22 @@
     }
     var html = 'Hari ini: ';
     if (j.complete) html += '<span class="status-pill status-ok">Check-in & check-out selesai</span>';
+    else if (j.check_in_status === 'rejected')
+      html += '<span class="status-pill status-err">Check-in ditolak — silakan check-in ulang</span>';
+    else if (j.check_in_status === 'pending_review')
+      html += '<span class="status-pill status-warn">Check-in menunggu HRD (' + statusLbl(j.check_in_status) + ')</span>';
     else if (j.has_check_in && !j.has_check_out)
       html += '<span class="status-pill status-warn">Sudah check-in — check-out wajib</span>';
     else if (!j.has_check_in) html += '<span class="status-pill status-warn">Belum check-in</span>';
+    if (j.check_out_status === 'pending_review')
+      html += ' <span class="status-pill status-warn">Check-out review HRD</span>';
+    if (j.check_out_status === 'rejected')
+      html += ' <span class="status-pill status-err">Check-out ditolak — ulangi</span>';
     el.innerHTML = html;
-    document.getElementById('btn-checkout').disabled = !j.has_check_in || j.has_check_out;
-    document.getElementById('btn-checkin').disabled = j.has_check_in;
+    var btnIn = document.getElementById('btn-checkin');
+    var btnOut = document.getElementById('btn-checkout');
+    if (btnIn) btnIn.disabled = j.can_check_in === false;
+    if (btnOut) btnOut.disabled = j.can_check_out === false;
   }
   function getGps() {
     return new Promise(function (resolve, reject) {
@@ -211,13 +230,17 @@
     });
     if (j && j.ok) {
       toast(j.message || 'Berhasil');
-      if (eventType === 'check_in') showScreen('screen-home');
-      else showScreen('screen-home');
+      showScreen('screen-home');
       fileIn.value = '';
       var prev = document.getElementById(eventType === 'check_out' ? 'preview-out' : 'preview-in');
       if (prev) prev.innerHTML = '';
       await refreshDayStatus();
-    } else toast((j && j.error) || 'Gagal simpan');
+      return;
+    }
+    var err = (j && j.error) || 'Gagal simpan';
+    if (j && j.retry) err += ' — silakan coba lagi.';
+    toast(err);
+    await refreshDayStatus();
   }
   async function loadLeaveHistory() {
     var el = document.getElementById('leave-history');

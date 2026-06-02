@@ -46,6 +46,7 @@ function writeStubConfig(reason) {
     "window.SIGAJI_STORAGE_MODE = 'dual';",
     'window.SIGAJI_RESUME_SESSION_ON_LOAD = false;',
     'window.SIGAJI_IDLE_LOGOUT_MINUTES = 30;',
+    'window.SIGAJI_CLOUD_ONLY_MODE = true;',
     '',
   ].join('\n');
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -98,7 +99,8 @@ const tenant = envStr('SIGAJI_TENANT_KEY', '');
 const maxEmp = envInt('SIGAJI_MAX_EMPLOYEES', 0);
 const bootstrap = envStr('SIGAJI_BOOTSTRAP_ADMIN_EMAIL', '');
 const storage = envStr('SIGAJI_STORAGE_MODE', 'dual');
-const resume = envBool('SIGAJI_RESUME_SESSION_ON_LOAD', false);
+// Default true bila Supabase dikonfigurasi — agar F5 tidak selalu kembali ke login
+const resume = envBool('SIGAJI_RESUME_SESSION_ON_LOAD', !!(url && anon));
 const idleMin = envInt('SIGAJI_IDLE_LOGOUT_MINUTES', 30);
 
 const content = [
@@ -112,6 +114,7 @@ const content = [
   `window.SIGAJI_STORAGE_MODE = ${esc(storage)};`,
   `window.SIGAJI_RESUME_SESSION_ON_LOAD = ${resume};`,
   `window.SIGAJI_IDLE_LOGOUT_MINUTES = ${idleMin};`,
+  'window.SIGAJI_CLOUD_ONLY_MODE = true;',
   '',
 ].join('\n');
 

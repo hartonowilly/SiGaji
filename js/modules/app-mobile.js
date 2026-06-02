@@ -106,14 +106,27 @@ async function renderMobileAttendanceLog(){
     if(row.event_type==='check_in')byNik[row.nik].cin=row;
     if(row.event_type==='check_out')byNik[row.nik].cout=row;
   });
-  var rows=Object.keys(byNik).sort().map(function(nik){
+  var nikList=Object.keys(byNik);
+  if(typeof sortKaryawanByNik==='function'){
+    nikList=sortKaryawanByNik(nikList.map(function(n){return{nik:n};})).map(function(x){return x.nik;});
+  }else nikList.sort(function(a,b){return String(a).localeCompare(String(b),'id',{numeric:true});});
+  var rows=nikList.map(function(nik){
     var g=byNik[nik];
     var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
     var nama=k?(k.nama+' <span style="color:#9ca3af;font-weight:400">('+nik+')</span>'):nik;
     function cell(r,label){
       if(!r)return '<span style="color:#9ca3af">—</span>';
       var loc=r.location_nama?escapeHtml(r.location_nama):'<span style="color:#9ca3af">Lokasi tidak cocok</span>';
-      return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+'<br>'+loc+mobMapLink(r.lat,r.lon)+'<br>'+mobAttStatusLbl(r.validation_status)+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+'</div>';
+      var decideBtns='';
+      if(r.id&&(r.validation_status==='pending_review'||r.validation_status==='outside_geofence')){
+        var idEsc=String(r.id).replace(/'/g,"\\'");
+        decideBtns='<div class="fl gap1" style="margin-top:4px">'
+          +'<button type="button" class="btn btn-xs btn-g" onclick="mobAttendanceDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
+          +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div>';
+      }else if(r.validation_status==='rejected'){
+        decideBtns='<div style="font-size:10px;color:#9b2121;margin-top:2px">Karyawan dapat absen ulang di HP</div>';
+      }
+      return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+'<br>'+loc+mobMapLink(r.lat,r.lon)+'<br>'+mobAttStatusLbl(r.validation_status)+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+decideBtns+'</div>';
     }
     var st='';
     if(g.cin&&g.cout)st='<span class="bdg b-teal">Lengkap</span>';
@@ -122,7 +135,23 @@ async function renderMobileAttendanceLog(){
     return '<tr><td>'+nama+'</td><td>'+cell(g.cin,'Masuk')+'</td><td>'+cell(g.cout,'Pulang')+'</td><td>'+st+'</td></tr>';
   }).join('');
   host.innerHTML='<table><thead><tr><th>Karyawan</th><th>Check-in</th><th>Check-out</th><th>Status hari</th></tr></thead><tbody>'+rows+'</tbody></table>'
-    +'<p style="font-size:10px;color:#9ca3af;margin-top:.5rem">Foto tersimpan di cloud (path di database). Status <em>Review</em> = perlu dicek HRD (GPS mock / di luar radius).</p>';
+    +'<p style="font-size:10px;color:#9ca3af;margin-top:.5rem">'
+    +'<strong>Luar radius / GPS mock</strong> ditolak otomatis di HP (belum tersimpan). '
+    +'<strong>Review</strong> = akurasi GPS rendah — HRD <em>Setujui</em> atau <em>Tolak</em> (tolak → karyawan check-in ulang). '
+    +'Foto di cloud (path di database).</p>';
+}
+async function mobAttendanceDecide(id,decide){
+  var note='';
+  if(decide==='reject'){note=prompt('Alasan penolakan (opsional) — karyawan akan diminta check-in ulang')||'';}
+  else if(!confirm('Setujui absensi ini? Jika check-in & check-out sudah OK, kalender gaji akan diisi hadir.'))return;
+  var r=await sigajiMobileFetch('mobile-attendance',{method:'POST',body:{action:'decide',id:id,decide:decide,note:note}});
+  if(r&&r.ok){
+    toast(r.message||(decide==='approve'?'Disetujui':'Ditolak'));
+    if(r.synced_hadir&&typeof renderAbsensi==='function')renderAbsensi();
+    renderMobileAttendanceLog();
+    return;
+  }
+  toast((r&&r.error)||'Gagal — deploy API mobile-attendance terbaru');
 }
 // ── HRD: Lokasi kerja ───────────────────────────
 async function renderMobileLocations(){
@@ -353,7 +382,7 @@ async function renderMyCutiPage(){
   var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
   extra.innerHTML='<div class="card"><div class="ct">Ajuan cuti / izin / sakit</div>'
     +(cloud?'<p style="font-size:11px;color:#6b7280">Sakit wajib upload surat dokter sejak hari pertama. Setelah disetujui HRD, kalender absensi ter-update otomatis.</p>'
-      :'<p style="font-size:11px;color:#6b7280">Mode lokal: pengajuan disimpan di browser (cloud diperlukan untuk antrian HRD penuh).</p>')
+      :'<p style="font-size:11px;color:#6b7280">Login cloud diperlukan untuk mengirim pengajuan ke HRD.</p>')
     +'<div class="fg2"><div class="fg"><label>Jenis</label><select id="mycuti-type"><option value="cuti">Cuti tahunan</option><option value="izin">Izin</option><option value="sakit">Sakit (wajib surat dokter)</option></select></div>'
     +'<div class="fg"><label>Dari</label><input type="date" id="mycuti-from"></div><div class="fg"><label>Sampai</label><input type="date" id="mycuti-to"></div></div>'
     +'<div class="fg"><label>Alasan</label><textarea id="mycuti-reason" rows="2" style="width:100%"></textarea></div>'

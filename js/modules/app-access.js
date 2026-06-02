@@ -331,24 +331,38 @@ function applyBranding(){
   if(lp){if(logo){lp.src=logo;lp.style.display='block';}else lp.style.display='none';}
 }
 // ── LOGIN ────────────────────────────────────────
+function sigajiIsCloudOnlyMode(){
+  return window.SIGAJI_CLOUD_ONLY_MODE!==false;
+}
 function sigajiIsCloudConfigured(){
   return !!(window.SIGAJI_SUPABASE_URL||'').trim() && !!(window.SIGAJI_SUPABASE_ANON_KEY||'').trim();
 }
-/** Dipanggil setelah config.js: sembunyikan login lokal, wajibkan email Supabase. */
+/** UI login: selalu email Supabase (mode online saja). */
 function sigajiApplyCloudLoginUi(){
-  if(!sigajiIsCloudConfigured())return;
+  if(!sigajiIsCloudOnlyMode()&&!sigajiIsCloudConfigured())return;
   window.sigajiCloudOnlyMode=true;
   var lu=document.getElementById('lu');
   var lp=document.getElementById('lp');
-  if(lu){lu.value='';lu.removeAttribute('value');lu.placeholder='nama@perusahaan.com';}
-  if(lp){lp.value='';lp.removeAttribute('value');lp.type='password';lp.placeholder='';}
+  if(lu){lu.removeAttribute('value');lu.placeholder='nama@perusahaan.com';lu.type='email';lu.autocomplete='username';}
+  if(lp){lp.removeAttribute('value');lp.type='password';lp.placeholder='';lp.autocomplete='current-password';}
   var l1=document.getElementById('lu-lbl');if(l1)l1.textContent='Email';
   var l2=document.getElementById('lp-lbl');if(l2)l2.textContent='Kata sandi';
+  var remLbl=document.getElementById('remember-username-lbl');
+  if(remLbl)remLbl.textContent='Ingat email';
   var h=document.getElementById('cloud-login-hint');
-  if(h)h.style.display='none';
-  var fp = document.getElementById('forgot-pw-wrap');
-  if (fp) fp.style.display = 'block';
-  // Jika fitur "ingat username" aktif, aplikasikan lagi setelah UI cloud membersihkan input
+  if(h){
+    if(!sigajiIsCloudConfigured()){
+      h.style.display='block';
+      h.innerHTML='<strong>Mode online.</strong> Server belum dikonfigurasi: isi <code>SIGAJI_SUPABASE_URL</code> dan <code>SIGAJI_SUPABASE_ANON_KEY</code> di Cloudflare Pages (Environment variables), lalu deploy ulang. Login <code>admin</code>/<code>hrd</code> lokal tidak dipakai lagi.';
+    }else{
+      h.style.display='block';
+      h.innerHTML='Masuk dengan <strong>email & sandi Supabase</strong> (akun yang disetujui Admin/HRD). Data disimpan di cloud.';
+    }
+  }
+  var fp=document.getElementById('forgot-pw-wrap');
+  if(fp)fp.style.display=sigajiIsCloudConfigured()?'block':'none';
+  var fileHint=document.getElementById('file-protocol-hint');
+  if(fileHint)fileHint.style.display='none';
   try{if(typeof initRememberUsername==='function')initRememberUsername();}catch(e){}
 }
 
@@ -387,7 +401,7 @@ function submitForgotPassword(){
 function openRegisterModal(){
   try{
     if(!sigajiIsCloudConfigured()){
-      toast('Fitur ini hanya untuk mode online (Supabase).');
+      toast('Supabase belum dikonfigurasi di server.');
       return;
     }
     var lu=document.getElementById('lu');
@@ -445,7 +459,7 @@ function doUpdatePassword(){
 async function verifyAdminPasswordForReset(pw){
   if(!CU||CU.role!=='Admin'||!pw)return false;
   var cloudOn=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
-  if(cloudOn&&window.sigajiSupabase&&window.sigajiSupabase.auth){
+  if((sigajiIsCloudOnlyMode()||cloudOn)&&window.sigajiSupabase&&window.sigajiSupabase.auth){
     var email=(CU.email||'').trim();
     if(!email||email.indexOf('@')<0)return false;
     try{
@@ -453,6 +467,7 @@ async function verifyAdminPasswordForReset(pw){
       return !r.error;
     }catch(e){return false;}
   }
+  if(sigajiIsCloudOnlyMode())return false;
   var u=users.find(function(x){
     return x.username&&CU.username&&String(x.username).toLowerCase()===String(CU.username).toLowerCase()&&x.role==='Admin'&&x.aktif!==false;
   });
@@ -461,6 +476,7 @@ async function verifyAdminPasswordForReset(pw){
 if(typeof window!=='undefined'){
   window.sigajiApplyCloudLoginUi=sigajiApplyCloudLoginUi;
   window.sigajiIsCloudConfigured=sigajiIsCloudConfigured;
+  window.sigajiIsCloudOnlyMode=sigajiIsCloudOnlyMode;
   window.sigajiEmailSmtpPing=sigajiEmailSmtpPing;
   window.verifyAdminPasswordForReset=verifyAdminPasswordForReset;
 }
@@ -1205,14 +1221,13 @@ function doLogin(){
       else localStorage.removeItem('sigaji_last_username');
     }
   }catch(e){}
-  const cloudOn=sigajiIsCloudConfigured();
-  if(cloudOn||window.sigajiCloudOnlyMode){
-    if(!cloudOn){
-      toast('Isi js/config.js (URL + anon key Supabase) lalu deploy ulang.');
+  if(sigajiIsCloudOnlyMode()||sigajiIsCloudConfigured()||window.sigajiCloudOnlyMode){
+    if(!sigajiIsCloudConfigured()){
+      toast('Supabase belum dikonfigurasi di server. Set env SIGAJI_SUPABASE_* di Cloudflare lalu deploy ulang.');
       return;
     }
     if(rawU.indexOf('@')<0){
-      toast('Gunakan email lengkap untuk masuk (contoh: anda@gmail.com). Mode ini terhubung ke Supabase, bukan username admin/hrd lokal.');
+      toast('Gunakan email lengkap (contoh: anda@perusahaan.com). Login lokal admin/hrd tidak dipakai.');
       return;
     }
     if(typeof window.sigajiTryCloudLogin!=='function'){
@@ -1223,9 +1238,7 @@ function doLogin(){
     window.sigajiTryCloudLogin(rawU,pw);
     return;
   }
-  const user=users.find(x=>x.username.toLowerCase()===u&&x.password===pw&&x.aktif!==false);
-  if(!user){toast('Username/password salah atau user tidak aktif');return;}
-  enterAppWithUser(user);
+  toast('Mode lokal dinonaktifkan. Hubungi Admin untuk akun email Supabase.');
 }
 
 function initRememberUsername(){
@@ -1430,7 +1443,7 @@ function renderSysStatus(){
       return '<tr><td style="padding:8px 12px;font-weight:600;color:#374151;width:38%;border-bottom:1px solid #f3f4f6">'+lbl+'</td>'
         +'<td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:12px">'+val+b+'</td></tr>';
     }
-    var cloudLbl=cloudOn?(cloudOnly?'Cloud (wajib email)':'Cloud aktif'):'Lokal (tanpa Supabase)';
+    var cloudLbl=sigajiIsCloudOnlyMode()?'Online (Supabase wajib)':(cloudOn?(cloudOnly?'Cloud (wajib email)':'Cloud aktif'):'Lokal (legacy)');
     var schemaLbl=schemaStored==null?'belum ada data tersimpan':String(schemaStored);
     if(schemaStored!=null&&!schemaOk)schemaLbl+=' - buka app sekali untuk migrasi otomatis';
     var deployWarn=!modOk
@@ -1448,7 +1461,7 @@ function renderSysStatus(){
       +row('index.html di server','<span id="sysstatus-server-index">Memeriksa...</span>')
       +row('Schema (kode)',String(schemaExp),{cls:'b-info',txt:'target'})
       +row('Schema (data tersimpan)',escapeHtml(schemaLbl),schemaOk?{cls:'b-ok',txt:'sesuai'}:{cls:'b-warn',txt:'cek'})
-      +row('Mode cloud',escapeHtml(cloudLbl),cloudOn?{cls:'b-ok',txt:'ON'}:{cls:'b-gray',txt:'OFF'})
+      +row('Mode cloud',escapeHtml(cloudLbl),cloudOn?{cls:'b-ok',txt:'ON'}:{cls:'b-err',txt:'config?'})
       +row('Klien Supabase',sbReady?'terhubung':'belum / tidak dipakai',sbReady?{cls:'b-ok',txt:'siap'}:{cls:'b-gray',txt:'-'})
       +(storageMode?row('Penyimpanan cloud',escapeHtml(storageMode)):'')
       +row('Situs',escapeHtml(prot+'//'+host))

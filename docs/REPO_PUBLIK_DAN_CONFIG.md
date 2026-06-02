@@ -22,7 +22,7 @@ Opsional (sama seperti `config.example.js`):
 - `SIGAJI_TENANT_KEY`
 - `SIGAJI_MAX_EMPLOYEES`
 - `SIGAJI_STORAGE_MODE` = `dual`
-- `SIGAJI_RESUME_SESSION_ON_LOAD` = `true` atau `false`
+- `SIGAJI_RESUME_SESSION_ON_LOAD` = `true` (disarankan; jika `false`, setiap refresh browser kembali ke halaman login meski sesi Supabase masih ada)
 - `SIGAJI_IDLE_LOGOUT_MINUTES` = `30`
 
 Salin nilai dari `js/config.js` di laptop Anda (sekali), paste ke Netlify — **jangan** commit `config.js` ke GitHub.
@@ -39,13 +39,17 @@ npm install && npm run build
 
 `npm run build` → `scripts/generate-config.js` → file `js/config.js` ada di situs live.
 
+## Mode online saja
+
+SiGaji **tidak lagi** mendukung login lokal `admin` / `hrd` tanpa Supabase (`SIGAJI_CLOUD_ONLY_MODE = true`). Semua user masuk dengan **email + sandi Supabase**; data utama di cloud.
+
 ## Develop di laptop
 
 ```powershell
 copy js\config.example.js js\config.js
 ```
 
-Isi URL + anon key, lalu buka / deploy lokal seperti biasa.
+Isi URL + anon key, jalankan lewat server lokal (`npm run build` atau `start-sigaji.cmd`), buka `http://localhost:...` — bukan `file:///`.
 
 ## Push ke GitHub
 
