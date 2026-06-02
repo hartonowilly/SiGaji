@@ -118,13 +118,19 @@ async function renderMobileAttendanceLog(){
       if(!r)return '<span style="color:#9ca3af">—</span>';
       var loc=r.location_nama?escapeHtml(r.location_nama):'<span style="color:#9ca3af">Lokasi tidak cocok</span>';
       var decideBtns='';
-      if(r.id&&(r.validation_status==='pending_review'||r.validation_status==='outside_geofence')){
+      if(r.id){
         var idEsc=String(r.id).replace(/'/g,"\\'");
-        decideBtns='<div class="fl gap1" style="margin-top:4px">'
-          +'<button type="button" class="btn btn-xs btn-g" onclick="mobAttendanceDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
-          +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div>';
-      }else if(r.validation_status==='rejected'){
-        decideBtns='<div style="font-size:10px;color:#9b2121;margin-top:2px">Karyawan dapat absen ulang di HP</div>';
+        if(r.validation_status==='pending_review'||r.validation_status==='outside_geofence'){
+          decideBtns='<div class="fl gap1" style="margin-top:4px">'
+            +'<button type="button" class="btn btn-xs btn-g" onclick="mobAttendanceDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
+            +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div>';
+        }else if(r.validation_status==='ok'){
+          decideBtns='<div class="fl gap1" style="margin-top:4px;flex-wrap:wrap">'
+            +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak (salah lokasi)</button>'
+            +'<span style="font-size:10px;color:#6b7280">Sudah OK GPS — tolak bila lokasi/penugasan salah</span></div>';
+        }else if(r.validation_status==='rejected'){
+          decideBtns='<div style="font-size:10px;color:#9b2121;margin-top:2px">Karyawan dapat absen ulang di HP</div>';
+        }
       }
       return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+'<br>'+loc+mobMapLink(r.lat,r.lon)+'<br>'+mobAttStatusLbl(r.validation_status)+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+decideBtns+'</div>';
     }
@@ -135,10 +141,14 @@ async function renderMobileAttendanceLog(){
     return '<tr><td>'+nama+'</td><td>'+cell(g.cin,'Masuk')+'</td><td>'+cell(g.cout,'Pulang')+'</td><td>'+st+'</td></tr>';
   }).join('');
   host.innerHTML='<table><thead><tr><th>Karyawan</th><th>Check-in</th><th>Check-out</th><th>Status hari</th></tr></thead><tbody>'+rows+'</tbody></table>'
-    +'<p style="font-size:10px;color:#9ca3af;margin-top:.5rem">'
-    +'<strong>Luar radius / GPS mock</strong> ditolak otomatis di HP (belum tersimpan). '
-    +'<strong>Review</strong> = akurasi GPS rendah — HRD <em>Setujui</em> atau <em>Tolak</em> (tolak → karyawan check-in ulang). '
-    +'Foto di cloud (path di database).</p>';
+    +'<div class="info-box" style="margin-top:.65rem;font-size:11px;line-height:1.55">'
+    +'<strong>Kapan tombol muncul?</strong><ul style="margin:.35rem 0 0 1rem;padding:0">'
+    +'<li><span class="bdg b-warn">Review</span> — GPS kurang akurat → <em>Setujui</em> atau <em>Tolak</em></li>'
+    +'<li><span class="bdg b-err">Luar radius</span> (data lama) — sama, Setujui/Tolak</li>'
+    +'<li><span class="bdg b-teal">OK</span> — GPS dalam radius; cukup <em>Tolak (salah lokasi)</em> jika penugasan/koordinat salah</li>'
+    +'<li>Tanpa badge tombol: belum deploy API terbaru, atau login bukan email cloud Admin/HRD</li>'
+    +'</ul>'
+    +'<strong>Check-in gagal di HP (luar radius):</strong> perbaiki penugasan lokasi + radius, minta karyawan check-in ulang — tidak ada baris di log.</div>';
 }
 async function mobAttendanceDecide(id,decide){
   var note='';
@@ -151,7 +161,10 @@ async function mobAttendanceDecide(id,decide){
     renderMobileAttendanceLog();
     return;
   }
-  toast((r&&r.error)||'Gagal — deploy API mobile-attendance terbaru');
+  var err=(r&&r.error)||'Gagal';
+  if(/Forbidden|Invalid auth|tidak terhubung/i.test(err))err+=' — login dengan email Admin/HRD yang tertaut di Manajemen User.';
+  else if(/deploy|404|tidak aktif/i.test(err))err+=' — deploy ulang functions/api/mobile-attendance.js lalu Ctrl+F5.';
+  toast(err);
 }
 // ── HRD: Lokasi kerja ───────────────────────────
 async function renderMobileLocations(){

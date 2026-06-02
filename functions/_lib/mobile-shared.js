@@ -238,9 +238,22 @@ export async function trySyncHadirFromAttendance(sb, tenant, nik, workDate) {
   return changed;
 }
 
-/** Status yang boleh di-approve/tolak HRD di web. */
+/** Apakah HRD/Admin boleh approve/reject log ini. */
+export function attendanceCanDecide(row, decide) {
+  if (!row || !decide) return false;
+  const st = row.validation_status;
+  if (decide === 'approve') {
+    return st === 'pending_review' || st === 'outside_geofence';
+  }
+  if (decide === 'reject') {
+    return st === 'pending_review' || st === 'outside_geofence' || st === 'ok';
+  }
+  return false;
+}
+
+/** @deprecated gunakan attendanceCanDecide */
 export function attendanceDecideAllowedStatuses() {
-  return ['pending_review', 'outside_geofence'];
+  return ['pending_review', 'outside_geofence', 'ok'];
 }
 
 export function canRetryAttendanceEvent(row) {

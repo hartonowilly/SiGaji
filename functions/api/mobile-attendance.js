@@ -12,7 +12,7 @@ import {
   resolveAllowedLocations,
   clearHadirFromAttendance,
   trySyncHadirFromAttendance,
-  attendanceDecideAllowedStatuses,
+  attendanceCanDecide,
   canRetryAttendanceEvent,
   checkInBlocksCheckOut,
 } from '../_lib/mobile-shared.js';
@@ -184,16 +184,16 @@ export async function onRequestPost({ request, env }) {
       if (re) throw re;
       if (!row) return jsonResponse(404, { ok: false, error: 'Log tidak ditemukan' }, request);
 
-      const allowed = attendanceDecideAllowedStatuses();
-      if (!allowed.includes(row.validation_status)) {
+      if (!attendanceCanDecide(row, decide)) {
+        const hint =
+          decide === 'approve'
+            ? 'Setujui hanya untuk status Review atau Luar radius. Untuk check-in OK yang salah, gunakan Tolak.'
+            : 'Log sudah ditolak atau tidak bisa dibatalkan.';
         return jsonResponse(
           409,
           {
             ok: false,
-            error:
-              'Log sudah ' +
-              row.validation_status +
-              ' — hanya Review / Luar radius yang bisa diputuskan HRD',
+            error: 'Status ' + row.validation_status + ' — ' + hint,
           },
           request
         );
