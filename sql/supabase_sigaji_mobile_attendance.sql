@@ -161,3 +161,5 @@ create policy "sigaji_leave_requests_main" on public.sigaji_leave_requests for a
 -- Path foto: {tenant_key}/attendance/{nik}/{uuid}.jpg
 -- Path surat: {tenant_key}/leave/{nik}/{uuid}.pdf|.jpg
 -- Policy storage: authenticated upload/read own tenant — atur di Dashboard atau SQL storage policies.
+--
+-- Notifikasi karyawan (disetujui/ditolak pengajuan): sql/supabase_mobile_notifications.sql

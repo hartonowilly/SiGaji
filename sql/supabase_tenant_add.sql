@@ -170,6 +170,10 @@ drop policy if exists "sigaji_leave_requests___TENANT_KEY__" on public.sigaji_le
 create policy "sigaji_leave_requests___TENANT_KEY__" on public.sigaji_leave_requests for all to authenticated
   using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
 
+drop policy if exists "sigaji_mobile_notifications___TENANT_KEY__" on public.sigaji_mobile_notifications;
+create policy "sigaji_mobile_notifications___TENANT_KEY__" on public.sigaji_mobile_notifications for all to authenticated
+  using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
+
 -- ── Verifikasi ─────────────────────────────────────────────────────────────
 -- select tenant_key, max_employees, plan_label from public.sigaji_tenant_meta where tenant_key = '__TENANT_KEY__';
 -- select policyname from pg_policies where policyname like '%__TENANT_KEY__%';

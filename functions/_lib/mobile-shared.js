@@ -487,3 +487,56 @@ export async function validateCutiKuota(
   }
   return { ok: true, details };
 }
+
+// ── Notifikasi mobile (PWA karyawan) ────────────────────────────────────────
+
+const LEAVE_TYPE_LABEL = { cuti: 'Cuti tahunan', izin: 'Izin', sakit: 'Sakit' };
+
+export function leaveDecisionNotificationContent(req, decide, rejectNote) {
+  const lbl = LEAVE_TYPE_LABEL[req.request_type] || req.request_type || 'Pengajuan';
+  const range = req.date_from + ' – ' + req.date_to;
+  if (decide === 'approve') {
+    return {
+      title: lbl + ' disetujui',
+      body:
+        'Pengajuan ' +
+        lbl +
+        ' (' +
+        range +
+        ') telah disetujui HRD. Absensi akan diperbarui.',
+    };
+  }
+  const note = String(rejectNote || '').trim();
+  return {
+    title: lbl + ' ditolak',
+    body:
+      'Pengajuan ' +
+      lbl +
+      ' (' +
+      range +
+      ') ditolak HRD.' +
+      (note ? ' Catatan: ' + note : ''),
+  };
+}
+
+export async function insertMobileNotification(sb, tenant, nik, row) {
+  const { error } = await sb.from('sigaji_mobile_notifications').insert({
+    tenant_key: tenant,
+    nik,
+    category: row.category || 'leave',
+    title: row.title,
+    body: row.body,
+    ref_id: row.ref_id || null,
+  });
+  if (error) throw error;
+}
+
+export async function notifyLeaveDecision(sb, tenant, req, decide, rejectNote) {
+  const content = leaveDecisionNotificationContent(req, decide, rejectNote);
+  await insertMobileNotification(sb, tenant, req.nik, {
+    category: 'leave',
+    title: content.title,
+    body: content.body,
+    ref_id: req.id,
+  });
+}

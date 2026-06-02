@@ -34,6 +34,7 @@ grant select, insert, update, delete on table public.sigaji_work_locations to au
 grant select, insert, update, delete on table public.sigaji_location_assignments to authenticated;
 grant select, insert, update, delete on table public.sigaji_attendance_logs to authenticated;
 grant select, insert, update, delete on table public.sigaji_leave_requests to authenticated;
+grant select, insert, update, delete on table public.sigaji_mobile_notifications to authenticated;
 
 -- Netlify Functions (service_role) — konsisten dengan kebijakan Supabase baru
 grant select, insert, update, delete on table public.sigaji_cloud to service_role;
@@ -52,3 +53,4 @@ grant select, insert, update, delete on table public.sigaji_work_locations to se
 grant select, insert, update, delete on table public.sigaji_location_assignments to service_role;
 grant select, insert, update, delete on table public.sigaji_attendance_logs to service_role;
 grant select, insert, update, delete on table public.sigaji_leave_requests to service_role;
+grant select, insert, update, delete on table public.sigaji_mobile_notifications to service_role;

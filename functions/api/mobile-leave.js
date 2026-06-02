@@ -15,6 +15,7 @@ import {
   countLeaveWorkDays,
   validateCutiKuota,
   sumPendingCutiDaysByYear,
+  notifyLeaveDecision,
 } from '../_lib/mobile-shared.js';
 
 export async function onRequestOptions({ request }) {
@@ -95,6 +96,11 @@ export async function onRequestPost({ request, env }) {
             decided_by_name: hrd.me.nama || hrd.me.username,
           })
           .eq('id', id);
+        try {
+          await notifyLeaveDecision(sb, tenant, req, 'reject', note);
+        } catch (ne) {
+          console.warn('notifyLeaveDecision reject', ne.message || ne);
+        }
         return jsonResponse(200, { ok: true, status: 'rejected' }, request);
       }
 
@@ -146,6 +152,12 @@ export async function onRequestPost({ request, env }) {
           reject_note: note || null,
         })
         .eq('id', id);
+
+      try {
+        await notifyLeaveDecision(sb, tenant, req, 'approve', note);
+      } catch (ne) {
+        console.warn('notifyLeaveDecision approve', ne.message || ne);
+      }
 
       return jsonResponse(
         200,

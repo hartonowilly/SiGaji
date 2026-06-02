@@ -400,6 +400,7 @@ async function renderMyCutiPage(){
     +'<div class="fg"><label>Alasan</label><textarea id="mycuti-reason" rows="2" style="width:100%"></textarea></div>'
     +'<div class="fg" id="mycuti-file-wrap" style="display:none"><label>Surat dokter (wajib)</label><input type="file" id="mycuti-file" accept="image/*,.pdf"></div>'
     +'<button class="btn btn-p btn-sm" onclick="submitMyCutiRequest()">Kirim pengajuan</button>'
+    +'<div id="mycuti-notif-cloud" class="mt1" style="display:none"></div>'
     +'<div id="mycuti-requests-list" class="mt1"></div></div>';
   var sel=document.getElementById('mycuti-type');
   if(sel)sel.onchange=function(){
@@ -411,8 +412,31 @@ async function renderMyCutiPage(){
   var mt=document.getElementById('mycuti-to');
   if(mf){mf.onchange=loadMyCutiBalanceCloud;mf.oninput=loadMyCutiBalanceCloud;}
   if(mt){mt.onchange=refreshMyCutiPreviewCloud;mt.oninput=refreshMyCutiPreviewCloud;}
-  if(cloud)loadMyCutiBalanceCloud();
+  if(cloud){loadMyCutiBalanceCloud();loadMyCutiNotifCloud();}
   loadMyCutiRequests();
+}
+async function loadMyCutiNotifCloud(){
+  var el=document.getElementById('mycuti-notif-cloud');
+  if(!el||typeof sigajiIsCloudConfigured!=='function'||!sigajiIsCloudConfigured())return;
+  var j=await sigajiMobileFetch('mobile-notifications',{method:'POST',body:{action:'list',limit:15}});
+  if(!j||!j.ok){el.style.display='none';return;}
+  var items=j.items||[];
+  if(!items.length){el.style.display='none';return;}
+  var unread=items.filter(function(n){return !n.read_at;});
+  el.style.display='block';
+  el.innerHTML='<div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:.35rem">Notifikasi pengajuan'
+    +(unread.length?' <span class="bdg b-warn">'+unread.length+' baru</span>':'')+'</div>'
+    +items.slice(0,8).map(function(n){
+      var st=!n.read_at?'background:#f0f6ff;':'';
+      return '<div style="font-size:11px;padding:.45rem 0;border-bottom:1px solid #f3f4f6;'+st+'">'
+        +'<div style="font-weight:700">'+escapeHtml(n.title||'')+'</div>'
+        +'<div style="color:#6b7280">'+escapeHtml(n.body||'')+'</div></div>';
+    }).join('')
+    +(unread.length?'<button type="button" class="btn btn-sm btn-out mt05" onclick="markMyCutiNotifRead()">Tandai dibaca</button>':'');
+}
+async function markMyCutiNotifRead(){
+  await sigajiMobileFetch('mobile-notifications',{method:'POST',body:{action:'mark_read',all:true}});
+  loadMyCutiNotifCloud();
 }
 function formatMyCutiBalanceCloud(b){
   if(!b)return '';

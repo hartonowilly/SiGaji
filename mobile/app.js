@@ -2,6 +2,8 @@
   var sb = null;
   var session = null;
   var me = { nama: '', nik: '', role: '' };
+  var lastUnreadCount = 0;
+  var notifPollTimer = null;
 
   function apiBase() {
     var h = (location && location.hostname) || '';
@@ -113,7 +115,96 @@
     document.getElementById('home-nama').textContent = me.nama;
     document.getElementById('home-nik').textContent = 'NIK: ' + me.nik;
     await refreshDayStatus();
+    await refreshNotifBadge(true);
+    startNotifPolling();
     showScreen('screen-home');
+  }
+  function fmtNotifTime(iso) {
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return iso;
+    }
+  }
+  function updateNotifBadgeUi(n) {
+    var badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    if (n > 0) {
+      badge.style.display = 'block';
+      badge.textContent = n > 99 ? '99+' : String(n);
+    } else badge.style.display = 'none';
+  }
+  async function refreshNotifBadge(silent) {
+    var j = await mobileApi('mobile-notifications', { action: 'unread_count' });
+    if (!j || !j.ok) return;
+    var n = j.unread || 0;
+    if (!silent && n > lastUnreadCount && lastUnreadCount >= 0) {
+      toast('Ada notifikasi baru — buka lonceng');
+    }
+    lastUnreadCount = n;
+    updateNotifBadgeUi(n);
+  }
+  function startNotifPolling() {
+    if (notifPollTimer) clearInterval(notifPollTimer);
+    notifPollTimer = setInterval(function () {
+      var home = document.getElementById('screen-home');
+      if (home && home.classList.contains('active')) refreshNotifBadge(false);
+    }, 45000);
+  }
+  async function loadNotifList() {
+    var el = document.getElementById('notif-list');
+    var btnAll = document.getElementById('btn-notif-read-all');
+    if (!el) return;
+    el.textContent = 'Memuat…';
+    var j = await mobileApi('mobile-notifications', { action: 'list', limit: 50 });
+    if (!j || !j.ok) {
+      el.textContent = (j && j.error) || 'Gagal memuat notifikasi';
+      if (btnAll) btnAll.style.display = 'none';
+      return;
+    }
+    var items = j.items || [];
+    if (!items.length) {
+      el.innerHTML = '<div style="text-align:center;padding:.5rem 0">Belum ada notifikasi</div>';
+      if (btnAll) btnAll.style.display = 'none';
+      await refreshNotifBadge(true);
+      return;
+    }
+    var hasUnread = items.some(function (n) {
+      return !n.read_at;
+    });
+    if (btnAll) btnAll.style.display = hasUnread ? 'block' : 'none';
+    el.innerHTML = items
+      .map(function (n) {
+        var unread = !n.read_at;
+        return (
+          '<div class="notif-item' +
+          (unread ? ' unread' : '') +
+          '">' +
+          '<div class="notif-item-title">' +
+          escapeHtml(n.title || '') +
+          '</div>' +
+          '<div class="notif-item-body">' +
+          escapeHtml(n.body || '') +
+          '</div>' +
+          '<div class="notif-item-time">' +
+          fmtNotifTime(n.created_at) +
+          '</div></div>'
+        );
+      })
+      .join('');
+    if (hasUnread) {
+      await mobileApi('mobile-notifications', { action: 'mark_read', all: true });
+    }
+    await refreshNotifBadge(true);
+  }
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
   function statusLbl(st) {
     var map = {
@@ -450,19 +541,30 @@
     await afterLogin();
   };
   window.sigajiMobileLogout = async function () {
+    if (notifPollTimer) clearInterval(notifPollTimer);
+    notifPollTimer = null;
+    lastUnreadCount = 0;
     await sb.auth.signOut();
     session = null;
     showScreen('screen-login');
   };
   window.sigajiMobileGo = function (id) {
     showScreen(id);
+    if (id === 'screen-notif') loadNotifList();
     if (id === 'screen-leave') {
       document.getElementById('leave-file-wrap').style.display =
         document.getElementById('leave-type').value === 'sakit' ? 'block' : 'none';
       loadLeaveHistory();
       loadLeaveBalance();
     }
-    if (id === 'screen-home') refreshDayStatus();
+    if (id === 'screen-home') {
+      refreshDayStatus();
+      refreshNotifBadge(true);
+    }
+  };
+  window.sigajiMobileMarkAllNotifRead = async function () {
+    await mobileApi('mobile-notifications', { action: 'mark_read', all: true });
+    await loadNotifList();
   };
   window.sigajiMobileSubmitIn = function () {
     submitAttendance('check_in');

@@ -27,9 +27,16 @@
   </div>
 
   <div id="screen-home" class="screen">
-    <p class="logo-txt">Halo</p>
-    <p class="sub" id="home-nama">—</p>
-    <p class="sub" id="home-nik" style="margin-top:-.5rem">—</p>
+    <div class="home-top">
+      <div>
+        <p class="logo-txt" style="margin:0">Halo</p>
+        <p class="sub" id="home-nama" style="margin:.15rem 0 0">—</p>
+        <p class="sub" id="home-nik" style="margin:0">—</p>
+      </div>
+      <button type="button" class="notif-bell" id="btn-notif" onclick="sigajiMobileGo('screen-notif')" aria-label="Notifikasi">
+        &#128276;<span class="notif-badge" id="notif-badge" style="display:none">0</span>
+      </button>
+    </div>
     <div class="card">
       <div id="day-status" style="font-size:.85rem;margin-bottom:.75rem">Memuat status…</div>
       <button type="button" class="btn btn-success" id="btn-checkin" onclick="sigajiMobileGo('screen-checkin')">Check-in</button>
@@ -60,6 +67,16 @@
       <div id="preview-out"></div>
       <button type="button" class="btn btn-primary" onclick="sigajiMobileSubmitOut()">Kirim check-out</button>
       <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Batal</button>
+    </div>
+  </div>
+
+  <div id="screen-notif" class="screen">
+    <p class="logo-txt">Notifikasi</p>
+    <p class="sub">Status pengajuan cuti / izin / sakit</p>
+    <div class="card">
+      <div id="notif-list" style="font-size:.85rem;color:#64748b">Memuat…</div>
+      <button type="button" class="btn btn-out" id="btn-notif-read-all" style="display:none" onclick="sigajiMobileMarkAllNotifRead()">Tandai semua dibaca</button>
+      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Kembali</button>
     </div>
   </div>
 
@@ -94,6 +111,6 @@
 <div id="toast"></div>
 <script src="/js/config.js"></script>
 <script src="/js/vendor/supabase.js"></script>
-<script src="/mobile/app.js?v=11.5.2"></script>
+<script src="/mobile/app.js?v=11.5.3"></script>
 </body>
 </html>
