@@ -28,14 +28,27 @@ export async function onRequestGet({ request, env }) {
       const nik = url.searchParams.get('nik') || '';
       let q = sb
         .from('sigaji_location_assignments')
-        .select('*, sigaji_work_locations(nama,lat,lon,radius_m,tipe)')
+        .select('*')
         .eq('tenant_key', tenant)
         .order('date_from', { ascending: false })
         .limit(300);
       if (nik) q = q.eq('nik', nik);
-      const { data, error } = await q;
-      if (error) throw error;
-      return jsonResponse(200, { ok: true, items: data || [] }, request);
+      const { data: assigns, error: aErr } = await q;
+      if (aErr) throw aErr;
+      const { data: locs, error: lErr } = await sb
+        .from('sigaji_work_locations')
+        .select('id,nama,lat,lon,radius_m,tipe')
+        .eq('tenant_key', tenant);
+      if (lErr) throw lErr;
+      const locMap = {};
+      (locs || []).forEach((l) => {
+        if (l && l.id) locMap[l.id] = l;
+      });
+      const items = (assigns || []).map((a) => ({
+        ...a,
+        sigaji_work_locations: locMap[a.location_id] || null,
+      }));
+      return jsonResponse(200, { ok: true, items }, request);
     }
 
     const { data, error } = await sb
@@ -117,6 +130,16 @@ export async function onRequestPost({ request, env }) {
       const locationId = String(body.location_id || '').trim();
       if (!nik || !locationId || !dateFrom || !dateTo) {
         return jsonResponse(400, { ok: false, error: 'nik, location_id, date_from, date_to wajib' }, request);
+      }
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(locationId)) {
+        return jsonResponse(
+          400,
+          { ok: false, error: 'Lokasi tidak valid — pilih dari dropdown, jangan ketik nomor/ID manual' },
+          request
+        );
+      }
+      if (dateTo < dateFrom) {
+        return jsonResponse(400, { ok: false, error: 'Tanggal akhir harus >= tanggal mulai' }, request);
       }
       const row = {
         tenant_key: tenant,

@@ -90,32 +90,128 @@ async function editMobileLocation(id){
   if(r&&r.ok){toast('Lokasi disimpan');renderMobileLocations();}else toast((r&&r.error)||'Gagal simpan');
 }
 // ── HRD: Penugasan ──────────────────────────────
+function mobKarSelectHtml(selectedNik){
+  var list=(karyawan||[]).slice().sort(function(a,b){return String(a.nama||'').localeCompare(String(b.nama||''));});
+  var opts='<option value="">-- Pilih karyawan --</option>';
+  list.forEach(function(k){
+    if(!k||!k.nik)return;
+    var sel=k.nik===selectedNik?' selected':'';
+    opts+='<option value="'+escapeHtml(k.nik)+'"'+sel+'>'+escapeHtml(k.nik+' — '+k.nama)+'</option>';
+  });
+  return opts;
+}
+function mobLocSelectHtml(locations,selectedId){
+  var opts='<option value="">-- Pilih lokasi --</option>';
+  (locations||[]).forEach(function(l){
+    if(!l||!l.id||l.aktif===false)return;
+    var sel=l.id===selectedId?' selected':'';
+    opts+='<option value="'+escapeHtml(l.id)+'"'+sel+'>'+escapeHtml(l.nama)+' ('+(l.radius_m||200)+' m)</option>';
+  });
+  return opts;
+}
+function mobAssignFormHtml(locations,editRow){
+  editRow=editRow||null;
+  var today=new Date().toISOString().substring(0,10);
+  var df=editRow?editRow.date_from:today;
+  var dt=editRow?editRow.date_to:today;
+  var sat=editRow?!!editRow.works_saturday:true;
+  var cat=editRow?(editRow.catatan||''):'';
+  return '<div id="mob-assign-form" class="card" style="background:#f8fafc;border:1px solid #e2e8f0;margin-bottom:.85rem">'
+    +'<div class="ct" style="margin:0 0 .75rem;border:0;padding:0">'+(editRow?'Edit penugasan':'Tambah penugasan baru')+'</div>'
+    +'<input type="hidden" id="mob-assign-edit-id" value="'+(editRow?escapeHtml(editRow.id):'')+'">'
+    +'<div class="fg"><label>Karyawan</label><select id="mob-assign-nik" style="width:100%">'+mobKarSelectHtml(editRow?editRow.nik:'')+'</select></div>'
+    +'<div class="fg"><label>Lokasi check-in</label><select id="mob-assign-loc" style="width:100%">'+mobLocSelectHtml(locations,editRow?editRow.location_id:'')+'</select></div>'
+    +'<div class="fg2"><div class="fg"><label>Tanggal mulai</label><input type="date" id="mob-assign-from" value="'+escapeHtml(df)+'"></div>'
+    +'<div class="fg"><label>Tanggal selesai</label><input type="date" id="mob-assign-to" value="'+escapeHtml(dt)+'"></div></div>'
+    +'<label style="display:flex;align-items:center;gap:.4rem;font-size:12px;margin-bottom:.65rem;cursor:pointer">'
+    +'<input type="checkbox" id="mob-assign-sat" '+(sat?'checked':'')+' style="width:16px;height:16px"> Sabtu termasuk hari kerja di lokasi ini</label>'
+    +'<div class="fg"><label>Catatan (opsional)</label><input type="text" id="mob-assign-cat" value="'+escapeHtml(cat)+'" placeholder="Mis. proyek Site B"></div>'
+    +'<div class="fl gap1"><button type="button" class="btn btn-sm btn-p" onclick="saveMobileAssignment()">Simpan penugasan</button>'
+    +(editRow?'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileAssignments()">Batal</button>':'')
+    +'</div></div>';
+}
 async function renderMobileAssignments(){
   var el=document.getElementById('mob-assign-wrap');if(!el)return;
   el.innerHTML='<div style="color:#6b7280;padding:1rem">Memuat…</div>';
+  var jAssign=await sigajiMobileFetch('mobile-locations?kind=assignments',{method:'GET'});
+  var jLoc=await sigajiMobileFetch('mobile-locations',{method:'GET'});
+  if(!jAssign||!jAssign.ok){el.innerHTML='<div class="info-box info-red">'+(jAssign&&jAssign.error||'Gagal memuat penugasan')+'</div>';return;}
+  var locations=(jLoc&&jLoc.ok)?(jLoc.items||[]):[];
+  window._mobLocList=locations;
+  var items=jAssign.items||[];
+  if(!locations.length){
+    el.innerHTML='<div class="info-box info-amber">Buat <strong>lokasi check-in GPS</strong> di tabel atas dulu, baru bisa menambah penugasan.</div>';
+    return;
+  }
+  var rows=items.map(function(a){
+    var loc=a.sigaji_work_locations||{};
+    var namaKar=(karyawan||[]).find(function(k){return k&&k.nik===a.nik;});
+    var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
+    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out" onclick="editMobileAssignment(\''+a.id+'\')">Edit</button><button type="button" class="btn btn-sm btn-r" onclick="deleteMobileAssignment(\''+a.id+'\')">Hapus</button></div></td></tr>';
+  }).join('');
+  el.innerHTML=mobAssignFormHtml(locations,null)
+    +'<div class="card"><div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Daftar penugasan</div>'
+    +'<p style="font-size:11px;color:#6b7280;margin:0 0 .75rem">Tim menginap luar kota: pilih karyawan, lokasi mess/site, dan rentang tanggal.</p>'
+    +'<table><thead><tr><th>Karyawan</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="5" style="text-align:center;color:#9ca3af">Belum ada penugasan</td></tr>')
+    +'</tbody></table></div>';
+}
+async function saveMobileAssignment(){
+  var nikEl=document.getElementById('mob-assign-nik');
+  var locEl=document.getElementById('mob-assign-loc');
+  var fromEl=document.getElementById('mob-assign-from');
+  var toEl=document.getElementById('mob-assign-to');
+  var satEl=document.getElementById('mob-assign-sat');
+  var catEl=document.getElementById('mob-assign-cat');
+  var idEl=document.getElementById('mob-assign-edit-id');
+  if(!nikEl||!locEl||!fromEl||!toEl){toast('Form tidak siap — buka tab Lokasi GPS lagi');return;}
+  var nik=nikEl.value.trim();
+  var location_id=locEl.value.trim();
+  var date_from=fromEl.value;
+  var date_to=toEl.value;
+  if(!nik){toast('Pilih karyawan');return;}
+  if(!location_id){toast('Pilih lokasi');return;}
+  if(!date_from||!date_to){toast('Isi tanggal mulai dan selesai');return;}
+  if(date_to<date_from){toast('Tanggal selesai harus sama atau setelah tanggal mulai');return;}
+  var body={
+    action:'save_assignment',
+    nik:nik,
+    location_id:location_id,
+    date_from:date_from,
+    date_to:date_to,
+    works_saturday:!(satEl&&!satEl.checked),
+    catatan:catEl?catEl.value.trim():''
+  };
+  if(idEl&&idEl.value)body.id=idEl.value;
+  toast('Menyimpan…');
+  var r=await sigajiMobileFetch('mobile-locations',{method:'POST',body:body});
+  if(r&&r.ok){toast('Penugasan disimpan');renderMobileAssignments();}
+  else toast((r&&r.error)||'Gagal simpan — pastikan login cloud & deploy API terbaru');
+}
+async function editMobileAssignment(id){
   var j=await sigajiMobileFetch('mobile-locations?kind=assignments',{method:'GET'});
-  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat penugasan')+'</div>';return;}
+  if(!j||!j.ok){toast((j&&j.error)||'Gagal memuat');return;}
+  var row=(j.items||[]).find(function(x){return x.id===id;});
+  if(!row){toast('Data tidak ditemukan');return;}
+  var locations=window._mobLocList||[];
+  if(!locations.length){
+    var jLoc=await sigajiMobileFetch('mobile-locations',{method:'GET'});
+    locations=(jLoc&&jLoc.ok)?(jLoc.items||[]):[];
+  }
+  var el=document.getElementById('mob-assign-wrap');if(!el)return;
   var items=j.items||[];
   var rows=items.map(function(a){
     var loc=a.sigaji_work_locations||{};
-    return '<tr><td>'+escapeHtml(a.nik)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+a.date_from+' → '+a.date_to+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><button class="btn btn-sm btn-r" onclick="deleteMobileAssignment(\''+a.id+'\')">Hapus</button></td></tr>';
+    var namaKar=(karyawan||[]).find(function(k){return k&&k.nik===a.nik;});
+    var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
+    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out" onclick="editMobileAssignment(\''+a.id+'\')">Edit</button><button type="button" class="btn btn-sm btn-r" onclick="deleteMobileAssignment(\''+a.id+'\')">Hapus</button></div></td></tr>';
   }).join('');
-  el.innerHTML='<div class="card"><div class="flb mb2"><div class="ct" style="margin:0;border:0;padding:0">Penugasan lokasi (HRD)</div><button class="btn btn-sm btn-p" onclick="addMobileAssignment()">+ Penugasan</button></div>'
-    +'<p style="font-size:11px;color:#6b7280;margin:0 0 .75rem">Karyawan menginap luar kota: set rentang tanggal + lokasi mess/site. <strong>Sabtu ikut kerja</strong> (default).</p>'
-    +'<table><thead><tr><th>NIK</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="5" style="text-align:center;color:#9ca3af">Belum ada penugasan</td></tr>')+'</tbody></table></div>';
-}
-async function addMobileAssignment(){
-  var nik=prompt('NIK karyawan');if(!nik)return;
-  var j=await sigajiMobileFetch('mobile-locations',{method:'GET'});
-  if(!j||!j.ok||!(j.items||[]).length){toast('Buat lokasi kerja dulu');return;}
-  var list=(j.items||[]).map(function(l,i){return (i+1)+'. '+l.nama+' ['+l.id+']';}).join('\n');
-  var pick=prompt('Pilih location_id:\n'+list);if(!pick)return;
-  var df=prompt('Tanggal mulai (YYYY-MM-DD)');if(!df)return;
-  var dt=prompt('Tanggal akhir (YYYY-MM-DD)');if(!dt)return;
-  var sat=confirm('Sabtu termasuk hari kerja di lokasi ini?');
-  var r=await sigajiMobileFetch('mobile-locations',{method:'POST',body:{action:'save_assignment',nik:nik.trim(),location_id:pick.trim(),date_from:df,date_to:dt,works_saturday:sat}});
-  if(r&&r.ok){toast('Penugasan disimpan');renderMobileAssignments();}else toast((r&&r.error)||'Gagal');
+  el.innerHTML=mobAssignFormHtml(locations,row)
+    +'<div class="card"><div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Daftar penugasan</div>'
+    +'<table><thead><tr><th>Karyawan</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="5" style="text-align:center;color:#9ca3af">Belum ada</td></tr>')
+    +'</tbody></table></div>';
+  try{document.getElementById('mob-assign-form')&&document.getElementById('mob-assign-form').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}
 }
 async function deleteMobileAssignment(id){
   if(!confirm('Hapus penugasan ini?'))return;
