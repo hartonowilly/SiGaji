@@ -29,6 +29,12 @@ grant select, insert, update, delete on table public.sigaji_slip_email_sent to a
 -- Registrasi email: baca policy terbatas; insert/update lewat Functions (service_role)
 grant select on table public.sigaji_registration_requests to authenticated;
 
+-- Mobile absensi & cuti (sql/supabase_sigaji_mobile_attendance.sql)
+grant select, insert, update, delete on table public.sigaji_work_locations to authenticated;
+grant select, insert, update, delete on table public.sigaji_location_assignments to authenticated;
+grant select, insert, update, delete on table public.sigaji_attendance_logs to authenticated;
+grant select, insert, update, delete on table public.sigaji_leave_requests to authenticated;
+
 -- Netlify Functions (service_role) — konsisten dengan kebijakan Supabase baru
 grant select, insert, update, delete on table public.sigaji_cloud to service_role;
 grant select, insert, update, delete on table public.sigaji_tenant_meta to service_role;
@@ -42,3 +48,7 @@ grant select, insert, update, delete on table public.sigaji_telegram_link_reques
 grant select, insert, update, delete on table public.sigaji_slip_tg_sent to service_role;
 grant select, insert, update, delete on table public.sigaji_slip_email_sent to service_role;
 grant select, insert, update, delete on table public.sigaji_registration_requests to service_role;
+grant select, insert, update, delete on table public.sigaji_work_locations to service_role;
+grant select, insert, update, delete on table public.sigaji_location_assignments to service_role;
+grant select, insert, update, delete on table public.sigaji_attendance_logs to service_role;
+grant select, insert, update, delete on table public.sigaji_leave_requests to service_role;

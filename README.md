@@ -11,6 +11,7 @@ Aplikasi payroll Indonesia (gaji, THR, PPh 21, slip PDF/email/Telegram, sinkron 
 | **Fork per perusahaan** (repo beda, basis sama) | [docs/README-FORK.md](docs/README-FORK.md) |
 | **Kuota karyawan** (hanya penjual) | [docs/KUOTA_LISENSI_PENJUAL.md](docs/KUOTA_LISENSI_PENJUAL.md) |
 | **Pegawai tetap / tidak tetap (NIK K vs NT)** | [docs/KARYAWAN_TIDAK_TETAP.md](docs/KARYAWAN_TIDAK_TETAP.md) |
+| **Absen di HP (check-in GPS + cuti)** | [docs/ANDROID_APP_GUIDE.md](docs/ANDROID_APP_GUIDE.md) → buka `/mobile/` |
 | **Deploy Cloudflare + GitHub** | [docs/DEPLOY_GITHUB_CLOUDFLARE.md](docs/DEPLOY_GITHUB_CLOUDFLARE.md) |
 | **Env & config.js** | [docs/REPO_PUBLIK_DAN_CONFIG.md](docs/REPO_PUBLIK_DAN_CONFIG.md) |
 

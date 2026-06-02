@@ -1,0 +1,17 @@
+{
+  "name": "SiGaji Absen",
+  "short_name": "SiGaji",
+  "description": "Check-in GPS + pengajuan cuti SiGaji",
+  "start_url": "/mobile/",
+  "display": "standalone",
+  "background_color": "#0c1929",
+  "theme_color": "#1a56a0",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

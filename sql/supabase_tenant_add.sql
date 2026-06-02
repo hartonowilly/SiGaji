@@ -153,6 +153,23 @@ create policy "sigaji_slip_tg_sent_upd___TENANT_KEY__"
   using (tenant_key = '__TENANT_KEY__')
   with check (tenant_key = '__TENANT_KEY__');
 
+-- ── 9) Mobile absensi & cuti (jika tabel ada — sql/supabase_sigaji_mobile_attendance.sql) ─
+drop policy if exists "sigaji_work_locations___TENANT_KEY__" on public.sigaji_work_locations;
+create policy "sigaji_work_locations___TENANT_KEY__" on public.sigaji_work_locations for all to authenticated
+  using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
+
+drop policy if exists "sigaji_location_assignments___TENANT_KEY__" on public.sigaji_location_assignments;
+create policy "sigaji_location_assignments___TENANT_KEY__" on public.sigaji_location_assignments for all to authenticated
+  using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
+
+drop policy if exists "sigaji_attendance_logs___TENANT_KEY__" on public.sigaji_attendance_logs;
+create policy "sigaji_attendance_logs___TENANT_KEY__" on public.sigaji_attendance_logs for all to authenticated
+  using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
+
+drop policy if exists "sigaji_leave_requests___TENANT_KEY__" on public.sigaji_leave_requests;
+create policy "sigaji_leave_requests___TENANT_KEY__" on public.sigaji_leave_requests for all to authenticated
+  using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
+
 -- ── Verifikasi ─────────────────────────────────────────────────────────────
 -- select tenant_key, max_employees, plan_label from public.sigaji_tenant_meta where tenant_key = '__TENANT_KEY__';
 -- select policyname from pg_policies where policyname like '%__TENANT_KEY__%';

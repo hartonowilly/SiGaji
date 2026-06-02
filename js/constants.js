@@ -94,7 +94,7 @@ const TUNJ_TYPES={tetap:'Tetap (BPJS+THR+PPh+TH)',tetap_no_bpjs:'Tetap Excl.BPJS
 const SUBTABS={
   karyawan:['info'],
   kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
-  absensi:['kalender','cuti'],
+  absensi:['kalender','cuti','lokasi','pengajuan'],
   master:['prs','periode','umk','libur','potongan','ter'],
   laporan:['rekap','pph'],
   approval:['pend','hist'],
@@ -104,6 +104,7 @@ const SUBTAB_LBL={
   'kompgaji.gaji':'Gaji & Tunjangan','kompgaji.tunjvar':'Tunjangan Variabel','kompgaji.bpjs':'BPJS','kompgaji.natura':'Natura',
   'kompgaji.pphret':'PPh Return','kompgaji.ring':'Ringkasan',
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
+  'absensi.lokasi':'Lokasi & Penugasan','absensi.pengajuan':'Persetujuan Cuti',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR','master.umk':'UMK',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
   'laporan.rekap':'Rekap Penggajian','laporan.pph':'PPh 21 & Bukti Potong',
@@ -115,7 +116,7 @@ const MODULES=[
   {id:'dashboard',lbl:'Dashboard',icon:'&#9632;',sec:'Utama'},
   {id:'notifikasi',lbl:'Notifikasi',icon:'&#128276;',sec:'Utama'},
   {id:'karyawan',lbl:'Master Karyawan',icon:'&#128100;',sec:'SDM',subtabs:['info']},
-  {id:'absensi',lbl:'Absensi & Cuti',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti']},
+  {id:'absensi',lbl:'Absensi & Cuti',icon:'&#128197;',sec:'SDM',subtabs:['kalender','cuti','lokasi','pengajuan']},
   {id:'kompgaji',lbl:'Komponen Gaji',icon:'&#128178;',sec:'Penggajian',subtabs:['gaji','tunjvar','bpjs','natura','pphret','ring']},
   {id:'lembur',lbl:'Lembur',icon:'&#9203;',sec:'THR & Lembur'},
   {id:'thr',lbl:'THR',icon:'&#127873;',sec:'THR & Lembur'},
@@ -166,8 +167,8 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=14;
+const SCHEMA_VERSION=15;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.3.2';
+const SIGAJI_MODULES_CACHE='11.4.0';

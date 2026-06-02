@@ -188,11 +188,11 @@ function showPg(pg){
   var el=document.getElementById('pg-'+pg);if(el)el.classList.add('active');
   document.querySelectorAll('.ni').forEach(function(n){if(n.dataset.pg===pg)n.classList.add('active');});
   if(pg==='notifikasi'){notifikasi.forEach(function(n){n.read=true;});saveAll();renderNotif();updateNotifBadge();}
-  if(pg==='absensi')setTimeout(function(){applyAbsensiSubtabVisibility();renderAbsensi();},50);
+  if(pg==='absensi')setTimeout(function(){applyAbsensiSubtabVisibility();if(typeof renderMobileAbsensiTabs==='function')renderMobileAbsensiTabs();renderAbsensi();},50);
   if(pg==='slip')setTimeout(function(){renderPeriodeSelects();populateSelects();onSlipPeriodeChange();applyPayrollSpTabSimpleUi();},50);
   if(pg==='master'){renderPeriodes();renderHariLibur();renderCutiRekap();loadPrsForm();applyBranding();initLibnasYearSelect();applyMasterSubtabVisibility();}
   if(pg==='thr')renderTHR();
-  if(pg==='mycuti')renderMyCuti();
+  if(pg==='mycuti'){if(typeof renderMyCutiPage==='function')renderMyCutiPage();else if(typeof renderMyCuti==='function')renderMyCuti();}
   if(pg==='myslip')loadMySlip();
   if(pg==='laporan'){applyLaporanSubtabVisibility();renderLaporan();}
   if(pg==='backup'){setTimeout(function(){initBackupPageTabs();},0);}
@@ -271,7 +271,7 @@ function applyAbsensiSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first=t;
   });
-  ['abt-kalender','abt-cuti'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  ['abt-kalender','abt-cuti','abt-lokasi','abt-pengajuan'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
   if(first&&first.dataset.abpanel)switchAbTab(first,first.dataset.abpanel);
   else toast('Tidak ada sub-tab Absensi yang diizinkan untuk role ini.');
 }
@@ -297,9 +297,13 @@ function switchTab(el,tid){
   if(tid==='m-libur'){initLibnasYearSelect();renderHariLibur();renderCutiRekap();}
 }
 function switchAbTab(el,tid){
-  var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti'};
+  var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti','abt-lokasi':'lokasi','abt-pengajuan':'pengajuan'};
   if(abSubs[tid]&&!canAccessSubTab('absensi',abSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
-  el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['abt-kalender','abt-cuti'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});if(tid==='abt-cuti')renderCutiRekap();}
+  el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['abt-kalender','abt-cuti','abt-lokasi','abt-pengajuan'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});
+  if(tid==='abt-cuti')renderCutiRekap();
+  if(tid==='abt-lokasi'){if(typeof renderMobileLocations==='function')renderMobileLocations();if(typeof renderMobileAssignments==='function')renderMobileAssignments();}
+  if(tid==='abt-pengajuan'&&typeof renderMobileLeavePending==='function')renderMobileLeavePending();
+}
 function switchPayrollSpTab(el,tid){
   const tabMap={'sp-gaji':'gaji','sp-bpjs':'bpjs','sp-natura':'natura','sp-pphret':'pphret','sp-ring':'ring'};
   const subId=tabMap[tid];
@@ -344,7 +348,7 @@ function runResetAllData(){
   karyawan=[];periodes=[];hariLibur=[];masterCuti={kuota:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
   perusahaan={nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,umk:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}};
   users=[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}];
-  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','slip','laporan','laporan.rekap','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi']};
+  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','absensi.lokasi','absensi.pengajuan','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','slip','laporan','laporan.rekap','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi']};
   thrManual={};tunjVarBulan={};tunjVarLabels={v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'};tunjVarColumns=[{id:'v1',nama:'Bonus'},{id:'v2',nama:'Uang Makan'},{id:'v3',nama:'Lain-lain'}];localStorage.removeItem(DB_KEY);localStorage.removeItem('sigaji_universal');saveAll();closeModal('m-reset');renderSidebar();renderAll();updateNotifBadge();applyBranding();
   var inp=document.getElementById('reset-inp');
   var pwEl=document.getElementById('reset-pw');

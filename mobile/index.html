@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a56a0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SiGaji Absen">
+<link rel="manifest" href="/mobile/manifest.webmanifest">
+<link rel="stylesheet" href="/mobile/styles.css">
+<title>SiGaji Absen</title>
+</head>
+<body>
+<div id="app">
+  <div id="screen-login" class="screen active">
+    <p class="logo-txt">SiGaji Absen</p>
+    <p class="sub">Check-in foto + GPS &amp; pengajuan cuti</p>
+    <div class="card">
+      <label>Email (Supabase)</label>
+      <input type="email" id="login-email" autocomplete="username" placeholder="anda@perusahaan.com">
+      <label>Sandi</label>
+      <input type="password" id="login-pw" autocomplete="current-password">
+      <button type="button" class="btn btn-primary" onclick="sigajiMobileLogin()">Masuk</button>
+    </div>
+    <p style="font-size:11px;color:rgba(255,255,255,.7);text-align:center">Pasang ke layar utama: menu browser → <strong>Tambahkan ke Layar Utama</strong></p>
+  </div>
+
+  <div id="screen-home" class="screen">
+    <p class="logo-txt">Halo</p>
+    <p class="sub" id="home-nama">—</p>
+    <p class="sub" id="home-nik" style="margin-top:-.5rem">—</p>
+    <div class="card">
+      <div id="day-status" style="font-size:.85rem;margin-bottom:.75rem">Memuat status…</div>
+      <button type="button" class="btn btn-success" id="btn-checkin" onclick="sigajiMobileGo('screen-checkin')">Check-in</button>
+      <button type="button" class="btn btn-primary" id="btn-checkout" onclick="sigajiMobileGo('screen-checkout')">Check-out (wajib)</button>
+      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-leave')">Ajuan cuti / izin / sakit</button>
+      <button type="button" class="btn btn-out" onclick="sigajiMobileLogout()">Keluar</button>
+    </div>
+  </div>
+
+  <div id="screen-checkin" class="screen">
+    <p class="logo-txt">Check-in</p>
+    <p class="sub">Foto wajah + GPS di lokasi penugasan HRD</p>
+    <div class="card">
+      <label>Foto (kamera depan)</label>
+      <input type="file" id="photo-in" accept="image/*" capture="user">
+      <div id="preview-in"></div>
+      <button type="button" class="btn btn-success" onclick="sigajiMobileSubmitIn()">Kirim check-in</button>
+      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Batal</button>
+    </div>
+  </div>
+
+  <div id="screen-checkout" class="screen">
+    <p class="logo-txt">Check-out</p>
+    <p class="sub">Wajib setelah check-in</p>
+    <div class="card">
+      <label>Foto</label>
+      <input type="file" id="photo-out" accept="image/*" capture="user">
+      <div id="preview-out"></div>
+      <button type="button" class="btn btn-primary" onclick="sigajiMobileSubmitOut()">Kirim check-out</button>
+      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Batal</button>
+    </div>
+  </div>
+
+  <div id="screen-leave" class="screen">
+    <p class="logo-txt">Pengajuan</p>
+    <p class="sub">Sakit: surat dokter wajib hari pertama</p>
+    <div class="card">
+      <label>Jenis</label>
+      <select id="leave-type">
+        <option value="cuti">Cuti tahunan</option>
+        <option value="izin">Izin</option>
+        <option value="sakit">Sakit (wajib surat dokter)</option>
+      </select>
+      <label>Dari tanggal</label>
+      <input type="date" id="leave-from">
+      <label>Sampai tanggal</label>
+      <input type="date" id="leave-to">
+      <label>Alasan</label>
+      <textarea id="leave-reason" rows="2"></textarea>
+      <div id="leave-file-wrap" style="display:none">
+        <label>Surat dokter (PDF/foto)</label>
+        <input type="file" id="leave-file" accept="image/*,.pdf">
+      </div>
+      <button type="button" class="btn btn-primary" onclick="sigajiMobileSubmitLeave()">Kirim pengajuan</button>
+      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Kembali</button>
+      <div id="leave-history" style="margin-top:1rem;font-size:.85rem;color:#64748b"></div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="/js/config.js"></script>
+<script src="/js/vendor/supabase.js"></script>
+<script src="/mobile/app.js"></script>
+</body>
+</html>

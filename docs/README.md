@@ -21,6 +21,13 @@
 | **[DOMAIN_CEMERLANG_ONLINE.md](DOMAIN_CEMERLANG_ONLINE.md)** | Custom domain contoh |
 | **[DNS_CEMERLANG_CLOUDFLARE.md](DNS_CEMERLANG_CLOUDFLARE.md)** | DNS Hostinger + Pages |
 
+## Mobile (Android)
+
+| Dokumen | Isi |
+|---------|-----|
+| **[MOBILE_ATTENDANCE_APP.md](MOBILE_ATTENDANCE_APP.md)** | Check-in foto+GPS multi-lokasi, cuti/sakit, keputusan HRD |
+| **[ANDROID_APP_GUIDE.md](ANDROID_APP_GUIDE.md)** | PWA `/mobile/` di HP + rencana APK native |
+
 ## Email & integrasi
 
 | Dokumen | Isi |

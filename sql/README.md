@@ -29,6 +29,9 @@ Jalankan di **SQL Editor** berurutan:
 | `supabase_sigaji_slip_email_sent.sql` | Riwayat email slip |
 | `supabase_sigaji_slip_tg_sent.sql` | Riwayat Telegram slip |
 | `supabase_fix_slip_tg_sent_period_nama.sql` | Perbaikan data lama |
+| `supabase_sigaji_mobile_attendance.sql` | App Android: lokasi, check-in/out, pengajuan cuti |
+
+Spesifikasi app mobile: **[../docs/MOBILE_ATTENDANCE_APP.md](../docs/MOBILE_ATTENDANCE_APP.md)**.
 
 Migrasi mode tabel: **[README_MIGRASI_TABEL.md](README_MIGRASI_TABEL.md)**.
 
