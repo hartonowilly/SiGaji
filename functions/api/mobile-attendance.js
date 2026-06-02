@@ -6,6 +6,7 @@ import {
 } from '../_lib/cf-shared.js';
 import {
   assertCallerWithNik,
+  assertCallerIsHrdOrAdminMobile,
   workDateJakarta,
   matchGeofence,
   resolveAllowedLocations,
@@ -16,6 +17,69 @@ import {
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
+}
+
+/** HRD: daftar siapa check-in/out di tanggal tertentu */
+export async function onRequestGet({ request, env }) {
+  try {
+    const tenant = getTenantKey(env);
+    const sb = createSbAdmin(env);
+    const auth = request.headers.get('authorization') || '';
+    const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+    await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+
+    const url = new URL(request.url);
+    const workDate = url.searchParams.get('work_date') || workDateJakarta();
+    const nikFilter = (url.searchParams.get('nik') || '').trim();
+
+    let q = sb
+      .from('sigaji_attendance_logs')
+      .select(
+        'id,nik,work_date,event_type,location_id,lat,lon,accuracy_m,photo_path,validation_status,is_mock,flags,created_at'
+      )
+      .eq('tenant_key', tenant)
+      .eq('work_date', workDate)
+      .order('created_at', { ascending: true });
+    if (nikFilter) q = q.eq('nik', nikFilter);
+
+    const { data: logs, error } = await q;
+    if (error) throw error;
+
+    const locIds = [
+      ...new Set((logs || []).map((l) => l.location_id).filter(Boolean)),
+    ];
+    const locMap = {};
+    if (locIds.length) {
+      const { data: locs } = await sb
+        .from('sigaji_work_locations')
+        .select('id,nama')
+        .eq('tenant_key', tenant)
+        .in('id', locIds);
+      (locs || []).forEach((l) => {
+        if (l && l.id) locMap[l.id] = l.nama;
+      });
+    }
+
+    const items = (logs || []).map((row) => ({
+      ...row,
+      location_nama: row.location_id ? locMap[row.location_id] || null : null,
+    }));
+
+    return jsonResponse(200, { ok: true, work_date: workDate, items }, request);
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (/Forbidden|Invalid auth/i.test(msg)) {
+      return jsonResponse(403, { ok: false, error: msg }, request);
+    }
+    if (/relation.*does not exist|sigaji_attendance/i.test(msg)) {
+      return jsonResponse(
+        503,
+        { ok: false, error: 'Tabel mobile belum ada — jalankan sql mobile' },
+        request
+      );
+    }
+    return jsonResponse(500, { ok: false, error: msg }, request);
+  }
 }
 
 export async function onRequestPost({ request, env }) {

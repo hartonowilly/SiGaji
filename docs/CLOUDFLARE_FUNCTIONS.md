@@ -13,7 +13,7 @@ SiGaji di **Cloudflare Pages** memakai prefix **`/api/`** (bukan `/netlify/funct
 | `/api/telegram-send-slip` | POST — kirim slip PDF ke Telegram (Admin/HRD + Bearer) |
 | `/api/telegram-create-link` | POST — buat kode link Telegram untuk NIK |
 | `/api/license-set` | POST — atur kuota lisensi (Bearer `SIGAJI_LICENSE_ADMIN_SECRET`, penjual saja) |
-| `/api/mobile-attendance` | POST — check-in / check-out / day_status (Bearer + NIK) |
+| `/api/mobile-attendance` | GET — log check-in/out per tanggal (HRD); POST check-in / check-out |
 | `/api/mobile-leave` | GET pending (HRD); POST submit / decide / my_list |
 | `/api/mobile-locations` | GET lokasi & penugasan; POST simpan/hapus (HRD) |
 | `/api/mobile-upload` | POST multipart `file` + `subfolder` — upload foto (service role) |

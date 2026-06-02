@@ -301,7 +301,7 @@ function switchAbTab(el,tid){
   if(abSubs[tid]&&!canAccessSubTab('absensi',abSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
   el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['abt-kalender','abt-cuti','abt-lokasi','abt-pengajuan'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});
   if(tid==='abt-cuti')renderCutiRekap();
-  if(tid==='abt-lokasi'){if(typeof renderMobileLocations==='function')renderMobileLocations();if(typeof renderMobileAssignments==='function')renderMobileAssignments();}
+  if(tid==='abt-lokasi'){if(typeof renderMobileLocations==='function')renderMobileLocations();if(typeof renderMobileAssignments==='function')renderMobileAssignments();if(typeof renderMobileAttendanceLog==='function')renderMobileAttendanceLog();}
   if(tid==='abt-pengajuan'&&typeof renderMobileLeavePending==='function')renderMobileLeavePending();
 }
 function switchPayrollSpTab(el,tid){

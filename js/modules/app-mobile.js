@@ -60,6 +60,70 @@ async function sigajiUploadMobileFile(file,subfolder){
     return null;
   }
 }
+// ── HRD: Log check-in / check-out ─────────────────
+function mobAttStatusLbl(st){
+  var map={ok:['OK','b-teal'],pending_review:['Review','b-warn'],outside_geofence:['Luar radius','b-err'],rejected:['Ditolak','b-err']};
+  var x=map[st]||[st||'-','b-gray'];
+  return '<span class="bdg '+x[1]+'">'+x[0]+'</span>';
+}
+function mobFmtTimeIso(iso){
+  if(!iso)return '-';
+  try{
+    var d=new Date(iso);
+    return d.toLocaleString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',hour12:false});
+  }catch(e){return String(iso).substring(11,16);}
+}
+function mobMapLink(lat,lon){
+  if(lat==null||lon==null)return '';
+  return ' <a href="https://www.google.com/maps?q='+lat+','+lon+'" target="_blank" rel="noopener" style="font-size:10px">Peta</a>';
+}
+async function renderMobileAttendanceLog(){
+  var el=document.getElementById('mob-att-log-wrap');if(!el)return;
+  var today=new Date().toISOString().substring(0,10);
+  el.innerHTML='<div class="card"><div class="flb mb2" style="flex-wrap:wrap;gap:.5rem">'
+    +'<div class="ct" style="margin:0;border:0;padding:0">Siapa sudah check-in / check-out</div>'
+    +'<div class="fl gap1" style="align-items:center">'
+    +'<label style="font-size:11px;font-weight:700;color:#6b7280">Tanggal:</label>'
+    +'<input type="date" id="mob-log-date" value="'+today+'" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9">'
+    +'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileAttendanceLog()">&#8635; Muat</button>'
+    +'</div></div><div id="mob-log-table">Memuat…</div></div>';
+  var dateEl=document.getElementById('mob-log-date');
+  var workDate=dateEl?dateEl.value:today;
+  var j=await sigajiMobileFetch('mobile-attendance?work_date='+encodeURIComponent(workDate),{method:'GET'});
+  var host=document.getElementById('mob-log-table');if(!host)return;
+  if(!j||!j.ok){
+    host.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat log — deploy API mobile-attendance GET')+'</div>';
+    return;
+  }
+  var items=j.items||[];
+  if(!items.length){
+    host.innerHTML='<p style="color:#6b7280;font-size:12px;padding:.5rem 0">Belum ada check-in/check-out pada tanggal '+escapeHtml(workDate)+'.</p>';
+    return;
+  }
+  var byNik={};
+  items.forEach(function(row){
+    if(!byNik[row.nik])byNik[row.nik]={nik:row.nik,cin:null,cout:null};
+    if(row.event_type==='check_in')byNik[row.nik].cin=row;
+    if(row.event_type==='check_out')byNik[row.nik].cout=row;
+  });
+  var rows=Object.keys(byNik).sort().map(function(nik){
+    var g=byNik[nik];
+    var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+    var nama=k?(k.nama+' <span style="color:#9ca3af;font-weight:400">('+nik+')</span>'):nik;
+    function cell(r,label){
+      if(!r)return '<span style="color:#9ca3af">—</span>';
+      var loc=r.location_nama?escapeHtml(r.location_nama):'<span style="color:#9ca3af">Lokasi tidak cocok</span>';
+      return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+'<br>'+loc+mobMapLink(r.lat,r.lon)+'<br>'+mobAttStatusLbl(r.validation_status)+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+'</div>';
+    }
+    var st='';
+    if(g.cin&&g.cout)st='<span class="bdg b-teal">Lengkap</span>';
+    else if(g.cin)st='<span class="bdg b-warn">Belum check-out</span>';
+    else st='<span class="bdg b-gray">—</span>';
+    return '<tr><td>'+nama+'</td><td>'+cell(g.cin,'Masuk')+'</td><td>'+cell(g.cout,'Pulang')+'</td><td>'+st+'</td></tr>';
+  }).join('');
+  host.innerHTML='<table><thead><tr><th>Karyawan</th><th>Check-in</th><th>Check-out</th><th>Status hari</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<p style="font-size:10px;color:#9ca3af;margin-top:.5rem">Foto tersimpan di cloud (path di database). Status <em>Review</em> = perlu dicek HRD (GPS mock / di luar radius).</p>';
+}
 // ── HRD: Lokasi kerja ───────────────────────────
 async function renderMobileLocations(){
   var el=document.getElementById('mob-locations-wrap');if(!el)return;
