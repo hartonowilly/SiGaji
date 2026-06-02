@@ -7,8 +7,8 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/css/styles.css?v=11.2.3">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.2.3">
+<link rel="stylesheet" href="/css/styles.css?v=11.3.0">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.3.0">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -26,7 +26,7 @@ window.sigajiParseFunctionJson=async function(r){
   if(ct.indexOf('text/html')>=0||r.status===404)return{ok:false,error:'API tidak aktif — deploy /api/ + env SIGAJI_SUPABASE_* di Cloudflare'};
   return r.json().catch(function(){return null;});
 };
-window.SIGAJI_BUILD='11.2.3';
+window.SIGAJI_BUILD='11.3.0';
 (function(){
   var h=(location&&location.hostname)||'';
   if(!/\.pages\.dev$/i.test(h)&&!/cemerlang\.online$/i.test(h))return;
@@ -76,7 +76,8 @@ window.SIGAJI_BUILD='11.2.3';
 </script>
 <!-- LOGIN -->
 <div id="login">
-<div class="lbox">
+<div class="login-bg-deco" aria-hidden="true"></div>
+<div class="lbox lbox-premium">
   <div class="llogo">
     <img class="llogo-img" id="login-logo" alt="">
     <h1 id="login-title">SiGaji</h1>
@@ -132,11 +133,11 @@ window.SIGAJI_BUILD='11.2.3';
 <!-- DASHBOARD -->
 <div class="pg active" id="pg-dashboard">
   <div id="pb-dash"></div>
-  <div class="sg4">
-    <div class="sc"><div class="sl">Total Karyawan</div><div class="sv" id="d-kar">-</div></div>
-    <div class="sc"><div class="sl">Gross PPh</div><div class="sv" style="font-size:13px" id="d-bruto">-</div></div>
-    <div class="sc"><div class="sl">Total PPh 21</div><div class="sv" style="font-size:13px;color:#7d4800" id="d-pph">-</div></div>
-    <div class="sc"><div class="sl">Total Neto</div><div class="sv" style="font-size:13px;color:#2d6a0a" id="d-neto">-</div></div>
+  <div class="sg4 sg4-kpi">
+    <div class="sc sc-kpi sc-kpi-kar"><span class="sc-kpi-icon" aria-hidden="true">&#128101;</span><div class="sc-kpi-body"><div class="sl">Total Karyawan</div><div class="sv" id="d-kar">-</div></div></div>
+    <div class="sc sc-kpi sc-kpi-bruto"><span class="sc-kpi-icon" aria-hidden="true">&#128200;</span><div class="sc-kpi-body"><div class="sl">Gross PPh</div><div class="sv sv-money" id="d-bruto">-</div></div></div>
+    <div class="sc sc-kpi sc-kpi-pph"><span class="sc-kpi-icon" aria-hidden="true">&#128203;</span><div class="sc-kpi-body"><div class="sl">Total PPh 21</div><div class="sv sv-money sv-warn" id="d-pph">-</div></div></div>
+    <div class="sc sc-kpi sc-kpi-neto"><span class="sc-kpi-icon" aria-hidden="true">&#128176;</span><div class="sc-kpi-body"><div class="sl">Total Neto</div><div class="sv sv-money sv-ok" id="d-neto">-</div></div></div>
   </div>
   <div class="card"><div class="ct">Status per Departemen</div>
     <table><thead><tr><th>Dept</th><th>Karyawan</th><th>Gross</th><th>Neto</th></tr></thead>
@@ -1159,20 +1160,20 @@ window.SIGAJI_BUILD='11.2.3';
 <div id="toast9" class="toast9"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.2.5"></script>
-<script src="/js/karyawan-tipe.js?v=11.2.5"></script>
-<script src="/js/storage.js?v=11.2.3"></script>
+<script src="/js/constants.js?v=11.3.0"></script>
+<script src="/js/karyawan-tipe.js?v=11.3.0"></script>
+<script src="/js/storage.js?v=11.3.0"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/modules/app-globals.js?v=11.2.3"></script>
-<script src="/js/modules/app-core.js?v=11.2.5"></script>
-<script src="/js/modules/app-access.js?v=11.2.3"></script>
-<script src="/js/modules/app-hr.js?v=11.2.5"></script>
-<script src="/js/modules/app-slip.js?v=11.2.3"></script>
-<script src="/js/modules/app-reports.js?v=11.2.3"></script>
-<script src="/js/modules/app-absensi.js?v=11.2.3"></script>
-<script src="/js/modules/app-master.js?v=11.2.3"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.2.3"></script>
-<script src="/js/modules/app-shell.js?v=11.2.3"></script>
+<script src="/js/modules/app-globals.js?v=11.3.0"></script>
+<script src="/js/modules/app-core.js?v=11.3.0"></script>
+<script src="/js/modules/app-access.js?v=11.3.0"></script>
+<script src="/js/modules/app-hr.js?v=11.3.0"></script>
+<script src="/js/modules/app-slip.js?v=11.3.0"></script>
+<script src="/js/modules/app-reports.js?v=11.3.0"></script>
+<script src="/js/modules/app-absensi.js?v=11.3.0"></script>
+<script src="/js/modules/app-master.js?v=11.3.0"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.3.0"></script>
+<script src="/js/modules/app-shell.js?v=11.3.0"></script>
 <script>
 if(typeof exportCloudDatabaseBackup!=='function'){
   window.exportCloudDatabaseBackup=async function(){
@@ -1207,9 +1208,9 @@ if(typeof bindBackupTabsOnce==='function')bindBackupTabsOnce();
 </script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
-<script src="/js/cloud-tables.js?v=11.2.4"></script>
+<script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.2.4"></script>
+<script src="/js/cloud-sync.js?v=11.3.0"></script>
 <script>
 (function(){var h=document.getElementById('file-protocol-hint');if(h&&location.protocol==='file:')h.style.display='block';})();
 </script>
