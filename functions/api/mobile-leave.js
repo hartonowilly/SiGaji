@@ -11,6 +11,10 @@ import {
   applyLeaveToPayload,
   loadCloudPayload,
   saveCloudPayload,
+  computeCutiBalanceForYear,
+  countLeaveWorkDays,
+  validateCutiKuota,
+  sumPendingCutiDaysByYear,
 } from '../_lib/mobile-shared.js';
 
 export async function onRequestOptions({ request }) {
@@ -105,6 +109,23 @@ export async function onRequestPost({ request, env }) {
         (assigns || []).some((a) => a.works_saturday) || true;
 
       const payload = await loadCloudPayload(sb, tenant);
+
+      if (req.request_type === 'cuti') {
+        const v = await validateCutiKuota(
+          sb,
+          tenant,
+          payload,
+          req.nik,
+          req.date_from,
+          req.date_to,
+          worksSaturday,
+          req.id
+        );
+        if (!v.ok) {
+          return jsonResponse(409, { ok: false, error: v.error, details: v.details }, request);
+        }
+      }
+
       const dates = applyLeaveToPayload(
         payload,
         req.nik,
@@ -151,6 +172,74 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse(200, { ok: true, items: data || [] }, request);
     }
 
+    if (action === 'cuti_balance' || action === 'validate_cuti') {
+      const ctx = await assertCallerWithNik(sb, jwt, tenant);
+      const payload = await loadCloudPayload(sb, tenant);
+      const dateFrom = parseDateOnly(body.date_from);
+      const dateTo = parseDateOnly(body.date_to);
+      const yr =
+        parseInt(body.year, 10) ||
+        (dateFrom ? parseInt(String(dateFrom).substring(0, 4), 10) : new Date().getFullYear());
+
+      const { data: assigns } = await sb
+        .from('sigaji_location_assignments')
+        .select('works_saturday')
+        .eq('tenant_key', tenant)
+        .eq('nik', ctx.nik)
+        .lte('date_from', dateTo || dateFrom || '2099-12-31')
+        .gte('date_to', dateFrom || '2000-01-01');
+      const worksSaturday = (assigns || []).some((a) => a.works_saturday) || true;
+
+      const pendingByYear = await sumPendingCutiDaysByYear(
+        sb,
+        tenant,
+        ctx.nik,
+        payload,
+        null
+      );
+      const pending = pendingByYear[yr] || 0;
+      const balance = computeCutiBalanceForYear(payload, ctx.nik, yr, pending);
+
+      if (action === 'cuti_balance') {
+        return jsonResponse(200, { ok: true, balance }, request);
+      }
+
+      if (!dateFrom || !dateTo) {
+        return jsonResponse(
+          400,
+          { ok: false, error: 'date_from dan date_to wajib untuk validasi' },
+          request
+        );
+      }
+      if (dateTo < dateFrom) {
+        return jsonResponse(400, { ok: false, error: 'date_to harus >= date_from' }, request);
+      }
+
+      const requestedTotal = countLeaveWorkDays(payload, dateFrom, dateTo, worksSaturday);
+      const v = await validateCutiKuota(
+        sb,
+        tenant,
+        payload,
+        ctx.nik,
+        dateFrom,
+        dateTo,
+        worksSaturday,
+        null
+      );
+      return jsonResponse(
+        200,
+        {
+          ok: true,
+          allowed: v.ok,
+          error: v.error || null,
+          requested_work_days: requestedTotal,
+          balance,
+          details: v.details || [],
+        },
+        request
+      );
+    }
+
     const ctx = await assertCallerWithNik(sb, jwt, tenant);
     const requestType = String(body.request_type || 'cuti').trim();
     const dateFrom = parseDateOnly(body.date_from);
@@ -173,6 +262,33 @@ export async function onRequestPost({ request, env }) {
         { ok: false, error: 'Sakit wajib upload surat dokter sejak hari pertama' },
         request
       );
+    }
+
+    const { data: assignsSubmit } = await sb
+      .from('sigaji_location_assignments')
+      .select('works_saturday')
+      .eq('tenant_key', tenant)
+      .eq('nik', ctx.nik)
+      .lte('date_from', dateTo)
+      .gte('date_to', dateFrom);
+    const worksSaturdaySubmit =
+      (assignsSubmit || []).some((a) => a.works_saturday) || true;
+
+    if (requestType === 'cuti') {
+      const payload = await loadCloudPayload(sb, tenant);
+      const v = await validateCutiKuota(
+        sb,
+        tenant,
+        payload,
+        ctx.nik,
+        dateFrom,
+        dateTo,
+        worksSaturdaySubmit,
+        null
+      );
+      if (!v.ok) {
+        return jsonResponse(422, { ok: false, error: v.error, details: v.details }, request);
+      }
     }
 
     const row = {

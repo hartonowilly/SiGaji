@@ -263,3 +263,227 @@ export function canRetryAttendanceEvent(row) {
 export function checkInBlocksCheckOut(cin) {
   return !!(cin && cin.validation_status && cin.validation_status !== 'rejected');
 }
+
+// ── Kuota cuti (selaras rekap Absensi → tab Cuti) ───────────────────────────
+
+export function isHariLiburKerjaDow(dow, hariKerja) {
+  const hk = hariKerja || 6;
+  if (hk === 5) return dow === 0 || dow === 6;
+  return dow === 0;
+}
+
+function getCrossYearTailRanges(payload, yr) {
+  const y = String(yr);
+  const yearStart = y + '-01-01';
+  const prevDay = addDaysIso(yearStart, -1);
+  const tails = [];
+  (payload.periodes || []).forEach((p) => {
+    const s = parseDateOnly(p && p.start);
+    const e = parseDateOnly(p && p.end);
+    if (!s || !e) return;
+    if (!(s < yearStart && e >= yearStart)) return;
+    const tailStart = s;
+    const tailEnd = e < yearStart ? e : prevDay;
+    if (tailStart <= tailEnd) tails.push({ start: tailStart, end: tailEnd });
+  });
+  return tails;
+}
+
+function isCutiBersamaPotongKuotaTgl(payload, tglIso) {
+  const masterCuti = payload.masterCuti || {};
+  if (masterCuti.cbPotong === false) return false;
+  const d = parseDateOnly(tglIso);
+  if (!d) return false;
+  const lib = (payload.hariLibur || []).find(
+    (x) => x && parseDateOnly(x.tgl) === d && x.tipe === 'cuti-bersama'
+  );
+  if (!lib) return false;
+  const hk = (payload.perusahaan && payload.perusahaan.hariKerja) || 6;
+  return !isHariLiburKerjaDow(new Date(d + 'T12:00:00').getDay(), hk);
+}
+
+function cutiManualTrackingYear(payload, nik, yr) {
+  const y = String(yr);
+  const ys = y + '-01-01';
+  const ab = (payload.absensi && payload.absensi[nik]) || {};
+  let n = 0;
+  Object.keys(ab).forEach((raw) => {
+    if (ab[raw] !== 'cuti') return;
+    const d = parseDateOnly(raw);
+    if (!d || !d.startsWith(y)) return;
+    if (isCutiBersamaPotongKuotaTgl(payload, d)) return;
+    n++;
+  });
+  const tails = getCrossYearTailRanges(payload, yr);
+  if (!tails.length) return n;
+  Object.keys(ab).forEach((raw) => {
+    if (ab[raw] !== 'cuti') return;
+    const d = parseDateOnly(raw);
+    if (!d || d >= ys) return;
+    if (isCutiBersamaPotongKuotaTgl(payload, d)) return;
+    for (let i = 0; i < tails.length; i++) {
+      const r = tails[i];
+      if (d >= r.start && d <= r.end) {
+        n++;
+        break;
+      }
+    }
+  });
+  return n;
+}
+
+function countCutiBersamaYear(payload, yr) {
+  const masterCuti = payload.masterCuti || {};
+  if (masterCuti.cbPotong === false) return 0;
+  const y = String(yr);
+  const hk = (payload.perusahaan && payload.perusahaan.hariKerja) || 6;
+  return (payload.hariLibur || []).filter((l) => {
+    if (!l || l.tipe !== 'cuti-bersama') return false;
+    const t = parseDateOnly(l.tgl);
+    if (!t || !t.startsWith(y)) return false;
+    return !isHariLiburKerjaDow(new Date(t + 'T12:00:00').getDay(), hk);
+  }).length;
+}
+
+function countCutiBersamaTrackingYear(payload, yr) {
+  let n = countCutiBersamaYear(payload, yr);
+  const tails = getCrossYearTailRanges(payload, yr);
+  if (!tails.length) return n;
+  const masterCuti = payload.masterCuti || {};
+  if (masterCuti.cbPotong === false) return n;
+  const y = String(yr);
+  const hk = (payload.perusahaan && payload.perusahaan.hariKerja) || 6;
+  const extra = (payload.hariLibur || []).filter((l) => {
+    if (!l || l.tipe !== 'cuti-bersama') return false;
+    const d = parseDateOnly(l.tgl);
+    if (!d || d >= y + '-01-01') return false;
+    if (isHariLiburKerjaDow(new Date(d + 'T12:00:00').getDay(), hk)) return false;
+    return tails.some((r) => d >= r.start && d <= r.end);
+  }).length;
+  return n + extra;
+}
+
+/** Hari kerja dalam rentang yang akan diisi status cuti (sama aturan pengajuan). */
+export function countLeaveWorkDays(payload, dateFrom, dateTo, worksSaturday) {
+  return enumerateWorkDates(payload, dateFrom, dateTo, worksSaturday).length;
+}
+
+function countLeaveWorkDaysInYear(payload, dateFrom, dateTo, worksSaturday, yr) {
+  const y = String(yr);
+  return enumerateWorkDates(payload, dateFrom, dateTo, worksSaturday).filter((d) =>
+    d.startsWith(y)
+  ).length;
+}
+
+function yearsInRange(dateFrom, dateTo) {
+  const ys = new Set();
+  const y0 = parseInt(String(dateFrom).substring(0, 4), 10);
+  const y1 = parseInt(String(dateTo).substring(0, 4), 10);
+  for (let y = y0; y <= y1; y++) ys.add(y);
+  return [...ys];
+}
+
+export function computeCutiBalanceForYear(payload, nik, yr, extraPendingDays) {
+  const kuota = (payload.masterCuti && payload.masterCuti.kuota) || 12;
+  const manual = cutiManualTrackingYear(payload, nik, yr);
+  const cb = countCutiBersamaTrackingYear(payload, yr);
+  const pending = extraPendingDays || 0;
+  const terpakai = manual + cb + pending;
+  const sisa = kuota - terpakai;
+  return {
+    year: yr,
+    kuota,
+    cuti_dari_absensi: manual,
+    cuti_bersama: cb,
+    pending_pengajuan: pending,
+    terpakai,
+    sisa,
+  };
+}
+
+/** Jumlah hari kerja cuti pending (pengajuan menunggu) per tahun kalender. */
+export async function sumPendingCutiDaysByYear(sb, tenant, nik, payload, excludeRequestId) {
+  const { data, error } = await sb
+    .from('sigaji_leave_requests')
+    .select('id,date_from,date_to,status,request_type')
+    .eq('tenant_key', tenant)
+    .eq('nik', nik)
+    .eq('request_type', 'cuti')
+    .eq('status', 'pending');
+  if (error) throw error;
+  const byYear = {};
+  (data || []).forEach((row) => {
+    if (excludeRequestId && String(row.id) === String(excludeRequestId)) return;
+    const df = parseDateOnly(row.date_from);
+    const dt = parseDateOnly(row.date_to);
+    if (!df || !dt) return;
+    yearsInRange(df, dt).forEach((yr) => {
+      const n = countLeaveWorkDaysInYear(payload, df, dt, true, yr);
+      byYear[yr] = (byYear[yr] || 0) + n;
+    });
+  });
+  return byYear;
+}
+
+/**
+ * Validasi pengajuan cuti tidak melebihi sisa kuota (per tahun kalender).
+ * @returns {{ ok: boolean, error?: string, details?: object[] }}
+ */
+export async function validateCutiKuota(
+  sb,
+  tenant,
+  payload,
+  nik,
+  dateFrom,
+  dateTo,
+  worksSaturday,
+  excludeRequestId
+) {
+  const pendingByYear = await sumPendingCutiDaysByYear(
+    sb,
+    tenant,
+    nik,
+    payload,
+    excludeRequestId
+  );
+  const years = yearsInRange(dateFrom, dateTo);
+  const details = [];
+  for (const yr of years) {
+    const requested = countLeaveWorkDaysInYear(
+      payload,
+      dateFrom,
+      dateTo,
+      worksSaturday,
+      yr
+    );
+    if (requested <= 0) continue;
+    const pending = pendingByYear[yr] || 0;
+    const bal = computeCutiBalanceForYear(payload, nik, yr, pending);
+    details.push({
+      year: yr,
+      requested,
+      sisa: bal.sisa,
+      kuota: bal.kuota,
+      terpakai: bal.terpakai,
+    });
+    if (requested > bal.sisa) {
+      return {
+        ok: false,
+        error:
+          'Cuti melebihi sisa kuota tahun ' +
+          yr +
+          ': mengajukan ' +
+          requested +
+          ' hari kerja, sisa ' +
+          Math.max(0, bal.sisa) +
+          ' hari (kuota ' +
+          bal.kuota +
+          ', terpakai ' +
+          bal.terpakai +
+          ' termasuk pengajuan pending)',
+        details,
+      };
+    }
+  }
+  return { ok: true, details };
+}

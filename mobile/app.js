@@ -242,6 +242,98 @@
     toast(err);
     await refreshDayStatus();
   }
+  function formatCutiBalance(b) {
+    if (!b) return 'Memuat sisa cuti…';
+    var sisa = b.sisa != null ? b.sisa : 0;
+    var col = sisa <= 0 ? 'status-err' : sisa <= 3 ? 'status-warn' : 'status-ok';
+    return (
+      '<span class="status-pill ' +
+      col +
+      '">Sisa cuti ' +
+      b.year +
+      ': <b>' +
+      Math.max(0, sisa) +
+      '</b> hari</span> ' +
+      '(kuota ' +
+      (b.kuota || 12) +
+      ', terpakai ' +
+      (b.terpakai || 0) +
+      (b.pending_pengajuan ? ', termasuk ' + b.pending_pengajuan + ' hari pending' : '') +
+      ')'
+    );
+  }
+  async function loadLeaveBalance() {
+    var box = document.getElementById('leave-balance-box');
+    var prev = document.getElementById('leave-preview-box');
+    if (!box) return;
+    var type = document.getElementById('leave-type');
+    if (type && type.value !== 'cuti') {
+      box.style.display = 'none';
+      if (prev) prev.style.display = 'none';
+      return;
+    }
+    box.style.display = 'block';
+    box.innerHTML = 'Memuat sisa cuti…';
+    var yr = new Date().getFullYear();
+    var df = document.getElementById('leave-from');
+    if (df && df.value) yr = parseInt(String(df.value).substring(0, 4), 10) || yr;
+    var j = await mobileApi('mobile-leave', { action: 'cuti_balance', year: yr });
+    if (!j || !j.ok) {
+      box.innerHTML = (j && j.error) || 'Gagal memuat sisa cuti';
+      return;
+    }
+    box.innerHTML = formatCutiBalance(j.balance);
+    await refreshLeavePreview();
+  }
+  async function refreshLeavePreview() {
+    var prev = document.getElementById('leave-preview-box');
+    if (!prev) return;
+    var type = document.getElementById('leave-type').value;
+    var df = document.getElementById('leave-from').value;
+    var dt = document.getElementById('leave-to').value;
+    if (type !== 'cuti' || !df || !dt) {
+      prev.style.display = 'none';
+      return;
+    }
+    if (dt < df) {
+      prev.style.display = 'block';
+      prev.innerHTML = '<span style="color:#b91c1c">Tanggal akhir harus ≥ tanggal mulai</span>';
+      return;
+    }
+    prev.style.display = 'block';
+    prev.innerHTML = 'Menghitung hari kerja…';
+    var j = await mobileApi('mobile-leave', {
+      action: 'validate_cuti',
+      date_from: df,
+      date_to: dt,
+    });
+    if (!j || !j.ok) {
+      prev.innerHTML = (j && j.error) || 'Validasi gagal';
+      return;
+    }
+    var req = j.requested_work_days || 0;
+    var bal = j.balance;
+    var sisa = bal && bal.sisa != null ? bal.sisa : 0;
+    if (j.allowed) {
+      prev.innerHTML =
+        'Mengajukan <b>' +
+        req +
+        '</b> hari kerja. Sisa setelah ini: <b>' +
+        Math.max(0, sisa - req) +
+        '</b> hari.';
+      prev.style.color = '#166534';
+    } else {
+      prev.innerHTML =
+        '<span style="color:#b91c1c">' +
+        (j.error || 'Melebihi sisa cuti') +
+        '</span> (mengajukan ' +
+        req +
+        ' hari, sisa ' +
+        Math.max(0, sisa) +
+        ' hari)';
+      prev.style.color = '#b91c1c';
+    }
+  }
   async function loadLeaveHistory() {
     var el = document.getElementById('leave-history');
     if (!el) return;
@@ -277,6 +369,30 @@
     var df = document.getElementById('leave-from').value;
     var dt = document.getElementById('leave-to').value;
     var reason = document.getElementById('leave-reason').value;
+    if (!df || !dt) {
+      toast('Isi tanggal mulai & akhir');
+      return;
+    }
+    if (dt < df) {
+      toast('Tanggal akhir harus ≥ tanggal mulai');
+      return;
+    }
+    if (type === 'cuti') {
+      var v = await mobileApi('mobile-leave', {
+        action: 'validate_cuti',
+        date_from: df,
+        date_to: dt,
+      });
+      if (!v || !v.ok) {
+        toast((v && v.error) || 'Validasi gagal');
+        return;
+      }
+      if (!v.allowed) {
+        toast(v.error || 'Cuti melebihi sisa kuota');
+        await refreshLeavePreview();
+        return;
+      }
+    }
     var attachment_path = null;
     if (type === 'sakit') {
       var f = document.getElementById('leave-file').files[0];
@@ -344,6 +460,7 @@
       document.getElementById('leave-file-wrap').style.display =
         document.getElementById('leave-type').value === 'sakit' ? 'block' : 'none';
       loadLeaveHistory();
+      loadLeaveBalance();
     }
     if (id === 'screen-home') refreshDayStatus();
   };
@@ -364,8 +481,15 @@
       lt.onchange = function () {
         var w = document.getElementById('leave-file-wrap');
         if (w) w.style.display = lt.value === 'sakit' ? 'block' : 'none';
+        loadLeaveBalance();
       };
     }
+    var lf = document.getElementById('leave-from');
+    var lto = document.getElementById('leave-to');
+    if (lf) lf.onchange = function () { loadLeaveBalance(); };
+    if (lto) lto.onchange = refreshLeavePreview;
+    if (lf) lf.oninput = function () { loadLeaveBalance(); };
+    if (lto) lto.oninput = refreshLeavePreview;
     initSupabase();
   });
 })();

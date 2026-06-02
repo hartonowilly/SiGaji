@@ -365,10 +365,7 @@ async function mobileLeaveDecide(id,decide){
     if(typeof renderCutiRekap==='function')renderCutiRekap();
     return;
   }
-  if(decide==='approve'){
-    var rowEl=document.getElementById('mob-leave-wrap');
-    toast('API gagal — coba sinkron manual dari kalender');
-  }else toast((r&&r.error)||'Gagal');
+  toast((r&&r.error)||(decide==='approve'?'Gagal menyetujui — periksa sisa cuti karyawan':'Gagal'));
 }
 function renderMobileAbsensiTabs(){
   if(typeof canAccessSubTab!=='function')return;
@@ -394,8 +391,10 @@ async function renderMyCutiPage(){
   }
   var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
   extra.innerHTML='<div class="card"><div class="ct">Ajuan cuti / izin / sakit</div>'
-    +(cloud?'<p style="font-size:11px;color:#6b7280">Sakit wajib upload surat dokter sejak hari pertama. Setelah disetujui HRD, kalender absensi ter-update otomatis.</p>'
+    +(cloud?'<p style="font-size:11px;color:#6b7280">Sakit wajib upload surat dokter sejak hari pertama. Cuti tahunan tidak boleh melebihi sisa kuota (termasuk pengajuan pending). Setelah disetujui HRD, kalender absensi ter-update otomatis.</p>'
       :'<p style="font-size:11px;color:#6b7280">Login cloud diperlukan untuk mengirim pengajuan ke HRD.</p>')
+    +'<div id="mycuti-balance-cloud" class="info-box info-amber" style="display:none;font-size:11px;line-height:1.5;margin-bottom:.5rem"></div>'
+    +'<div id="mycuti-preview-cloud" style="display:none;font-size:11px;margin-bottom:.5rem;padding:.45rem .6rem;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0"></div>'
     +'<div class="fg2"><div class="fg"><label>Jenis</label><select id="mycuti-type"><option value="cuti">Cuti tahunan</option><option value="izin">Izin</option><option value="sakit">Sakit (wajib surat dokter)</option></select></div>'
     +'<div class="fg"><label>Dari</label><input type="date" id="mycuti-from"></div><div class="fg"><label>Sampai</label><input type="date" id="mycuti-to"></div></div>'
     +'<div class="fg"><label>Alasan</label><textarea id="mycuti-reason" rows="2" style="width:100%"></textarea></div>'
@@ -406,8 +405,70 @@ async function renderMyCutiPage(){
   if(sel)sel.onchange=function(){
     var w=document.getElementById('mycuti-file-wrap');
     if(w)w.style.display=sel.value==='sakit'?'block':'none';
+    loadMyCutiBalanceCloud();
   };
+  var mf=document.getElementById('mycuti-from');
+  var mt=document.getElementById('mycuti-to');
+  if(mf){mf.onchange=loadMyCutiBalanceCloud;mf.oninput=loadMyCutiBalanceCloud;}
+  if(mt){mt.onchange=refreshMyCutiPreviewCloud;mt.oninput=refreshMyCutiPreviewCloud;}
+  if(cloud)loadMyCutiBalanceCloud();
   loadMyCutiRequests();
+}
+function formatMyCutiBalanceCloud(b){
+  if(!b)return '';
+  var sisa=b.sisa!=null?b.sisa:0;
+  return '<strong>Sisa cuti '+b.year+': '+Math.max(0,sisa)+' hari</strong> (kuota '+(b.kuota||12)
+    +', terpakai '+(b.terpakai||0)+(b.pending_pengajuan?', termasuk '+b.pending_pengajuan+' hari pending':'')+')';
+}
+async function loadMyCutiBalanceCloud(){
+  var box=document.getElementById('mycuti-balance-cloud');
+  var prev=document.getElementById('mycuti-preview-cloud');
+  var sel=document.getElementById('mycuti-type');
+  if(!box||!sel)return;
+  if(sel.value!=='cuti'){
+    box.style.display='none';
+    if(prev)prev.style.display='none';
+    return;
+  }
+  if(typeof sigajiIsCloudConfigured!=='function'||!sigajiIsCloudConfigured()){
+    box.style.display='none';
+    return;
+  }
+  box.style.display='block';
+  box.textContent='Memuat sisa cuti…';
+  var yr=new Date().getFullYear();
+  var mf=document.getElementById('mycuti-from');
+  if(mf&&mf.value)yr=parseInt(String(mf.value).substring(0,4),10)||yr;
+  var j=await sigajiMobileFetch('mobile-leave',{method:'POST',body:{action:'cuti_balance',year:yr}});
+  if(!j||!j.ok){box.textContent=(j&&j.error)||'Gagal memuat sisa cuti';return;}
+  box.innerHTML=formatMyCutiBalanceCloud(j.balance);
+  await refreshMyCutiPreviewCloud();
+}
+async function refreshMyCutiPreviewCloud(){
+  var prev=document.getElementById('mycuti-preview-cloud');
+  var sel=document.getElementById('mycuti-type');
+  var mf=document.getElementById('mycuti-from');
+  var mt=document.getElementById('mycuti-to');
+  if(!prev||!sel||!mf||!mt)return;
+  if(sel.value!=='cuti'||!mf.value||!mt.value){prev.style.display='none';return;}
+  if(mt.value<mf.value){
+    prev.style.display='block';
+    prev.innerHTML='<span style="color:#b91c1c">Tanggal akhir harus ≥ tanggal mulai</span>';
+    return;
+  }
+  prev.style.display='block';
+  prev.textContent='Menghitung hari kerja…';
+  var j=await sigajiMobileFetch('mobile-leave',{method:'POST',body:{action:'validate_cuti',date_from:mf.value,date_to:mt.value}});
+  if(!j||!j.ok){prev.textContent=(j&&j.error)||'Validasi gagal';return;}
+  var req=j.requested_work_days||0;
+  var sisa=j.balance&&j.balance.sisa!=null?j.balance.sisa:0;
+  if(j.allowed){
+    prev.innerHTML='Mengajukan <b>'+req+'</b> hari kerja. Sisa setelah ini: <b>'+Math.max(0,sisa-req)+'</b> hari.';
+    prev.style.color='#166534';
+  }else{
+    prev.innerHTML='<span style="color:#b91c1c">'+(j.error||'Melebihi sisa cuti')+'</span> (mengajukan '+req+' hari, sisa '+Math.max(0,sisa)+' hari)';
+    prev.style.color='#b91c1c';
+  }
 }
 async function loadMyCutiRequests(){
   var el=document.getElementById('mycuti-requests-list');if(!el)return;
@@ -427,6 +488,12 @@ async function submitMyCutiRequest(){
   var dt=document.getElementById('mycuti-to')&&document.getElementById('mycuti-to').value;
   var reason=(document.getElementById('mycuti-reason')&&document.getElementById('mycuti-reason').value)||'';
   if(!df||!dt){toast('Isi tanggal');return;}
+  if(dt<df){toast('Tanggal akhir harus ≥ tanggal mulai');return;}
+  if(type==='cuti'&&typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured()){
+    var v=await sigajiMobileFetch('mobile-leave',{method:'POST',body:{action:'validate_cuti',date_from:df,date_to:dt}});
+    if(!v||!v.ok){toast((v&&v.error)||'Validasi gagal');return;}
+    if(!v.allowed){toast(v.error||'Cuti melebihi sisa kuota');await refreshMyCutiPreviewCloud();return;}
+  }
   var attachment_path=null;
   if(type==='sakit'){
     var f=document.getElementById('mycuti-file')&&document.getElementById('mycuti-file').files[0];
