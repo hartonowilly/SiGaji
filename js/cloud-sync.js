@@ -290,6 +290,10 @@
     }
   }
 
+  function clearLoginBusy() {
+    if (typeof window.sigajiSetLoginBusy === 'function') window.sigajiSetLoginBusy(false);
+  }
+
   function tryCloudLogin(email, pw) {
     var sb = window.sigajiSupabase;
     sb.auth
@@ -315,7 +319,8 @@
             m +
             '. Cek jaringan dan konsol F12. Data lokal tidak diubah jika login tidak selesai.'
         );
-      });
+      })
+      .finally(clearLoginBusy);
   }
 
   /**

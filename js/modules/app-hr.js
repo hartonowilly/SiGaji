@@ -37,14 +37,14 @@ function onSpTipeKerjaChange() {
 // ── DASHBOARD ───────────────────────────────────
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
-  const thrTag=p.thr_aktif?`<span style="background:#5b21b6;color:#fff;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px">&#127873; THR ${p.thr_nama||''}</span>`:'';
+  const thrTag=p.thr_aktif?'<span class="bdg b-pu dash-thr-badge">&#127873; THR '+(p.thr_nama||'')+'</span>':'';
   document.getElementById('pb-dash').innerHTML=
     '<div class="dash-hero">'+
     '<div><div class="dash-hero-label">Periode aktif</div>'+
     '<div class="dash-hero-title">'+p.nama+thrTag+'</div>'+
     '<div class="dash-hero-meta">'+fmtDate(p.start)+' — '+fmtDate(p.end)+' · Bayar: '+fmtDate(p.bayar)+
     (p.thr_aktif?' · THR: '+fmtDate(p.thr_bayar||'-'):'')+'</div></div>'+
-    '<div style="text-align:right"><div class="dash-hero-count">'+hP+'</div>'+
+    '<div class="dash-hero-side"><div class="dash-hero-count">'+hP+'</div>'+
     '<div class="dash-hero-count-lbl">hari menuju penggajian</div></div></div>';
   let tB=0,tP=0,tN=0,tT=0;const depts={};
   const list=karyawanListPeriode(p);
@@ -54,7 +54,12 @@ function renderDash(){
   document.getElementById('d-table').innerHTML=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
   const pRet=list.reduce((s,k)=>s+(k.pph_return?.nilai||0),0);
   const pAp=approvals.filter(a=>a.status==='pending'&&a.period===p.nama).length;
-  document.getElementById('d-alerts').innerHTML=`${p.thr_aktif?`<div style="padding:10px 14px;background:#f5f0ff;border-radius:7px;border-left:3px solid #5b21b6;font-size:12px;margin-bottom:5px">&#127873; <strong>Periode ini ada THR (${p.thr_nama||''})</strong> &#8212; Total THR Bruto: <strong>${fmt(tT)}</strong> | Bayar THR: <strong>${p.thr_bayar||'-'}</strong> | PPh THR digabung ke gaji akhir bulan.</div>`:''}${pAp>0?`<div style="padding:8px 12px;background:#fef3e2;border-radius:7px;border-left:3px solid #7d4800;font-size:12px;margin-bottom:5px"><strong>${pAp} Approval Tertunda</strong></div>`:''}${pRet>0?`<div style="padding:8px 12px;background:#e8f4de;border-radius:7px;border-left:3px solid #2d6a0a;font-size:12px;margin-bottom:5px"><strong>Pengembalian PPh 21:</strong> ${fmt(pRet)}</div>`:''}`;
+  var alerts='';
+  if(p.thr_aktif)alerts+='<div class="alert-item alert-purple">&#127873; <strong>Periode ini ada THR ('+(p.thr_nama||'')+')</strong> — Total THR Bruto: <strong>'+fmt(tT)+'</strong> · Bayar THR: <strong>'+(p.thr_bayar||'-')+'</strong> · PPh THR digabung ke gaji akhir bulan.</div>';
+  if(pAp>0)alerts+='<div class="alert-item alert-amber"><strong>'+pAp+' approval tertunda</strong> — periksa modul Approval.</div>';
+  if(pRet>0)alerts+='<div class="alert-item alert-green"><strong>Pengembalian PPh 21:</strong> '+fmt(pRet)+'</div>';
+  if(!alerts)alerts='<div class="alert-empty">Tidak ada peringatan untuk periode ini.</div>';
+  document.getElementById('d-alerts').innerHTML=alerts;
 }
 // ── MASTER KARYAWAN ─────────────────────────────
 function karRowHtml(k,no){

@@ -325,7 +325,15 @@ function onApModeChange(key){var mode=document.getElementById('ap-mode-'+key)&&d
 function simpanAturanPotongan(){if(!perusahaan.aturan_potongan)perusahaan.aturan_potongan={};JENIS_POT.forEach(function(j){var mode=(document.getElementById('ap-mode-'+j.key)&&document.getElementById('ap-mode-'+j.key).value)||'prorata';var nilai=parseFloat((document.getElementById('ap-val-'+j.key)&&document.getElementById('ap-val-'+j.key).value))||0;perusahaan.aturan_potongan[j.key]={mode:mode,nilai:nilai};});saveAll();toast('Aturan potongan disimpan');renderPenggajian();}
 function resetAturanPotongan(){perusahaan.aturan_potongan={cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}};saveAll();loadAturanPotongan();toast('Reset ke default');}
 // ── NOTIFIKASI ───────────────────────────────────
-function renderNotif(){document.getElementById('notif-list').innerHTML=notifikasi.length?notifikasi.map(function(n){return '<div style="padding:.75rem 1rem;border-bottom:1px solid #f3f4f6;display:flex;gap:.6rem;align-items:flex-start;'+(n.read?'':'background:#f0f6ff')+'"><div style="width:7px;height:7px;border-radius:50%;background:'+(n.read?'#d1d5db':'#1a56a0')+';margin-top:4px;flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:700">'+n.title+'</div><div style="font-size:11px;color:#6b7280">'+n.body+'</div></div><button class="btn btn-sm btn-r" onclick="hapusNotif('+n.id+')" style="font-size:10px;padding:2px 7px">&#10007;</button></div>';}).join(''):'<div style="text-align:center;color:#6b7280;padding:1.5rem">Belum ada notifikasi</div>';}
+function renderNotif(){
+  var el=document.getElementById('notif-list');if(!el)return;
+  el.innerHTML=notifikasi.length?notifikasi.map(function(n){
+    return '<div class="notif-item'+(n.read?'':' notif-unread')+'">'+
+      '<span class="notif-dot" aria-hidden="true"></span>'+
+      '<div class="notif-body"><div class="notif-title">'+n.title+'</div><div class="notif-text">'+n.body+'</div></div>'+
+      '<button type="button" class="btn btn-sm btn-r" onclick="hapusNotif('+n.id+')" aria-label="Hapus">&#10007;</button></div>';
+  }).join(''):'<div class="notif-empty">Belum ada notifikasi</div>';
+}
 function hapusNotif(id){notifikasi=notifikasi.filter(function(n){return n.id!==id;});saveAll();renderNotif();updateNotifBadge();}
 function hapusNotifSemua(){if(!confirm('Hapus semua?'))return;notifikasi=[];saveAll();renderNotif();updateNotifBadge();toast('Dihapus');}
 function markAllRead(){notifikasi.forEach(function(n){n.read=true;});saveAll();renderNotif();updateNotifBadge();}

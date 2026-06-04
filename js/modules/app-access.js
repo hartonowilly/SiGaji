@@ -1195,6 +1195,7 @@ function enterAppWithUser(user){
       if(!cb.checked)localStorage.removeItem('sigaji_last_username');
     }
   }catch(e){}
+  sigajiSetLoginBusy(false);
   document.getElementById('login').style.display='none';document.getElementById('app').style.display='flex';
   try{document.body.classList.add('sigaji-app-active');}catch(e){}
   document.getElementById('uav').textContent=ini(CU.nama);document.getElementById('uname').textContent=CU.nama;document.getElementById('urbadge').textContent=CU.role;
@@ -1208,6 +1209,14 @@ function enterAppWithUser(user){
   updateNotifBadge();
   initIdleSession();
 }
+function sigajiSetLoginBusy(busy){
+  var btn=document.getElementById('btn-login');
+  if(!btn)return;
+  btn.classList.toggle('is-busy',!!busy);
+  btn.disabled=!!busy;
+}
+if(typeof window!=='undefined')window.sigajiSetLoginBusy=sigajiSetLoginBusy;
+
 function doLogin(){
   const rawU=document.getElementById('lu').value.trim();
   const u=rawU.toLowerCase();
@@ -1235,6 +1244,7 @@ function doLogin(){
       return;
     }
     if(!pw){toast('Isi sandi akun Supabase Anda.');return;}
+    sigajiSetLoginBusy(true);
     window.sigajiTryCloudLogin(rawU,pw);
     return;
   }

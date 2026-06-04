@@ -185,7 +185,15 @@ function showPg(pg){
   sigajiCloseNavDrawer();
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
-  var el=document.getElementById('pg-'+pg);if(el)el.classList.add('active');
+  var el=document.getElementById('pg-'+pg);
+  if(el){
+    el.classList.add('active');
+    el.style.animation='none';
+    void el.offsetWidth;
+    el.style.animation='';
+  }
+  var content=document.querySelector('.content');
+  if(content)content.scrollTop=0;
   document.querySelectorAll('.ni').forEach(function(n){if(n.dataset.pg===pg)n.classList.add('active');});
   if(pg==='notifikasi'){notifikasi.forEach(function(n){n.read=true;});saveAll();renderNotif();updateNotifBadge();}
   if(pg==='absensi')setTimeout(function(){applyAbsensiSubtabVisibility();if(typeof renderMobileAbsensiTabs==='function')renderMobileAbsensiTabs();renderAbsensi();},50);
