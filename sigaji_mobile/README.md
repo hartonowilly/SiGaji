@@ -30,15 +30,19 @@ Perintah ini melengkapi file Android tanpa menghapus kode di `lib/`.
 
 ## Build APK (gratis, tanpa Play Store)
 
+**Jika macet di `[1/6] android-arm-profile`:** baca [`docs/BUILD_MACET.md`](docs/BUILD_MACET.md) — unduh engine dulu, bukan error project.
+
 ```bash
 cd sigaji_mobile
-flutter pub get
-flutter build apk --release
+flutter precache --android -v
+flutter build apk --release --target-platform android-arm64
 ```
 
-File APK:
+Atau di Windows: double-click / jalankan `scripts\build_apk.bat`
 
-`build/app/outputs/flutter-apk/app-release.apk`
+File APK (ARM64, untuk HP modern):
+
+`build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
 
 Bagikan file itu ke karyawan (Drive, WhatsApp internal, dll.) → izinkan **Install dari sumber tidak dikenal**.
 
