@@ -355,8 +355,8 @@ function sigajiApplyCloudLoginUi(){
       h.style.display='block';
       h.innerHTML='<strong>Mode online.</strong> Server belum dikonfigurasi: isi <code>SIGAJI_SUPABASE_URL</code> dan <code>SIGAJI_SUPABASE_ANON_KEY</code> di Cloudflare Pages (Environment variables), lalu deploy ulang. Login <code>admin</code>/<code>hrd</code> lokal tidak dipakai lagi.';
     }else{
-      h.style.display='block';
-      h.innerHTML='Masuk dengan <strong>email & sandi Supabase</strong> (akun yang disetujui Admin/HRD). Data disimpan di cloud.';
+      h.style.display='none';
+      h.innerHTML='';
     }
   }
   var fp=document.getElementById('forgot-pw-wrap');
