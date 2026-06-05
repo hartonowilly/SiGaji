@@ -292,16 +292,9 @@ export async function onRequestPost({ request, env }) {
       );
     }
     if (faceVerified) {
-      if (!Number.isFinite(faceScore) || faceScore < 0.65) {
-        return jsonResponse(
-          422,
-          { ok: false, error: 'Validasi wajah gagal — coba lagi di pencahayaan cukup', retry: true },
-          request
-        );
-      }
       const { data: enr, error: enrErr } = await sb
         .from('sigaji_face_enrollments')
-        .select('id')
+        .select('id,model_version,verify_threshold')
         .eq('tenant_key', tenant)
         .eq('nik', ctx.nik)
         .maybeSingle();
@@ -310,6 +303,33 @@ export async function onRequestPost({ request, env }) {
         return jsonResponse(
           403,
           { ok: false, error: 'Belum daftar wajah — lakukan enrollment sekali di aplikasi' },
+          request
+        );
+      }
+      if (String(enr.model_version || '') !== 'lbp_v2') {
+        return jsonResponse(
+          403,
+          {
+            ok: false,
+            error: 'Model wajah usang — daftar ulang wajah di app terbaru',
+          },
+          request
+        );
+      }
+      const reqScore = Number.isFinite(Number(enr.verify_threshold))
+        ? Math.max(0.88, Number(enr.verify_threshold))
+        : 0.88;
+      if (!Number.isFinite(faceScore) || faceScore < reqScore) {
+        return jsonResponse(
+          422,
+          {
+            ok: false,
+            error:
+              'Validasi wajah gagal — wajah tidak cocok (min ' +
+              Math.round(reqScore * 100) +
+              '%)',
+            retry: true,
+          },
           request
         );
       }

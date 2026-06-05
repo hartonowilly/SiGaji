@@ -27,7 +27,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   bool _busy = false;
   bool _loadingEmb = true;
   String? _loadError;
-  List<double>? _enrolled;
+  EnrolledFaceProfile? _profile;
   final _picker = ImagePicker();
   final _verify = FaceVerifyService();
 
@@ -48,10 +48,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   Future<void> _loadEnrollment() async {
     try {
-      final emb = await FaceService(widget.config).loadEmbedding();
+      final profile = await FaceService(widget.config).loadProfile();
       if (!mounted) return;
       setState(() {
-        _enrolled = emb;
+        _profile = profile;
         _loadingEmb = false;
       });
     } catch (e) {
@@ -64,7 +64,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Future<void> _verifyAndSubmit() async {
-    if (_enrolled == null) {
+    if (_profile == null) {
       _snack('Belum daftar wajah');
       return;
     }
@@ -89,7 +89,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         _snack(extracted.error ?? 'Validasi wajah gagal');
         return;
       }
-      final matched = _verify.match(_enrolled!, extracted.embedding!);
+      final matched = _verify.match(
+        _profile!.embedding,
+        extracted.embedding!,
+        personalThreshold: _profile!.verifyThreshold,
+      );
       if (!matched.ok || matched.score == null) {
         _snack(matched.error ?? 'Wajah tidak cocok');
         return;

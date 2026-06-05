@@ -10,7 +10,9 @@ create table if not exists public.sigaji_face_enrollments (
   tenant_key text not null default 'main',
   nik text not null,
   embedding jsonb not null,
-  model_version text not null default 'landmark_v1',
+  model_version text not null default 'lbp_v2',
+  enroll_min_self_score double precision,
+  verify_threshold double precision,
   enrolled_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (tenant_key, nik)
@@ -35,6 +37,12 @@ alter table public.sigaji_attendance_logs
 
 alter table public.sigaji_attendance_logs
   add column if not exists face_score double precision;
+
+alter table public.sigaji_face_enrollments
+  add column if not exists enroll_min_self_score double precision;
+
+alter table public.sigaji_face_enrollments
+  add column if not exists verify_threshold double precision;
 
 alter table public.sigaji_face_enrollments enable row level security;
 

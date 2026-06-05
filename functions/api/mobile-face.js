@@ -9,9 +9,10 @@ import {
   assertCallerIsHrdOrAdminMobile,
 } from '../_lib/mobile-shared.js';
 
-const MODEL_VERSION = 'landmark_v1';
-const MIN_DIM = 64;
+const MODEL_VERSION = 'lbp_v2';
+const MIN_DIM = 60;
 const MAX_DIM = 256;
+const MIN_VERIFY_THRESHOLD = 0.88;
 
 function validateEmbedding(raw) {
   if (!Array.isArray(raw) || raw.length < MIN_DIM || raw.length > MAX_DIM) {
@@ -103,6 +104,8 @@ export async function onRequestPost({ request, env }) {
         .eq('nik', ctx.nik)
         .maybeSingle();
       if (error) throw error;
+      const needsReenroll =
+        !!data && String(data.model_version || '') !== MODEL_VERSION;
       return jsonResponse(
         200,
         {
@@ -110,6 +113,7 @@ export async function onRequestPost({ request, env }) {
           enrolled: !!data,
           model_version: data ? data.model_version : null,
           enrolled_at: data ? data.enrolled_at : null,
+          needs_reenroll: needsReenroll,
         },
         request
       );
@@ -118,7 +122,7 @@ export async function onRequestPost({ request, env }) {
     if (action === 'get_embedding') {
       const { data, error } = await sb
         .from('sigaji_face_enrollments')
-        .select('embedding,model_version,updated_at')
+        .select('embedding,model_version,verify_threshold,updated_at')
         .eq('tenant_key', tenant)
         .eq('nik', ctx.nik)
         .maybeSingle();
@@ -130,12 +134,25 @@ export async function onRequestPost({ request, env }) {
           request
         );
       }
+      if (String(data.model_version || '') !== MODEL_VERSION) {
+        return jsonResponse(
+          409,
+          {
+            ok: false,
+            error: 'Model wajah usang — daftar ulang wajah di app terbaru',
+            needs_reenroll: true,
+          },
+          request
+        );
+      }
+      const vt = Number(data.verify_threshold);
       return jsonResponse(
         200,
         {
           ok: true,
           embedding: data.embedding,
           model_version: data.model_version,
+          verify_threshold: Number.isFinite(vt) ? vt : MIN_VERIFY_THRESHOLD,
           updated_at: data.updated_at,
         },
         request
@@ -151,6 +168,19 @@ export async function onRequestPost({ request, env }) {
           request
         );
       }
+      const minSelf = Number(body.enroll_min_self_score);
+      const verifyThreshold = Number(body.verify_threshold);
+      if (!Number.isFinite(minSelf) || minSelf < 0.8) {
+        return jsonResponse(
+          400,
+          { ok: false, error: 'enroll_min_self_score wajib (min 0.8)' },
+          request
+        );
+      }
+      const vt = Number.isFinite(verifyThreshold)
+        ? Math.max(MIN_VERIFY_THRESHOLD, verifyThreshold)
+        : MIN_VERIFY_THRESHOLD;
+
       const now = new Date().toISOString();
       const { data, error } = await sb
         .from('sigaji_face_enrollments')
@@ -160,6 +190,8 @@ export async function onRequestPost({ request, env }) {
             nik: ctx.nik,
             embedding,
             model_version: String(body.model_version || MODEL_VERSION).trim() || MODEL_VERSION,
+            enroll_min_self_score: minSelf,
+            verify_threshold: vt,
             updated_at: now,
           },
           { onConflict: 'tenant_key,nik' }

@@ -139,7 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
-                  if (_face != null && !_face!.enrolled) ...[
+                  if (_face != null &&
+                      (!_face!.enrolled || _face!.needsReenroll)) ...[
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
@@ -152,9 +153,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
-                            'Daftar wajah sekali sebelum absen',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                          Text(
+                            _face!.needsReenroll
+                                ? 'Perbarui daftar wajah (app terbaru)'
+                                : 'Daftar wajah sekali sebelum absen',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 8),
                           FilledButton.tonal(
@@ -167,7 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: (_face?.enrolled == true && (_day?.canCheckIn ?? false))
+                    onPressed: (_face?.enrolled == true &&
+                            _face?.needsReenroll != true &&
+                            (_day?.canCheckIn ?? false))
                         ? () => _openAttendance('check_in')
                         : null,
                     icon: const Icon(Icons.login),
@@ -175,7 +180,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   FilledButton.tonalIcon(
-                    onPressed: (_face?.enrolled == true && (_day?.canCheckOut ?? false))
+                    onPressed: (_face?.enrolled == true &&
+                            _face?.needsReenroll != true &&
+                            (_day?.canCheckOut ?? false))
                         ? () => _openAttendance('check_out')
                         : null,
                     icon: const Icon(Icons.logout),

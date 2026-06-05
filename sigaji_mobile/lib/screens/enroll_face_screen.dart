@@ -74,8 +74,19 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
     }
     setState(() => _busy = true);
     try {
-      final avg = _verify.averageEmbeddings(_samples);
-      final msg = await FaceService(widget.config).enroll(avg);
+      final quality = _verify.finalizeEnrollment(_samples);
+      if (!quality.ok ||
+          quality.embedding == null ||
+          quality.minSelfScore == null ||
+          quality.verifyThreshold == null) {
+        _snack(quality.error ?? 'Enrollment gagal');
+        return;
+      }
+      final msg = await FaceService(widget.config).enroll(
+        embedding: quality.embedding!,
+        minSelfScore: quality.minSelfScore!,
+        verifyThreshold: quality.verifyThreshold!,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       Navigator.pop(context, true);
@@ -101,8 +112,8 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Sekali saja per karyawan. Foto tidak disimpan di server — '
-              'hanya pola wajah untuk validasi check-in/out.',
+              'Sekali saja per karyawan. Foto tidak disimpan di server. '
+              'Hanya karyawan yang terdaftar boleh absen — jangan pakai wajah orang lain.',
               style: TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 12),

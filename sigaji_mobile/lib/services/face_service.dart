@@ -8,13 +8,27 @@ class FaceEnrollmentStatus {
         enrolled = j['enrolled'] == true,
         modelVersion = j['model_version']?.toString(),
         enrolledAt = j['enrolled_at']?.toString(),
+        needsReenroll = j['needs_reenroll'] == true,
         error = j['error']?.toString();
 
   final bool ok;
   final bool enrolled;
   final String? modelVersion;
   final String? enrolledAt;
+  final bool needsReenroll;
   final String? error;
+}
+
+class EnrolledFaceProfile {
+  EnrolledFaceProfile({
+    required this.embedding,
+    required this.modelVersion,
+    required this.verifyThreshold,
+  });
+
+  final List<double> embedding;
+  final String modelVersion;
+  final double verifyThreshold;
 }
 
 class FaceService {
@@ -23,54 +37,68 @@ class FaceService {
   final AppConfig config;
   ApiClient get _api => ApiClient(config);
 
-  List<double>? _cachedEmbedding;
-  String? _cachedModelVersion;
+  EnrolledFaceProfile? _cached;
 
-  List<double>? get cachedEmbedding => _cachedEmbedding;
-
-  void clearCache() {
-    _cachedEmbedding = null;
-    _cachedModelVersion = null;
-  }
+  void clearCache() => _cached = null;
 
   Future<FaceEnrollmentStatus> status() async {
     final j = await _api.post('mobile-face', {'action': 'status'});
     return FaceEnrollmentStatus.fromJson(j ?? {'ok': false, 'error': 'Gagal'});
   }
 
-  Future<List<double>> loadEmbedding({bool forceRefresh = false}) async {
-    if (!forceRefresh &&
-        _cachedEmbedding != null &&
-        _cachedEmbedding!.isNotEmpty) {
-      return _cachedEmbedding!;
-    }
+  Future<EnrolledFaceProfile> loadProfile({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cached != null) return _cached!;
+
     final j = await _api.post('mobile-face', {'action': 'get_embedding'});
     if (j == null || j['ok'] != true) {
       throw Exception(
         j?['error']?.toString() ?? 'Belum daftar wajah — lakukan enrollment',
       );
     }
+
+    final model = j['model_version']?.toString() ?? '';
+    if (model != FaceVerifyService.modelVersion) {
+      throw Exception(
+        'Model wajah usang ($model) — daftar ulang wajah di app terbaru',
+      );
+    }
+
     final raw = j['embedding'];
     if (raw is! List) {
       throw Exception('Data wajah tidak valid — daftar ulang');
     }
-    final emb = raw.map((e) => (e as num).toDouble()).toList();
-    _cachedEmbedding = emb;
-    _cachedModelVersion = j['model_version']?.toString();
-    return emb;
+
+    final threshold = (j['verify_threshold'] as num?)?.toDouble() ??
+        FaceVerifyService.matchThresholdFloor;
+
+    _cached = EnrolledFaceProfile(
+      embedding: raw.map((e) => (e as num).toDouble()).toList(),
+      modelVersion: model,
+      verifyThreshold: threshold,
+    );
+    return _cached!;
   }
 
-  Future<String> enroll(List<double> embedding) async {
+  Future<String> enroll({
+    required List<double> embedding,
+    required double minSelfScore,
+    required double verifyThreshold,
+  }) async {
     final j = await _api.post('mobile-face', {
       'action': 'enroll',
       'embedding': embedding,
       'model_version': FaceVerifyService.modelVersion,
+      'enroll_min_self_score': minSelfScore,
+      'verify_threshold': verifyThreshold,
     });
     if (j == null || j['ok'] != true) {
       throw Exception(j?['error']?.toString() ?? 'Gagal simpan enrollment');
     }
-    _cachedEmbedding = embedding;
-    _cachedModelVersion = FaceVerifyService.modelVersion;
+    _cached = EnrolledFaceProfile(
+      embedding: embedding,
+      modelVersion: FaceVerifyService.modelVersion,
+      verifyThreshold: verifyThreshold,
+    );
     return j['message']?.toString() ?? 'Wajah terdaftar';
   }
 }
