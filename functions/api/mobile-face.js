@@ -9,10 +9,10 @@ import {
   assertCallerIsHrdOrAdminMobile,
 } from '../_lib/mobile-shared.js';
 
-const MODEL_VERSION = 'lbp_v2';
-const MIN_DIM = 60;
+const MODEL_VERSION = 'mobilefacenet_v4';
+const MIN_DIM = 128;
 const MAX_DIM = 256;
-const MIN_VERIFY_THRESHOLD = 0.88;
+const MIN_VERIFY_THRESHOLD = 0.76;
 
 function validateEmbedding(raw) {
   if (!Array.isArray(raw) || raw.length < MIN_DIM || raw.length > MAX_DIM) {

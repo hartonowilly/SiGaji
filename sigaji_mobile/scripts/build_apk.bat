@@ -31,7 +31,15 @@ if errorlevel 1 (
 )
 echo.
 
-echo [3/4] Dependencies...
+echo [2b/5] Model MobileFaceNet (wajib)...
+powershell -ExecutionPolicy Bypass -File "scripts\download_face_model.ps1"
+if errorlevel 1 (
+  echo ERROR: mobilefacenet.tflite belum ada di assets\models\
+  pause
+  exit /b 1
+)
+
+echo [3/5] Dependencies...
 flutter pub get
 echo.
 

@@ -4,11 +4,8 @@ import 'dart:math' as math;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 
-class _LmPoint {
-  const _LmPoint(this.x, this.y);
-  final double x;
-  final double y;
-}
+import 'face_liveness.dart';
+import 'face_net_embedder.dart';
 
 class FaceVerifyResult {
   const FaceVerifyResult({
@@ -16,12 +13,14 @@ class FaceVerifyResult {
     this.score,
     this.error,
     this.embedding,
+    this.face,
   });
 
   final bool ok;
   final double? score;
   final String? error;
   final List<double>? embedding;
+  final Face? face;
 }
 
 class EnrollQualityResult {
@@ -40,13 +39,13 @@ class EnrollQualityResult {
   final String? error;
 }
 
-/// Validasi wajah on-device — tidak mengunggah foto ke server.
+/// MobileFaceNet + liveness kedip — validasi wajah on-device tanpa upload foto.
 class FaceVerifyService {
-  /// v2: landmark + tekstur LBP (lebih ketat dari landmark_v1).
-  static const matchThresholdFloor = 0.88;
-  static const enrollMinSelfFloor = 0.86;
-  static const verifyMarginBelowEnroll = 0.05;
-  static const modelVersion = 'lbp_v2';
+  /// Cosine similarity pada embedding L2-normalized (MobileFaceNet).
+  static const matchThresholdFloor = 0.76;
+  static const enrollMinSelfFloor = 0.82;
+  static const verifyMarginBelowEnroll = 0.04;
+  static const modelVersion = 'mobilefacenet_v4';
   static const enrollSamples = 3;
 
   final FaceDetector _detector = FaceDetector(
@@ -54,30 +53,43 @@ class FaceVerifyService {
       enableLandmarks: true,
       enableClassification: true,
       performanceMode: FaceDetectorMode.accurate,
-      minFaceSize: 0.18,
+      minFaceSize: 0.2,
     ),
   );
 
-  Future<void> dispose() => _detector.close();
+  late final FaceLiveness _liveness = FaceLiveness(_detector);
+  final FaceNetEmbedder _net = FaceNetEmbedder.instance;
 
-  Future<FaceVerifyResult> extractEmbedding(File file) async {
-    final face = await _detectSingleFace(file);
+  FaceLiveness get liveness => _liveness;
+
+  Future<void> dispose() async {
+    await _detector.close();
+  }
+
+  Future<FaceVerifyResult> extractEmbedding(
+    File file, {
+    bool strictNeutral = false,
+  }) async {
+    final face = await _detectSingleFace(file, strictNeutral: strictNeutral);
     if (!face.ok || face.face == null || face.image == null) {
       return FaceVerifyResult(ok: false, error: face.error);
     }
 
-    final embedding = _computeEmbedding(face.face!, face.image!);
-    if (embedding.every((v) => v == 0)) {
-      return const FaceVerifyResult(
+    try {
+      final embedding = await _net.embedFace(face.face!, face.image!);
+      return FaceVerifyResult(
+        ok: true,
+        embedding: embedding,
+        face: face.face,
+      );
+    } catch (e) {
+      return FaceVerifyResult(
         ok: false,
-        error: 'Wajah kurang jelas — coba lagi di ruang terang',
+        error: 'Model wajah error — build ulang APK: ${e.toString()}',
       );
     }
-
-    return FaceVerifyResult(ok: true, embedding: embedding);
   }
 
-  /// Gabungkan 3 sampel enrollment + hitung ambang personal.
   EnrollQualityResult finalizeEnrollment(List<List<double>> samples) {
     if (samples.length < enrollSamples) {
       return EnrollQualityResult(
@@ -85,11 +97,12 @@ class FaceVerifyService {
         error: 'Butuh $enrollSamples foto wajah',
       );
     }
+    final dim = FaceNetEmbedder.embeddingDim;
     for (final s in samples) {
-      if (s.length != samples.first.length) {
+      if (s.length != dim) {
         return const EnrollQualityResult(
           ok: false,
-          error: 'Sampel tidak konsisten — ulangi dari awal',
+          error: 'Sampel tidak valid — ulangi enrollment',
         );
       }
     }
@@ -97,7 +110,7 @@ class FaceVerifyService {
     var minSelf = 1.0;
     for (var i = 0; i < samples.length; i++) {
       for (var j = i + 1; j < samples.length; j++) {
-        final s = _cosine(samples[i], samples[j]);
+        final s = _net.cosineSimilarity(samples[i], samples[j]);
         if (s < minSelf) minSelf = s;
       }
     }
@@ -107,7 +120,7 @@ class FaceVerifyService {
         ok: false,
         error:
             'Foto enrollment kurang konsisten (${(minSelf * 100).toStringAsFixed(0)}%). '
-            'Pakai pencahayaan sama & hadap kamera lurus.',
+            'Wajah normal, hadap kamera, pencahayaan cukup.',
       );
     }
 
@@ -137,7 +150,7 @@ class FaceVerifyService {
       );
     }
     final threshold = personalThreshold ?? matchThresholdFloor;
-    final score = _cosine(enrolled, live);
+    final score = _net.cosineSimilarity(enrolled, live);
     if (score < threshold) {
       return FaceVerifyResult(
         ok: false,
@@ -165,7 +178,10 @@ class FaceVerifyService {
   }
 
   Future<({bool ok, Face? face, img.Image? image, String? error})>
-      _detectSingleFace(File file) async {
+      _detectSingleFace(
+    File file, {
+    bool strictNeutral = false,
+  }) async {
     final inputImage = InputImage.fromFilePath(file.path);
     final faces = await _detector.processImage(inputImage);
     if (faces.isEmpty) {
@@ -181,26 +197,35 @@ class FaceVerifyService {
     }
 
     final face = faces.first;
-    if (face.headEulerAngleY != null &&
-        face.headEulerAngleY!.abs() > 18) {
-      return (
-        ok: false,
-        face: null,
-        image: null,
-        error: 'Hadap kamera lurus (jangan miring)',
-      );
+    final left = face.leftEyeOpenProbability;
+    final right = face.rightEyeOpenProbability;
+    if (left != null && right != null) {
+      final avg = (left + right) / 2;
+      if (strictNeutral) {
+        if (avg < FaceLiveness.minEyeOpen || avg > FaceLiveness.maxEyeOpen) {
+          return (
+            ok: false,
+            face: null,
+            image: null,
+            error: 'Wajah normal saja — jangan melotot atau menutup mata',
+          );
+        }
+      } else if (avg < 0.3) {
+        return (
+          ok: false,
+          face: null,
+          image: null,
+          error: 'Buka mata dan hadap kamera',
+        );
+      }
     }
 
-    final leftEye = face.leftEyeOpenProbability;
-    final rightEye = face.rightEyeOpenProbability;
-    if (leftEye != null &&
-        rightEye != null &&
-        (leftEye < 0.3 || rightEye < 0.3)) {
+    if (face.headEulerAngleY != null && face.headEulerAngleY!.abs() > 15) {
       return (
         ok: false,
         face: null,
         image: null,
-        error: 'Buka mata dan hadap kamera',
+        error: 'Hadap kamera lurus',
       );
     }
 
@@ -218,100 +243,6 @@ class FaceVerifyService {
     return (ok: true, face: face, image: decoded, error: null);
   }
 
-  List<double> _computeEmbedding(Face face, img.Image rgb) {
-    final ratios = _landmarkRatios(face);
-    final lbp = _lbpHistogram(face, rgb);
-    return _l2normalize([...ratios, ...lbp]);
-  }
-
-  List<double> _landmarkRatios(Face face) {
-    final leftEye = _lm(face, FaceLandmarkType.leftEye);
-    final rightEye = _lm(face, FaceLandmarkType.rightEye);
-    final nose = _lm(face, FaceLandmarkType.noseBase);
-    final mouthL = _lm(face, FaceLandmarkType.leftMouth);
-    final mouthR = _lm(face, FaceLandmarkType.rightMouth);
-    final cheekL = _lm(face, FaceLandmarkType.leftCheek);
-    final cheekR = _lm(face, FaceLandmarkType.rightCheek);
-
-    if (leftEye == null || rightEye == null || nose == null) {
-      return List<double>.filled(12, 0);
-    }
-
-    final eyeDist = _dist(leftEye, rightEye);
-    if (eyeDist < 1) return List<double>.filled(12, 0);
-
-    return [
-      _dist(nose, leftEye) / eyeDist,
-      _dist(nose, rightEye) / eyeDist,
-      _dist(mouthL, mouthR) / eyeDist,
-      _dist(nose, mouthL) / eyeDist,
-      _dist(nose, mouthR) / eyeDist,
-      _dist(cheekL, cheekR) / eyeDist,
-      _dist(leftEye, mouthL) / eyeDist,
-      _dist(rightEye, mouthR) / eyeDist,
-      face.headEulerAngleY != null ? (face.headEulerAngleY! + 90) / 180 : 0.5,
-      face.headEulerAngleZ != null ? (face.headEulerAngleZ! + 90) / 180 : 0.5,
-      face.boundingBox.width / face.boundingBox.height,
-      eyeDist / face.boundingBox.width,
-    ];
-  }
-
-  /// Local Binary Pattern — tekstur kulit, lebih membedakan individu.
-  List<double> _lbpHistogram(Face face, img.Image rgb) {
-    final box = face.boundingBox;
-    final margin = box.width * 0.08;
-    var x = (box.left - margin).round().clamp(0, rgb.width - 1);
-    var y = (box.top - margin).round().clamp(0, rgb.height - 1);
-    var w = (box.width + margin * 2).round().clamp(1, rgb.width - x);
-    var h = (box.height + margin * 2).round().clamp(1, rgb.height - y);
-
-    final crop = img.copyCrop(rgb, x: x, y: y, width: w, height: h);
-    final gray = img.grayscale(img.copyResize(crop, width: 64, height: 64));
-
-    final hist = List<double>.filled(59, 0);
-    const offsets = [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, 1],
-      [1, 1],
-      [1, 0],
-      [1, -1],
-      [0, -1],
-    ];
-
-    for (var py = 1; py < 63; py++) {
-      for (var px = 1; px < 63; px++) {
-        final c = gray.getPixel(px, py).r;
-        var code = 0;
-        for (var k = 0; k < 8; k++) {
-          final nx = px + offsets[k][0];
-          final ny = py + offsets[k][1];
-          if (gray.getPixel(nx, ny).r >= c) code |= 1 << k;
-        }
-        hist[code % 59] += 1;
-      }
-    }
-
-    final total = hist.fold<double>(0, (a, b) => a + b);
-    if (total <= 0) return hist;
-    return hist.map((v) => v / total).toList();
-  }
-
-  _LmPoint? _lm(Face face, FaceLandmarkType type) {
-    final lm = face.landmarks[type];
-    if (lm == null) return null;
-    final p = lm.position;
-    return _LmPoint(p.x.toDouble(), p.y.toDouble());
-  }
-
-  double _dist(_LmPoint? a, _LmPoint? b) {
-    if (a == null || b == null) return 0;
-    final dx = a.x - b.x;
-    final dy = a.y - b.y;
-    return math.sqrt(dx * dx + dy * dy);
-  }
-
   List<double> _l2normalize(List<double> v) {
     var sum = 0.0;
     for (final x in v) {
@@ -320,13 +251,5 @@ class FaceVerifyService {
     if (sum <= 1e-12) return v;
     final inv = 1 / math.sqrt(sum);
     return v.map((x) => x * inv).toList();
-  }
-
-  double _cosine(List<double> a, List<double> b) {
-    var dot = 0.0;
-    for (var i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-    }
-    return dot;
   }
 }

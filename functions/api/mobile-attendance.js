@@ -306,7 +306,7 @@ export async function onRequestPost({ request, env }) {
           request
         );
       }
-      if (String(enr.model_version || '') !== 'lbp_v2') {
+      if (String(enr.model_version || '') !== 'mobilefacenet_v4') {
         return jsonResponse(
           403,
           {
@@ -317,8 +317,8 @@ export async function onRequestPost({ request, env }) {
         );
       }
       const reqScore = Number.isFinite(Number(enr.verify_threshold))
-        ? Math.max(0.88, Number(enr.verify_threshold))
-        : 0.88;
+        ? Math.max(0.76, Number(enr.verify_threshold))
+        : 0.76;
       if (!Number.isFinite(faceScore) || faceScore < reqScore) {
         return jsonResponse(
           422,

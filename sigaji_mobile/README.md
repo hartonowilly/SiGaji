@@ -1,6 +1,6 @@
 # SiGaji Absen — Flutter (APK internal)
 
-Aplikasi Android internal untuk karyawan: **check-in / check-out** (foto + GPS) dan **pengajuan cuti / izin / sakit**. Memakai API SiGaji yang sama dengan PWA `/mobile/`.
+Aplikasi Android internal untuk karyawan: **check-in / check-out** (MobileFaceNet + kedip + GPS) dan **pengajuan cuti / izin / sakit**. Memakai API SiGaji yang sama dengan PWA `/mobile/`.
 
 ## Prasyarat
 
@@ -34,11 +34,15 @@ Perintah ini melengkapi file Android tanpa menghapus kode di `lib/`.
 
 ```bash
 cd sigaji_mobile
+powershell -ExecutionPolicy Bypass -File scripts/download_face_model.ps1
+flutter pub get
 flutter precache --android -v
 flutter build apk --release --target-platform android-arm64
 ```
 
-Atau di Windows: double-click / jalankan `scripts\build_apk.bat`
+Model **MobileFaceNet** (~5 MB) wajib ada di `assets/models/mobilefacenet.tflite` sebelum build.
+
+Atau di Windows: jalankan `scripts\build_apk.bat` (unduh model otomatis).
 
 File APK (ARM64, untuk HP modern):
 

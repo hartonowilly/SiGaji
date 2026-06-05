@@ -48,7 +48,7 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
     setState(() => _busy = true);
     try {
       final file = File(x.path);
-      final r = await _verify.extractEmbedding(file);
+      final r = await _verify.extractEmbedding(file, strictNeutral: true);
       if (!r.ok || r.embedding == null) {
         _snack(r.error ?? 'Gagal baca wajah');
         return;
@@ -112,8 +112,8 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Sekali saja per karyawan. Foto tidak disimpan di server. '
-              'Hanya karyawan yang terdaftar boleh absen — jangan pakai wajah orang lain.',
+              'Sekali saja per karyawan. Wajah normal (jangan melotot). '
+              'Saat absen nanti: mata terbuka → kedip → verifikasi.',
               style: TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 12),

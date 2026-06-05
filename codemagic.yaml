@@ -8,6 +8,11 @@ workflows:
     environment:
       flutter: stable
     scripts:
+      - name: Download MobileFaceNet model
+        script: |
+          mkdir -p assets/models
+          curl -L -o assets/models/mobilefacenet.tflite \
+            https://github.com/MCarlomagno/FaceRecognitionAuth/raw/master/assets/mobilefacenet.tflite
       - name: Get packages
         script: flutter pub get
       - name: Build APK
@@ -24,6 +29,11 @@ workflows:
       flutter: stable
       xcode: latest
     scripts:
+      - name: Download MobileFaceNet model
+        script: |
+          mkdir -p assets/models
+          curl -L -o assets/models/mobilefacenet.tflite \
+            https://github.com/MCarlomagno/FaceRecognitionAuth/raw/master/assets/mobilefacenet.tflite
       - name: Get packages
         script: flutter pub get
       - name: CocoaPods
