@@ -63,6 +63,17 @@ Config ada di **`codemagic.yaml` di root repo** (bukan di folder ini). Branch: *
 | `sigaji-mobile-ios` | `.ipa` Ad Hoc | Ya ($99/tahun) |
 | `sigaji-mobile-ios-testflight` | `.ipa` TestFlight | Ya ($99/tahun) |
 
+### Workflow YAML tidak muncul (cuma "Default Workflow")
+
+1. Pastikan repo Codemagic = `hartonowilly/SiGaji`, branch **`master`**
+2. Push `codemagic.yaml` terbaru dari root repo
+3. **Settings** aplikasi → tab **codemagic.yaml** (sidebar kiri) → branch `master` → **Check for configuration file**
+4. **Start new build** → branch `master` → harus muncul section **codemagic.yaml** dengan:
+   - **SiGaji iOS Sideload 7 hari**
+   - **SiGaji Absen Android**
+
+**Fallback (Workflow Editor):** Settings → **Workflow editor** → Build → **Project path** = `sigaji_mobile` → tambah script build dari `scripts/prepare_ios_codemagic.sh` + `flutter build ios --release --no-codesign`.
+
 ### Error Codemagic: "Scheme Runner not found"
 
 1. **Project path** harus `sigaji_mobile` (lihat bagian error pubspec di atas).

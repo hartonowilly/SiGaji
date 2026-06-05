@@ -1,24 +1,11 @@
-# Monorepo SiGaji — Flutter di subfolder sigaji_mobile
-# Build dari branch master (bukan main — main belum punya file ini)
-#
-# WAJIB di Codemagic UI (sekali):
-#   Application → Settings → Build → Project path → Rescan → pilih "sigaji_mobile"
-#   Build configuration: pakai codemagic.yaml (bukan Workflow Editor saja)
-#
+# SiGaji monorepo - Flutter di sigaji_mobile/
+# Branch build: master
 workflows:
-  sigaji-mobile-android:
+  sigaji-android:
     name: SiGaji Absen Android
     max_build_duration: 60
     instance_type: mac_mini_m2
     working_directory: sigaji_mobile
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: master
-          include: true
-        - pattern: main
-          include: true
     environment:
       flutter: stable
     scripts:
@@ -34,99 +21,28 @@ workflows:
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
 
-  sigaji-mobile-ios:
-    name: SiGaji Absen iOS
+  sigaji-ios-sideload:
+    name: SiGaji iOS Sideload 7 hari
     max_build_duration: 90
     instance_type: mac_mini_m2
     working_directory: sigaji_mobile
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: master
-          include: true
     environment:
       flutter: stable
       xcode: latest
-      vars:
-        XCODE_SCHEME: Runner
-        XCODE_WORKSPACE: ios/Runner.xcworkspace
-        BUNDLE_ID: com.sigaji.sigajiMobile
-      ios_signing:
-        distribution_type: ad_hoc
-        bundle_identifier: com.sigaji.sigajiMobile
+      cocoapods: default
     scripts:
       - name: Download MobileFaceNet model
         script: |
           mkdir -p assets/models
           curl -L -o assets/models/mobilefacenet.tflite \
             https://github.com/MCarlomagno/FaceRecognitionAuth/raw/master/assets/mobilefacenet.tflite
-      - name: Prepare iOS (CocoaPods + ML Kit)
+      - name: Prepare iOS
         script: bash scripts/prepare_ios_codemagic.sh
-      - name: Set up code signing
-        script: xcode-project use-profiles
-      - name: Build IPA (Ad Hoc — distribusi internal)
-        script: flutter build ipa --release --export-method ad-hoc
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-
-  sigaji-mobile-ios-sideload:
-    name: SiGaji iOS Sideload 7 hari (gratis)
-    max_build_duration: 90
-    instance_type: mac_mini_m2
-    working_directory: sigaji_mobile
-    # Jalankan MANUAL di Codemagic — tidak butuh Apple Developer
-    environment:
-      flutter: stable
-      xcode: latest
-      vars:
-        XCODE_SCHEME: Runner
-        XCODE_WORKSPACE: ios/Runner.xcworkspace
-    scripts:
-      - name: Download MobileFaceNet model
-        script: |
-          mkdir -p assets/models
-          curl -L -o assets/models/mobilefacenet.tflite \
-            https://github.com/MCarlomagno/FaceRecognitionAuth/raw/master/assets/mobilefacenet.tflite
-      - name: Prepare iOS (CocoaPods + ML Kit)
-        script: bash scripts/prepare_ios_codemagic.sh
-      - name: Build iOS tanpa code signing
+      - name: Build iOS unsigned
         script: |
           flutter build ios --release --no-codesign
           test -d build/ios/iphoneos/Runner.app
-      - name: Paket IPA unsigned
+      - name: Package IPA
         script: bash scripts/package_unsigned_ipa.sh
     artifacts:
       - build/ios/sideload/*.ipa
-
-  sigaji-mobile-ios-testflight:
-    name: SiGaji Absen iOS TestFlight
-    max_build_duration: 90
-    instance_type: mac_mini_m2
-    working_directory: sigaji_mobile
-    # Start manual di Codemagic UI setelah App Store Connect API key terhubung
-    environment:
-      flutter: stable
-      xcode: latest
-      vars:
-        XCODE_SCHEME: Runner
-        XCODE_WORKSPACE: ios/Runner.xcworkspace
-        BUNDLE_ID: com.sigaji.sigajiMobile
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.sigaji.sigajiMobile
-    scripts:
-      - name: Download MobileFaceNet model
-        script: |
-          mkdir -p assets/models
-          curl -L -o assets/models/mobilefacenet.tflite \
-            https://github.com/MCarlomagno/FaceRecognitionAuth/raw/master/assets/mobilefacenet.tflite
-      - name: Prepare iOS (CocoaPods + ML Kit)
-        script: bash scripts/prepare_ios_codemagic.sh
-      - name: Set up code signing
-        script: xcode-project use-profiles
-      - name: Build IPA (App Store / TestFlight)
-        script: flutter build ipa --release --export-method app-store
-    artifacts:
-      - build/ios/ipa/*.ipa
