@@ -63,6 +63,22 @@ Config ada di **`codemagic.yaml` di root repo** (bukan di folder ini). Branch: *
 | `sigaji-mobile-ios` | `.ipa` Ad Hoc | Ya ($99/tahun) |
 | `sigaji-mobile-ios-testflight` | `.ipa` TestFlight | Ya ($99/tahun) |
 
+### Error Codemagic: "Scheme Runner not found"
+
+1. **Project path** harus `sigaji_mobile` (lihat bagian error pubspec di atas).
+2. **Build configuration** pakai `codemagic.yaml` saja — matikan Workflow Editor iOS ganda di Settings.
+3. Push commit terbaru (berisi `ios/Podfile` + `Runner.xcscheme` shared).
+4. Jalankan workflow **SiGaji iOS Sideload 7 hari** — step `Prepare iOS` akan restore scheme.
+
+### Error Codemagic: "Directory was not found" / pubspec di root
+
+Flutter ada di **`sigaji_mobile/`**, bukan di root repo.
+
+1. Codemagic → aplikasi SiGaji → **Settings** → **Build**
+2. **Project path** → klik ikon **Rescan** → pilih **`sigaji_mobile`**
+3. Pastikan build pakai **`codemagic.yaml`** dari root repo
+4. Jalankan ulang workflow (mis. **SiGaji iOS Sideload 7 hari**)
+
 ### Sideload 7 hari (gratis, tanpa Apple Developer)
 
 1. **Codemagic** → jalankan manual workflow **`SiGaji iOS Sideload 7 hari (gratis)`**.

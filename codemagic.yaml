@@ -1,4 +1,9 @@
-# Monorepo SiGaji — Flutter di sigaji_mobile (branch: master)
+# Monorepo SiGaji — Flutter di subfolder sigaji_mobile (branch: master)
+#
+# WAJIB di Codemagic UI (sekali):
+#   Application → Settings → Build → Project path → Rescan → pilih "sigaji_mobile"
+#   Build configuration: pakai codemagic.yaml (bukan Workflow Editor saja)
+#
 workflows:
   sigaji-mobile-android:
     name: SiGaji Absen Android
@@ -40,6 +45,9 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
+      vars:
+        XCODE_SCHEME: Runner
+        XCODE_WORKSPACE: ios/Runner.xcworkspace
       ios_signing:
         distribution_type: ad_hoc
         bundle_identifier: com.sigaji.sigajiMobile
@@ -71,6 +79,9 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
+      vars:
+        XCODE_SCHEME: Runner
+        XCODE_WORKSPACE: ios/Runner.xcworkspace
     scripts:
       - name: Download MobileFaceNet model
         script: |
@@ -80,7 +91,9 @@ workflows:
       - name: Prepare iOS (CocoaPods + ML Kit)
         script: bash scripts/prepare_ios_codemagic.sh
       - name: Build iOS tanpa code signing
-        script: flutter build ios --release --no-codesign
+        script: |
+          flutter build ios --release --no-codesign
+          test -d build/ios/iphoneos/Runner.app
       - name: Paket IPA unsigned
         script: bash scripts/package_unsigned_ipa.sh
     artifacts:
@@ -95,6 +108,9 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
+      vars:
+        XCODE_SCHEME: Runner
+        XCODE_WORKSPACE: ios/Runner.xcworkspace
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.sigaji.sigajiMobile
