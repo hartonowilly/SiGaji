@@ -135,7 +135,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       if (!go3) return;
       f3 = await _capture();
       if (f3 == null) return;
-      final extracted = await _verify.extractEmbedding(f3, strictNeutral: true);
+      final extracted = await _verify.extractEmbedding(
+        f3,
+        forVerification: true,
+      );
       if (!extracted.ok || extracted.embedding == null) {
         _snack(extracted.error ?? 'Validasi wajah gagal');
         return;

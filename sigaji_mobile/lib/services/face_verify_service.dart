@@ -43,7 +43,7 @@ class EnrollQualityResult {
 class FaceVerifyService {
   /// Cosine similarity pada embedding L2-normalized (MobileFaceNet).
   static const matchThresholdFloor = 0.76;
-  static const enrollMinSelfFloor = 0.82;
+  static const enrollMinSelfFloor = 0.78;
   static const verifyMarginBelowEnroll = 0.04;
   static const modelVersion = 'mobilefacenet_v4';
   static const enrollSamples = 3;
@@ -66,11 +66,12 @@ class FaceVerifyService {
     await _detector.close();
   }
 
+  /// [forVerification] true = ketat (absen). false = longgar (enrollment).
   Future<FaceVerifyResult> extractEmbedding(
     File file, {
-    bool strictNeutral = false,
+    bool forVerification = false,
   }) async {
-    final face = await _detectSingleFace(file, strictNeutral: strictNeutral);
+    final face = await _detectSingleFace(file, forVerification: forVerification);
     if (!face.ok || face.face == null || face.image == null) {
       return FaceVerifyResult(ok: false, error: face.error);
     }
@@ -180,7 +181,7 @@ class FaceVerifyService {
   Future<({bool ok, Face? face, img.Image? image, String? error})>
       _detectSingleFace(
     File file, {
-    bool strictNeutral = false,
+    bool forVerification = false,
   }) async {
     final inputImage = InputImage.fromFilePath(file.path);
     final faces = await _detector.processImage(inputImage);
@@ -201,7 +202,7 @@ class FaceVerifyService {
     final right = face.rightEyeOpenProbability;
     if (left != null && right != null) {
       final avg = (left + right) / 2;
-      if (strictNeutral) {
+      if (forVerification) {
         if (avg < FaceLiveness.minEyeOpen || avg > FaceLiveness.maxEyeOpen) {
           return (
             ok: false,
@@ -210,22 +211,33 @@ class FaceVerifyService {
             error: 'Wajah normal saja — jangan melotot atau menutup mata',
           );
         }
-      } else if (avg < 0.3) {
+      } else if (avg < 0.15) {
+        // Enrollment: cukup wajah & mata terbaca, tidak perlu ekspresi sempurna
         return (
           ok: false,
           face: null,
           image: null,
-          error: 'Buka mata dan hadap kamera',
+          error: 'Buka mata sedikit — pastikan wajah terlihat jelas',
         );
       }
     }
 
-    if (face.headEulerAngleY != null && face.headEulerAngleY!.abs() > 15) {
+    final maxYaw = forVerification ? 15.0 : 22.0;
+    final maxRoll = forVerification ? 12.0 : 18.0;
+    if (face.headEulerAngleY != null && face.headEulerAngleY!.abs() > maxYaw) {
       return (
         ok: false,
         face: null,
         image: null,
         error: 'Hadap kamera lurus',
+      );
+    }
+    if (face.headEulerAngleZ != null && face.headEulerAngleZ!.abs() > maxRoll) {
+      return (
+        ok: false,
+        face: null,
+        image: null,
+        error: 'Jangan miringkan kepala',
       );
     }
 
