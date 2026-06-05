@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
@@ -39,17 +38,12 @@ class EnrollQualityResult {
   final String? error;
 }
 
-/// MobileFaceNet + liveness kedip — validasi wajah on-device tanpa upload foto.
+/// MobileFaceNet on-device — enrollment 1 foto, absen 1 foto (tanpa kedip).
 class FaceVerifyService {
   /// Cosine similarity pada embedding L2-normalized (MobileFaceNet).
   static const matchThresholdFloor = 0.76;
-  /// Enrollment: longgar — cahaya/sudut sedikit beda wajar di HP.
-  static const enrollMinSelfFloor = 0.62;
-  /// Setelah buang 1 foto outlier, 2 sisa harus sedikit lebih mirip.
-  static const enrollMinSelfFloorPair = 0.68;
-  static const verifyMarginBelowEnroll = 0.04;
   static const modelVersion = 'mobilefacenet_v4';
-  static const enrollSamples = 3;
+  static const enrollSamples = 1;
 
   final FaceDetector _detector = FaceDetector(
     options: FaceDetectorOptions(
@@ -60,10 +54,7 @@ class FaceVerifyService {
     ),
   );
 
-  late final FaceLiveness _liveness = FaceLiveness(_detector);
   final FaceNetEmbedder _net = FaceNetEmbedder.instance;
-
-  FaceLiveness get liveness => _liveness;
 
   Future<void> dispose() async {
     await _detector.close();
@@ -95,57 +86,25 @@ class FaceVerifyService {
   }
 
   EnrollQualityResult finalizeEnrollment(List<List<double>> samples) {
-    if (samples.length < enrollSamples) {
-      return EnrollQualityResult(
+    if (samples.isEmpty) {
+      return const EnrollQualityResult(
         ok: false,
-        error: 'Butuh $enrollSamples foto wajah',
+        error: 'Butuh 1 foto wajah',
       );
     }
-    final dim = FaceNetEmbedder.embeddingDim;
-    for (final s in samples) {
-      if (s.length != dim) {
-        return const EnrollQualityResult(
-          ok: false,
-          error: 'Sampel tidak valid — ulangi enrollment',
-        );
-      }
-    }
-
-    var used = List<List<double>>.from(samples);
-    var minSelf = _minPairwiseSimilarity(used);
-
-    if (minSelf < enrollMinSelfFloor && used.length == enrollSamples) {
-      final outlier = _outlierIndex(used);
-      used = List<List<double>>.from(used)..removeAt(outlier);
-      minSelf = _minPairwiseSimilarity(used);
-      if (minSelf < enrollMinSelfFloorPair) {
-        return EnrollQualityResult(
-          ok: false,
-          error:
-              'Satu foto tidak cocok dengan yang lain (${(minSelf * 100).toStringAsFixed(0)}%). '
-              'Ulangi foto terakhir — posisi & cahaya sama seperti foto 1–2.',
-        );
-      }
-    } else if (minSelf < enrollMinSelfFloor) {
-      return EnrollQualityResult(
+    final embedding = samples.first;
+    if (embedding.length != FaceNetEmbedder.embeddingDim) {
+      return const EnrollQualityResult(
         ok: false,
-        error:
-            'Foto kurang mirip (${(minSelf * 100).toStringAsFixed(0)}%). '
-            'Hadap kamera, jarak sama, cahaya terang & stabil.',
+        error: 'Sampel tidak valid — ulangi enrollment',
       );
     }
-
-    final avg = averageEmbeddings(used);
-    final threshold = math.max(
-      matchThresholdFloor,
-      minSelf - verifyMarginBelowEnroll,
-    );
 
     return EnrollQualityResult(
       ok: true,
-      embedding: avg,
-      minSelfScore: minSelf,
-      verifyThreshold: threshold,
+      embedding: embedding,
+      minSelfScore: 1.0,
+      verifyThreshold: matchThresholdFloor,
     );
   }
 
@@ -171,53 +130,6 @@ class FaceVerifyService {
       );
     }
     return FaceVerifyResult(ok: true, score: score);
-  }
-
-  double _minPairwiseSimilarity(List<List<double>> samples) {
-    if (samples.length < 2) return 1.0;
-    var minSelf = 1.0;
-    for (var i = 0; i < samples.length; i++) {
-      for (var j = i + 1; j < samples.length; j++) {
-        final s = _net.cosineSimilarity(samples[i], samples[j]);
-        if (s < minSelf) minSelf = s;
-      }
-    }
-    return minSelf;
-  }
-
-  int _outlierIndex(List<List<double>> samples) {
-    var worst = 0;
-    var worstAvg = double.infinity;
-    for (var i = 0; i < samples.length; i++) {
-      var sum = 0.0;
-      var n = 0;
-      for (var j = 0; j < samples.length; j++) {
-        if (i == j) continue;
-        sum += _net.cosineSimilarity(samples[i], samples[j]);
-        n++;
-      }
-      final avg = sum / n;
-      if (avg < worstAvg) {
-        worstAvg = avg;
-        worst = i;
-      }
-    }
-    return worst;
-  }
-
-  List<double> averageEmbeddings(List<List<double>> samples) {
-    if (samples.isEmpty) throw ArgumentError('samples kosong');
-    final dim = samples.first.length;
-    final out = List<double>.filled(dim, 0);
-    for (final s in samples) {
-      for (var i = 0; i < dim; i++) {
-        out[i] += s[i];
-      }
-    }
-    for (var i = 0; i < dim; i++) {
-      out[i] /= samples.length;
-    }
-    return _l2normalize(out);
   }
 
   Future<({bool ok, Face? face, img.Image? image, String? error})>
@@ -295,15 +207,5 @@ class FaceVerifyService {
     }
     decoded = img.bakeOrientation(decoded);
     return (ok: true, face: face, image: decoded, error: null);
-  }
-
-  List<double> _l2normalize(List<double> v) {
-    var sum = 0.0;
-    for (final x in v) {
-      sum += x * x;
-    }
-    if (sum <= 1e-12) return v;
-    final inv = 1 / math.sqrt(sum);
-    return v.map((x) => x * inv).toList();
   }
 }

@@ -169,9 +169,18 @@ export async function onRequestPost({ request, env }) {
           request
         );
       }
+      const photoPath = String(body.photo_path || '').trim();
+      if (!photoPath || photoPath.length > 512 || !/^[a-zA-Z0-9_./-]+$/.test(photoPath)) {
+        return jsonResponse(
+          400,
+          { ok: false, error: 'photo_path wajib (upload foto enrollment dulu)' },
+          request
+        );
+      }
       const minSelf = Number(body.enroll_min_self_score);
+      const effectiveMinSelf = Number.isFinite(minSelf) ? minSelf : 1;
       const verifyThreshold = Number(body.verify_threshold);
-      if (!Number.isFinite(minSelf) || minSelf < MIN_ENROLL_SELF_SCORE) {
+      if (effectiveMinSelf < MIN_ENROLL_SELF_SCORE) {
         return jsonResponse(
           400,
           {
@@ -194,8 +203,9 @@ export async function onRequestPost({ request, env }) {
             nik: ctx.nik,
             embedding,
             model_version: String(body.model_version || MODEL_VERSION).trim() || MODEL_VERSION,
-            enroll_min_self_score: minSelf,
+            enroll_min_self_score: effectiveMinSelf,
             verify_threshold: vt,
+            enroll_photo_path: photoPath,
             updated_at: now,
           },
           { onConflict: 'tenant_key,nik' }

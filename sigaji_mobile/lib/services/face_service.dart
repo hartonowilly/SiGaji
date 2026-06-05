@@ -83,6 +83,7 @@ class FaceService {
     required List<double> embedding,
     required double minSelfScore,
     required double verifyThreshold,
+    required String photoPath,
   }) async {
     final j = await _api.post('mobile-face', {
       'action': 'enroll',
@@ -90,6 +91,7 @@ class FaceService {
       'model_version': FaceVerifyService.modelVersion,
       'enroll_min_self_score': minSelfScore,
       'verify_threshold': verifyThreshold,
+      'photo_path': photoPath,
     });
     if (j == null || j['ok'] != true) {
       throw Exception(j?['error']?.toString() ?? 'Gagal simpan enrollment');

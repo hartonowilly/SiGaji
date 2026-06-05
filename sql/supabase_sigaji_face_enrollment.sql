@@ -44,6 +44,9 @@ alter table public.sigaji_face_enrollments
 alter table public.sigaji_face_enrollments
   add column if not exists verify_threshold double precision;
 
+alter table public.sigaji_face_enrollments
+  add column if not exists enroll_photo_path text not null default '';
+
 alter table public.sigaji_face_enrollments enable row level security;
 
 drop policy if exists "sigaji_face_enrollments_main" on public.sigaji_face_enrollments;

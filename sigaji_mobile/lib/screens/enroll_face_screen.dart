@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../config/app_config.dart';
 import '../services/face_service.dart';
 import '../services/face_verify_service.dart';
+import '../services/upload_service.dart';
 
 class EnrollFaceScreen extends StatefulWidget {
   const EnrollFaceScreen({super.key, required this.config});
@@ -20,17 +21,15 @@ class EnrollFaceScreen extends StatefulWidget {
 class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
   final _picker = ImagePicker();
   final _verify = FaceVerifyService();
-  final _samples = <List<double>>[];
+  List<double>? _embedding;
+  File? _photo;
   bool _busy = false;
-  File? _lastPreview;
 
   @override
   void dispose() {
     _verify.dispose();
     super.dispose();
   }
-
-  int get _need => FaceVerifyService.enrollSamples - _samples.length;
 
   Future<void> _captureSample() async {
     final cam = await Permission.camera.request();
@@ -54,47 +53,41 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
         return;
       }
       setState(() {
-        _samples.add(r.embedding!);
-        _lastPreview = file;
+        _embedding = r.embedding;
+        _photo = file;
       });
-      if (_samples.length >= FaceVerifyService.enrollSamples) {
-        _snack('Semua sampel OK — tekan Simpan');
-      } else {
-        _snack('Sampel ${_samples.length}/${FaceVerifyService.enrollSamples} OK');
-      }
+      _snack('Foto wajah OK — tekan Simpan');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _save() async {
-    if (_samples.length < FaceVerifyService.enrollSamples) {
-      _snack('Ambil ${FaceVerifyService.enrollSamples} foto wajah dulu');
+    if (_embedding == null || _photo == null) {
+      _snack('Ambil 1 foto wajah dulu');
       return;
     }
     setState(() => _busy = true);
     try {
-      final quality = _verify.finalizeEnrollment(_samples);
+      final quality = _verify.finalizeEnrollment([_embedding!]);
       if (!quality.ok ||
           quality.embedding == null ||
           quality.minSelfScore == null ||
           quality.verifyThreshold == null) {
-        if (_samples.length >= FaceVerifyService.enrollSamples) {
-          setState(() {
-            _samples.removeLast();
-            _lastPreview = null;
-          });
-        }
-        _snack(
-          quality.error ??
-              'Enrollment gagal — ambil ulang foto terakhir (cahaya & posisi sama)',
-        );
+        _snack(quality.error ?? 'Enrollment gagal');
         return;
       }
+
+      final photoPath = await UploadService(widget.config).uploadFile(
+        _photo!,
+        subfolder: 'face-enrollment',
+      );
+
       final msg = await FaceService(widget.config).enroll(
         embedding: quality.embedding!,
         minSelfScore: quality.minSelfScore!,
         verifyThreshold: quality.verifyThreshold!,
+        photoPath: photoPath,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -112,7 +105,7 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final done = _samples.length >= FaceVerifyService.enrollSamples;
+    final done = _embedding != null;
     return Scaffold(
       appBar: AppBar(title: const Text('Daftar wajah')),
       body: Padding(
@@ -121,49 +114,22 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Sekali saja per karyawan — 3 foto wajah. '
-              'Pakai cahaya & jarak yang sama untuk ketiga foto. '
-              'Pengecekan ketat hanya saat check-in/out nanti.',
+              'Sekali saja per karyawan — 1 foto wajah (terang & jelas). '
+              'Foto disimpan di server; absen nanti cukup 1 foto dibandingkan MobileFaceNet.',
               style: TextStyle(color: Colors.black54),
             ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: _samples.length / FaceVerifyService.enrollSamples,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              done
-                  ? 'Siap simpan'
-                  : 'Ambil $_need foto lagi (hadap kamera, pencahayaan cukup)',
-            ),
             const SizedBox(height: 16),
-            if (_lastPreview != null)
+            if (_photo != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.file(_lastPreview!, height: 200, fit: BoxFit.cover),
+                child: Image.file(_photo!, height: 220, fit: BoxFit.cover),
               ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: _busy || done ? null : _captureSample,
+              onPressed: _busy ? null : _captureSample,
               icon: const Icon(Icons.face_retouching_natural),
-              label: Text(
-                _samples.isEmpty
-                    ? 'Ambil foto wajah 1'
-                    : 'Ambil foto wajah ${_samples.length + 1}',
-              ),
+              label: Text(done ? 'Ambil ulang foto' : 'Ambil foto wajah'),
             ),
-            if (_samples.isNotEmpty && !done) ...[
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _busy
-                    ? null
-                    : () => setState(() {
-                          _samples.clear();
-                          _lastPreview = null;
-                        }),
-                child: const Text('Ulangi dari awal'),
-              ),
-            ],
             const Spacer(),
             FilledButton(
               onPressed: _busy || !done ? null : _save,

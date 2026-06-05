@@ -91,52 +91,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
 
     setState(() => _busy = true);
-    File? f1;
-    File? f2;
-    File? f3;
+    File? photo;
     try {
-      // Langkah 1: wajah normal, mata terbuka
-      if (!mounted) return;
-      final go1 = await _confirmStep(
-        'Langkah 1/3',
-        'Hadap kamera — wajah normal, mata terbuka',
-      );
-      if (!go1) return;
-      f1 = await _capture();
-      if (f1 == null) return;
-      final open = await _verify.liveness.checkEyesOpen(f1);
-      if (!open.ok || open.face == null) {
-        _snack(open.error ?? 'Langkah 1 gagal');
-        return;
-      }
-      final priorOpen = open.face!;
+      photo = await _capture();
+      if (photo == null) return;
 
-      // Langkah 2: kedip (anti foto layar)
-      if (!mounted) return;
-      final go2 = await _confirmStep(
-        'Langkah 2/3',
-        'Kedipkan mata sekarang — ambil foto saat mata tertutup',
-      );
-      if (!go2) return;
-      f2 = await _capture();
-      if (f2 == null) return;
-      final blink = await _verify.liveness.checkBlink(f2, priorOpen);
-      if (!blink.ok) {
-        _snack(blink.error ?? 'Kedip tidak terdeteksi — bukan foto layar');
-        return;
-      }
-
-      // Langkah 3: verifikasi wajah
-      if (!mounted) return;
-      final go3 = await _confirmStep(
-        'Langkah 3/3',
-        'Buka mata normal lagi — verifikasi wajah',
-      );
-      if (!go3) return;
-      f3 = await _capture();
-      if (f3 == null) return;
       final extracted = await _verify.extractEmbedding(
-        f3,
+        photo,
         forVerification: true,
       );
       if (!extracted.ok || extracted.embedding == null) {
@@ -164,32 +125,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      await _deleteFile(f1);
-      await _deleteFile(f2);
-      await _deleteFile(f3);
+      await _deleteFile(photo);
       if (mounted) setState(() => _busy = false);
     }
-  }
-
-  Future<bool> _confirmStep(String title, String body) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(body),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ambil foto'),
-          ),
-        ],
-      ),
-    );
-    return ok == true;
   }
 
   void _snack(String t) {
@@ -231,15 +169,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'MobileFaceNet + kedip 3 langkah. '
-              'Foto layar/orang lain ditolak. Wajah normal saja.',
+              'MobileFaceNet — 1 foto wajah dibandingkan dengan data enrollment. '
+              'Hadap kamera, pencahayaan cukup.',
               style: TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 24),
             const Icon(Icons.face_retouching_natural, size: 72, color: Color(0xFF1A56A0)),
             const SizedBox(height: 16),
             const Text(
-              'Lalu GPS di lokasi penugasan HRD. Foto tidak disimpan di server.',
+              'Lalu GPS di lokasi penugasan HRD. Foto absen tidak disimpan di server.',
               textAlign: TextAlign.center,
             ),
             const Spacer(),
@@ -251,8 +189,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.verified_user),
-              label: Text(_busy ? 'Memproses…' : 'Mulai verifikasi & $_title'),
+                  : const Icon(Icons.camera_alt),
+              label: Text(_busy ? 'Memproses…' : 'Ambil foto & $_title'),
             ),
           ],
         ),
