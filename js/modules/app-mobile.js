@@ -132,7 +132,9 @@ async function renderMobileAttendanceLog(){
           decideBtns='<div style="font-size:10px;color:#9b2121;margin-top:2px">Karyawan dapat absen ulang di HP</div>';
         }
       }
-      return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+'<br>'+loc+mobMapLink(r.lat,r.lon)+'<br>'+mobAttStatusLbl(r.validation_status)+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+decideBtns+'</div>';
+      var faceBadge=r.face_verified?' <span class="bdg b-teal">Wajah OK</span>':'';
+      if(r.face_verified&&r.face_score!=null)faceBadge+=' <span style="color:#6b7280;font-size:10px">'+Math.round(r.face_score*100)+'%</span>';
+      return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+'<br>'+loc+mobMapLink(r.lat,r.lon)+'<br>'+mobAttStatusLbl(r.validation_status)+faceBadge+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+decideBtns+'</div>';
     }
     var st='';
     if(g.cin&&g.cout)st='<span class="bdg b-teal">Lengkap</span>';

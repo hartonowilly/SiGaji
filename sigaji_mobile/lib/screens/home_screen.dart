@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 import '../services/attendance_service.dart';
 import '../services/auth_service.dart';
+import '../services/face_service.dart';
 import '../services/notification_service.dart';
 import 'attendance_screen.dart';
+import 'enroll_face_screen.dart';
 import 'leave_screen.dart';
 import 'notifications_screen.dart';
 import 'setup_screen.dart';
@@ -28,6 +30,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   EmployeeProfile? _profile;
   DayStatus? _day;
+  FaceEnrollmentStatus? _face;
   int _unread = 0;
   bool _loading = true;
 
@@ -43,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final auth = AuthService(widget.config);
       _profile = await auth.loadProfile();
       _day = await AttendanceService(widget.config).dayStatus();
+      _face = await FaceService(widget.config).status();
       _unread = await NotificationService(widget.config).unreadCount();
     } catch (e) {
       if (mounted) {
@@ -135,9 +139,35 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
+                  if (_face != null && !_face!.enrolled) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Daftar wajah sekali sebelum absen',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 8),
+                          FilledButton.tonal(
+                            onPressed: _openEnroll,
+                            child: const Text('Daftar wajah sekarang'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: (_day?.canCheckIn ?? false)
+                    onPressed: (_face?.enrolled == true && (_day?.canCheckIn ?? false))
                         ? () => _openAttendance('check_in')
                         : null,
                     icon: const Icon(Icons.login),
@@ -145,12 +175,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   FilledButton.tonalIcon(
-                    onPressed: (_day?.canCheckOut ?? false)
+                    onPressed: (_face?.enrolled == true && (_day?.canCheckOut ?? false))
                         ? () => _openAttendance('check_out')
                         : null,
                     icon: const Icon(Icons.logout),
                     label: const Text('Check-out (wajib)'),
                   ),
+                  if (_face?.enrolled == true) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _openEnroll,
+                      icon: const Icon(Icons.face),
+                      label: const Text('Daftar ulang wajah'),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () async {
@@ -174,6 +212,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
     );
+  }
+
+  Future<void> _openEnroll() async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EnrollFaceScreen(config: widget.config),
+      ),
+    );
+    if (ok == true) _refresh();
   }
 
   Future<void> _openAttendance(String type) async {

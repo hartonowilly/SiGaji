@@ -65,14 +65,17 @@ API **sudah siap** — developer Android cukup memanggil endpoint yang sama (lih
 Contoh kontrak:
 
 ```
+POST /api/mobile-face
+  { "action": "status"|"enroll"|"get_embedding" }  — enrollment sekali (vektor, bukan foto)
+
 POST /api/mobile-attendance
-  { "action": "check_in"|"check_out", "lat", "lon", "photo_path", "is_mock", ... }
+  { "action": "check_in"|"check_out", "lat", "lon", "face_verified", "face_score", "is_mock", ... }
 
 POST /api/mobile-leave
   { "action": "submit", "request_type", "date_from", "date_to", "attachment_path" }
 ```
 
-Upload foto: Supabase Storage `sigaji-mobile/{tenant}/attendance/{nik}/...`
+Absensi **tidak** mengunggah foto. Lampiran cuti/sakit tetap lewat Storage `sigaji-mobile/{tenant}/leave/...`
 
 ---
 

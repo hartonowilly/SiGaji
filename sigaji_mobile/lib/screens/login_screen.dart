@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const Text(
-                  'Check-in foto + GPS & pengajuan cuti',
+                  'Check-in validasi wajah + GPS & pengajuan cuti',
                   style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 24),

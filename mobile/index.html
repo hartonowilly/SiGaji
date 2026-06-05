@@ -48,11 +48,9 @@
 
   <div id="screen-checkin" class="screen">
     <p class="logo-txt">Check-in</p>
-    <p class="sub">Foto wajah + GPS di lokasi penugasan HRD</p>
+    <p class="sub">Validasi wajah + GPS — gunakan APK SiGaji Absen (bukan PWA browser)</p>
     <div class="card">
-      <label>Foto (kamera depan)</label>
-      <input type="file" id="photo-in" accept="image/*" capture="user">
-      <div id="preview-in"></div>
+      <p style="font-size:.85rem;color:#6b7280">Check-in/out membutuhkan daftar wajah sekali di aplikasi Android.</p>
       <button type="button" class="btn btn-success" onclick="sigajiMobileSubmitIn()">Kirim check-in</button>
       <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Batal</button>
     </div>
@@ -62,9 +60,7 @@
     <p class="logo-txt">Check-out</p>
     <p class="sub">Wajib setelah check-in</p>
     <div class="card">
-      <label>Foto</label>
-      <input type="file" id="photo-out" accept="image/*" capture="user">
-      <div id="preview-out"></div>
+      <p style="font-size:.85rem;color:#6b7280">Check-out membutuhkan APK SiGaji Absen.</p>
       <button type="button" class="btn btn-primary" onclick="sigajiMobileSubmitOut()">Kirim check-out</button>
       <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Batal</button>
     </div>

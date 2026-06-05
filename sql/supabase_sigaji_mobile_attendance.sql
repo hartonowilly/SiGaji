@@ -48,7 +48,22 @@ create index if not exists sigaji_location_assignments_lookup_idx
 create index if not exists sigaji_location_assignments_loc_idx
   on public.sigaji_location_assignments (tenant_key, location_id);
 
--- ── Log check-in / check-out (foto + GPS) — check-out WAJIB per hari ─────────
+-- ── Enrollment wajah (sekali per NIK — vektor, bukan foto) ───────────────────
+create table if not exists public.sigaji_face_enrollments (
+  id uuid primary key default gen_random_uuid(),
+  tenant_key text not null default 'main',
+  nik text not null,
+  embedding jsonb not null,
+  model_version text not null default 'landmark_v1',
+  enrolled_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (tenant_key, nik)
+);
+
+create index if not exists sigaji_face_enrollments_tenant_idx
+  on public.sigaji_face_enrollments (tenant_key, nik);
+
+-- ── Log check-in / check-out (validasi wajah + GPS) — check-out WAJIB ───────
 create table if not exists public.sigaji_attendance_logs (
   id uuid primary key default gen_random_uuid(),
   tenant_key text not null default 'main',
@@ -59,7 +74,9 @@ create table if not exists public.sigaji_attendance_logs (
   lat double precision not null,
   lon double precision not null,
   accuracy_m double precision,
-  photo_path text not null,
+  photo_path text default '',
+  face_verified boolean not null default false,
+  face_score double precision,
   device_id text,
   is_mock boolean not null default false,
   validation_status text not null default 'ok'
@@ -135,6 +152,7 @@ create trigger trg_sigaji_leave_requests_absensi
 alter table public.sigaji_work_locations enable row level security;
 alter table public.sigaji_location_assignments enable row level security;
 alter table public.sigaji_attendance_logs enable row level security;
+alter table public.sigaji_face_enrollments enable row level security;
 alter table public.sigaji_leave_requests enable row level security;
 
 drop policy if exists "sigaji_work_locations_main" on public.sigaji_work_locations;
@@ -149,6 +167,10 @@ drop policy if exists "sigaji_attendance_logs_main" on public.sigaji_attendance_
 create policy "sigaji_attendance_logs_main" on public.sigaji_attendance_logs for all to authenticated
   using (tenant_key = 'main') with check (tenant_key = 'main');
 
+drop policy if exists "sigaji_face_enrollments_main" on public.sigaji_face_enrollments;
+create policy "sigaji_face_enrollments_main" on public.sigaji_face_enrollments for all to authenticated
+  using (tenant_key = 'main') with check (tenant_key = 'main');
+
 drop policy if exists "sigaji_leave_requests_main" on public.sigaji_leave_requests;
 create policy "sigaji_leave_requests_main" on public.sigaji_leave_requests for all to authenticated
   using (tenant_key = 'main') with check (tenant_key = 'main');
@@ -158,7 +180,8 @@ create policy "sigaji_leave_requests_main" on public.sigaji_leave_requests for a
 
 -- ── Storage (jalankan manual di Dashboard jika belum ada) ─────────────────────
 -- Bucket: sigaji-mobile (private)
--- Path foto: {tenant_key}/attendance/{nik}/{uuid}.jpg
+-- Path lampiran cuti: {tenant_key}/leave/{nik}/{uuid}.pdf|.jpg
+-- Absensi: tidak simpan foto (validasi wajah on-device); enrollment simpan vektor di sigaji_face_enrollments
 -- Path surat: {tenant_key}/leave/{nik}/{uuid}.pdf|.jpg
 -- Policy storage: authenticated upload/read own tenant — atur di Dashboard atau SQL storage policies.
 --

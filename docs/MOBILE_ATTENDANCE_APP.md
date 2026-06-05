@@ -65,7 +65,9 @@ Untuk tanggal `work_date` dan NIK:
 |--------|------------|
 | `event_type` | `check_in` \| `check_out` |
 | `work_date` | Tanggal kerja (timezone PT, disarankan Asia/Jakarta di API) |
-| `photo_path` | Wajib |
+| `face_verified` | Wajib (APK) — validasi wajah on-device, tanpa simpan foto |
+| `face_score` | Skor kemiripan 0–1 dari HP |
+| `photo_path` | Kosong (legacy PWA/upload dinonaktifkan) |
 | `lat`, `lon`, `accuracy_m` | GPS |
 | `is_mock`, `flags` | Anti fake GPS |
 | `validation_status` | `ok`, `pending_review`, `outside_geofence`, … |
@@ -74,8 +76,9 @@ Untuk tanggal `work_date` dan NIK:
 
 ### Alur app
 
-1. Pagi: check-in (foto + GPS) → tidak bisa check-out sebelum check-in.
-2. Sore: check-out (foto + GPS) → wajib sebelum tengah malam (aturan jam di API).
+1. **Sekali:** enrollment wajah di APK (3 foto → vektor disimpan, foto tidak di server).
+2. Pagi: check-in (validasi wajah di HP + GPS) → tidak bisa check-out sebelum check-in.
+3. Sore: check-out (validasi wajah + GPS) → wajib sebelum tengah malam (aturan jam di API).
 3. Jika hanya check-in tanpa check-out → status hari `incomplete` (HRD lihat di web).
 
 ### Sinkron ke gaji SiGaji
@@ -166,6 +169,7 @@ RLS Supabase: isolasi **tenant_key** saja; filter role di **API Cloudflare** + S
 
 | Method | Path | Role |
 |--------|------|------|
+| POST | `/api/mobile-face` | Karyawan: `status`, `enroll`, `get_embedding`; HRD: `delete` + `nik` |
 | POST | `/api/mobile-attendance` | Karyawan: `check_in`, `check_out`, `day_status` |
 | POST | `/api/mobile-attendance` | HRD: `action=decide` + `approve` \| `reject` |
 | GET | `/api/mobile-attendance?work_date=` | HRD: log check-in/out |

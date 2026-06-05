@@ -287,38 +287,9 @@
     throw new Error(err);
   }
   async function submitAttendance(eventType) {
-    var fileIn = document.getElementById(eventType === 'check_out' ? 'photo-out' : 'photo-in');
-    var file = fileIn && fileIn.files[0];
-    if (!file) {
-      toast('Ambil foto dulu');
-      return;
-    }
-    toast('Mengambil GPS…');
-    var gps;
-    try {
-      gps = await getGps();
-    } catch (e) {
-      toast(e.message || 'GPS error');
-      return;
-    }
-    toast('Mengunggah foto…');
-    var path;
-    try {
-      path = await uploadPhoto(file, 'attendance');
-    } catch (e) {
-      toast(e.message || 'Upload error');
-      return;
-    }
-    toast('Menyimpan…');
-    var j = await mobileApi('mobile-attendance', {
-      action: eventType,
-      lat: gps.lat,
-      lon: gps.lon,
-      accuracy_m: gps.accuracy_m,
-      is_mock: gps.is_mock,
-      photo_path: path,
-      device_id: navigator.userAgent.substring(0, 120),
-    });
+    toast('Absensi wajah hanya di APK SiGaji Absen (Flutter). PWA tidak menyimpan foto lagi.');
+    return;
+    /* legacy upload dinonaktifkan — gunakan APK untuk validasi wajah on-device */
     if (j && j.ok) {
       toast(j.message || 'Berhasil');
       showScreen('screen-home');

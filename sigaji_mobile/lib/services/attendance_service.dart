@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:geolocator/geolocator.dart';
 
 import '../config/app_config.dart';
 import 'api_client.dart';
-import 'upload_service.dart';
 
 class DayStatus {
   DayStatus.fromJson(Map<String, dynamic> j)
@@ -48,7 +45,6 @@ class AttendanceService {
 
   final AppConfig config;
   ApiClient get _api => ApiClient(config);
-  UploadService get _upload => UploadService(config);
 
   Future<DayStatus> dayStatus() async {
     final j = await _api.post('mobile-attendance', {'action': 'day_status'});
@@ -77,17 +73,17 @@ class AttendanceService {
 
   Future<String> submitEvent({
     required String eventType,
-    required File photo,
+    required double faceScore,
   }) async {
     final pos = await getGps();
-    final path = await _upload.uploadFile(photo, subfolder: 'attendance');
     final j = await _api.post('mobile-attendance', {
       'action': eventType,
       'lat': pos.latitude,
       'lon': pos.longitude,
       'accuracy_m': pos.accuracy,
       'is_mock': pos.isMocked,
-      'photo_path': path,
+      'face_verified': true,
+      'face_score': faceScore,
       'device_id': 'flutter-sigaji-mobile',
     });
     if (j == null || j['ok'] != true) {

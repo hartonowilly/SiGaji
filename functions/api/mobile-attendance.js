@@ -37,7 +37,7 @@ export async function onRequestGet({ request, env }) {
     let q = sb
       .from('sigaji_attendance_logs')
       .select(
-        'id,nik,work_date,event_type,location_id,lat,lon,accuracy_m,photo_path,validation_status,is_mock,flags,created_at'
+        'id,nik,work_date,event_type,location_id,lat,lon,accuracy_m,photo_path,face_verified,face_score,validation_status,is_mock,flags,created_at'
       )
       .eq('tenant_key', tenant)
       .eq('work_date', workDate)
@@ -276,13 +276,44 @@ export async function onRequestPost({ request, env }) {
     const eventType = action === 'check_out' ? 'check_out' : 'check_in';
     const lat = Number(body.lat);
     const lon = Number(body.lon);
-    const photoPath = String(body.photo_path || '').trim();
+    const photoPath = String(body.photo_path || '').trim() || null;
+    const faceVerified = !!body.face_verified;
+    const faceScore = body.face_score != null ? Number(body.face_score) : null;
     const isMock = !!body.is_mock;
     const accuracyM = body.accuracy_m != null ? Number(body.accuracy_m) : null;
     const deviceId = String(body.device_id || '').trim() || null;
     const workDate = body.work_date || workDateJakarta();
 
-    if (!photoPath) return jsonResponse(400, { ok: false, error: 'photo_path wajib' }, request);
+    if (!faceVerified && !photoPath) {
+      return jsonResponse(
+        400,
+        { ok: false, error: 'Validasi wajah (face_verified) wajib — gunakan APK SiGaji Absen' },
+        request
+      );
+    }
+    if (faceVerified) {
+      if (!Number.isFinite(faceScore) || faceScore < 0.65) {
+        return jsonResponse(
+          422,
+          { ok: false, error: 'Validasi wajah gagal — coba lagi di pencahayaan cukup', retry: true },
+          request
+        );
+      }
+      const { data: enr, error: enrErr } = await sb
+        .from('sigaji_face_enrollments')
+        .select('id')
+        .eq('tenant_key', tenant)
+        .eq('nik', ctx.nik)
+        .maybeSingle();
+      if (enrErr) throw enrErr;
+      if (!enr) {
+        return jsonResponse(
+          403,
+          { ok: false, error: 'Belum daftar wajah — lakukan enrollment sekali di aplikasi' },
+          request
+        );
+      }
+    }
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       return jsonResponse(400, { ok: false, error: 'lat/lon invalid' }, request);
     }
@@ -355,11 +386,21 @@ export async function onRequestPost({ request, env }) {
       lat,
       lon,
       accuracy_m: accuracyM,
-      photo_path: photoPath,
+      photo_path: photoPath || '',
+      face_verified: faceVerified,
+      face_score: faceVerified ? faceScore : null,
       device_id: deviceId,
       is_mock: isMock,
       validation_status: gps.validationStatus,
-      flags: Object.assign({ accuracy_m: accuracyM, is_mock: isMock }, gps.flags),
+      flags: Object.assign(
+        {
+          accuracy_m: accuracyM,
+          is_mock: isMock,
+          face_verified: faceVerified,
+          face_score: faceVerified ? faceScore : null,
+        },
+        gps.flags
+      ),
     };
 
     const { data: ins, error: ierr } = await sb

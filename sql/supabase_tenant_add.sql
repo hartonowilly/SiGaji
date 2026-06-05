@@ -166,6 +166,10 @@ drop policy if exists "sigaji_attendance_logs___TENANT_KEY__" on public.sigaji_a
 create policy "sigaji_attendance_logs___TENANT_KEY__" on public.sigaji_attendance_logs for all to authenticated
   using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
 
+drop policy if exists "sigaji_face_enrollments___TENANT_KEY__" on public.sigaji_face_enrollments;
+create policy "sigaji_face_enrollments___TENANT_KEY__" on public.sigaji_face_enrollments for all to authenticated
+  using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
+
 drop policy if exists "sigaji_leave_requests___TENANT_KEY__" on public.sigaji_leave_requests;
 create policy "sigaji_leave_requests___TENANT_KEY__" on public.sigaji_leave_requests for all to authenticated
   using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');

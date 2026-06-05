@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../config/app_config.dart';
 import '../services/attendance_service.dart';
+import '../services/face_service.dart';
+import '../services/face_verify_service.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({
@@ -22,14 +24,50 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
-  File? _photo;
   bool _busy = false;
+  bool _loadingEmb = true;
+  String? _loadError;
+  List<double>? _enrolled;
   final _picker = ImagePicker();
+  final _verify = FaceVerifyService();
 
   String get _title =>
       widget.eventType == 'check_out' ? 'Check-out' : 'Check-in';
 
-  Future<void> _takePhoto() async {
+  @override
+  void initState() {
+    super.initState();
+    _loadEnrollment();
+  }
+
+  @override
+  void dispose() {
+    _verify.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadEnrollment() async {
+    try {
+      final emb = await FaceService(widget.config).loadEmbedding();
+      if (!mounted) return;
+      setState(() {
+        _enrolled = emb;
+        _loadingEmb = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString().replaceFirst('Exception: ', '');
+        _loadingEmb = false;
+      });
+    }
+  }
+
+  Future<void> _verifyAndSubmit() async {
+    if (_enrolled == null) {
+      _snack('Belum daftar wajah');
+      return;
+    }
     final cam = await Permission.camera.request();
     if (!cam.isGranted) {
       _snack('Izin kamera diperlukan');
@@ -38,22 +76,29 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final x = await _picker.pickImage(
       source: ImageSource.camera,
       preferredCameraDevice: CameraDevice.front,
-      imageQuality: 85,
+      imageQuality: 90,
     );
-    if (x != null) setState(() => _photo = File(x.path));
-  }
+    if (x == null) return;
 
-  Future<void> _submit() async {
-    if (_photo == null) {
-      _snack('Ambil foto dulu');
-      return;
-    }
     setState(() => _busy = true);
+    File? temp;
     try {
+      temp = File(x.path);
+      final extracted = await _verify.extractEmbedding(temp);
+      if (!extracted.ok || extracted.embedding == null) {
+        _snack(extracted.error ?? 'Validasi wajah gagal');
+        return;
+      }
+      final matched = _verify.match(_enrolled!, extracted.embedding!);
+      if (!matched.ok || matched.score == null) {
+        _snack(matched.error ?? 'Wajah tidak cocok');
+        return;
+      }
+
       final svc = AttendanceService(widget.config);
       final msg = await svc.submitEvent(
         eventType: widget.eventType,
-        photo: _photo!,
+        faceScore: matched.score!,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -61,6 +106,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
     } finally {
+      try {
+        await temp?.delete();
+      } catch (_) {}
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -71,6 +119,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingEmb) {
+      return Scaffold(
+        appBar: AppBar(title: Text(_title)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_loadError != null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(_title)),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text(_loadError!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Kembali — daftar wajah dulu'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(_title)),
       body: Padding(
@@ -79,31 +152,28 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Foto wajah + GPS di lokasi penugasan HRD',
+              'Validasi wajah di HP (foto tidak diunggah) + GPS di lokasi penugasan HRD',
               style: TextStyle(color: Colors.black54),
             ),
+            const SizedBox(height: 24),
+            const Icon(Icons.face_retouching_natural, size: 72, color: Color(0xFF1A56A0)),
             const SizedBox(height: 16),
-            if (_photo != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(_photo!, height: 220, fit: BoxFit.cover),
-              ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _takePhoto,
-              icon: const Icon(Icons.camera_alt),
-              label: Text(_photo == null ? 'Ambil foto' : 'Ganti foto'),
+            const Text(
+              'Tekan tombol di bawah, hadap kamera depan. '
+              'Foto langsung dibuang setelah cocok dengan wajah terdaftar.',
+              textAlign: TextAlign.center,
             ),
             const Spacer(),
-            FilledButton(
-              onPressed: _busy ? null : _submit,
-              child: _busy
+            FilledButton.icon(
+              onPressed: _busy ? null : _verifyAndSubmit,
+              icon: _busy
                   ? const SizedBox(
-                      height: 22,
-                      width: 22,
+                      width: 20,
+                      height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text('Kirim $_title'),
+                  : const Icon(Icons.verified_user),
+              label: Text(_busy ? 'Memproses…' : 'Verifikasi wajah & kirim $_title'),
             ),
           ],
         ),
