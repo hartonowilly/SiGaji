@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Sigaji Mobile</string>
+	<string>SiGaji Absen</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -53,6 +53,8 @@
 	<string>Kamera untuk daftar wajah dan validasi check-in/out.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Akses foto untuk lampiran cuti/izin/sakit.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Simpan lampiran cuti/izin/sakit ke perangkat.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Lokasi GPS untuk memastikan absensi di area penugasan HRD.</string>
 	<key>UILaunchStoryboardName</key>

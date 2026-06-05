@@ -1,6 +1,6 @@
-# SiGaji Absen — Flutter (APK internal)
+# SiGaji Absen — Flutter (Android & iOS internal)
 
-Aplikasi Android internal untuk karyawan: **check-in / check-out** (MobileFaceNet + kedip + GPS) dan **pengajuan cuti / izin / sakit**. Memakai API SiGaji yang sama dengan PWA `/mobile/`.
+Aplikasi internal untuk karyawan: **check-in / check-out** (MobileFaceNet + GPS) dan **pengajuan cuti / izin / sakit**. Memakai API SiGaji yang sama dengan PWA `/mobile/`.
 
 ## Prasyarat
 
@@ -50,6 +50,37 @@ File APK (ARM64, untuk HP modern):
 
 Bagikan file itu ke karyawan (Drive, WhatsApp internal, dll.) → izinkan **Install dari sumber tidak dikenal**.
 
+## Build iOS (Codemagic)
+
+Config ada di **`codemagic.yaml` di root repo** (bukan di folder ini). Branch: **`master`**, path: **`sigaji_mobile`**.
+
+### Workflow Codemagic
+
+| Workflow | Output | Distribusi |
+|----------|--------|------------|
+| `sigaji-mobile-ios` | `.ipa` Ad Hoc | Internal — daftarkan UDID iPhone di Apple Developer |
+| `sigaji-mobile-ios-testflight` | `.ipa` App Store | TestFlight (jalankan manual) |
+| `sigaji-mobile-android` | `.apk` ARM64 | Sama seperti build lokal |
+
+### Setup sekali di Codemagic + Apple
+
+1. **Apple Developer Program** (berbayar).
+2. **App ID** `com.sigaji.sigajiMobile` di [developer.apple.com](https://developer.apple.com).
+3. **Codemagic → Team settings → Code signing identities:**
+   - Upload **Distribution certificate** (.p12)
+   - Upload **Ad Hoc provisioning profile** (untuk workflow `sigaji-mobile-ios`)
+   - Opsional: **App Store profile** (untuk TestFlight)
+4. **Codemagic → Applications → SiGaji:** pastikan `codemagic.yaml` terbaca dari root, branch `master`.
+5. Push ke `master` → jalankan workflow **SiGaji Absen iOS**.
+
+Build iOS memakai `scripts/prepare_ios_codemagic.sh` (CocoaPods + ML Kit **iOS 15.5**).
+
+### Pasang IPA Ad Hoc di iPhone
+
+- Unduh `.ipa` dari artifact Codemagic.
+- Pasang lewat **Apple Configurator**, **Diawi**, atau **TestFlight** (workflow TestFlight).
+- iPhone harus **terdaftar** di provisioning profile Ad Hoc.
+
 ### Build dengan default server (opsional)
 
 Anda bisa pre-fill lewat file `lib/config/build_defaults.dart` (salin dari `build_defaults.example.dart`) sebelum build, agar karyawan tidak perlu ketik URL.
@@ -64,9 +95,9 @@ Anda bisa pre-fill lewat file `lib/config/build_defaults.dart` (salin dari `buil
 | Cuti / izin / sakit | `mobile-leave` (+ validasi kuota cuti) |
 | Notifikasi setuju/tolak | `mobile-notifications` |
 
-## Izin Android
+## Izin perangkat
 
-Kamera, lokasi (GPS), internet — diminta saat dipakai.
+Kamera, lokasi (GPS), internet — diminta saat dipakai (Android & iOS).
 
 ## Troubleshooting
 
