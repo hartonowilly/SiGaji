@@ -1,10 +1,10 @@
-# DEPRECATED — gunakan codemagic.yaml di root repo (../codemagic.yaml).
-# Codemagic membaca config dari root; working_directory: sigaji_mobile sudah diset di sana.
+# Monorepo SiGaji — app Flutter di subfolder sigaji_mobile
 workflows:
   sigaji-mobile-android:
     name: SiGaji Absen Android
     max_build_duration: 60
     instance_type: mac_mini_m2
+    working_directory: sigaji_mobile
     environment:
       flutter: stable
     scripts:
@@ -19,6 +19,7 @@ workflows:
     name: SiGaji Absen iOS (no codesign)
     max_build_duration: 60
     instance_type: mac_mini_m2
+    working_directory: sigaji_mobile
     environment:
       flutter: stable
       xcode: latest
