@@ -7,32 +7,205 @@ import {
 import {
   assertCallerWithNik,
   assertCallerIsHrdOrAdminMobile,
+  assertCallerAuthenticated,
   workDateJakarta,
   matchGeofence,
+  nearestLocation,
+  formatDistanceM,
+  gpsPreviewPayload,
   resolveAllowedLocations,
   clearHadirFromAttendance,
   trySyncHadirFromAttendance,
   attendanceCanDecide,
   canRetryAttendanceEvent,
   checkInBlocksCheckOut,
+  loadCloudPayload,
+  companyJamMasuk,
+  minutesLateFromIso,
 } from '../_lib/mobile-shared.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
 }
 
-/** HRD: daftar siapa check-in/out di tanggal tertentu */
+function buildDashboardSummary(karyawan, logs, workDate, locationFilter) {
+  const byNik = {};
+  (logs || []).forEach((row) => {
+    if (!byNik[row.nik]) byNik[row.nik] = { cin: null, cout: null };
+    if (row.event_type === 'check_in') byNik[row.nik].cin = row;
+    if (row.event_type === 'check_out') byNik[row.nik].cout = row;
+  });
+
+  const summary = {
+    hadir_lengkap: 0,
+    belum_checkout: 0,
+    pending_review: 0,
+    tidak_hadir: 0,
+    total_karyawan: 0,
+  };
+  const rows = [];
+
+  (karyawan || []).forEach((k) => {
+    if (!k || !k.nik || k.aktif === false) return;
+    const nik = String(k.nik).trim();
+    const g = byNik[nik] || { cin: null, cout: null };
+    const cin = g.cin;
+    const cout = g.cout;
+
+    if (locationFilter) {
+      const locHit =
+        (cin && cin.location_id === locationFilter) ||
+        (cout && cout.location_id === locationFilter);
+      if (!locHit && cin) return;
+      if (!cin && !cout) return;
+    }
+
+    summary.total_karyawan++;
+    let bucket = 'tidak_hadir';
+    if (
+      cin &&
+      cout &&
+      cin.validation_status === 'ok' &&
+      cout.validation_status === 'ok'
+    ) {
+      bucket = 'hadir_lengkap';
+      summary.hadir_lengkap++;
+    } else if (
+      cin &&
+      (cin.validation_status === 'pending_review' ||
+        (cout && cout.validation_status === 'pending_review'))
+    ) {
+      bucket = 'pending_review';
+      summary.pending_review++;
+    } else if (cin && cin.validation_status === 'ok' && (!cout || cout.validation_status === 'rejected')) {
+      bucket = 'belum_checkout';
+      summary.belum_checkout++;
+    } else if (!cin || cin.validation_status === 'rejected') {
+      bucket = 'tidak_hadir';
+      summary.tidak_hadir++;
+    } else {
+      bucket = 'belum_checkout';
+      summary.belum_checkout++;
+    }
+
+    rows.push({
+      nik,
+      nama: k.nama || nik,
+      bucket,
+      check_in: cin,
+      check_out: cout,
+    });
+  });
+
+  return { summary, rows };
+}
+
+/** HRD: daftar log / dashboard / rekap terlambat */
 export async function onRequestGet({ request, env }) {
   try {
     const tenant = getTenantKey(env);
     const sb = createSbAdmin(env);
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const hrd = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
 
     const url = new URL(request.url);
     const workDate = url.searchParams.get('work_date') || workDateJakarta();
     const nikFilter = (url.searchParams.get('nik') || '').trim();
+    const locationFilter = (url.searchParams.get('location_id') || '').trim() || null;
+
+    if (url.searchParams.get('dashboard') === '1') {
+      const payload = await loadCloudPayload(sb, tenant);
+      const karyawan = payload.karyawan || [];
+      const { data: logs } = await sb
+        .from('sigaji_attendance_logs')
+        .select(
+          'id,nik,work_date,event_type,location_id,validation_status,face_verified,face_score,created_at,flags'
+        )
+        .eq('tenant_key', tenant)
+        .eq('work_date', workDate);
+      const dash = buildDashboardSummary(karyawan, logs, workDate, locationFilter);
+      return jsonResponse(
+        200,
+        { ok: true, work_date: workDate, location_id: locationFilter, ...dash },
+        request
+      );
+    }
+
+    if (url.searchParams.get('late_report') === '1') {
+      const month = (url.searchParams.get('month') || workDate.substring(0, 7)).trim();
+      if (!/^\d{4}-\d{2}$/.test(month)) {
+        return jsonResponse(400, { ok: false, error: 'month format YYYY-MM' }, request);
+      }
+      const payload = await loadCloudPayload(sb, tenant);
+      const jamMasuk = companyJamMasuk(payload);
+      const dateFrom = month + '-01';
+      const dateTo = month + '-31';
+      const { data: logs } = await sb
+        .from('sigaji_attendance_logs')
+        .select('nik,work_date,event_type,validation_status,created_at,location_id,flags')
+        .eq('tenant_key', tenant)
+        .eq('event_type', 'check_in')
+        .gte('work_date', dateFrom)
+        .lte('work_date', dateTo)
+        .eq('validation_status', 'ok');
+      const karMap = {};
+      (payload.karyawan || []).forEach((k) => {
+        if (k && k.nik) karMap[k.nik] = k.nama || k.nik;
+      });
+      const locIds = [...new Set((logs || []).map((l) => l.location_id).filter(Boolean))];
+      const locMap = {};
+      if (locIds.length) {
+        const { data: locs } = await sb
+          .from('sigaji_work_locations')
+          .select('id,nama')
+          .eq('tenant_key', tenant)
+          .in('id', locIds);
+        (locs || []).forEach((l) => {
+          if (l && l.id) locMap[l.id] = l.nama;
+        });
+      }
+      const items = (logs || [])
+        .map((row) => {
+          const lateMin = minutesLateFromIso(row.created_at, jamMasuk, row.work_date);
+          return {
+            nik: row.nik,
+            nama: karMap[row.nik] || row.nik,
+            work_date: row.work_date,
+            check_in_at: row.created_at,
+            late_minutes: lateMin,
+            location_nama: row.location_id ? locMap[row.location_id] || null : null,
+          };
+        })
+        .filter((x) => x.late_minutes > 0)
+        .sort((a, b) => b.late_minutes - a.late_minutes);
+      const byNik = {};
+      items.forEach((it) => {
+        if (!byNik[it.nik]) {
+          byNik[it.nik] = {
+            nik: it.nik,
+            nama: it.nama,
+            late_days: 0,
+            total_late_minutes: 0,
+            max_late_minutes: 0,
+          };
+        }
+        byNik[it.nik].late_days++;
+        byNik[it.nik].total_late_minutes += it.late_minutes;
+        byNik[it.nik].max_late_minutes = Math.max(byNik[it.nik].max_late_minutes, it.late_minutes);
+      });
+      return jsonResponse(
+        200,
+        {
+          ok: true,
+          month,
+          jam_masuk: jamMasuk,
+          items,
+          rekap: Object.values(byNik).sort((a, b) => b.total_late_minutes - a.total_late_minutes),
+        },
+        request
+      );
+    }
 
     let q = sb
       .from('sigaji_attendance_logs')
@@ -124,7 +297,7 @@ function dayStatusPayload(workDate, cin, cout) {
   };
 }
 
-function validateAttendanceGps(isMock, match, accuracyM) {
+function validateAttendanceGps(isMock, match, accuracyM, nearest) {
   if (isMock) {
     return {
       reject: true,
@@ -134,11 +307,32 @@ function validateAttendanceGps(isMock, match, accuracyM) {
     };
   }
   if (!match) {
+    let err =
+      'Lokasi di luar radius penugasan. Dekati lokasi kerja yang ditetapkan HRD lalu coba lagi.';
+    if (nearest) {
+      err =
+        'Lokasi terdekat: ' +
+        nearest.location.nama +
+        ' — ' +
+        formatDistanceM(nearest.distanceM) +
+        ' di luar radius (butuh ≤ ' +
+        formatDistanceM(nearest.radiusM) +
+        ')';
+    }
     return {
       reject: true,
       code: 'outside_geofence',
-      error:
-        'Lokasi di luar radius penugasan. Dekati lokasi kerja yang ditetapkan HRD lalu coba lagi.',
+      error: err,
+      nearest: nearest
+        ? {
+            id: nearest.location.id,
+            nama: nearest.location.nama,
+            distance_m: nearest.distanceM,
+            distance_label: formatDistanceM(nearest.distanceM),
+            radius_m: nearest.radiusM,
+            radius_label: formatDistanceM(nearest.radiusM),
+          }
+        : null,
     };
   }
   let validationStatus = 'ok';
@@ -251,6 +445,83 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse(200, dayStatusPayload(workDate, cin, cout), request);
     }
 
+    if (action === 'gps_preview') {
+      const lat = Number(body.lat);
+      const lon = Number(body.lon);
+      const workDate = body.work_date || workDateJakarta();
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return jsonResponse(400, { ok: false, error: 'lat/lon invalid' }, request);
+      }
+      const { locations } = await resolveAllowedLocations(sb, tenant, ctx.nik, workDate);
+      if (!locations.length) {
+        return jsonResponse(
+          409,
+          { ok: false, error: 'Belum ada lokasi kerja / penugasan HRD untuk tanggal ini' },
+          request
+        );
+      }
+      return jsonResponse(200, gpsPreviewPayload(lat, lon, locations), request);
+    }
+
+    if (action === 'history') {
+      const days = Math.min(30, Math.max(7, parseInt(body.days, 10) || 14));
+      const end = workDateJakarta();
+      const start = new Date(end + 'T12:00:00');
+      start.setDate(start.getDate() - (days - 1));
+      const dateFrom = start.toISOString().substring(0, 10);
+      const { data: logs, error: he } = await sb
+        .from('sigaji_attendance_logs')
+        .select(
+          'work_date,event_type,validation_status,created_at,location_id,face_verified,face_score,flags'
+        )
+        .eq('tenant_key', tenant)
+        .eq('nik', ctx.nik)
+        .gte('work_date', dateFrom)
+        .lte('work_date', end)
+        .order('work_date', { ascending: false });
+      if (he) throw he;
+      const locIds = [...new Set((logs || []).map((l) => l.location_id).filter(Boolean))];
+      const locMap = {};
+      if (locIds.length) {
+        const { data: locs } = await sb
+          .from('sigaji_work_locations')
+          .select('id,nama')
+          .eq('tenant_key', tenant)
+          .in('id', locIds);
+        (locs || []).forEach((l) => {
+          if (l && l.id) locMap[l.id] = l.nama;
+        });
+      }
+      const byDate = {};
+      (logs || []).forEach((row) => {
+        if (!byDate[row.work_date]) byDate[row.work_date] = { work_date: row.work_date };
+        const slot = byDate[row.work_date];
+        const locNama = row.location_id ? locMap[row.location_id] || null : null;
+        const distM = row.flags && row.flags.distance_m != null ? row.flags.distance_m : null;
+        if (row.event_type === 'check_in') {
+          slot.check_in = {
+            at: row.created_at,
+            status: row.validation_status,
+            location_nama: locNama,
+            face_score: row.face_score,
+            distance_m: distM,
+          };
+        } else {
+          slot.check_out = {
+            at: row.created_at,
+            status: row.validation_status,
+            location_nama: locNama,
+            face_score: row.face_score,
+            distance_m: distM,
+          };
+        }
+      });
+      const items = Object.keys(byDate)
+        .sort((a, b) => (a < b ? 1 : -1))
+        .map((d) => byDate[d]);
+      return jsonResponse(200, { ok: true, days, date_from: dateFrom, date_to: end, items }, request);
+    }
+
     const eventType = action === 'check_out' ? 'check_out' : 'check_in';
     const lat = Number(body.lat);
     const lon = Number(body.lon);
@@ -260,6 +531,10 @@ export async function onRequestPost({ request, env }) {
     const isMock = !!body.is_mock;
     const accuracyM = body.accuracy_m != null ? Number(body.accuracy_m) : null;
     const deviceId = String(body.device_id || '').trim() || null;
+    const integrityFlags =
+      body.integrity_flags && typeof body.integrity_flags === 'object'
+        ? body.integrity_flags
+        : null;
     const workDate = body.work_date || workDateJakarta();
 
     if (!faceVerified && !photoPath) {
@@ -366,11 +641,56 @@ export async function onRequestPost({ request, env }) {
     }
 
     const match = matchGeofence(lat, lon, locations);
-    const gps = validateAttendanceGps(isMock, match, accuracyM);
+    const nearest = nearestLocation(lat, lon, locations);
+    const gps = validateAttendanceGps(isMock, match, accuracyM, nearest);
     if (gps.reject) {
+      const existing = eventType === 'check_in' ? cin : cout;
+      const canLogFail = !existing || canRetryAttendanceEvent(existing);
+      if (canLogFail) {
+        const failStatus =
+          gps.code === 'outside_geofence' ? 'outside_geofence' : 'rejected';
+        const failRow = {
+          tenant_key: tenant,
+          nik: ctx.nik,
+          work_date: workDate,
+          event_type: eventType,
+          location_id: gps.nearest ? gps.nearest.id : null,
+          lat,
+          lon,
+          accuracy_m: accuracyM,
+          photo_path: photoPath || '',
+          face_verified: faceVerified,
+          face_score: faceVerified ? faceScore : null,
+          device_id: deviceId,
+          is_mock: isMock,
+          validation_status: failStatus,
+          flags: {
+            fail_code: gps.code,
+            fail_message: gps.error,
+            nearest: gps.nearest || null,
+            accuracy_m: accuracyM,
+            is_mock: isMock,
+            face_verified: faceVerified,
+            face_score: faceVerified ? faceScore : null,
+            integrity_flags: integrityFlags,
+            distance_m: gps.nearest ? gps.nearest.distance_m : null,
+          },
+        };
+        await sb
+          .from('sigaji_attendance_logs')
+          .upsert(failRow, { onConflict: 'tenant_key,nik,work_date,event_type' });
+        await clearHadirFromAttendance(sb, tenant, ctx.nik, workDate);
+      }
       return jsonResponse(
         422,
-        { ok: false, code: gps.code, error: gps.error, retry: true },
+        {
+          ok: false,
+          code: gps.code,
+          error: gps.error,
+          retry: true,
+          nearest: gps.nearest || null,
+          logged: canLogFail,
+        },
         request
       );
     }
@@ -396,6 +716,7 @@ export async function onRequestPost({ request, env }) {
           is_mock: isMock,
           face_verified: faceVerified,
           face_score: faceVerified ? faceScore : null,
+          integrity_flags: integrityFlags,
         },
         gps.flags
       ),

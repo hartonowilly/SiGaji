@@ -39,8 +39,13 @@
     </div>
     <div class="card">
       <div id="day-status" style="font-size:.85rem;margin-bottom:.75rem">Memuat status…</div>
-      <button type="button" class="btn btn-success" id="btn-checkin" onclick="sigajiMobileGo('screen-checkin')">Check-in</button>
-      <button type="button" class="btn btn-primary" id="btn-checkout" onclick="sigajiMobileGo('screen-checkout')">Check-out (wajib)</button>
+      <div id="pwa-absen-block" style="display:none;margin-bottom:.75rem;padding:.75rem;border-radius:10px;background:#f0f6ff;border:1px solid #c5d9f5">
+        <p style="font-size:.85rem;margin:0 0 .5rem;color:#1a56a0;font-weight:700">Absen wajah + GPS hanya di APK Android</p>
+        <p style="font-size:.8rem;margin:0 0 .65rem;color:#64748b;line-height:1.45">Browser/PWA tidak mendukung verifikasi wajah. Unduh aplikasi resmi untuk check-in/out.</p>
+        <a id="pwa-apk-link" href="#" class="btn btn-primary" style="display:inline-block;text-decoration:none;text-align:center">Unduh APK SiGaji Absen</a>
+      </div>
+      <button type="button" class="btn btn-success" id="btn-checkin" style="display:none">Check-in</button>
+      <button type="button" class="btn btn-primary" id="btn-checkout" style="display:none">Check-out (wajib)</button>
       <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-leave')">Ajuan cuti / izin / sakit</button>
       <button type="button" class="btn btn-out" onclick="sigajiMobileLogout()">Keluar</button>
     </div>

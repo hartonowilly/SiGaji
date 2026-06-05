@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'config/app_config.dart';
+import 'theme/sigaji_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/auth_service.dart';
-
 class SigajiApp extends StatefulWidget {
   const SigajiApp({super.key});
 
@@ -48,17 +48,7 @@ class _SigajiAppState extends State<SigajiApp> {
     return MaterialApp(
       title: 'SiGaji Absen',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A56A0),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
-      ),
+      theme: sigajiTheme(),
       home: _buildHome(),
     );
   }

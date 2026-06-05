@@ -194,6 +194,141 @@ export function matchGeofence(lat, lon, locations) {
   return best ? { location: best, distanceM: Math.round(bestDist) } : null;
 }
 
+/** Jarak ke lokasi terdekat (selalu dihitung, termasuk di luar radius). */
+export function nearestLocation(lat, lon, locations) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const loc of locations) {
+    const d = haversineM(lat, lon, loc.lat, loc.lon);
+    if (d < bestDist) {
+      best = loc;
+      bestDist = d;
+    }
+  }
+  if (!best) return null;
+  const radiusM = Number(best.radius_m) || 200;
+  return {
+    location: best,
+    distanceM: Math.round(bestDist),
+    radiusM,
+    inside: bestDist <= radiusM,
+  };
+}
+
+export function formatDistanceM(meters) {
+  const m = Math.round(Number(meters) || 0);
+  if (m >= 1000) {
+    const km = m / 1000;
+    const rounded = km >= 10 ? Math.round(km) : Math.round(km * 10) / 10;
+    return rounded + ' km';
+  }
+  return m + ' m';
+}
+
+export function gpsPreviewPayload(lat, lon, locations) {
+  const nearest = nearestLocation(lat, lon, locations);
+  if (!nearest) {
+    return { ok: false, error: 'Tidak ada lokasi kerja aktif' };
+  }
+  const match = matchGeofence(lat, lon, locations);
+  const distLbl = formatDistanceM(nearest.distanceM);
+  const radLbl = formatDistanceM(nearest.radiusM);
+  const message = nearest.inside
+    ? 'Lokasi terdekat: ' +
+      nearest.location.nama +
+      ' — ' +
+      distLbl +
+      ' (dalam radius ✓)'
+    : 'Lokasi terdekat: ' +
+      nearest.location.nama +
+      ' — ' +
+      distLbl +
+      ' di luar radius (butuh ≤ ' +
+      radLbl +
+      ')';
+  return {
+    ok: true,
+    nearest: {
+      id: nearest.location.id,
+      nama: nearest.location.nama,
+      tipe: nearest.location.tipe || null,
+      lat: nearest.location.lat,
+      lon: nearest.location.lon,
+      distance_m: nearest.distanceM,
+      distance_label: distLbl,
+      radius_m: nearest.radiusM,
+      radius_label: radLbl,
+      inside: nearest.inside,
+    },
+    matched_location_id: match ? match.location.id : null,
+    matched_location_nama: match ? match.location.nama : null,
+    can_submit: !!match,
+    message,
+  };
+}
+
+export function companyJamMasuk(payload) {
+  const jm =
+    payload &&
+    payload.perusahaan &&
+    String(payload.perusahaan.jamMasuk || payload.perusahaan.jam_masuk || '').trim();
+  return /^\d{1,2}:\d{2}$/.test(jm) ? jm : '08:00';
+}
+
+export function minutesLateFromIso(isoCheckIn, jamMasuk, workDate) {
+  if (!isoCheckIn || !workDate) return null;
+  const parts = String(jamMasuk || '08:00').split(':');
+  const hh = parseInt(parts[0], 10) || 8;
+  const mm = parseInt(parts[1], 10) || 0;
+  const deadline = new Date(workDate + 'T' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':00+07:00');
+  const cin = new Date(isoCheckIn);
+  const diff = Math.round((cin.getTime() - deadline.getTime()) / 60000);
+  return diff > 0 ? diff : 0;
+}
+
+export async function syncAlphaFromMobileAttendance(sb, tenant, payload, dateFrom, dateTo) {
+  const karyawan = (payload && payload.karyawan) || [];
+  const absensi = payload.absensi || (payload.absensi = {});
+  let marked = 0;
+  const today = workDateJakarta();
+  const end = dateTo > today ? today : dateTo;
+  if (end < dateFrom) return { marked: 0, dates: [] };
+
+  const { data: logs } = await sb
+    .from('sigaji_attendance_logs')
+    .select('nik,work_date,event_type,validation_status')
+    .eq('tenant_key', tenant)
+    .gte('work_date', dateFrom)
+    .lte('work_date', end)
+    .eq('event_type', 'check_in');
+  const cinMap = {};
+  (logs || []).forEach((r) => {
+    const k = r.nik + '|' + r.work_date;
+    cinMap[k] = r.validation_status;
+  });
+
+  const affectedDates = new Set();
+  for (const k of karyawan) {
+    if (!k || !k.nik || k.aktif === false) continue;
+    const nik = String(k.nik).trim();
+    const dates = enumerateWorkDates(payload, dateFrom, end, true);
+    if (!absensi[nik]) absensi[nik] = {};
+    for (const d of dates) {
+      const cur = absensi[nik][d];
+      if (cur && cur !== 'alpha') continue;
+      const st = cinMap[nik + '|' + d];
+      if (st === 'ok' || st === 'pending_review') continue;
+      if (absensi[nik][d] !== 'alpha') {
+        absensi[nik][d] = 'alpha';
+        marked++;
+        affectedDates.add(d);
+      }
+    }
+  }
+  if (marked) await saveCloudPayload(sb, tenant, payload);
+  return { marked, dates: [...affectedDates] };
+}
+
 export function afterCheckinPairValid(checkInRow, checkOutRow) {
   return !!(checkInRow && checkOutRow);
 }
@@ -257,11 +392,20 @@ export function attendanceDecideAllowedStatuses() {
 }
 
 export function canRetryAttendanceEvent(row) {
-  return !row || row.validation_status === 'rejected';
+  return (
+    !row ||
+    row.validation_status === 'rejected' ||
+    row.validation_status === 'outside_geofence'
+  );
 }
 
 export function checkInBlocksCheckOut(cin) {
-  return !!(cin && cin.validation_status && cin.validation_status !== 'rejected');
+  return !!(
+    cin &&
+    cin.validation_status &&
+    cin.validation_status !== 'rejected' &&
+    cin.validation_status !== 'outside_geofence'
+  );
 }
 
 // ── Kuota cuti (selaras rekap Absensi → tab Cuti) ───────────────────────────

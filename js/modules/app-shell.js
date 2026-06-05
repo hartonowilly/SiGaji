@@ -244,6 +244,18 @@ function applyLaporanSubtabVisibility(){
   ['lap-tab-rekap','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
   if(first&&first.dataset.panel)switchLaporanTab(first,first.dataset.panel);
 }
+function switchSubTab(opts){
+  opts=opts||{};
+  var el=opts.el,panelId=opts.panelId,panelIds=opts.panelIds||[],subKey=opts.subKey,subId=opts.subId,onShow=opts.onShow;
+  if(subKey&&subId&&typeof canAccessSubTab==='function'&&!canAccessSubTab(subKey,subId)){toast('Tidak punya akses ke tab ini');return;}
+  if(el&&el.parentElement){
+    el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    el.classList.add('active');
+  }
+  panelIds.forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===panelId?'block':'none';});
+  if(typeof onShow==='function')onShow(panelId);
+}
+if(typeof window!=='undefined')window.switchSubTab=switchSubTab;
 function switchLaporanTab(el,panelId){
   var lapMap={'lap-tab-rekap':'rekap','lap-tab-pph':'pph'};
   var sub=lapMap[panelId];
@@ -306,11 +318,21 @@ function switchTab(el,tid){
 }
 function switchAbTab(el,tid){
   var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti','abt-lokasi':'lokasi','abt-pengajuan':'pengajuan'};
-  if(abSubs[tid]&&!canAccessSubTab('absensi',abSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
-  el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');['abt-kalender','abt-cuti','abt-lokasi','abt-pengajuan'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});
-  if(tid==='abt-cuti')renderCutiRekap();
-  if(tid==='abt-lokasi'){if(typeof renderMobileLocations==='function')renderMobileLocations();if(typeof renderMobileAssignments==='function')renderMobileAssignments();if(typeof renderMobileAttendanceLog==='function')renderMobileAttendanceLog();}
-  if(tid==='abt-pengajuan'&&typeof renderMobileLeavePending==='function')renderMobileLeavePending();
+  switchSubTab({
+    el:el,panelId:tid,panelIds:['abt-kalender','abt-cuti','abt-lokasi','abt-pengajuan'],
+    subKey:'absensi',subId:abSubs[tid],
+    onShow:function(id){
+      if(id==='abt-cuti')renderCutiRekap();
+      if(id==='abt-lokasi'){
+        if(typeof mobInitLokasiTab==='function')mobInitLokasiTab();
+        if(typeof renderMobileLocations==='function')renderMobileLocations();
+        if(typeof renderMobileAssignments==='function')renderMobileAssignments();
+        if(typeof renderMobileAttendanceLog==='function')renderMobileAttendanceLog();
+        if(typeof renderMobileLateReport==='function')renderMobileLateReport();
+      }
+      if(id==='abt-pengajuan'&&typeof renderMobileLeavePending==='function')renderMobileLeavePending();
+    }
+  });
 }
 function switchPayrollSpTab(el,tid){
   const tabMap={'sp-gaji':'gaji','sp-bpjs':'bpjs','sp-natura':'natura','sp-pphret':'pphret','sp-ring':'ring'};

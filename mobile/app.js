@@ -6,8 +6,6 @@
   var notifPollTimer = null;
 
   function apiBase() {
-    var h = (location && location.hostname) || '';
-    if (/\.netlify\.app$/i.test(h)) return '/.netlify/functions/';
     return '/api/';
   }
   function apiUrl(name) {
@@ -239,8 +237,22 @@
     el.innerHTML = html;
     var btnIn = document.getElementById('btn-checkin');
     var btnOut = document.getElementById('btn-checkout');
-    if (btnIn) btnIn.disabled = j.can_check_in === false;
-    if (btnOut) btnOut.disabled = j.can_check_out === false;
+    var pwaBlock = document.getElementById('pwa-absen-block');
+    var apkLink = document.getElementById('pwa-apk-link');
+    if (pwaBlock) pwaBlock.style.display = 'block';
+    if (apkLink && !apkLink.dataset.bound) {
+      apkLink.dataset.bound = '1';
+      var apkUrl = (window.SIGAJI_MOBILE_APK_URL && String(window.SIGAJI_MOBILE_APK_URL).trim()) || '/downloads/sigaji-absen.apk';
+      apkLink.href = apkUrl;
+    }
+    if (btnIn) {
+      btnIn.style.display = 'none';
+      btnIn.disabled = true;
+    }
+    if (btnOut) {
+      btnOut.style.display = 'none';
+      btnOut.disabled = true;
+    }
   }
   function getGps() {
     return new Promise(function (resolve, reject) {

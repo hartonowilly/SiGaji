@@ -15,28 +15,18 @@ async function sigajiMobileFetch(name,opts){
   });
   return typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(function(){return null;});
 }
-function sigajiEnumerateWorkDates(dateFrom,dateTo,worksSaturday){
-  var hk=(perusahaan&&perusahaan.hariKerja)||6;
-  var hlMap={};
-  (hariLibur||[]).forEach(function(l){if(l&&l.tgl)hlMap[String(l.tgl).substring(0,10)]=l.tipe||'';});
-  var out=[],cur=dateFrom;
-  function addDays(iso,n){var d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().substring(0,10);}
-  while(cur<=dateTo){
-    var dow=new Date(cur+'T12:00:00').getDay();
-    if(dow===0){cur=addDays(cur,1);continue;}
-    if(dow===6){if(!(worksSaturday||hk===6)){cur=addDays(cur,1);continue;}}
-    var tp=hlMap[cur];
-    if(tp==='libnas'||tp==='cuti-bersama'){cur=addDays(cur,1);continue;}
-    out.push(cur);cur=addDays(cur,1);
-  }
-  return out;
+var _mobMapPicker=null;
+var _mobLocEditId=null;
+function mobFmtDistanceM(m){
+  m=Math.round(Number(m)||0);
+  if(m>=1000){var km=m/1000;return (km>=10?Math.round(km):Math.round(km*10)/10)+' km';}
+  return m+' m';
 }
-function sigajiApplyLeaveLocal(nik,dateFrom,dateTo,status,worksSaturday){
-  var dates=sigajiEnumerateWorkDates(dateFrom,dateTo,worksSaturday!==false);
-  if(!absensi[nik])absensi[nik]={};
-  dates.forEach(function(d){absensi[nik][d]=status;});
-  saveAll();
-  return dates;
+function mobAuditHtml(flags){
+  if(!flags||!flags.decided_at)return '';
+  var who=flags.decided_by_name||flags.decided_by||'HRD';
+  var note=flags.review_note?(' — '+escapeHtml(flags.review_note)):'';
+  return '<div style="font-size:10px;color:#6b7280;margin-top:2px">Audit: '+escapeHtml(who)+' · '+mobFmtTimeIso(flags.decided_at)+note+'</div>';
 }
 async function sigajiUploadMobileFile(file,subfolder){
   if(!file)return null;
@@ -61,10 +51,27 @@ async function sigajiUploadMobileFile(file,subfolder){
   }
 }
 // ── HRD: Log check-in / check-out ─────────────────
-function mobAttStatusLbl(st){
+function mobAttStatusLbl(st,flags){
+  if(st==='rejected'&&flags&&flags.fail_code==='mock_gps'){
+    return '<span class="bdg b-err">GPS mock</span>';
+  }
   var map={ok:['OK','b-teal'],pending_review:['Review','b-warn'],outside_geofence:['Luar radius','b-err'],rejected:['Ditolak','b-err']};
   var x=map[st]||[st||'-','b-gray'];
   return '<span class="bdg '+x[1]+'">'+x[0]+'</span>';
+}
+function mobFailDetailHtml(flags){
+  if(!flags)return '';
+  var parts=[];
+  if(flags.nearest&&flags.nearest.nama){
+    var dl=flags.nearest.distance_label||mobFmtDistanceM(flags.nearest.distance_m);
+    var rl=flags.nearest.radius_label||mobFmtDistanceM(flags.nearest.radius_m);
+    parts.push('Terdekat: <strong>'+escapeHtml(flags.nearest.nama)+'</strong> — '+escapeHtml(dl)+' (radius '+escapeHtml(rl)+')');
+  }else if(flags.distance_m!=null){
+    parts.push('Jarak: '+mobFmtDistanceM(flags.distance_m));
+  }
+  if(flags.fail_message)parts.push('<span style="color:#6b7280">'+escapeHtml(String(flags.fail_message).substring(0,120))+'</span>');
+  if(!parts.length)return '';
+  return '<div style="font-size:10px;color:#9b2121;margin-top:2px;line-height:1.45">'+parts.join('<br>')+'</div>';
 }
 function mobFmtTimeIso(iso){
   if(!iso)return '-';
@@ -82,9 +89,12 @@ async function renderMobileAttendanceLog(){
   var today=new Date().toISOString().substring(0,10);
   el.innerHTML='<div class="card"><div class="flb mb2" style="flex-wrap:wrap;gap:.5rem">'
     +'<div class="ct" style="margin:0;border:0;padding:0">Siapa sudah check-in / check-out</div>'
-    +'<div class="fl gap1" style="align-items:center">'
+    +'<div class="fl gap1" style="align-items:center;flex-wrap:wrap">'
     +'<label style="font-size:11px;font-weight:700;color:#6b7280">Tanggal:</label>'
     +'<input type="date" id="mob-log-date" value="'+today+'" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9">'
+    +'<select id="mob-log-filter" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9" onchange="mobRenderLogFromCache()">'
+    +'<option value="">Semua status</option><option value="ok">OK</option><option value="pending_review">Review</option>'
+    +'<option value="outside_geofence">Luar radius</option><option value="rejected">Ditolak / mock</option></select>'
     +'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileAttendanceLog()">&#8635; Muat</button>'
     +'</div></div><div id="mob-log-table">Memuat…</div></div>';
   var dateEl=document.getElementById('mob-log-date');
@@ -95,7 +105,21 @@ async function renderMobileAttendanceLog(){
     host.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat log — deploy API mobile-attendance GET')+'</div>';
     return;
   }
-  var items=j.items||[];
+  window._mobLogItems=j.items||[];
+  window._mobLogDate=workDate;
+  mobRenderLogFromCache();
+}
+function mobLogRowPassesFilter(row,filter){
+  if(!filter)return true;
+  if(filter==='rejected')return row.validation_status==='rejected'||(row.flags&&row.flags.fail_code==='mock_gps')||row.is_mock;
+  return row.validation_status===filter;
+}
+function mobRenderLogFromCache(){
+  var host=document.getElementById('mob-log-table');if(!host)return;
+  var items=window._mobLogItems||[];
+  var workDate=window._mobLogDate||'';
+  var filterEl=document.getElementById('mob-log-filter');
+  var filter=filterEl?filterEl.value:'';
   if(!items.length){
     host.innerHTML='<p style="color:#6b7280;font-size:12px;padding:.5rem 0">Belum ada check-in/check-out pada tanggal '+escapeHtml(workDate)+'.</p>';
     return;
@@ -106,51 +130,67 @@ async function renderMobileAttendanceLog(){
     if(row.event_type==='check_in')byNik[row.nik].cin=row;
     if(row.event_type==='check_out')byNik[row.nik].cout=row;
   });
-  var nikList=Object.keys(byNik);
+  var nikList=Object.keys(byNik).filter(function(nik){
+    var g=byNik[nik];
+    if(!filter)return true;
+    return mobLogRowPassesFilter(g.cin,filter)||mobLogRowPassesFilter(g.cout,filter);
+  });
   if(typeof sortKaryawanByNik==='function'){
     nikList=sortKaryawanByNik(nikList.map(function(n){return{nik:n};})).map(function(x){return x.nik;});
   }else nikList.sort(function(a,b){return String(a).localeCompare(String(b),'id',{numeric:true});});
+  function cell(r,label){
+    if(!r)return '<span style="color:#9ca3af">—</span>';
+    var loc=r.location_nama?escapeHtml(r.location_nama):(r.validation_status==='outside_geofence'?'<span style="color:#9ca3af">Di luar radius</span>':'<span style="color:#9ca3af">—</span>');
+    var decideBtns='';
+    if(r.id){
+      var idEsc=String(r.id).replace(/'/g,"\\'");
+      if(r.validation_status==='pending_review'||r.validation_status==='outside_geofence'){
+        decideBtns='<div class="fl gap1" style="margin-top:4px">'
+          +'<button type="button" class="btn btn-xs btn-g" onclick="mobAttendanceDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
+          +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div>';
+      }else if(r.validation_status==='ok'){
+        decideBtns='<div class="fl gap1" style="margin-top:4px;flex-wrap:wrap">'
+          +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak (salah lokasi)</button>'
+          +'<span style="font-size:10px;color:#6b7280">Sudah OK GPS — tolak bila lokasi/penugasan salah</span></div>';
+      }else if(r.validation_status==='rejected'){
+        decideBtns='<div style="font-size:10px;color:#9b2121;margin-top:2px">Karyawan dapat absen ulang di HP</div>';
+      }
+    }
+    var faceBadge=r.face_verified?' <span class="bdg b-teal">Wajah OK</span>':'';
+    if(r.face_verified&&r.face_score!=null)faceBadge+=' <span style="color:#6b7280;font-size:10px">'+Math.round(r.face_score*100)+'%</span>';
+    var distBadge='';
+    var distM=r.flags&&r.flags.distance_m!=null?r.flags.distance_m:r.distance_m;
+    if(distM!=null)distBadge=' <span style="color:#6b7280;font-size:10px" title="Jarak ke lokasi">'+mobFmtDistanceM(distM)+'</span>';
+    var accBadge=mobGpsAccBadge(r.accuracy_m);
+    return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+' '+accBadge+'<br>'+loc+mobMapLink(r.lat,r.lon)+distBadge+'<br>'+mobAttStatusLbl(r.validation_status,r.flags)+faceBadge+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+mobFailDetailHtml(r.flags)+decideBtns+mobAuditHtml(r.flags)+'</div>';
+  }
   var rows=nikList.map(function(nik){
     var g=byNik[nik];
     var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
     var nama=k?(k.nama+' <span style="color:#9ca3af;font-weight:400">('+nik+')</span>'):nik;
-    function cell(r,label){
-      if(!r)return '<span style="color:#9ca3af">—</span>';
-      var loc=r.location_nama?escapeHtml(r.location_nama):'<span style="color:#9ca3af">Lokasi tidak cocok</span>';
-      var decideBtns='';
-      if(r.id){
-        var idEsc=String(r.id).replace(/'/g,"\\'");
-        if(r.validation_status==='pending_review'||r.validation_status==='outside_geofence'){
-          decideBtns='<div class="fl gap1" style="margin-top:4px">'
-            +'<button type="button" class="btn btn-xs btn-g" onclick="mobAttendanceDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
-            +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div>';
-        }else if(r.validation_status==='ok'){
-          decideBtns='<div class="fl gap1" style="margin-top:4px;flex-wrap:wrap">'
-            +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak (salah lokasi)</button>'
-            +'<span style="font-size:10px;color:#6b7280">Sudah OK GPS — tolak bila lokasi/penugasan salah</span></div>';
-        }else if(r.validation_status==='rejected'){
-          decideBtns='<div style="font-size:10px;color:#9b2121;margin-top:2px">Karyawan dapat absen ulang di HP</div>';
-        }
-      }
-      var faceBadge=r.face_verified?' <span class="bdg b-teal">Wajah OK</span>':'';
-      if(r.face_verified&&r.face_score!=null)faceBadge+=' <span style="color:#6b7280;font-size:10px">'+Math.round(r.face_score*100)+'%</span>';
-      return '<div style="font-size:11px"><strong>'+label+'</strong> '+mobFmtTimeIso(r.created_at)+'<br>'+loc+mobMapLink(r.lat,r.lon)+'<br>'+mobAttStatusLbl(r.validation_status)+faceBadge+(r.is_mock?' <span class="bdg b-warn">GPS mock?</span>':'')+decideBtns+'</div>';
-    }
     var st='';
     if(g.cin&&g.cout)st='<span class="bdg b-teal">Lengkap</span>';
     else if(g.cin)st='<span class="bdg b-warn">Belum check-out</span>';
     else st='<span class="bdg b-gray">—</span>';
     return '<tr><td>'+nama+'</td><td>'+cell(g.cin,'Masuk')+'</td><td>'+cell(g.cout,'Pulang')+'</td><td>'+st+'</td></tr>';
   }).join('');
-  host.innerHTML='<table><thead><tr><th>Karyawan</th><th>Check-in</th><th>Check-out</th><th>Status hari</th></tr></thead><tbody>'+rows+'</tbody></table>'
+  var cards=nikList.map(function(nik){
+    var g=byNik[nik];
+    var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+    var nama=k?k.nama:nik;
+    return '<div class="mob-log-card"><h4>'+escapeHtml(nama)+' <span style="font-weight:400;color:#9ca3af">'+escapeHtml(nik)+'</span></h4>'
+      +'<div class="mob-log-ev">'+cell(g.cin,'Masuk')+'</div><div class="mob-log-ev">'+cell(g.cout,'Pulang')+'</div></div>';
+  }).join('');
+  host.innerHTML='<div class="mob-log-table-desktop"><table><thead><tr><th>Karyawan</th><th>Check-in</th><th>Check-out</th><th>Status hari</th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="4" style="text-align:center;color:#9ca3af">Tidak ada data untuk filter ini</td></tr>')
+    +'</tbody></table></div><div class="mob-log-cards">'+cards+'</div>'
     +'<div class="info-box" style="margin-top:.65rem;font-size:11px;line-height:1.55">'
-    +'<strong>Kapan tombol muncul?</strong><ul style="margin:.35rem 0 0 1rem;padding:0">'
-    +'<li><span class="bdg b-warn">Review</span> — GPS kurang akurat → <em>Setujui</em> atau <em>Tolak</em></li>'
-    +'<li><span class="bdg b-err">Luar radius</span> (data lama) — sama, Setujui/Tolak</li>'
-    +'<li><span class="bdg b-teal">OK</span> — GPS dalam radius; cukup <em>Tolak (salah lokasi)</em> jika penugasan/koordinat salah</li>'
-    +'<li>Tanpa badge tombol: belum deploy API terbaru, atau login bukan email cloud Admin/HRD</li>'
-    +'</ul>'
-    +'<strong>Check-in gagal di HP (luar radius):</strong> perbaiki penugasan lokasi + radius, minta karyawan check-in ulang — tidak ada baris di log.</div>';
+    +'<strong>Status log absensi</strong><ul style="margin:.35rem 0 0 1rem;padding:0">'
+    +'<li><span class="bdg b-teal">OK</span> — dalam radius; <em>Tolak</em> bila penugasan/koordinat salah</li>'
+    +'<li><span class="bdg b-warn">Review</span> — GPS kurang akurat (±80 m) → <em>Setujui</em> atau <em>Tolak</em></li>'
+    +'<li><span class="bdg b-err">Luar radius</span> — gagal geofence; tampil jarak ke lokasi terdekat</li>'
+    +'<li><span class="bdg b-err">GPS mock / Ditolak</span> — percobaan gagal; karyawan bisa coba lagi di HP</li>'
+    +'</ul></div>';
 }
 async function mobAttendanceDecide(id,decide){
   var note='';
@@ -176,26 +216,307 @@ async function renderMobileLocations(){
   if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat lokasi — jalankan SQL mobile + deploy API')+'</div>';return;}
   var items=j.items||[];
   var rows=items.map(function(loc){
-    return '<tr><td>'+escapeHtml(loc.nama)+'</td><td>'+escapeHtml(loc.tipe||'')+'</td><td style="font-size:10px">'+loc.lat.toFixed(5)+', '+loc.lon.toFixed(5)+'</td><td>'+loc.radius_m+' m</td><td>'+(loc.aktif?'<span class="bdg b-teal">Aktif</span>':'<span class="bdg b-gray">Off</span>')+'</td><td><button class="btn btn-sm btn-out" onclick="editMobileLocation(\''+loc.id+'\')">Edit</button></td></tr>';
+    var idEsc=String(loc.id).replace(/'/g,"\\'");
+    return '<tr><td>'+escapeHtml(loc.nama)+'</td><td>'+escapeHtml(loc.tipe||'')+'</td>'
+      +'<td><div id="mob-loc-mini-'+loc.id+'" class="mob-loc-mini" title="Peta lokasi"></div>'
+      +'<div style="font-size:9px;color:#9ca3af;margin-top:2px">'+loc.lat.toFixed(5)+', '+loc.lon.toFixed(5)+'</div></td>'
+      +'<td>'+loc.radius_m+' m</td><td>'+(loc.aktif?'<span class="bdg b-teal">Aktif</span>':'<span class="bdg b-gray">Off</span>')+'</td>'
+      +'<td><button class="btn btn-sm btn-out" onclick="editMobileLocation(\''+idEsc+'\')">Edit</button></td></tr>';
   }).join('');
   el.innerHTML='<div class="card"><div class="flb mb2"><div class="ct" style="margin:0;border:0;padding:0">Lokasi check-in GPS</div><button class="btn btn-sm btn-p" onclick="editMobileLocation()">+ Lokasi</button></div>'
-    +'<table><thead><tr><th>Nama</th><th>Tipe</th><th>Koordinat</th><th>Radius</th><th>Status</th><th></th></tr></thead><tbody>'
+    +'<table><thead><tr><th>Nama</th><th>Tipe</th><th>Peta</th><th>Radius</th><th>Status</th><th></th></tr></thead><tbody>'
     +(rows||'<tr><td colspan="6" style="text-align:center;color:#9ca3af">Belum ada lokasi</td></tr>')+'</tbody></table></div>';
+  setTimeout(function(){mobInitLocationMiniMaps(items);},200);
+}
+function mobLocRadiusToSlider(radiusM){
+  var m=parseInt(radiusM,10)||250;
+  if(m<50)m=50;if(m>5000)m=5000;
+  return m;
+}
+function mobLocSliderToRadius(v){
+  return mobLocRadiusToSlider(v);
+}
+function mobLocRadiusHint(m){
+  m=parseInt(m,10)||250;
+  if(m>=200&&m<=300)return ' ≈ setengah lapangan bola';
+  if(m>300&&m<=600)return ' ≈ 1 lapangan mini';
+  return '';
+}
+function mobLocRadiusLabel(m){
+  m=parseInt(m,10)||250;
+  var lbl=mobFmtDistanceM(m);
+  var hint=mobLocRadiusHint(m);
+  if(hint)lbl+='<span style="color:#1a56a0;font-weight:600">'+hint+'</span>';
+  if(m<100)return lbl+' <span style="color:#b45309">(sangat kecil — pastikan meter, bukan km)</span>';
+  return lbl;
+}
+function mobGpsAccBadge(m){
+  m=parseInt(m,10);
+  if(!Number.isFinite(m))return '';
+  var cls=m<=40?'good':m<=80?'mid':'bad';
+  return '<span class="mob-gps-acc '+cls+'">±'+m+' m</span>';
+}
+function mobInitLocationMiniMaps(items){
+  if(typeof L==='undefined')return;
+  (items||[]).forEach(function(loc){
+    if(!loc||!loc.id)return;
+    var el=document.getElementById('mob-loc-mini-'+loc.id);
+    if(!el||el.dataset.inited)return;
+    el.dataset.inited='1';
+    try{
+      var map=L.map(el,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false}).setView([loc.lat,loc.lon],15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+      L.circleMarker([loc.lat,loc.lon],{radius:5,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:1}).addTo(map);
+      L.circle([loc.lat,loc.lon],{radius:loc.radius_m||250,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:0.12,weight:1}).addTo(map);
+      setTimeout(function(){try{map.invalidateSize();}catch(e){}},120);
+    }catch(e){}
+  });
+}
+function mobAssignWeekCalendarHtml(items,locations){
+  var locMap={};
+  (locations||[]).forEach(function(l){if(l&&l.id)locMap[l.id]=l;});
+  var today=new Date().toISOString().substring(0,10);
+  var start=new Date();
+  start.setDate(start.getDate()-start.getDay()+1);
+  var dow=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+  var html='<div class="card" style="margin-bottom:.85rem"><div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Kalender penugasan minggu ini</div><div class="mob-assign-cal">';
+  dow.forEach(function(d){html+='<div class="mob-assign-cal-h">'+d+'</div>';});
+  for(var i=0;i<7;i++){
+    var d=new Date(start);
+    d.setDate(start.getDate()+i);
+    var iso=d.toISOString().substring(0,10);
+    var tags=[];
+    (items||[]).forEach(function(a){
+      if(!a||!a.nik)return;
+      if(iso<a.date_from||iso>a.date_to)return;
+      var dowN=d.getDay();
+      if(dowN===0)return;
+      if(dowN===6&&!a.works_saturday)return;
+      var loc=locMap[a.location_id]||a.sigaji_work_locations||{};
+      var kar=(karyawan||[]).find(function(k){return k&&k.nik===a.nik;});
+      var nm=kar?(kar.nama.split(' ')[0]):a.nik;
+      tags.push(nm+' @ '+(loc.nama||'?'));
+    });
+    html+='<div class="mob-assign-cal-cell'+(iso===today?' today':'')+'"><div class="mob-assign-cal-day">'+d.getDate()+'</div>';
+    tags.slice(0,3).forEach(function(t){html+='<span class="mob-assign-cal-tag" title="'+escapeHtml(t)+'">'+escapeHtml(t)+'</span>';});
+    if(tags.length>3)html+='<span class="mob-assign-cal-tag">+'+(tags.length-3)+'</span>';
+    html+='</div>';
+  }
+  return html+'</div></div>';
+}
+function mobLeaveQuotaPanel(nik,reqType){
+  if(reqType&&reqType!=='cuti')return '<div class="mob-leave-quota-panel"><div style="font-weight:700;color:#374151">Kuota cuti</div><p style="margin:.35rem 0 0;color:#6b7280">Izin/sakit tidak memotong kuota cuti tahunan.</p></div>';
+  var yr=new Date().getFullYear();
+  var kuota=(typeof masterCuti!=='undefined'&&masterCuti.kuota)||12;
+  var t=typeof cutiTerpakai==='function'?cutiTerpakai(nik,yr):0;
+  var sisa=Math.max(0,kuota-t);
+  var cls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
+  return '<div class="mob-leave-quota-panel"><div style="font-weight:700;color:#374151;margin-bottom:.35rem">Sisa kuota cuti '+yr+'</div>'
+    +'<div><span class="bdg '+cls+'" style="font-size:14px;padding:4px 12px">'+sisa+' / '+kuota+' hari</span></div>'
+    +'<p style="margin:.5rem 0 0;color:#6b7280">Terpakai: '+t+' hari · termasuk pengajuan pending di sistem</p></div>';
+}
+function mobLocUpdateRadiusUi(){
+  var sl=document.getElementById('mob-loc-radius');
+  var lb=document.getElementById('mob-loc-radius-lbl');
+  if(!sl||!lb)return;
+  lb.innerHTML=mobLocRadiusLabel(sl.value);
+  if(_mobMapPicker&&_mobMapPicker.circle)_mobMapPicker.circle.setRadius(parseInt(sl.value,10)||250);
+}
+async function mobLocUseMyPosition(){
+  if(!navigator.geolocation){toast('Browser tidak mendukung GPS');return;}
+  toast('Mengambil lokasi…');
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=document.getElementById('mob-loc-lat');
+    var lon=document.getElementById('mob-loc-lon');
+    if(lat)lat.value=pos.coords.latitude.toFixed(6);
+    if(lon)lon.value=pos.coords.longitude.toFixed(6);
+    mobLocInitMapPicker();
+    toast('Lokasi Anda ditempatkan di peta');
+  },function(){toast('Gagal ambil GPS — izinkan lokasi di browser');},{enableHighAccuracy:true,timeout:20000});
+}
+function mobLocInitMapPicker(){
+  var host=document.getElementById('mob-loc-map');
+  if(!host||typeof L==='undefined')return;
+  var lat=parseFloat((document.getElementById('mob-loc-lat')||{}).value)||-6.2;
+  var lon=parseFloat((document.getElementById('mob-loc-lon')||{}).value)||106.816666;
+  var rad=mobLocSliderToRadius((document.getElementById('mob-loc-radius')||{}).value);
+  if(_mobMapPicker&&_mobMapPicker.map){_mobMapPicker.map.remove();_mobMapPicker=null;}
+  var map=L.map(host).setView([lat,lon],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(map);
+  var marker=L.marker([lat,lon],{draggable:true}).addTo(map);
+  var circle=L.circle([lat,lon],{radius:rad,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:0.15}).addTo(map);
+  marker.on('dragend',function(){
+    var p=marker.getLatLng();
+    var latEl=document.getElementById('mob-loc-lat');
+    var lonEl=document.getElementById('mob-loc-lon');
+    if(latEl)latEl.value=p.lat.toFixed(6);
+    if(lonEl)lonEl.value=p.lng.toFixed(6);
+    circle.setLatLng(p);
+  });
+  map.on('click',function(e){
+    marker.setLatLng(e.latlng);
+    circle.setLatLng(e.latlng);
+    var latEl=document.getElementById('mob-loc-lat');
+    var lonEl=document.getElementById('mob-loc-lon');
+    if(latEl)latEl.value=e.latlng.lat.toFixed(6);
+    if(lonEl)lonEl.value=e.latlng.lng.toFixed(6);
+  });
+  _mobMapPicker={map:map,marker:marker,circle:circle};
+  setTimeout(function(){try{map.invalidateSize();}catch(e){}},200);
 }
 async function editMobileLocation(id){
+  _mobLocEditId=id||null;
   var loc=null;
   if(id){
     var j=await sigajiMobileFetch('mobile-locations',{method:'GET'});
     if(j&&j.ok)loc=(j.items||[]).find(function(x){return x.id===id;});
   }
-  var nama=prompt('Nama lokasi',loc?loc.nama:'Site luar kota');if(nama===null)return;
-  var lat=prompt('Latitude',loc?String(loc.lat):'-6.2');if(lat===null)return;
-  var lon=prompt('Longitude',loc?String(loc.lon):'106.8');if(lon===null)return;
-  var radius=prompt('Radius (meter)',loc?String(loc.radius_m):'250');if(radius===null)return;
-  var tipe=prompt('Tipe: kantor|site|mess|dinas|lainnya',loc?loc.tipe:'site');if(tipe===null)return;
-  var body={action:'save_location',id:loc?loc.id:null,nama:nama,lat:parseFloat(lat),lon:parseFloat(lon),radius_m:parseInt(radius,10)||200,tipe:tipe,aktif:true};
+  var tit=document.getElementById('mob-loc-modal-title');
+  if(tit)tit.textContent=loc?'Edit lokasi GPS':'Tambah lokasi GPS';
+  var fields={nama:'mob-loc-nama',lat:'mob-loc-lat',lon:'mob-loc-lon',radius:'mob-loc-radius',tipe:'mob-loc-tipe'};
+  if(document.getElementById(fields.nama))document.getElementById(fields.nama).value=loc?loc.nama:'Site luar kota';
+  if(document.getElementById(fields.lat))document.getElementById(fields.lat).value=loc?String(loc.lat):'-6.2088';
+  if(document.getElementById(fields.lon))document.getElementById(fields.lon).value=loc?String(loc.lon):'106.8456';
+  if(document.getElementById(fields.radius))document.getElementById(fields.radius).value=String(mobLocRadiusToSlider(loc?loc.radius_m:250));
+  if(document.getElementById(fields.tipe))document.getElementById(fields.tipe).value=loc?loc.tipe:'site';
+  mobLocUpdateRadiusUi();
+  if(typeof openModal==='function')openModal('m-mob-location');
+  setTimeout(mobLocInitMapPicker,280);
+}
+async function saveMobileLocationModal(){
+  var nama=(document.getElementById('mob-loc-nama')||{}).value.trim();
+  var lat=parseFloat((document.getElementById('mob-loc-lat')||{}).value);
+  var lon=parseFloat((document.getElementById('mob-loc-lon')||{}).value);
+  var radius=mobLocSliderToRadius((document.getElementById('mob-loc-radius')||{}).value);
+  var tipe=(document.getElementById('mob-loc-tipe')||{}).value||'site';
+  if(!nama){toast('Nama lokasi wajib');return;}
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)){toast('Koordinat invalid');return;}
+  if(radius<50){toast('Radius minimal 50 meter');return;}
+  var body={action:'save_location',id:_mobLocEditId,nama:nama,lat:lat,lon:lon,radius_m:radius,tipe:tipe,aktif:true};
   var r=await sigajiMobileFetch('mobile-locations',{method:'POST',body:body});
-  if(r&&r.ok){toast('Lokasi disimpan');renderMobileLocations();}else toast((r&&r.error)||'Gagal simpan');
+  if(r&&r.ok){
+    toast('Lokasi disimpan');
+    if(typeof closeModal==='function')closeModal('m-mob-location');
+    renderMobileLocations();
+    renderMobileDashboard();
+  }else toast((r&&r.error)||'Gagal simpan');
+}
+async function renderMobileDashboard(){
+  var el=document.getElementById('mob-dashboard-wrap');if(!el)return;
+  var today=new Date().toISOString().substring(0,10);
+  var dateEl=document.getElementById('mob-dash-date');
+  var locEl=document.getElementById('mob-dash-loc');
+  var workDate=dateEl?dateEl.value:today;
+  var locId=locEl?locEl.value:'';
+  el.innerHTML='<div style="color:#6b7280;padding:.5rem 0">Memuat ringkasan…</div>';
+  var q='mobile-attendance?dashboard=1&work_date='+encodeURIComponent(workDate);
+  if(locId)q+='&location_id='+encodeURIComponent(locId);
+  var j=await sigajiMobileFetch(q,{method:'GET'});
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat dashboard')+'</div>';return;}
+  var s=j.summary||{};
+  var pending=s.pending_review||0;
+  if(pending>0&&typeof window._mobLastPending!=='number')window._mobLastPending=0;
+  if(pending>(window._mobLastPending||0)&&typeof Notification!=='undefined'&&Notification.permission==='granted'){
+    try{new Notification('SiGaji — absensi perlu review',{body:pending+' log menunggu persetujuan HRD'});}catch(eN){}
+  }
+  window._mobLastPending=pending;
+  el.innerHTML='<div class="fl gap1" style="flex-wrap:wrap;margin-bottom:.65rem">'
+    +'<span class="bdg b-teal">Hadir lengkap: '+(s.hadir_lengkap||0)+'</span>'
+    +'<span class="bdg b-warn">Belum check-out: '+(s.belum_checkout||0)+'</span>'
+    +'<span class="bdg b-warn">Review: '+(s.pending_review||0)+'</span>'
+    +'<span class="bdg b-err">Tidak hadir: '+(s.tidak_hadir||0)+'</span>'
+    +'<span class="bdg b-gray">Total: '+(s.total_karyawan||0)+'</span></div>';
+}
+async function renderMobileFaceEnrollments(){
+  var el=document.getElementById('mob-face-wrap');if(!el)return;
+  el.innerHTML='<div style="color:#6b7280;padding:.5rem 0">Memuat enrollment wajah…</div>';
+  var j=await sigajiMobileFetch('mobile-face',{method:'GET'});
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat enrollment')+'</div>';return;}
+  var items=j.items||[];
+  var map={};
+  items.forEach(function(x){if(x&&x.nik)map[x.nik]=x;});
+  var rows=(karyawan||[]).filter(function(k){return k&&k.nik&&k.aktif!==false;}).map(function(k){
+    var en=map[k.nik];
+    var st=en?'<span class="bdg b-teal">Terdaftar</span>':'<span class="bdg b-gray">Belum</span>';
+    var meta=en?('<span style="font-size:10px;color:#6b7280"> · '+escapeHtml(en.model_version||'')+' · '+mobFmtTimeIso(en.updated_at||en.enrolled_at)+'</span>'):'';
+    var nikEsc=String(k.nik).replace(/'/g,"\\'");
+    var btn=en?'<button type="button" class="btn btn-xs btn-r" onclick="deleteMobileFaceEnroll(\''+nikEsc+'\')">Hapus</button>':'';
+    return '<tr><td>'+escapeHtml(k.nik)+'</td><td>'+escapeHtml(k.nama||'')+'</td><td>'+st+meta+'</td><td>'+btn+'</td></tr>';
+  }).join('');
+  el.innerHTML='<div class="card"><div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Enrollment wajah (APK)</div>'
+    +'<table><thead><tr><th>NIK</th><th>Nama</th><th>Status</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="4" style="text-align:center;color:#9ca3af">Tidak ada karyawan</td></tr>')
+    +'</tbody></table></div>';
+}
+async function deleteMobileFaceEnroll(nik){
+  if(!confirm('Hapus enrollment wajah '+nik+'? Karyawan harus daftar ulang di HP.'))return;
+  var r=await sigajiMobileFetch('mobile-face',{method:'POST',body:{action:'delete',nik:nik}});
+  if(r&&r.ok){toast(r.message||'Dihapus');renderMobileFaceEnrollments();}
+  else toast((r&&r.error)||'Gagal hapus');
+}
+async function renderMobileLateReport(){
+  var el=document.getElementById('mob-late-wrap');if(!el)return;
+  var monthEl=document.getElementById('mob-late-month');
+  if(monthEl&&!monthEl.value)monthEl.value=new Date().toISOString().substring(0,7);
+  var month=monthEl?monthEl.value:new Date().toISOString().substring(0,7);
+  el.innerHTML='<div style="color:#6b7280;padding:.5rem 0">Memuat rekap keterlambatan…</div>';
+  var j=await sigajiMobileFetch('mobile-attendance?late_report=1&month='+encodeURIComponent(month),{method:'GET'});
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat rekap')+'</div>';return;}
+  var rekap=j.rekap||[];
+  if(!rekap.length){el.innerHTML='<p style="font-size:12px;color:#6b7280">Tidak ada keterlambatan (jam masuk: '+escapeHtml(j.jam_masuk||'08:00')+').</p>';return;}
+  var rows=rekap.map(function(r){
+    return '<tr><td>'+escapeHtml(r.nama||r.nik)+'</td><td>'+escapeHtml(r.nik)+'</td><td>'+r.late_days+'</td><td>'+r.total_late_minutes+' mnt</td><td>'+r.max_late_minutes+' mnt</td></tr>';
+  }).join('');
+  el.innerHTML='<p style="font-size:11px;color:#6b7280;margin:0 0 .5rem">Jam masuk perusahaan: <strong>'+escapeHtml(j.jam_masuk||'08:00')+'</strong> (atur di Master → Profil Perusahaan)</p>'
+    +'<table><thead><tr><th>Nama</th><th>NIK</th><th>Hari telat</th><th>Total menit</th><th>Maks/hari</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+async function mobImportLibnas(){
+  var yr=prompt('Tahun libur nasional',String(new Date().getFullYear()));
+  if(yr===null)return;
+  var r=await sigajiMobileFetch('mobile-calendar',{method:'POST',body:{action:'import_libnas',year:parseInt(yr,10)}});
+  if(r&&r.ok){
+    toast(r.message||'Libur nasional diimpor');
+    if(typeof loadCloudData==='function')await loadCloudData();
+    if(typeof renderHariLibur==='function')renderHariLibur();
+  }else toast((r&&r.error)||'Gagal impor');
+}
+async function mobSyncAlpha(){
+  var p=typeof PA==='function'?PA():null;
+  if(!p||!p.start){toast('Pilih periode gaji aktif');return;}
+  if(!confirm('Tandai alpha otomatis untuk hari kerja tanpa check-in valid di periode '+p.nama+'?'))return;
+  var r=await sigajiMobileFetch('mobile-calendar',{method:'POST',body:{action:'sync_alpha',date_from:p.start,date_to:p.end}});
+  if(r&&r.ok){
+    toast(r.message||'Selesai');
+    if(typeof loadCloudData==='function')await loadCloudData();
+    if(typeof renderAbsensi==='function')renderAbsensi();
+  }else toast((r&&r.error)||'Gagal sinkron alpha');
+}
+async function mobInitLokasiTab(){
+  var dashHost=document.getElementById('mob-dashboard-host');
+  if(dashHost&&!dashHost.dataset.inited){
+    var today=new Date().toISOString().substring(0,10);
+    var jLoc=await sigajiMobileFetch('mobile-locations',{method:'GET'});
+    var locOpts='<option value="">Semua lokasi</option>';
+    if(jLoc&&jLoc.ok)(jLoc.items||[]).forEach(function(l){
+      if(l&&l.id&&l.aktif!==false)locOpts+='<option value="'+escapeHtml(l.id)+'">'+escapeHtml(l.nama)+'</option>';
+    });
+    dashHost.innerHTML='<div class="card" style="margin-bottom:.75rem;border-left:4px solid #1a56a0">'
+      +'<div class="flb mb2" style="flex-wrap:wrap;gap:.5rem"><div class="ct" style="margin:0;border:0;padding:0">Dashboard absensi hari ini</div>'
+      +'<div class="fl gap1"><input type="date" id="mob-dash-date" value="'+today+'" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9">'
+      +'<select id="mob-dash-loc" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9">'+locOpts+'</select>'
+      +'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileDashboard()">Muat</button></div></div>'
+      +'<div id="mob-dashboard-wrap"></div></div>';
+    dashHost.dataset.inited='1';
+    var dEl=document.getElementById('mob-dash-date');
+    var lEl=document.getElementById('mob-dash-loc');
+    if(dEl)dEl.onchange=renderMobileDashboard;
+    if(lEl)lEl.onchange=renderMobileDashboard;
+    if(typeof Notification!=='undefined'&&Notification.permission==='default'){
+      try{Notification.requestPermission();}catch(eNp){}
+    }
+  }
+  renderMobileDashboard();
+  renderMobileFaceEnrollments();
 }
 // ── HRD: Penugasan ──────────────────────────────
 function mobKarSelectHtml(selectedNik){
@@ -258,6 +579,7 @@ async function renderMobileAssignments(){
     return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out" onclick="editMobileAssignment(\''+a.id+'\')">Edit</button><button type="button" class="btn btn-sm btn-r" onclick="deleteMobileAssignment(\''+a.id+'\')">Hapus</button></div></td></tr>';
   }).join('');
   el.innerHTML=mobAssignFormHtml(locations,null)
+    +mobAssignWeekCalendarHtml(items,locations)
     +'<div class="card"><div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Daftar penugasan</div>'
     +'<p style="font-size:11px;color:#6b7280;margin:0 0 .75rem">Tim menginap luar kota: pilih karyawan, lokasi mess/site, dan rentang tanggal.</p>'
     +'<table><thead><tr><th>Karyawan</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
@@ -315,6 +637,7 @@ async function editMobileAssignment(id){
     return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out" onclick="editMobileAssignment(\''+a.id+'\')">Edit</button><button type="button" class="btn btn-sm btn-r" onclick="deleteMobileAssignment(\''+a.id+'\')">Hapus</button></div></td></tr>';
   }).join('');
   el.innerHTML=mobAssignFormHtml(locations,row)
+    +mobAssignWeekCalendarHtml(items,locations)
     +'<div class="card"><div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Daftar penugasan</div>'
     +'<table><thead><tr><th>Karyawan</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
     +(rows||'<tr><td colspan="5" style="text-align:center;color:#9ca3af">Belum ada</td></tr>')
@@ -336,14 +659,16 @@ async function renderMobileLeavePending(){
   if(!items.length){el.innerHTML='<div class="card"><div class="ct">Pengajuan cuti / izin / sakit</div><p style="color:#6b7280;font-size:12px">Tidak ada antrian pending.</p></div>';return;}
   el.innerHTML='<div class="card"><div class="ct">Pengajuan menunggu persetujuan</div>'
     +items.map(function(r){
-      var att=r.attachment_path?'<div style="font-size:10px;color:#1a56a0">📎 Surat: '+escapeHtml(r.attachment_path)+'</div>':'';
-      return '<div class="mob-leave-card" style="border:1px solid #e5e7eb;border-radius:10px;padding:.75rem;margin-bottom:.6rem">'
-        +'<div style="font-weight:700">'+escapeHtml(r.nama_karyawan||r.nik)+' <span class="bdg b-info">'+escapeHtml(r.request_type)+'</span></div>'
-        +'<div style="font-size:12px;color:#374151">'+r.date_from+' → '+r.date_to+'</div>'
+      var idEsc=String(r.id).replace(/'/g,"\\'");
+      var att=r.attachment_path?'<div style="font-size:10px;color:#1a56a0">Surat: '+escapeHtml(r.attachment_path)+'</div>':'';
+      return '<div class="mob-leave-split" style="border:1px solid #e5e7eb;border-radius:10px;padding:.75rem;margin-bottom:.6rem">'
+        +'<div><div style="font-weight:700;font-size:14px">'+escapeHtml(r.nama_karyawan||r.nik)+' <span class="bdg b-info">'+escapeHtml(r.request_type)+'</span></div>'
+        +'<div style="font-size:12px;color:#374151;margin-top:4px">'+r.date_from+' → '+r.date_to+'</div>'
         +'<div style="font-size:11px;color:#6b7280;margin-top:4px">'+escapeHtml(r.reason||'-')+'</div>'+att
-        +'<div class="fl gap1" style="margin-top:.5rem">'
-        +'<button class="btn btn-sm btn-g" onclick="mobileLeaveDecide(\''+r.id+'\',\'approve\')">Setujui</button>'
-        +'<button class="btn btn-sm btn-r" onclick="mobileLeaveDecide(\''+r.id+'\',\'reject\')">Tolak</button></div></div>';
+        +'<div class="fl gap1" style="margin-top:.65rem">'
+        +'<button class="btn btn-sm btn-g" onclick="mobileLeaveDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
+        +'<button class="btn btn-sm btn-r" onclick="mobileLeaveDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div></div>'
+        +mobLeaveQuotaPanel(r.nik,r.request_type)+'</div>';
     }).join('')+'</div>';
 }
 async function mobileLeaveDecide(id,decide){

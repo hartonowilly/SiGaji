@@ -5,7 +5,8 @@
   "description": "SiGaji v9 (Netlify functions for Telegram + Supabase)",
   "type": "commonjs",
   "scripts": {
-    "build": "node scripts/generate-config.js"
+    "build": "node scripts/assemble-index.js && node scripts/generate-config.js",
+    "assemble": "node scripts/assemble-index.js"
   },
   "dependencies": {
     "@ryyr/worker-mailer": "^0.2.0",

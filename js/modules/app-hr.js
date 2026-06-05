@@ -60,6 +60,40 @@ function renderDash(){
   if(pRet>0)alerts+='<div class="alert-item alert-green"><strong>Pengembalian PPh 21:</strong> '+fmt(pRet)+'</div>';
   if(!alerts)alerts='<div class="alert-empty">Tidak ada peringatan untuk periode ini.</div>';
   document.getElementById('d-alerts').innerHTML=alerts;
+  var chartEl=document.getElementById('d-att-chart');
+  if(chartEl){
+    var now=new Date();
+    var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    var daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    var stats={hadir:0,cuti:0,izin:0,sakit:0,alpha:0};
+    var bars=[];
+    for(var d=1;d<=Math.min(now.getDate(),daysInMonth);d++){
+      var iso=ym+'-'+String(d).padStart(2,'0');
+      var daySt={hadir:0,izin:0,sakit:0,alpha:0};
+      list.forEach(function(k){
+        if(!k||!k.nik)return;
+        var st=(absensi[k.nik]&&absensi[k.nik][iso])||'hadir';
+        if(st==='hadir'||st==='libur'||st==='libnas'){stats.hadir++;daySt.hadir++;}
+        else if(st==='cuti')stats.cuti++;
+        else if(st==='izin'||st==='setengah_ijin'){stats.izin++;daySt.izin++;}
+        else if(st==='sakit'||st==='setengah_sakit'){stats.sakit++;daySt.sakit++;}
+        else if(st==='alpha'){stats.alpha++;daySt.alpha++;}
+      });
+      var maxK=list.length||1;
+      var h=Math.max(4,Math.round((daySt.hadir/maxK)*120));
+      bars.push({d:d,h:h});
+    }
+    var barHtml=bars.map(function(b){
+      return '<div class="dash-att-bar-wrap"><div class="dash-att-bar" style="height:'+b.h+'px" title="Tgl '+b.d+'"></div><div class="dash-att-bar-lbl">'+b.d+'</div></div>';
+    }).join('');
+    chartEl.innerHTML='<div class="dash-att-chart">'+barHtml+'</div>'
+      +'<div class="dash-att-legend">'
+      +'<span class="lg-hadir">Hadir '+stats.hadir+'</span>'
+      +'<span class="lg-izin">Izin '+stats.izin+'</span>'
+      +'<span class="lg-sakit">Sakit '+stats.sakit+'</span>'
+      +'<span class="lg-alpha">Alpha '+stats.alpha+'</span>'
+      +'<span style="margin-left:auto;color:#9ca3af">'+list.length+' karyawan · '+ym+'</span></div>';
+  }
 }
 // ── MASTER KARYAWAN ─────────────────────────────
 function karRowHtml(k,no){

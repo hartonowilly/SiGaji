@@ -505,12 +505,40 @@ function shareMySlipEmailWithPDF(){
   }catch(e){toast(e.message||'Gagal');}
 }
 
+function mySlipAbsenSummaryHtml(nik,p){
+  if(!nik||!p||!p.start||!p.end)return '';
+  var rec={hadir:0,cuti:0,izin:0,sakit:0,alpha:0,other:0};
+  var cur=p.start;
+  function addDays(iso,n){var d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().substring(0,10);}
+  var ab=(absensi&&absensi[nik])||{};
+  while(cur<=p.end){
+    var st=ab[cur];
+    if(st==='hadir')rec.hadir++;
+    else if(st==='cuti')rec.cuti++;
+    else if(st==='izin'||st==='setengah_ijin')rec.izin++;
+    else if(st==='sakit'||st==='setengah_sakit')rec.sakit++;
+    else if(st==='alpha')rec.alpha++;
+    else if(st)rec.other++;
+    cur=addDays(cur,1);
+  }
+  return '<div class="card" style="margin-bottom:.75rem;border-left:4px solid #1a56a0;background:#f8fafc">'
+    +'<div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Ringkasan kehadiran — '+escapeHtml(p.nama)+'</div>'
+    +'<div class="fl gap1" style="flex-wrap:wrap;font-size:12px">'
+    +'<span class="bdg b-teal">Hadir '+rec.hadir+'</span>'
+    +'<span class="bdg b-warn">Cuti '+rec.cuti+'</span>'
+    +'<span class="bdg b-info">Izin '+rec.izin+'</span>'
+    +'<span class="bdg b-warn">Sakit '+rec.sakit+'</span>'
+    +'<span class="bdg b-err">Alpha '+rec.alpha+'</span>'
+    +'</div><p style="font-size:10px;color:#6b7280;margin:.45rem 0 0">Dari kalender absensi periode gaji (termasuk hasil absen mobile).</p></div>';
+}
 function loadMySlip(){
   if(!CU||!CU.nik)return;
   const k=karyawan.find(function(x){return x.nik===CU.nik;});
   const pid=document.getElementById('my-period')&&document.getElementById('my-period').value;
   const p=periodesFindById(pid)||PA();
-  if(k)document.getElementById('my-slip-content').innerHTML=makeSlip(k,p.nama);
+  var host=document.getElementById('my-slip-content');
+  if(!host||!k)return;
+  host.innerHTML=mySlipAbsenSummaryHtml(k.nik,p)+makeSlip(k,p.nama);
 }
 function exportPDF(){
   const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;

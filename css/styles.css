@@ -3,7 +3,14 @@
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 input[type="number"]{-moz-appearance:textfield}
-:root{--blue:#1a56a0;--bll:#e8f0fb;--bdk:#0d3d7a;--gr:#2d6a0a;--grb:#e8f4de;--am:#7d4800;--amb:#fef3e2;--rd:#9b2121;--rdb:#fdeaea;--bd:#dde1e9;--tx:#1e2330;--bg:#f4f5f8;--wh:#fff;--muted:#6b7280;--sidebar:#1e2330}
+:root{
+  --blue:#1a56a0;--blue-dark:#0d3d7a;--blue-light:#3b82f6;
+  --bll:#e8f0fb;--bdk:var(--blue-dark);--gr:#2d6a0a;--grb:#e8f4de;
+  --am:#7d4800;--amb:#fef3e2;--rd:#9b2121;--rdb:#fdeaea;
+  --bd:#dde1e9;--tx:#1e2330;--ink:var(--tx);--bg:#f4f5f8;--wh:#fff;
+  --muted:#6b7280;--sidebar:#1e2330;--surface:#fff;--surface-2:#f8fafc;
+  --radius-sm:8px;--radius-md:12px;--ease:cubic-bezier(0.4,0,0.2,1);
+}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;line-height:1.5;min-height:100vh}
 #login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0d3d7a,#1a56a0 60%,#2e7fc1)}
 .lbox{background:#fff;border-radius:16px;padding:2.5rem;width:380px;max-width:95vw;box-shadow:0 24px 64px rgba(0,0,0,.3)}

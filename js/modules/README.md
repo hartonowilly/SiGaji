@@ -1,6 +1,9 @@
 # Modul SiGaji (`js/modules/`)
 
-`app.js` monolit dipindah ke modul per domain. Backup: `js/app.legacy.js`.
+`app.js` monolit dipindah ke modul per domain. Arsip monolit: `_archive/app.legacy.js`.
+
+HTML: `index.template.html` + `partials/` → rakit dengan `npm run assemble`.
+Boot inline (dulu di index): `app-api-shim.js`, `app-boot-resume.js`, `app-boot.js`.
 
 ## Urutan muat (wajib di `index.html`)
 

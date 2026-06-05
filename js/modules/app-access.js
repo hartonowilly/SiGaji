@@ -1,8 +1,7 @@
 /* SiGaji — hak akses, user, branding, login */
 if(typeof sigajiFunctionUrl!=='function'){
   window.sigajiFunctionUrl=function(name){
-    var h=(location&&location.hostname)||'';
-    var pre=/\.netlify\.app$/i.test(h)?'/.netlify/functions':(/cemerlang\.online$/i.test(h)||/\.pages\.dev$/i.test(h)?'/api':'/api');
+    var pre='/api';
     return pre+'/'+String(name||'').replace(/^\//,'');
   };
 }
@@ -40,7 +39,7 @@ function renderSidebar(){
     if(!secs[m.sec])secs[m.sec]=[];
     secs[m.sec].push(m);
   });
-  let h='';Object.entries(secs).forEach(([sec,mods])=>{h+=`<div class="nsec">${sec}</div>`;mods.forEach(m=>{h+=`<div class="ni" data-pg="${m.id}" onclick="showPg('${m.id}')"><span class="nic">${m.icon}</span>${m.lbl}${m.id==='notifikasi'?'<span class="nbadge" id="nc-badge" style="display:none">0</span>':''}</div>`;});});
+  let h='';Object.entries(secs).forEach(([sec,mods])=>{h+=`<div class="nsec">${sec}</div>`;mods.forEach(m=>{var ic=typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon;h+=`<div class="ni" data-pg="${m.id}" onclick="showPg('${m.id}')"><span class="nic">${ic}</span>${m.lbl}${m.id==='notifikasi'?'<span class="nbadge" id="nc-badge" style="display:none">0</span>':''}</div>`;});});
   document.getElementById('nav-dynamic').innerHTML=h;
   document.getElementById('nav-bottom').innerHTML='';
 }
@@ -424,7 +423,7 @@ async function submitRegisterRequest(){
     if(!email||email.indexOf('@')<0){toast('Email tidak valid.');return;}
     toast('Mengirim permintaan...');
     var regApi='/api/auth-register-request';
-    try{var rh=location.hostname||'';if(/\.netlify\.app$/i.test(rh))regApi='/.netlify/functions/auth-register-request';}catch(e){}
+    regApi='/api/auth-register-request';
     const r=await fetch(regApi,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,nama,nik})});
     const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
     if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal mengirim permintaan');return;}

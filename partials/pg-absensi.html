@@ -1,0 +1,65 @@
+<!-- ABSENSI & CUTI — partial (sumber: partials/pg-absensi.html, rakit via npm run assemble) -->
+<div class="pg" id="pg-absensi">
+  <div class="ph page-header">
+    <div><div class="pt">Absensi &amp; Cuti</div><div class="pst">Kalender kehadiran, tracking cuti, dan pengajuan</div></div>
+    <div class="page-actions page-toolbar-filters fl gap1">
+    <label class="toolbar-lbl">Periode gaji</label>
+    <select id="ab-periode-sel" class="toolbar-select" onchange="renderAbsensi();renderCutiRekap();"></select>
+    <label class="toolbar-lbl">Tahun cuti</label>
+    <select class="toolbar-select" id="ab-yr" onchange="renderAbsensi();renderCutiRekap();"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
+    <button class="btn btn-sm btn-out" onclick="renderAbsensi()">&#8635; Refresh</button>
+  </div></div>
+  <div class="tabs">
+    <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender" onclick="switchAbTab(this,'abt-kalender')">&#128197; Kalender Absensi</div>
+    <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti" onclick="switchAbTab(this,'abt-cuti')">&#127774; Tracking Cuti</div>
+    <div class="tab" data-abtab="lokasi" data-abpanel="abt-lokasi" onclick="switchAbTab(this,'abt-lokasi')">&#128205; Lokasi GPS</div>
+    <div class="tab" data-abtab="pengajuan" data-abpanel="abt-pengajuan" onclick="switchAbTab(this,'abt-pengajuan')">&#128221; Pengajuan Cuti</div>
+  </div>
+  <div id="abt-kalender">
+    <div class="ab-status-legend">
+      <span class="ab-legend-hint">Klik sel untuk ganti status:</span>
+      <span class="ab-chip ab-h">H Hadir</span>
+      <span class="ab-chip ab-c">C Cuti</span>
+      <span class="ab-chip ab-i">I Izin</span>
+      <span class="ab-chip ab-s">S Sakit</span>
+      <span class="ab-chip ab-hs">½S ½Sakit</span>
+      <span class="ab-chip ab-hi">½I ½Izin</span>
+      <span class="ab-chip ab-a">A Alpha</span>
+      <span class="ab-chip ab-ln">LN Libnas</span>
+    </div>
+    <div id="ab-kal-periode-info" style="display:none;font-size:12px;font-weight:600;color:#374151;margin-bottom:.5rem;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--bd);line-height:1.45"></div>
+    <div id="ab-scroll-host" class="ab-grid-host"><div id="ab-grid-wrap"></div></div>
+    <div id="ab-rekap-wrap" style="margin-top:.75rem"></div>
+  </div>
+  <div id="abt-cuti" style="display:none">
+    <div class="card">
+      <div class="ct">Tracking Cuti — <span id="cuti-yr-lbl">2026</span></div>
+      <div class="table-wrap"><table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
+      <tbody id="tb-cuti-rekap"></tbody></table></div>
+    </div>
+  </div>
+  <div id="abt-lokasi" style="display:none">
+    <div id="mob-dashboard-host"></div>
+    <div id="mob-locations-wrap"></div>
+    <div id="mob-assign-wrap" class="mt1"></div>
+    <div id="mob-att-log-wrap" class="mt1"></div>
+    <div id="mob-face-wrap" class="mt1"></div>
+    <div class="card mt1" style="border-left:4px solid #7d4800">
+      <div class="flb mb2" style="flex-wrap:wrap;gap:.5rem">
+        <div class="ct" style="margin:0;border:0;padding:0">Rekap keterlambatan</div>
+        <div class="fl gap1">
+          <input type="month" id="mob-late-month" class="toolbar-select" style="width:auto" onchange="renderMobileLateReport()">
+          <button type="button" class="btn btn-sm btn-out" onclick="renderMobileLateReport()">Muat</button>
+        </div>
+      </div>
+      <div id="mob-late-wrap"></div>
+    </div>
+    <div class="fl gap1 mt1" style="flex-wrap:wrap">
+      <button type="button" class="btn btn-sm btn-out" onclick="mobImportLibnas()">Impor libur nasional</button>
+      <button type="button" class="btn btn-sm btn-warn" onclick="mobSyncAlpha()">Sinkron alpha dari absen mobile</button>
+    </div>
+  </div>
+  <div id="abt-pengajuan" style="display:none">
+    <div id="mob-leave-wrap"></div>
+  </div>
+</div>

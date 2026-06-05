@@ -33,6 +33,33 @@ function populateAbsensiPeriodeSelect(){
     else if(sorted.length)sel.value=String(sorted[sorted.length-1].id);
   }
 }
+async function absensiPrefetchMobileLogs(dateFrom,dateTo){
+  if(typeof sigajiIsCloudConfigured!=='function'||!sigajiIsCloudConfigured())return;
+  if(typeof sigajiMobileFetch!=='function')return;
+  window._mobLogByNikDate=window._mobLogByNikDate||{};
+  var cur=new Date(String(dateFrom).trim()+'T12:00:00');
+  var end=new Date(String(dateTo).trim()+'T12:00:00');
+  if(isNaN(cur.getTime())||isNaN(end.getTime()))return;
+  while(cur<=end){
+    var iso=cur.toISOString().substring(0,10);
+    try{
+      var j=await sigajiMobileFetch('mobile-attendance?work_date='+encodeURIComponent(iso),{method:'GET'});
+      if(j&&j.ok)(j.items||[]).forEach(function(row){
+        if(!row||!row.nik||row.event_type!=='check_in')return;
+        if(row.validation_status!=='ok'&&row.validation_status!=='pending_review')return;
+        var key=row.nik+'|'+iso;
+        var t=row.created_at?String(row.created_at).substring(11,16):'';
+        if(t)window._mobLogByNikDate[key]=mobFmtTimeIso?mobFmtTimeIso(row.created_at):t;
+      });
+    }catch(e){}
+    cur.setDate(cur.getDate()+1);
+  }
+}
+function absensiMobileTip(nik,date){
+  var m=window._mobLogByNikDate||{};
+  var t=m[nik+'|'+date];
+  return t?' title="Check-in mobile: '+t+' WIB"':'';
+}
 function renderAbsensi(){
   var infoEl=document.getElementById('ab-kal-periode-info');
   function hideKalBanner(){if(infoEl){infoEl.style.display='none';infoEl.textContent='';}}
@@ -93,7 +120,8 @@ function renderAbsensi(){
       var bg=ST_BG[st]||'#f3f4f6';var tx=ST_TX[st]||'#6b7280';var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
       var canCell=cc&&canEditDataPadaTanggalIso(x.date);
-      html+='<td style="background:'+bg+';color:'+tx+';padding:0;text-align:center;border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid #f3f4f6;opacity:'+(canCell?'1':cc?'0.88':'1')+';'+(canCell?'cursor:pointer;':cc?'cursor:not-allowed;':'')+'font-weight:700;font-size:10px" '+(canCell?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':cc?'title="Periode terkunci — hubungi Admin"':'')+'>'+lbl+'</td>';
+      var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
+      html+='<td style="background:'+bg+';color:'+tx+';padding:0;text-align:center;border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid #f3f4f6;opacity:'+(canCell?'1':cc?'0.88':'1')+';'+(canCell?'cursor:pointer;':cc?'cursor:not-allowed;':'')+'font-weight:700;font-size:10px" '+(canCell?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
     });
     html+='<td style="text-align:center;font-weight:800;color:#2d6a0a;border-left:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;background:#e8f4de">'+(cH||'')+'</td><td style="text-align:center;font-weight:800;color:#5b21b6;border-bottom:1px solid #f3f4f6;background:#ede9fe">'+(cC||'')+'</td><td style="text-align:center;font-weight:800;color:#7d4800;border-bottom:1px solid #f3f4f6;background:#fef3e2">'+(cS||'')+'</td><td style="text-align:center;font-weight:800;color:#1a56a0;border-bottom:1px solid #f3f4f6;background:#e8f0fb">'+(cI||'')+'</td><td style="text-align:center;font-weight:800;color:#9b2121;border-bottom:1px solid #f3f4f6;background:#fdeaea">'+(cA||'')+'</td></tr>';
   });
@@ -106,7 +134,8 @@ function renderAbsensi(){
       if(l.tipe==='cuti-bersama'&&l.tgl>=pAbs.start&&l.tgl<=pAbs.end&&!isHariLiburKerja(new Date(l.tgl+'T12:00:00').getDay()))cbB++;
     });
   }
-  document.getElementById('ab-rekap-wrap').innerHTML='<div class="card" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center"><span style="font-size:11px;font-weight:700;color:#6b7280">'+escapeHtml(pAbs.nama)+':</span><span style="background:#e8f4de;color:#2d6a0a;padding:3px 12px;border-radius:20px;font-weight:700">Hari Kerja (dalam rentang): '+hkP+'</span>'+(cbB>0?'<span style="background:#ede9fe;color:#5b21b6;padding:3px 12px;border-radius:20px;font-weight:700">Cuti Bersama (dalam rentang): '+cbB+' hari</span>':'')+'<span style="font-size:10px;color:#9ca3af;margin-left:auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+'</span></div>';
+  document.getElementById('ab-rekap-wrap').innerHTML='<div class="card" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center"><span style="font-size:11px;font-weight:700;color:#6b7280">'+escapeHtml(pAbs.nama)+':</span><span style="background:#e8f4de;color:#2d6a0a;padding:3px 12px;border-radius:20px;font-weight:700">Hari Kerja (dalam rentang): '+hkP+'</span>'+(cbB>0?'<span style="background:#ede9fe;color:#5b21b6;padding:3px 12px;border-radius:20px;font-weight:700">Cuti Bersama (dalam rentang): '+cbB+' hari</span>':'')+'<span style="font-size:10px;color:#9ca3af;margin-left:auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+' · hover H = jam check-in mobile</span></div>';
+  absensiPrefetchMobileLogs(pAbs.start,pAbs.end);
 }
 function toggleAb(nik,date,el){
   if(!canEditDataPadaTanggalIso(date)){toast('Tanggal ini di periode yang snapshot-nya terkunci. Hanya Admin yang dapat mengubah absensi.');return;}

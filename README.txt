@@ -1,20 +1,19 @@
-SiGaji — struktur modular (tanpa build step)
-==========================================
+SiGaji — struktur modular
+=========================
 
 Cara pakai
 ----------
-Buka file index.html dari folder ini dengan browser (double-click atau Live Server).
-Pastikan seluruh folder sigaji-app tetap utuh (css/, js/).
+Buka index.html dengan browser atau deploy ke Cloudflare Pages.
+Build: npm install && npm run build (rakit HTML + generate config.js).
 
 Struktur
 --------
-index.html     Halaman utama (tanpa inline CSS/JS besar)
-css/styles.css Semua gaya
-js/constants.js Konstanta: TER, MODULES, PTKP default, SCHEMA_VERSION
-js/storage.js   localStorage, migrasi skema, variabel aplikasi, saveAll
-js/ptkp.js      Helper nilai PTKP dari Master Perusahaan
-js/modules/     UI & logika (pecah dari app.js): core, access, hr, slip, reports, absensi, master, shell
-js/app.legacy.js  Arsip monolit lama (referensi); jangan muat di index.html
+index.template.html  Shell HTML (sumber)
+partials/            Fragment halaman (mis. pg-absensi.html)
+index.html           Hasil rakit (npm run assemble)
+css/                 Gaya
+js/modules/          Logika aplikasi + app-boot.js, app-api-shim.js
+_archive/            Arsip monolit lama (jangan dimuat di produksi)
 
 Skema data (schemaVersion)
 ----------------------------
