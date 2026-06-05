@@ -56,30 +56,30 @@ Config ada di **`codemagic.yaml` di root repo** (bukan di folder ini). Branch: *
 
 ### Workflow Codemagic
 
-| Workflow | Output | Distribusi |
-|----------|--------|------------|
-| `sigaji-mobile-ios` | `.ipa` Ad Hoc | Internal — daftarkan UDID iPhone di Apple Developer |
-| `sigaji-mobile-ios-testflight` | `.ipa` App Store | TestFlight (jalankan manual) |
-| `sigaji-mobile-android` | `.apk` ARM64 | Sama seperti build lokal |
+| Workflow | Output | Butuh Apple Developer? |
+|----------|--------|------------------------|
+| **`sigaji-mobile-ios-sideload`** | `sigaji-absen-unsigned.ipa` | **Tidak** — sideload 7 hari |
+| `sigaji-mobile-android` | `.apk` ARM64 | Tidak |
+| `sigaji-mobile-ios` | `.ipa` Ad Hoc | Ya ($99/tahun) |
+| `sigaji-mobile-ios-testflight` | `.ipa` TestFlight | Ya ($99/tahun) |
 
-### Setup sekali di Codemagic + Apple
+### Sideload 7 hari (gratis, tanpa Apple Developer)
 
-1. **Apple Developer Program** (berbayar).
-2. **App ID** `com.sigaji.sigajiMobile` di [developer.apple.com](https://developer.apple.com).
-3. **Codemagic → Team settings → Code signing identities:**
-   - Upload **Distribution certificate** (.p12)
-   - Upload **Ad Hoc provisioning profile** (untuk workflow `sigaji-mobile-ios`)
-   - Opsional: **App Store profile** (untuk TestFlight)
-4. **Codemagic → Applications → SiGaji:** pastikan `codemagic.yaml` terbaca dari root, branch `master`.
-5. Push ke `master` → jalankan workflow **SiGaji Absen iOS**.
+1. **Codemagic** → jalankan manual workflow **`SiGaji iOS Sideload 7 hari (gratis)`**.
+2. Unduh artifact **`sigaji-absen-unsigned.ipa`**.
+3. Di PC Windows/Mac, install **[Sideloadly](https://sideloadly.io/)** (gratis).
+4. Sambungkan iPhone ke USB → buka Sideloadly:
+   - Masukkan **Apple ID biasa** (bukan developer, gratis)
+   - Pilih file `.ipa`
+   - Klik **Start**
+5. Di iPhone: **Pengaturan → Umum → VPN & Pengelolaan Perangkat** → **Percayai** profil developer.
+6. App aktif **±7 hari** → ulangi langkah 3–5 (refresh sideload).
 
-Build iOS memakai `scripts/prepare_ios_codemagic.sh` (CocoaPods + ML Kit **iOS 15.5**).
+**Batasan Apple ID gratis:** max ~3 app sideload, harus refresh mingguan, butuh PC + kabel USB saat install/refresh.
 
-### Pasang IPA Ad Hoc di iPhone
+### Opsi berbayar (tanpa refresh 7 hari)
 
-- Unduh `.ipa` dari artifact Codemagic.
-- Pasang lewat **Apple Configurator**, **Diawi**, atau **TestFlight** (workflow TestFlight).
-- iPhone harus **terdaftar** di provisioning profile Ad Hoc.
+Butuh **Apple Developer $99/tahun** + workflow `sigaji-mobile-ios` (Ad Hoc) atau TestFlight.
 
 ### Build dengan default server (opsional)
 

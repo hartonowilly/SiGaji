@@ -62,6 +62,30 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
+  sigaji-mobile-ios-sideload:
+    name: SiGaji iOS Sideload 7 hari (gratis)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    working_directory: sigaji_mobile
+    # Jalankan MANUAL di Codemagic — tidak butuh Apple Developer
+    environment:
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Download MobileFaceNet model
+        script: |
+          mkdir -p assets/models
+          curl -L -o assets/models/mobilefacenet.tflite \
+            https://github.com/MCarlomagno/FaceRecognitionAuth/raw/master/assets/mobilefacenet.tflite
+      - name: Prepare iOS (CocoaPods + ML Kit)
+        script: bash scripts/prepare_ios_codemagic.sh
+      - name: Build iOS tanpa code signing
+        script: flutter build ios --release --no-codesign
+      - name: Paket IPA unsigned
+        script: bash scripts/package_unsigned_ipa.sh
+    artifacts:
+      - build/ios/sideload/*.ipa
+
   sigaji-mobile-ios-testflight:
     name: SiGaji Absen iOS TestFlight
     max_build_duration: 90
