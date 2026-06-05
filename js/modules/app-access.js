@@ -455,29 +455,48 @@ function doUpdatePassword(){
     }
   });
 }
-/** Verifikasi password Admin sebelum reset semua data (lokal: sandi user; cloud: signIn Supabase). */
+/** Akun Admin utama (username admin) — password ini yang wajib untuk reset data. */
+function getPrimaryAdminUser(){
+  if(!users||!users.length)return null;
+  var u=users.find(function(x){
+    return x.username==='admin'&&x.role==='Admin'&&x.aktif!==false;
+  });
+  if(u)return u;
+  return users.find(function(x){return x.role==='Admin'&&x.aktif!==false;})||null;
+}
+/** Verifikasi password akun Admin (bukan user yang sedang login). */
 async function verifyAdminPasswordForReset(pw){
   if(!CU||CU.role!=='Admin'||!pw)return false;
+  var adminRec=getPrimaryAdminUser();
+  if(!adminRec)return false;
   var cloudOn=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
   if((sigajiIsCloudOnlyMode()||cloudOn)&&window.sigajiSupabase&&window.sigajiSupabase.auth){
-    var email=(CU.email||'').trim();
+    var email=(adminRec.email||'').trim();
     if(!email||email.indexOf('@')<0)return false;
     try{
+      var prevSess=await window.sigajiSupabase.auth.getSession();
+      var prev=prevSess&&prevSess.data&&prevSess.data.session;
       var r=await window.sigajiSupabase.auth.signInWithPassword({email:email,password:pw});
-      return !r.error;
+      if(r.error)return false;
+      var curEmail=(CU.email||'').trim().toLowerCase();
+      if(prev&&curEmail&&curEmail!==email.toLowerCase()){
+        await window.sigajiSupabase.auth.setSession({
+          access_token:prev.access_token,
+          refresh_token:prev.refresh_token,
+        });
+      }
+      return true;
     }catch(e){return false;}
   }
   if(sigajiIsCloudOnlyMode())return false;
-  var u=users.find(function(x){
-    return x.username&&CU.username&&String(x.username).toLowerCase()===String(CU.username).toLowerCase()&&x.role==='Admin'&&x.aktif!==false;
-  });
-  return !!(u&&u.password===pw);
+  return adminRec.password===pw;
 }
 if(typeof window!=='undefined'){
   window.sigajiApplyCloudLoginUi=sigajiApplyCloudLoginUi;
   window.sigajiIsCloudConfigured=sigajiIsCloudConfigured;
   window.sigajiIsCloudOnlyMode=sigajiIsCloudOnlyMode;
   window.sigajiEmailSmtpPing=sigajiEmailSmtpPing;
+  window.getPrimaryAdminUser=getPrimaryAdminUser;
   window.verifyAdminPasswordForReset=verifyAdminPasswordForReset;
 }
 

@@ -339,10 +339,12 @@ function openResetModal(){
   var hint=document.getElementById('reset-admin-hint');
   if(hint){
     var cloudOn=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
-    var who=CU.nama||CU.username||'Admin';
-    hint.textContent=cloudOn&&CU.email
-      ?'Verifikasi: sandi login Supabase untuk '+who+' ('+CU.email+').'
-      :'Verifikasi: sandi login user Admin "'+(CU.username||'admin')+'" ('+who+').';
+    var adminRec=typeof getPrimaryAdminUser==='function'?getPrimaryAdminUser():(typeof window.getPrimaryAdminUser==='function'?window.getPrimaryAdminUser():null);
+    var adminUser=(adminRec&&adminRec.username)||'admin';
+    var adminNama=(adminRec&&adminRec.nama)||'Administrator';
+    hint.textContent=cloudOn&&adminRec&&adminRec.email
+      ?'Masukkan password akun Admin "'+adminUser+'" ('+adminRec.email+') — bukan password Anda yang sedang login.'
+      :'Masukkan password akun Admin "'+adminUser+'" ('+adminNama+') — bukan password user yang sedang login.';
   }
   var inp=document.getElementById('reset-inp');
   var pwEl=document.getElementById('reset-pw');
@@ -378,7 +380,7 @@ async function execReset(){
   var ok=verifyFn?await verifyFn(pw):false;
   if(!ok){
     if(btn)updateResetButtonState();
-    toast('Password Admin salah atau akun bukan Admin');
+    toast('Password akun Admin salah');
     return;
   }
   var go=typeof sigajiConfirm==='function'

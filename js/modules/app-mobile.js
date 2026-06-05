@@ -154,7 +154,7 @@ async function renderMobileAttendanceLog(){
 }
 async function mobAttendanceDecide(id,decide){
   var note='';
-  if(decide==='reject'){note=prompt('Alasan penolakan (opsional) — karyawan akan diminta check-in ulang')||'';}
+  if(decide==='reject'){note=prompt('Alasan penolakan (opsional) — hanya event ini yang ditolak')||'';}
   else if(!confirm('Setujui absensi ini? Jika check-in & check-out sudah OK, kalender gaji akan diisi hadir.'))return;
   var r=await sigajiMobileFetch('mobile-attendance',{method:'POST',body:{action:'decide',id:id,decide:decide,note:note}});
   if(r&&r.ok){

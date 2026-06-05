@@ -215,30 +215,6 @@ export async function onRequestPost({ request, env }) {
         .eq('id', id);
       if (ue) return jsonResponse(500, { ok: false, error: ue.message }, request);
 
-      if (decide === 'reject' && row.event_type === 'check_in') {
-        const { data: cout } = await sb
-          .from('sigaji_attendance_logs')
-          .select('id,flags')
-          .eq('tenant_key', tenant)
-          .eq('nik', row.nik)
-          .eq('work_date', row.work_date)
-          .eq('event_type', 'check_out')
-          .maybeSingle();
-        if (cout) {
-          await sb
-            .from('sigaji_attendance_logs')
-            .update({
-              validation_status: 'rejected',
-              flags: Object.assign({}, cout.flags || {}, {
-                auto_rejected_with_check_in: true,
-                decided_at: decidedAt,
-                decided_by_name: reviewer,
-              }),
-            })
-            .eq('id', cout.id);
-        }
-      }
-
       await clearHadirFromAttendance(sb, tenant, row.nik, row.work_date);
       let syncedHadir = false;
       if (decide === 'approve') {
@@ -259,7 +235,9 @@ export async function onRequestPost({ request, env }) {
           message:
             decide === 'approve'
               ? 'Disetujui — absensi diperbarui jika check-in/out lengkap'
-              : 'Ditolak — karyawan dapat check-in ulang',
+              : row.event_type === 'check_out'
+                ? 'Check-out ditolak — karyawan dapat check-out ulang'
+                : 'Check-in ditolak — karyawan dapat check-in ulang',
         },
         request
       );
