@@ -16,8 +16,8 @@ class FaceLiveness {
 
   final FaceDetector _detector;
 
-  static const minEyeOpen = 0.38;
-  static const maxEyeOpen = 0.88;
+  /// ML Kit sering lapor >0.9 untuk mata normal — jangan pakai batas atas.
+  static const minEyeOpen = 0.32;
   static const blinkDropMin = 0.22;
 
   Future<BlinkLivenessResult> checkEyesOpen(File file) async {
@@ -96,11 +96,8 @@ class FaceLiveness {
       return 'Mata tidak terbaca — cukup cahaya';
     }
     final avg = (left + right) / 2;
-    if (requireOpen) {
-      if (avg < minEyeOpen) return 'Buka mata normal (jangan melotot/kedip)';
-      if (avg > maxEyeOpen) {
-        return 'Ekspresi wajah normal saja (jangan melotot)';
-      }
+    if (requireOpen && avg < minEyeOpen) {
+      return 'Buka mata — pastikan wajah & mata terlihat jelas';
     }
     return null;
   }

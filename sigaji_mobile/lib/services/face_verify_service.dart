@@ -245,12 +245,12 @@ class FaceVerifyService {
     if (left != null && right != null) {
       final avg = (left + right) / 2;
       if (forVerification) {
-        if (avg < FaceLiveness.minEyeOpen || avg > FaceLiveness.maxEyeOpen) {
+        if (avg < FaceLiveness.minEyeOpen) {
           return (
             ok: false,
             face: null,
             image: null,
-            error: 'Wajah normal saja — jangan melotot atau menutup mata',
+            error: 'Buka mata — pastikan wajah terlihat jelas',
           );
         }
       } else if (avg < 0.15) {
