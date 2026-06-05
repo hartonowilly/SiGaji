@@ -1,4 +1,5 @@
-# Monorepo SiGaji — Flutter di subfolder sigaji_mobile (branch: master)
+# Monorepo SiGaji — Flutter di subfolder sigaji_mobile
+# Build dari branch master (bukan main — main belum punya file ini)
 #
 # WAJIB di Codemagic UI (sekali):
 #   Application → Settings → Build → Project path → Rescan → pilih "sigaji_mobile"
@@ -15,6 +16,8 @@ workflows:
         - push
       branch_patterns:
         - pattern: master
+          include: true
+        - pattern: main
           include: true
     environment:
       flutter: stable
@@ -48,12 +51,10 @@ workflows:
       vars:
         XCODE_SCHEME: Runner
         XCODE_WORKSPACE: ios/Runner.xcworkspace
+        BUNDLE_ID: com.sigaji.sigajiMobile
       ios_signing:
         distribution_type: ad_hoc
         bundle_identifier: com.sigaji.sigajiMobile
-      vars:
-        BUNDLE_ID: com.sigaji.sigajiMobile
-        APP_STORE_APP_ID: ""
     scripts:
       - name: Download MobileFaceNet model
         script: |
@@ -111,11 +112,10 @@ workflows:
       vars:
         XCODE_SCHEME: Runner
         XCODE_WORKSPACE: ios/Runner.xcworkspace
+        BUNDLE_ID: com.sigaji.sigajiMobile
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.sigaji.sigajiMobile
-      vars:
-        BUNDLE_ID: com.sigaji.sigajiMobile
     scripts:
       - name: Download MobileFaceNet model
         script: |
