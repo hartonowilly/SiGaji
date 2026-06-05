@@ -1,9 +1,14 @@
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
+
+class _LmPoint {
+  const _LmPoint(this.x, this.y);
+  final double x;
+  final double y;
+}
 
 class FaceVerifyResult {
   const FaceVerifyResult({
@@ -180,16 +185,17 @@ class FaceVerifyService {
     return blocks;
   }
 
-  Point<int>? _lm(Face face, FaceLandmarkType type) {
+  _LmPoint? _lm(Face face, FaceLandmarkType type) {
     final lm = face.landmarks[type];
     if (lm == null) return null;
-    return lm.position;
+    final p = lm.position;
+    return _LmPoint(p.x.toDouble(), p.y.toDouble());
   }
 
-  double _dist(Point<int>? a, Point<int>? b) {
+  double _dist(_LmPoint? a, _LmPoint? b) {
     if (a == null || b == null) return 0;
-    final dx = (a.x - b.x).toDouble();
-    final dy = (a.y - b.y).toDouble();
+    final dx = a.x - b.x;
+    final dy = a.y - b.y;
     return math.sqrt(dx * dx + dy * dy);
   }
 
