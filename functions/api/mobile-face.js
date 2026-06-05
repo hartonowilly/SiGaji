@@ -13,6 +13,7 @@ const MODEL_VERSION = 'mobilefacenet_v4';
 const MIN_DIM = 128;
 const MAX_DIM = 256;
 const MIN_VERIFY_THRESHOLD = 0.76;
+const MIN_ENROLL_SELF_SCORE = 0.6;
 
 function validateEmbedding(raw) {
   if (!Array.isArray(raw) || raw.length < MIN_DIM || raw.length > MAX_DIM) {
@@ -170,10 +171,13 @@ export async function onRequestPost({ request, env }) {
       }
       const minSelf = Number(body.enroll_min_self_score);
       const verifyThreshold = Number(body.verify_threshold);
-      if (!Number.isFinite(minSelf) || minSelf < 0.8) {
+      if (!Number.isFinite(minSelf) || minSelf < MIN_ENROLL_SELF_SCORE) {
         return jsonResponse(
           400,
-          { ok: false, error: 'enroll_min_self_score wajib (min 0.8)' },
+          {
+            ok: false,
+            error: 'enroll_min_self_score wajib (min ' + MIN_ENROLL_SELF_SCORE + ')',
+          },
           request
         );
       }

@@ -79,7 +79,16 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
           quality.embedding == null ||
           quality.minSelfScore == null ||
           quality.verifyThreshold == null) {
-        _snack(quality.error ?? 'Enrollment gagal');
+        if (_samples.length >= FaceVerifyService.enrollSamples) {
+          setState(() {
+            _samples.removeLast();
+            _lastPreview = null;
+          });
+        }
+        _snack(
+          quality.error ??
+              'Enrollment gagal — ambil ulang foto terakhir (cahaya & posisi sama)',
+        );
         return;
       }
       final msg = await FaceService(widget.config).enroll(
@@ -112,7 +121,8 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Sekali saja per karyawan — 3 foto wajah (cukup terang & jelas). '
+              'Sekali saja per karyawan — 3 foto wajah. '
+              'Pakai cahaya & jarak yang sama untuk ketiga foto. '
               'Pengecekan ketat hanya saat check-in/out nanti.',
               style: TextStyle(color: Colors.black54),
             ),

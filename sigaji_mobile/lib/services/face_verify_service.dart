@@ -43,7 +43,10 @@ class EnrollQualityResult {
 class FaceVerifyService {
   /// Cosine similarity pada embedding L2-normalized (MobileFaceNet).
   static const matchThresholdFloor = 0.76;
-  static const enrollMinSelfFloor = 0.78;
+  /// Enrollment: longgar — cahaya/sudut sedikit beda wajar di HP.
+  static const enrollMinSelfFloor = 0.62;
+  /// Setelah buang 1 foto outlier, 2 sisa harus sedikit lebih mirip.
+  static const enrollMinSelfFloorPair = 0.68;
   static const verifyMarginBelowEnroll = 0.04;
   static const modelVersion = 'mobilefacenet_v4';
   static const enrollSamples = 3;
@@ -108,24 +111,31 @@ class FaceVerifyService {
       }
     }
 
-    var minSelf = 1.0;
-    for (var i = 0; i < samples.length; i++) {
-      for (var j = i + 1; j < samples.length; j++) {
-        final s = _net.cosineSimilarity(samples[i], samples[j]);
-        if (s < minSelf) minSelf = s;
-      }
-    }
+    var used = List<List<double>>.from(samples);
+    var minSelf = _minPairwiseSimilarity(used);
 
-    if (minSelf < enrollMinSelfFloor) {
+    if (minSelf < enrollMinSelfFloor && used.length == enrollSamples) {
+      final outlier = _outlierIndex(used);
+      used = List<List<double>>.from(used)..removeAt(outlier);
+      minSelf = _minPairwiseSimilarity(used);
+      if (minSelf < enrollMinSelfFloorPair) {
+        return EnrollQualityResult(
+          ok: false,
+          error:
+              'Satu foto tidak cocok dengan yang lain (${(minSelf * 100).toStringAsFixed(0)}%). '
+              'Ulangi foto terakhir — posisi & cahaya sama seperti foto 1–2.',
+        );
+      }
+    } else if (minSelf < enrollMinSelfFloor) {
       return EnrollQualityResult(
         ok: false,
         error:
-            'Foto enrollment kurang konsisten (${(minSelf * 100).toStringAsFixed(0)}%). '
-            'Wajah normal, hadap kamera, pencahayaan cukup.',
+            'Foto kurang mirip (${(minSelf * 100).toStringAsFixed(0)}%). '
+            'Hadap kamera, jarak sama, cahaya terang & stabil.',
       );
     }
 
-    final avg = averageEmbeddings(samples);
+    final avg = averageEmbeddings(used);
     final threshold = math.max(
       matchThresholdFloor,
       minSelf - verifyMarginBelowEnroll,
@@ -161,6 +171,38 @@ class FaceVerifyService {
       );
     }
     return FaceVerifyResult(ok: true, score: score);
+  }
+
+  double _minPairwiseSimilarity(List<List<double>> samples) {
+    if (samples.length < 2) return 1.0;
+    var minSelf = 1.0;
+    for (var i = 0; i < samples.length; i++) {
+      for (var j = i + 1; j < samples.length; j++) {
+        final s = _net.cosineSimilarity(samples[i], samples[j]);
+        if (s < minSelf) minSelf = s;
+      }
+    }
+    return minSelf;
+  }
+
+  int _outlierIndex(List<List<double>> samples) {
+    var worst = 0;
+    var worstAvg = double.infinity;
+    for (var i = 0; i < samples.length; i++) {
+      var sum = 0.0;
+      var n = 0;
+      for (var j = 0; j < samples.length; j++) {
+        if (i == j) continue;
+        sum += _net.cosineSimilarity(samples[i], samples[j]);
+        n++;
+      }
+      final avg = sum / n;
+      if (avg < worstAvg) {
+        worstAvg = avg;
+        worst = i;
+      }
+    }
+    return worst;
   }
 
   List<double> averageEmbeddings(List<List<double>> samples) {
