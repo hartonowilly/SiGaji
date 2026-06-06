@@ -37,6 +37,18 @@ function sortPeriodesByStart(list,desc){
   });
 }
 function renderLaporan(){
+  var tbLap=document.getElementById('tb-lap');
+  if(tbLap&&tbLap.dataset.sigajiSkel!=='1'&&typeof sigajiTableSkeletonRows==='function'){
+    tbLap.dataset.sigajiSkel='1';
+    tbLap.innerHTML=sigajiTableSkeletonRows(7,5);
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        if(tbLap)delete tbLap.dataset.sigajiSkel;
+        renderLaporan();
+      });
+    });
+    return;
+  }
   var sorted=sortPeriodesByStart(periodes,false);
   var hint=document.getElementById('lap-rekap-hint');
   if(hint){

@@ -97,7 +97,11 @@ function renderDash(){
       +'<span class="lg-alpha">Alpha: '+stats.alpha+'</span>'
       +'<span style="margin-left:auto;font-size:10px;color:#9ca3af">~'+avgHadir+'% kehadiran</span></div>';
   }
-  var deptTableHtml=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
+  var deptTableHtml=Object.entries(depts).map(function(ent){
+    var d=ent[0],v=ent[1];
+    var spark=typeof sigajiDeptSparklineCell==='function'?sigajiDeptSparklineCell(d):'';
+    return '<tr><td><strong>'+escapeHtml(d)+'</strong></td><td>'+v.n+'</td><td class="dept-spark-cell">'+spark+'</td><td>'+fmt(v.b)+'</td><td>'+fmt(v.n2)+'</td></tr>';
+  }).join('');
   try{
     if(typeof sigajiRenderBentoDashboard==='function')sigajiRenderBentoDashboard({
       p:p,hP:hP,thrTag:thrTag,tB:tB,tP:tP,tN:tN,tT:tT,nKar:list.length,depts:depts,
@@ -936,6 +940,19 @@ function hitungUlangPenggajian(){
   else toast('Perhitungan diperbarui (pro-rata, absensi, lembur, tunj. variabel).');
 }
 function renderPenggajian(skipTunjVar){
+  var tbSk=document.getElementById('tb-penggajian');
+  if(tbSk&&tbSk.dataset.sigajiSkel!=='1'&&typeof sigajiTableSkeletonRows==='function'){
+    tbSk.dataset.sigajiSkel='1';
+    tbSk.innerHTML=sigajiTableSkeletonRows(12,6);
+    var selfArgs=arguments;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        if(tbSk)delete tbSk.dataset.sigajiSkel;
+        renderPenggajian.apply(null,selfArgs);
+      });
+    });
+    return;
+  }
   const p=PA();
   // Buat snapshot master untuk periode aktif (agar periode yang sudah dikerjakan tidak berubah)
   const listPeriode=karyawanListPeriode(p);
@@ -986,7 +1003,7 @@ function renderPenggajian(skipTunjVar){
   });
   var tbPg=document.getElementById('tb-penggajian');
   if(!rows.length&&typeof sigajiEmptyState==='function'){
-    tbPg.innerHTML='<tr><td colspan="12">'+sigajiEmptyState({icon:'&#128176;',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
+    tbPg.innerHTML='<tr><td colspan="12">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
   }else tbPg.innerHTML=rows.join('');
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
 }

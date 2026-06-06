@@ -42,6 +42,7 @@ function renderSidebar(){
   let h='';Object.entries(secs).forEach(([sec,mods])=>{h+=`<div class="nsec">${sec}</div>`;mods.forEach(m=>{var ic=typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon;h+=`<div class="ni" data-pg="${m.id}" onclick="showPg('${m.id}')"><span class="nic">${ic}</span>${m.lbl}${m.id==='notifikasi'?'<span class="nbadge" id="nc-badge" style="display:none">0</span>':''}</div>`;});});
   document.getElementById('nav-dynamic').innerHTML=h;
   document.getElementById('nav-bottom').innerHTML='';
+  try{if(typeof sigajiUiPolishAfterRender==='function')sigajiUiPolishAfterRender();}catch(ePol){}
 }
 // ── USER MANAGEMENT ──────────────────────────────
 function renderUsers(){
@@ -1483,7 +1484,7 @@ function renderSysStatus(){
     var deployWarn=!modOk
       ?'<div id="sysstatus-deploy-warn" class="info-box" style="margin-bottom:.75rem;border-color:#f6d088;background:#fff8e6;color:#713f12">'
         +(modVers.length>1
-          ?'<strong>Versi cache tidak seragam di kode lokal.</strong> Browser memuat beberapa <code>?v=</code> ('+escapeHtml(modVerTxt)+') — target <strong>'+escapeHtml(targetVer)+'</strong> (<code>SIGAJI_BUILD</code>). Jalankan <code>node scripts/bump-cache-version.js '+escapeHtml(targetVer)+'</code> atau samakan manual, lalu <code>npm run assemble</code>.'
+          ?'<strong>Versi cache tidak seragam di kode lokal.</strong> Browser memuat beberapa <code>?v=</code> ('+escapeHtml(modVerTxt)+') — target <strong>'+escapeHtml(targetVer)+'</strong> (<code>SIGAJI_BUILD</code>). Jalankan <code>npm run bump -- '+escapeHtml(targetVer)+'</code> (samakan css+js+SIGAJI_BUILD, lalu assemble otomatis).'
           :'<strong>Browser masih cache lama.</strong> Target deploy: <strong>'+escapeHtml(targetVer)+'</strong>, browser: <strong>'+escapeHtml(modVerTxt||'-')+'</strong>. Ctrl+F5; jika tetap beda, push <code>index.html</code> ke GitHub dan tunggu Cloudflare deploy.')
         +'</div>'
       :'<div id="sysstatus-deploy-warn" style="display:none"></div>';

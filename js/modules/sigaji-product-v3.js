@@ -292,7 +292,7 @@
       att: '<div id="d-att-chart"></div>',
 
       dept_table:
-        '<div class="table-wrap"><table><thead><tr><th>Dept</th><th>Kar</th><th>Gross</th><th>Neto</th></tr></thead><tbody id="d-table"></tbody></table></div>',
+        '<div class="table-wrap"><table><thead><tr><th>Dept</th><th>Kar</th><th>Trend neto</th><th>Gross</th><th>Neto</th></tr></thead><tbody id="d-table"></tbody></table></div>',
     };
 
     grid.innerHTML = order
@@ -770,12 +770,42 @@
     }
     var doc = new window.jspdf.jsPDF({ format: 'a4', unit: 'mm' });
     var nama = (perusahaan && perusahaan.nama) || 'Perusahaan';
-    doc.setFontSize(14);
-    doc.text('Cerita Payroll — ' + nama, 14, 18);
-    doc.setFontSize(10);
-    var lines = doc.splitTextToSize(t, 180);
-    doc.text(lines, 14, 28);
-    doc.save('cerita-payroll-' + (PA() && PA().nama ? PA().nama.replace(/\s+/g, '-') : 'periode') + '.pdf');
+    var p = typeof PA === 'function' ? PA() : null;
+    var y = 48;
+    if (typeof sigajiPdfMagazineCover === 'function') {
+      y = sigajiPdfMagazineCover(doc, {
+        eyebrow: 'Ringkasan Eksekutif',
+        title: 'Cerita Payroll',
+        subtitle: nama,
+        meta: p ? p.nama + ' · ' + fmtDate(p.bayar) : '',
+      });
+    }
+    doc.setFillColor(248, 250, 252);
+    doc.rect(12, y, 186, 28, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text('Ringkasan untuk direksi — bahasa Indonesia, satu halaman.', 16, y + 8);
+    if (p) {
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(26, 86, 160);
+      doc.text(String(p.nama), 16, y + 18);
+    }
+    y += 36;
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(10.5);
+    var lines = doc.splitTextToSize(t, 178);
+    lines.forEach(function (ln) {
+      if (y > 270) {
+        if (typeof sigajiPdfMagazineFooter === 'function') sigajiPdfMagazineFooter(doc, doc.internal.getNumberOfPages());
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(ln, 16, y);
+      y += 5.2;
+    });
+    if (typeof sigajiPdfMagazineFooter === 'function') sigajiPdfMagazineFooter(doc, doc.internal.getNumberOfPages());
+    doc.save('cerita-payroll-' + (p && p.nama ? p.nama.replace(/\s+/g, '-') : 'periode') + '.pdf');
     toast('PDF cerita payroll diunduh');
   };
 

@@ -18,10 +18,14 @@
         escapeHtml(opts.btnLabel) +
         '</button>';
     }
+    var iconHtml = opts.icon || '&#128196;';
+    if (opts.illust && typeof sigajiEmptyIllustSvg === 'function') {
+      iconHtml = sigajiEmptyIllustSvg(opts.illust);
+    }
     return (
       '<div class="sigaji-empty">' +
       '<div class="sigaji-empty-icon" aria-hidden="true">' +
-      (opts.icon || '&#128196;') +
+      iconHtml +
       '</div>' +
       '<div class="sigaji-empty-title">' +
       escapeHtml(opts.title || 'Belum ada data') +

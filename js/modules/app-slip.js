@@ -233,20 +233,27 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
     doc.setFontSize(8.5);
   }
 
-  doc.setFillColor(26,86,160);doc.rect(0,0,pw,32,'F');doc.setTextColor(255,255,255);
-  doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('SLIP GAJI',14,11);
-  doc.setFontSize(10);doc.text(String(perusahaan.nama||'Perusahaan'),14,18);
-  doc.setFontSize(8);doc.setFont(undefined,'normal');
-  doc.text('Periode: '+pNama,pw-14,11,{align:'right'});
-  doc.text('Bayar: '+fmtDate(tglBayar||p.bayar||'-'),pw-14,17,{align:'right'});
-  if(g.isPR)doc.text('Pro-Rata '+g.pr.hh+'/'+g.pr.hk,pw-14,23,{align:'right'});
-  if(perusahaan.alamat){
-    doc.setFontSize(7.5);doc.setTextColor(230,240,255);
-    var al=doc.splitTextToSize(String(perusahaan.alamat),pw-85);var ay=22;
-    al.slice(0,2).forEach(function(ln){doc.text(ln,14,ay);ay+=3;});
+  if(typeof sigajiPdfMagazineCover==='function'){
+    y=sigajiPdfMagazineCover(doc,{eyebrow:'Slip Gaji Resmi',title:'SLIP GAJI',subtitle:String(perusahaan.nama||'Perusahaan'),meta:'Periode: '+pNama+' · Bayar: '+fmtDate(tglBayar||p.bayar||'-')});
+    doc.setTextColor(0,0,0);
+    doc.setFontSize(8);doc.setFont(undefined,'normal');
+    if(g.isPR)doc.text('Pro-Rata '+g.pr.hh+'/'+g.pr.hk,pw-14,y-2,{align:'right'});
+  }else{
+    doc.setFillColor(26,86,160);doc.rect(0,0,pw,32,'F');doc.setTextColor(255,255,255);
+    doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('SLIP GAJI',14,11);
+    doc.setFontSize(10);doc.text(String(perusahaan.nama||'Perusahaan'),14,18);
+    doc.setFontSize(8);doc.setFont(undefined,'normal');
+    doc.text('Periode: '+pNama,pw-14,11,{align:'right'});
+    doc.text('Bayar: '+fmtDate(tglBayar||p.bayar||'-'),pw-14,17,{align:'right'});
+    if(g.isPR)doc.text('Pro-Rata '+g.pr.hh+'/'+g.pr.hk,pw-14,23,{align:'right'});
+    if(perusahaan.alamat){
+      doc.setFontSize(7.5);doc.setTextColor(230,240,255);
+      var al=doc.splitTextToSize(String(perusahaan.alamat),pw-85);var ay=22;
+      al.slice(0,2).forEach(function(ln){doc.text(ln,14,ay);ay+=3;});
+    }
+    doc.setTextColor(0,0,0);
+    y=36;
   }
-  doc.setTextColor(0,0,0);
-  y=36;
 
   chk();
   doc.setFillColor(248,249,252);doc.rect(10,y,pw-20,20,'F');
@@ -374,8 +381,18 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
     doc.setFontSize(8.5);doc.setTextColor(0,0,0);
   }
 
-  chk();doc.setFontSize(8);doc.setTextColor(107,114,128);
-  doc.text('Slip gaji elektronik - sah tanpa tanda tangan basah',pw/2,ph-10,{align:'center'});
+  if(typeof sigajiPdfMagazineFooter==='function'){
+    var totalPages=doc.internal.getNumberOfPages();
+    for(var pg=1;pg<=totalPages;pg++){
+      doc.setPage(pg);
+      sigajiPdfMagazineFooter(doc,pg);
+      doc.setFontSize(7);doc.setTextColor(107,114,128);
+      doc.text('Slip gaji elektronik — sah tanpa tanda tangan basah',pw/2,ph-14,{align:'center'});
+    }
+  }else{
+    chk();doc.setFontSize(8);doc.setTextColor(107,114,128);
+    doc.text('Slip gaji elektronik - sah tanpa tanda tangan basah',pw/2,ph-10,{align:'center'});
+  }
   var fileName='Slip_'+sanitizePdfFileName(k.nama)+'_'+sanitizePdfFileName(pNama)+'.pdf';
   return{doc:doc,fileName:fileName};
 }
