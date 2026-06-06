@@ -222,6 +222,42 @@
   margin-top: 2px;
   letter-spacing: 0.02em;
 }
+
+/* Master karyawan — filter tipe (bukan search) */
+.kar-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.kar-toolbar .inp-search {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.inp-filter-select {
+  flex: 0 0 auto;
+  min-width: 10.5rem;
+  max-width: 14rem;
+  padding: 10px 36px 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: var(--radius-md, 12px);
+  font-size: 0.85rem;
+  font-family: var(--font, inherit);
+  color: var(--tx, #1e2330);
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border 0.15s, box-shadow 0.15s;
+}
+.inp-filter-select:focus {
+  outline: none;
+  border-color: var(--blue, #1a56a0);
+  box-shadow: 0 0 0 4px rgba(26, 86, 160, 0.1);
+}
 .dash-att-legend {
   display: flex;
   flex-wrap: wrap;

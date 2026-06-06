@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/css/styles.css?v=11.5.2">
 <link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.2">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.3">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.4">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -110,9 +110,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <button class="btn btn-sm btn-out" onclick="openNewKar('tidak_tetap')">+ Pegawai Tidak Tetap</button>
   </div></div>
   <div class="card">
-    <div class="flb mb2">
+    <div class="flb mb2 kar-toolbar">
       <input type="text" class="inp-search" placeholder="Cari nama, NIK, dept..." oninput="filterKar(this.value)">
-      <select id="kar-filter-tipe" class="inp-search" style="max-width:11rem;padding:.45rem .6rem" onchange="setKarFilterTipe(this.value)">
+      <select id="kar-filter-tipe" class="inp-filter-select" onchange="setKarFilterTipe(this.value)">
         <option value="">Semua tipe</option>
         <option value="tetap">Pegawai tetap (K…)</option>
         <option value="tidak_tetap">Tidak tetap (NT…)</option>
