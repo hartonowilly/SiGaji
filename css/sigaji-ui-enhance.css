@@ -1,6 +1,168 @@
 /**
- * SiGaji UI enhancements — HRD mobile, dashboard chart, log cards
+ * SiGaji UI enhancements — UX layer (aman di-override tanpa ubah JS)
+ * Sesuaikan brand: edit --blue / --blue-dark di css/styles.css
  */
+:root {
+  --ux-focus: 0 0 0 3px rgba(26, 86, 160, 0.28);
+  --ux-tap-min: 44px;
+  --ux-card-radius: 14px;
+  --ux-transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Aksesibilitas & interaksi ── */
+.btn:focus-visible,
+.tab:focus-visible,
+.ni:focus-visible,
+.chip-login:focus-visible,
+.periode-pill:focus-visible,
+.notif-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ux-focus);
+}
+.fg input:focus-visible,
+.fg select:focus-visible,
+.fg textarea:focus-visible {
+  outline: none;
+  border-color: var(--blue, #1a56a0);
+  box-shadow: var(--ux-focus);
+}
+.btn {
+  transition: background var(--ux-transition), border-color var(--ux-transition),
+    transform 0.12s ease, box-shadow var(--ux-transition);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Kartu & KPI ── */
+.card {
+  border-radius: var(--ux-card-radius);
+  transition: box-shadow var(--ux-transition), border-color var(--ux-transition);
+}
+.card:hover {
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.07);
+}
+.sc-kpi {
+  transition: transform var(--ux-transition), box-shadow var(--ux-transition);
+}
+.sc-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(26, 86, 160, 0.1);
+}
+.dash-hero {
+  border-radius: var(--ux-card-radius);
+}
+
+/* ── Tab & navigasi ── */
+.tab {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px 8px 0 0;
+}
+.tab:hover:not(.active) {
+  color: var(--blue, #1a56a0);
+  background: rgba(26, 86, 160, 0.05);
+}
+.tabs {
+  scroll-snap-type: x proximity;
+}
+.tabs .tab {
+  scroll-snap-align: start;
+}
+.ni .nav-svg {
+  opacity: 0.88;
+}
+.ni.active .nav-svg {
+  opacity: 1;
+  color: #93c5fd;
+}
+
+/* ── Tabel lebih mudah dibaca ── */
+.table-wrap {
+  border-radius: var(--radius-md, 12px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-wrap table tbody tr:hover td {
+  background: rgba(26, 86, 160, 0.04);
+}
+.bdg {
+  letter-spacing: 0.02em;
+}
+
+/* ── Form lapangan (HRD) ── */
+.fg label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.fg input,
+.fg select,
+.fg textarea {
+  min-height: 40px;
+}
+.info-box {
+  border-radius: 10px;
+  line-height: 1.55;
+}
+
+/* ── Toast lebih terlihat ── */
+.toast9.show,
+#toast.show {
+  animation: ux-toast-in 0.28s ease;
+}
+@keyframes ux-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Modal ── */
+.modal-box {
+  border-radius: 16px;
+}
+.mtit {
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+/* ── Kalender absensi: sel hover ── */
+#ab-grid-wrap table tbody td[onclick] {
+  transition: filter 0.12s ease, transform 0.1s ease;
+}
+#ab-grid-wrap table tbody td[onclick]:hover {
+  filter: brightness(0.96);
+  transform: scale(1.04);
+  z-index: 2;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Grafik dashboard ── */
+.dash-att-bar {
+  cursor: default;
+}
+.dash-att-bar-wrap:hover .dash-att-bar {
+  filter: brightness(1.08);
+}
+
 .nav-svg {
   width: 15px;
   height: 15px;
@@ -145,6 +307,36 @@
 }
 
 @media (max-width: 768px) {
+  .content {
+    padding: 1rem 0.85rem 2rem;
+  }
+  .ph .pt {
+    font-size: 1.2rem;
+  }
+  .btn,
+  .btn-sm {
+    min-height: var(--ux-tap-min);
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .tab {
+    min-height: var(--ux-tap-min);
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  .card {
+    padding: 0.9rem;
+  }
+  .fg input,
+  .fg select,
+  .fg textarea {
+    min-height: var(--ux-tap-min);
+    font-size: 16px;
+  }
+  .page-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
   .mob-log-table-desktop {
     display: none !important;
   }
@@ -154,20 +346,25 @@
   .mob-log-card {
     border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 0.75rem;
-    margin-bottom: 0.6rem;
+    padding: 0.85rem;
+    margin-bottom: 0.65rem;
     background: #fff;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
   }
   .mob-log-card h4 {
     margin: 0 0 0.35rem;
-    font-size: 13px;
+    font-size: 14px;
     color: #1a56a0;
   }
   .mob-log-card .mob-log-ev {
-    font-size: 11px;
+    font-size: 12px;
     margin-top: 0.35rem;
     padding-top: 0.35rem;
     border-top: 1px dashed #e5e7eb;
+    line-height: 1.5;
+  }
+  #pg-absensi .tabs {
+    margin-bottom: 1rem;
   }
 }
 
