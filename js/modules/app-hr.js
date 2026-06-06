@@ -85,17 +85,19 @@ function renderDash(){
   document.getElementById('d-alerts').innerHTML=alerts;
   var chartEl=document.getElementById('d-att-chart');
   if(chartEl){
-    var now=new Date();
-    var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    var daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    var todayIso=new Date().toISOString().substring(0,10);
+    var periodDays=typeof absensiDaysFromPeriode==='function'?absensiDaysFromPeriode(p):[];
+    periodDays=periodDays.filter(function(x){return x.date<=todayIso;});
     var stats={hadir:0,cuti:0,izin:0,sakit:0,alpha:0};
     var bars=[];
-    for(var d=1;d<=Math.min(now.getDate(),daysInMonth);d++){
-      var iso=ym+'-'+String(d).padStart(2,'0');
+    periodDays.forEach(function(x){
+      var iso=x.date;
       var daySt={hadir:0,izin:0,sakit:0,alpha:0};
       list.forEach(function(k){
         if(!k||!k.nik)return;
-        var st=(absensi[k.nik]&&absensi[k.nik][iso])||'hadir';
+        var isLN=typeof isHL==='function'?isHL(iso):false;
+        var isLK=typeof isHariLiburKerja==='function'?isHariLiburKerja(x.dow):false;
+        var st=(absensi[k.nik]&&absensi[k.nik][iso])||(isLN?'libnas':isLK?'libur':'hadir');
         if(st==='hadir'||st==='libur'||st==='libnas'){stats.hadir++;daySt.hadir++;}
         else if(st==='cuti')stats.cuti++;
         else if(st==='izin'||st==='setengah_ijin'){stats.izin++;daySt.izin++;}
@@ -104,12 +106,12 @@ function renderDash(){
       });
       var maxK=list.length||1;
       var h=Math.max(4,Math.round((daySt.hadir/maxK)*120));
-      bars.push({d:d,h:h,hadir:daySt.hadir,izin:daySt.izin,sakit:daySt.sakit,alpha:daySt.alpha});
-    }
+      bars.push({d:x.d,iso:iso,h:h,hadir:daySt.hadir,izin:daySt.izin,sakit:daySt.sakit,alpha:daySt.alpha});
+    });
     var nKar=list.length;
     var nDays=bars.length;
     var barHtml=bars.map(function(b){
-      var tip='Tgl '+b.d+': '+b.hadir+' dari '+nKar+' karyawan hadir';
+      var tip='Tgl '+b.d+' ('+b.iso+'): '+b.hadir+' dari '+nKar+' karyawan hadir';
       if(b.izin)tip+=' · izin '+b.izin;
       if(b.sakit)tip+=' · sakit '+b.sakit;
       if(b.alpha)tip+=' · alpha '+b.alpha;
@@ -118,17 +120,18 @@ function renderDash(){
         +(nKar?'<div class="dash-att-bar-sub">'+b.hadir+'/'+nKar+'</div>':'')+'</div>';
     }).join('');
     var avgHadir=nDays&&nKar?Math.round((stats.hadir/(nDays*nKar))*100):0;
-    chartEl.innerHTML='<p class="dash-att-hint">Grafik harian: tinggi batang = proporsi karyawan hadir hari itu. Angka di bawah batang = <strong>hadir / total karyawan</strong>. '
+    chartEl.innerHTML='<p class="dash-att-hint">Grafik harian periode <strong>'+escapeHtml(p.nama)+'</strong> ('+fmtDate(p.start)+' – '+fmtDate(p.end)+'): tinggi batang = proporsi karyawan hadir. '
       +'Kosong di kalender absensi = dianggap <em>hadir</em> (bukan alpha).</p>'
-      +'<div class="dash-att-chart">'+barHtml+'</div>'
+      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari dalam periode',desc:'Periode aktif belum dimulai atau rentang tanggal belum valid.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div style="color:#9ca3af;padding:1rem">Belum ada data grafik.</div>')
       +'<div class="dash-att-legend">'
       +'<span class="lg-hadir" title="Jumlah entri hadir: setiap karyawan per hari dihitung 1">Orang-hari hadir: '+stats.hadir+'</span>'
       +'<span class="lg-izin">Orang-hari izin: '+stats.izin+'</span>'
       +'<span class="lg-sakit">Orang-hari sakit: '+stats.sakit+'</span>'
       +'<span class="lg-alpha">Orang-hari alpha: '+stats.alpha+'</span>'
       +'<span style="margin-left:auto;color:#9ca3af;text-align:right;line-height:1.4">'
-      +nKar+' karyawan · '+ym+'<br><span style="font-size:10px">'+nDays+' hari terakhir · rata-rata kehadiran ~'+avgHadir+'%</span></span></div>';
+      +nKar+' karyawan · '+escapeHtml(p.nama)+'<br><span style="font-size:10px">'+nDays+' hari (s.d. hari ini) · rata-rata kehadiran ~'+avgHadir+'%</span></span></div>';
   }
+  try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){}
 }
 // ── MASTER KARYAWAN ─────────────────────────────
 function karRowHtml(k,no){
@@ -979,16 +982,19 @@ function renderPenggajian(skipTunjVar){
       +'<td><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div>'
       +'<div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div><small style="color:#6b7280">'+k.dept+'</small></div></div></td>'
       +'<td><div>'+prBtn+prInputs+'</div></td>'
-      +'<td>'+fmt(g.grossPPh)+'</td><td>'+thrCell+'</td>'
-      +'<td>'+fmt(g.brutoTH)+'</td>'
-      +'<td>'+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</td>'
+      +'<td>'+fmt(g.grossPPh)+'</td><td class="pg-col-adv">'+thrCell+'</td>'
+      +'<td class="pg-col-adv">'+fmt(g.brutoTH)+'</td>'
+      +'<td class="pg-col-adv">'+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</td>'
       +'<td>'+fmt(g.pph)+(g.reconciliation&&g.reconciliation.lebihBayar>0?'<div style="font-size:9px;color:#2d6a0a;font-weight:700">&#10003; Lebih Bayar '+fmt(g.reconciliation.lebihBayar)+'</div>':g.reconciliation&&g.reconciliation.kurangBayar>0?'<div style="font-size:9px;color:#9b2121">&#9650; Kurang Bayar '+fmt(g.reconciliation.kurangBayar)+'</div>':'')+'</td>'
-      +'<td>'+(g.pphRet>0?'<span style="color:#2d6a0a;font-weight:700">+'+fmt(g.pphRet)+'</span>':'&#8212;')+'</td>'
+      +'<td class="pg-col-adv">'+(g.pphRet>0?'<span style="color:#2d6a0a;font-weight:700">+'+fmt(g.pphRet)+'</span>':'&#8212;')+'</td>'
       +'<td><strong style="color:#2d6a0a">'+fmt(g.neto)+'</strong></td>'
       +'<td>'+stBdg+'</td>'
       +'<td><button class="btn btn-sm btn-out" onclick="detailGaji(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')">Detail</button></td></tr>';
   });
-  document.getElementById('tb-penggajian').innerHTML=rows.join('');
+  var tbPg=document.getElementById('tb-penggajian');
+  if(!rows.length&&typeof sigajiEmptyState==='function'){
+    tbPg.innerHTML='<tr><td colspan="12">'+sigajiEmptyState({icon:'&#128176;',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
+  }else tbPg.innerHTML=rows.join('');
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
 }
 function kirimApproval(){

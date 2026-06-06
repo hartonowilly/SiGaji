@@ -453,6 +453,7 @@
 
   function scheduleUpsert() {
     if (!clientReady || !window.sigajiSupabase) return;
+    if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('pending');
     clearTimeout(cloudTimer);
     cloudTimer = setTimeout(function () {
       cloudUpsert();
@@ -486,7 +487,10 @@
         cloudPayloadMode = 'tenant';
       }
     }
-    if (r.error) console.error('Sigaji cloud save:', r.error);
+    if (r.error) {
+      console.error('Sigaji cloud save:', r.error);
+      throw r.error;
+    }
   }
 
   async function cloudUpsert() {
@@ -494,22 +498,35 @@
     var sb = window.sigajiSupabase;
     if (!sb) return;
     var sess = await sb.auth.getSession();
-    if (!sess.data || !sess.data.session) return;
+    if (!sess.data || !sess.data.session) {
+      if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('idle');
+      return;
+    }
     var uid = sess.data.session.user.id;
     if (typeof window.getPayloadForCloud !== 'function') return;
     var payload = window.getPayloadForCloud();
     if (typeof window.sigajiShouldSkipCloudUpload === 'function' && window.sigajiShouldSkipCloudUpload(payload)) {
       console.warn('Sigaji cloud: lewati unggah — payload masih template kosong (lindungi data tenant di Supabase).');
+      if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('idle');
       return;
     }
 
-    if (window.sigajiCloudTables && typeof window.sigajiCloudTables.trySaveWithTables === 'function') {
-      await window.sigajiCloudTables.trySaveWithTables(sb, payload, function () {
-        return upsertBlobOnly(uid, payload);
-      });
-      return;
+    try {
+      if (window.sigajiCloudTables && typeof window.sigajiCloudTables.trySaveWithTables === 'function') {
+        await window.sigajiCloudTables.trySaveWithTables(sb, payload, function () {
+          return upsertBlobOnly(uid, payload);
+        });
+      } else {
+        await upsertBlobOnly(uid, payload);
+      }
+      if (typeof window.sigajiSetSyncStatus === 'function') {
+        window.sigajiSetSyncStatus('synced', new Date().toLocaleTimeString('id-ID'));
+      }
+    } catch (err) {
+      var er = (err && (err.message || err.details || err.hint)) || String(err);
+      if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('error', er);
+      console.error('Sigaji cloud upsert:', err);
     }
-    await upsertBlobOnly(uid, payload);
   }
 
   window.sigajiTryCloudLogin = tryCloudLoginWhenReady;

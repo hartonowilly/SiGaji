@@ -84,23 +84,28 @@ function mobMapLink(lat,lon){
   if(lat==null||lon==null)return '';
   return ' <a href="https://www.google.com/maps?q='+lat+','+lon+'" target="_blank" rel="noopener" style="font-size:10px">Peta</a>';
 }
-async function renderMobileAttendanceLog(){
+async function renderMobileAttendanceLog(btn){
   var el=document.getElementById('mob-att-log-wrap');if(!el)return;
   var today=new Date().toISOString().substring(0,10);
-  el.innerHTML='<div class="card"><div class="flb mb2" style="flex-wrap:wrap;gap:.5rem">'
-    +'<div class="ct" style="margin:0;border:0;padding:0">Siapa sudah check-in / check-out</div>'
-    +'<div class="fl gap1" style="align-items:center;flex-wrap:wrap">'
-    +'<label style="font-size:11px;font-weight:700;color:#6b7280">Tanggal:</label>'
-    +'<input type="date" id="mob-log-date" value="'+today+'" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9">'
-    +'<select id="mob-log-filter" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9" onchange="mobRenderLogFromCache()">'
-    +'<option value="">Semua status</option><option value="ok">OK</option><option value="pending_review">Review</option>'
-    +'<option value="outside_geofence">Luar radius</option><option value="rejected">Ditolak / mock</option></select>'
-    +'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileAttendanceLog()">&#8635; Muat</button>'
-    +'</div></div><div id="mob-log-table">Memuat…</div></div>';
   var dateEl=document.getElementById('mob-log-date');
   var workDate=dateEl?dateEl.value:today;
-  var j=await sigajiMobileFetch('mobile-attendance?work_date='+encodeURIComponent(workDate),{method:'GET'});
-  var host=document.getElementById('mob-log-table');if(!host)return;
+  if(!dateEl){
+    el.innerHTML='<div class="card"><div class="flb mb2" style="flex-wrap:wrap;gap:.5rem">'
+      +'<div class="ct" style="margin:0;border:0;padding:0">Siapa sudah check-in / check-out</div>'
+      +'<div class="fl gap1" style="align-items:center;flex-wrap:wrap">'
+      +'<label style="font-size:11px;font-weight:700;color:#6b7280">Tanggal:</label>'
+      +'<input type="date" id="mob-log-date" value="'+today+'" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9">'
+      +'<select id="mob-log-filter" style="width:auto;padding:6px 10px;border-radius:8px;border:1.5px solid #dde1e9" onchange="mobRenderLogFromCache()">'
+      +'<option value="">Semua status</option><option value="ok">OK</option><option value="pending_review">Review</option>'
+      +'<option value="outside_geofence">Luar radius</option><option value="rejected">Ditolak / mock</option></select>'
+      +'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileAttendanceLog(this)">&#8635; Muat</button>'
+      +'</div></div><div id="mob-log-table">Memuat…</div></div>';
+    dateEl=document.getElementById('mob-log-date');
+    workDate=dateEl?dateEl.value:today;
+  }
+  var host=document.getElementById('mob-log-table');
+  var j=await sigajiMobileFetch('mobile-attendance?work_date='+encodeURIComponent(workDate),{method:'GET',loadingHost:host,loadingBtn:btn});
+  if(!host)return;
   if(!j||!j.ok){
     host.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat log — deploy API mobile-attendance GET')+'</div>';
     return;
@@ -121,7 +126,7 @@ function mobRenderLogFromCache(){
   var filterEl=document.getElementById('mob-log-filter');
   var filter=filterEl?filterEl.value:'';
   if(!items.length){
-    host.innerHTML='<p style="color:#6b7280;font-size:12px;padding:.5rem 0">Belum ada check-in/check-out pada tanggal '+escapeHtml(workDate)+'.</p>';
+    host.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128241;',title:'Belum ada absensi mobile',desc:'Tidak ada check-in/check-out pada tanggal '+workDate+'.',btnLabel:'Muat ulang',btnOnclick:'renderMobileAttendanceLog()'}):'<p style="color:#6b7280;font-size:12px;padding:.5rem 0">Belum ada check-in/check-out pada tanggal '+escapeHtml(workDate)+'.</p>';
     return;
   }
   var byNik={};
@@ -192,11 +197,17 @@ function mobRenderLogFromCache(){
     +'<li><span class="bdg b-err">GPS mock / Ditolak</span> — percobaan gagal; karyawan bisa coba lagi di HP</li>'
     +'</ul></div>';
 }
+var _mobDecideBusy=false;
 async function mobAttendanceDecide(id,decide){
+  if(_mobDecideBusy){toast('Masih memproses…');return;}
   var note='';
   if(decide==='reject'){note=prompt('Alasan penolakan (opsional) — hanya event ini yang ditolak')||'';}
   else if(!confirm('Setujui absensi ini? Jika check-in & check-out sudah OK, kalender gaji akan diisi hadir.'))return;
-  var r=await sigajiMobileFetch('mobile-attendance',{method:'POST',body:{action:'decide',id:id,decide:decide,note:note}});
+  _mobDecideBusy=true;
+  var r;
+  try{
+    r=await sigajiMobileFetch('mobile-attendance',{method:'POST',body:{action:'decide',id:id,decide:decide,note:note}});
+  }finally{_mobDecideBusy=false;}
   if(r&&r.ok){
     toast(r.message||(decide==='approve'?'Disetujui':'Ditolak'));
     if(r.synced_hadir&&typeof renderAbsensi==='function')renderAbsensi();
@@ -211,7 +222,7 @@ async function mobAttendanceDecide(id,decide){
 // ── HRD: Lokasi kerja ───────────────────────────
 async function renderMobileLocations(){
   var el=document.getElementById('mob-locations-wrap');if(!el)return;
-  el.innerHTML='<div style="color:#6b7280;padding:1rem">Memuat…</div>';
+  if(typeof sigajiSkeleton==='function')el.innerHTML=sigajiSkeleton('table');else el.innerHTML='<div style="color:#6b7280;padding:1rem">Memuat…</div>';
   var j=await sigajiMobileFetch('mobile-locations',{method:'GET'});
   if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat lokasi — jalankan SQL mobile + deploy API')+'</div>';return;}
   var items=j.items||[];
@@ -225,7 +236,7 @@ async function renderMobileLocations(){
   }).join('');
   el.innerHTML='<div class="card"><div class="flb mb2"><div class="ct" style="margin:0;border:0;padding:0">Lokasi check-in GPS</div><button class="btn btn-sm btn-p" onclick="editMobileLocation()">+ Lokasi</button></div>'
     +'<table><thead><tr><th>Nama</th><th>Tipe</th><th>Peta</th><th>Radius</th><th>Status</th><th></th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="6" style="text-align:center;color:#9ca3af">Belum ada lokasi</td></tr>')+'</tbody></table></div>';
+    +(rows||'<tr><td colspan="6">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128205;',title:'Belum ada lokasi GPS',desc:'Tambahkan lokasi kantor/site agar karyawan bisa check-in di APK.',btnLabel:'+ Tambah lokasi',btnOnclick:'editMobileLocation()'}):'<span style="color:#9ca3af">Belum ada lokasi</span>')+'</td></tr>')+'</tbody></table></div>';
   setTimeout(function(){mobInitLocationMiniMaps(items);},200);
 }
 function mobLocRadiusToSlider(radiusM){
@@ -380,10 +391,11 @@ async function editMobileLocation(id){
   if(document.getElementById(fields.radius))document.getElementById(fields.radius).value=String(mobLocRadiusToSlider(loc?loc.radius_m:250));
   if(document.getElementById(fields.tipe))document.getElementById(fields.tipe).value=loc?loc.tipe:'site';
   mobLocUpdateRadiusUi();
+  if(typeof mobLocWizardReset==='function')mobLocWizardReset();
+  else if(typeof mobLocWizardGo==='function')mobLocWizardGo(1);
   if(typeof openModal==='function')openModal('m-mob-location');
-  setTimeout(mobLocInitMapPicker,280);
 }
-async function saveMobileLocationModal(){
+async function saveMobileLocationModal(btn){
   var nama=(document.getElementById('mob-loc-nama')||{}).value.trim();
   var lat=parseFloat((document.getElementById('mob-loc-lat')||{}).value);
   var lon=parseFloat((document.getElementById('mob-loc-lon')||{}).value);
@@ -393,7 +405,9 @@ async function saveMobileLocationModal(){
   if(!Number.isFinite(lat)||!Number.isFinite(lon)){toast('Koordinat invalid');return;}
   if(radius<50){toast('Radius minimal 50 meter');return;}
   var body={action:'save_location',id:_mobLocEditId,nama:nama,lat:lat,lon:lon,radius_m:radius,tipe:tipe,aktif:true};
+  if(typeof sigajiBtnLoading==='function')sigajiBtnLoading(btn,true,'Menyimpan…');
   var r=await sigajiMobileFetch('mobile-locations',{method:'POST',body:body});
+  if(typeof sigajiBtnLoading==='function')sigajiBtnLoading(btn,false);
   if(r&&r.ok){
     toast('Lokasi disimpan');
     if(typeof closeModal==='function')closeModal('m-mob-location');
@@ -408,10 +422,10 @@ async function renderMobileDashboard(){
   var locEl=document.getElementById('mob-dash-loc');
   var workDate=dateEl?dateEl.value:today;
   var locId=locEl?locEl.value:'';
-  el.innerHTML='<div style="color:#6b7280;padding:.5rem 0">Memuat ringkasan…</div>';
+  el.innerHTML=typeof sigajiSkeleton==='function'?sigajiSkeleton('kpi'):'<div style="color:#6b7280;padding:.5rem 0">Memuat ringkasan…</div>';
   var q='mobile-attendance?dashboard=1&work_date='+encodeURIComponent(workDate);
   if(locId)q+='&location_id='+encodeURIComponent(locId);
-  var j=await sigajiMobileFetch(q,{method:'GET'});
+  var j=await sigajiMobileFetch(q,{method:'GET',loadingHost:el});
   if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat dashboard')+'</div>';return;}
   var s=j.summary||{};
   var pending=s.pending_review||0;

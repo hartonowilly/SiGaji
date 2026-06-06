@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/css/styles.css?v=11.5.2">
 <link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.2">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.4">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.7">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
@@ -53,7 +53,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button type="button" class="nav-drawer-btn" id="nav-drawer-btn" aria-label="Buka menu modul" aria-expanded="false" aria-controls="sidebar-wrap" onclick="return sigajiToggleNavDrawer(event)">&#9776;</button>
     <img class="topbar-logo-img" id="topbar-logo">
     <span class="alogo" id="topbar-nama">&#9670; SiGaji</span>
-    <button class="periode-pill" onclick="showPg('master')">&#128197; <span id="top-periode">-</span></button>
+    <button class="periode-pill" onclick="showPg('master')" title="Buka Master Periode Gaji">&#128197; <span id="top-periode">-</span></button>
+    <span class="sync-status" id="sync-status" aria-live="polite"></span>
     <span class="save-ind" id="save-ind"></span>
   </div>
   <div class="tl">
@@ -61,6 +62,18 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="av" id="uav">A</div>
     <div><div class="uname" id="uname">-</div><span class="rbadge" id="urbadge">-</span></div>
     <button class="btn btn-sm btn-out topbar-logout" onclick="doLogout()">Keluar</button>
+  </div>
+</div>
+<div class="period-sticky-bar is-hidden" id="period-sticky-bar" role="region" aria-label="Periode gaji aktif">
+  <div class="period-sticky-main">
+    <span class="period-sticky-label">Periode gaji aktif</span>
+    <strong id="period-sticky-name">-</strong>
+    <span class="period-sticky-meta" id="period-sticky-range">-</span>
+    <span class="period-sticky-meta" id="period-sticky-bayar">-</span>
+  </div>
+  <div class="period-sticky-side">
+    <span class="period-sticky-chip" id="period-sticky-lock"></span>
+    <span class="period-sticky-chip" id="period-sticky-days"></span>
   </div>
 </div>
 <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true"></div>
@@ -308,8 +321,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div style="padding:7px 12px;background:#fff;border-radius:7px;border:1px solid var(--bd)">Pro-Rata Aktif: <strong id="pr-aktif" style="color:#1a56a0">0</strong></div>
     </div>
   </div>
+  <div class="pg-cols-toggle" role="group" aria-label="Tampilan kolom penggajian">
+    <button type="button" data-pg-cols="ringkas" class="active" onclick="sigajiSetPgGajiCols('ringkas')">Ringkas</button>
+    <button type="button" data-pg-cols="lengkap" onclick="sigajiSetPgGajiCols('lengkap')">Lengkap</button>
+  </div>
   <div class="card"><div class="table-wrap">
-  <table><thead><tr><th>No</th><th>Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th>THR</th><th>TH Bruto</th><th>BPJS Kar</th><th>PPh 21</th><th>PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
+  <table><thead><tr><th>No</th><th>Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
   <tbody id="tb-penggajian"></tbody></table></div></div>
   </div>
 </div>
@@ -1176,31 +1193,45 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
 </div>
 
-<!-- MODAL LOKASI GPS (peta) -->
+<!-- MODAL LOKASI GPS (wizard step-by-step) -->
 <div class="mbd" id="m-mob-location">
   <div class="modal" style="width:min(720px,96vw)">
     <button class="mclose" onclick="closeModal('m-mob-location')">&times;</button>
     <div class="mtit" id="mob-loc-modal-title">Lokasi check-in GPS</div>
-    <div class="fg"><label>Nama lokasi</label><input id="mob-loc-nama" placeholder="Site luar kota"></div>
-    <div class="fg2">
-      <div class="fg"><label>Latitude</label><input id="mob-loc-lat" type="number" step="any"></div>
-      <div class="fg"><label>Longitude</label><input id="mob-loc-lon" type="number" step="any"></div>
+    <div class="mob-loc-wizard-steps">
+      <div id="mob-loc-wiz-dot-1" class="mob-loc-wiz-dot active">1. Nama</div>
+      <div id="mob-loc-wiz-dot-2" class="mob-loc-wiz-dot">2. Peta</div>
+      <div id="mob-loc-wiz-dot-3" class="mob-loc-wiz-dot">3. Konfirmasi</div>
     </div>
-    <div class="fg"><label>Tipe</label>
-      <select id="mob-loc-tipe"><option value="kantor">kantor</option><option value="site">site</option><option value="mess">mess</option><option value="dinas">dinas</option><option value="lainnya">lainnya</option></select>
+    <div id="mob-loc-step-1">
+      <div class="mob-loc-step-hint">Langkah 1: Beri nama lokasi yang mudah dikenali tim HRD (mis. Kantor Pusat, Site A).</div>
+      <div class="fg"><label>Nama lokasi</label><input id="mob-loc-nama" placeholder="Site luar kota"></div>
+      <div class="fg"><label>Tipe</label>
+        <select id="mob-loc-tipe"><option value="kantor">kantor</option><option value="site">site</option><option value="mess">mess</option><option value="dinas">dinas</option><option value="lainnya">lainnya</option></select>
+      </div>
+      <div class="fg"><label>Radius geofence</label>
+        <input type="range" id="mob-loc-radius" min="50" max="5000" step="10" value="250" style="width:100%" oninput="mobLocUpdateRadiusUi()">
+        <div id="mob-loc-radius-lbl" style="font-size:12px;color:#374151;margin-top:4px">250 m</div>
+      </div>
     </div>
-    <div class="fg"><label>Radius geofence</label>
-      <input type="range" id="mob-loc-radius" min="50" max="5000" step="10" value="250" style="width:100%" oninput="mobLocUpdateRadiusUi()">
-      <div id="mob-loc-radius-lbl" style="font-size:12px;color:#374151;margin-top:4px">250 m</div>
+    <div id="mob-loc-step-2" style="display:none">
+      <div class="mob-loc-step-hint">Langkah 2: Klik peta untuk menempatkan pin, atau gunakan tombol &quot;Lokasi saya&quot; di bawah.</div>
+      <input id="mob-loc-lat" type="hidden">
+      <input id="mob-loc-lon" type="hidden">
+      <div id="mob-loc-map" style="height:280px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:.65rem"></div>
+      <div class="fl gap1" style="flex-wrap:wrap;margin-bottom:.5rem">
+        <button type="button" class="btn btn-sm btn-out" onclick="mobLocUseMyPosition()">&#128205; Gunakan lokasi saya sekarang</button>
+      </div>
     </div>
-    <div id="mob-loc-map" style="height:280px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:.65rem"></div>
-    <div class="fl gap1" style="flex-wrap:wrap;margin-bottom:.5rem">
-      <button type="button" class="btn btn-sm btn-out" onclick="mobLocUseMyPosition()">Gunakan lokasi saya sekarang</button>
-      <button type="button" class="btn btn-sm btn-out" onclick="mobLocInitMapPicker()">Refresh peta</button>
+    <div id="mob-loc-step-3" style="display:none">
+      <div class="mob-loc-step-hint">Langkah 3: Periksa ringkasan sebelum menyimpan. Karyawan harus berada dalam radius saat check-in di APK.</div>
+      <div id="mob-loc-wiz-preview"></div>
     </div>
     <div class="mfoot">
+      <button type="button" class="btn btn-sm btn-out" id="mob-loc-wiz-prev" style="display:none" onclick="mobLocWizardPrev()">&#8592; Sebelumnya</button>
       <button type="button" class="btn btn-sm btn-out" onclick="closeModal('m-mob-location')">Batal</button>
-      <button type="button" class="btn btn-sm btn-p" onclick="saveMobileLocationModal()">Simpan lokasi</button>
+      <button type="button" class="btn btn-sm btn-p" id="mob-loc-wiz-next" onclick="mobLocWizardNext()">Lanjut &#8594;</button>
+      <button type="button" class="btn btn-sm btn-p" id="mob-loc-wiz-save" style="display:none" onclick="saveMobileLocationModal(this)">Simpan lokasi</button>
     </div>
   </div>
 </div>
@@ -1239,17 +1270,18 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/sigaji-icons.js?v=11.5.2"></script>
 <script src="/js/sigaji-ui.js?v=11.5.2"></script>
 <script src="/js/karyawan-tipe.js?v=11.5.1"></script>
-<script src="/js/storage.js?v=11.5.1"></script>
+<script src="/js/storage.js?v=11.5.7"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
 <script src="/js/modules/app-globals.js?v=11.5.1"></script>
 <script src="/js/modules/app-core.js?v=11.5.1"></script>
-<script src="/js/modules/app-access.js?v=11.5.1"></script>
-<script src="/js/modules/app-hr.js?v=11.5.1"></script>
+<script src="/js/modules/app-access.js?v=11.5.7"></script>
+<script src="/js/modules/app-hr.js?v=11.5.7"></script>
 <script src="/js/modules/app-slip.js?v=11.5.1"></script>
 <script src="/js/modules/app-reports.js?v=11.5.5"></script>
 <script src="/js/modules/ebupot-export.js?v=11.5.6"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.1"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.1"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.7"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.7"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.7"></script>
 <script src="/js/modules/app-master.js?v=11.5.1"></script>
 <script src="/js/modules/app-migrasi-pph.js?v=11.5.1"></script>
 <script src="/js/modules/app-shell.js?v=11.5.1"></script>
@@ -1259,7 +1291,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
 <script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.5.1"></script>
+<script src="/js/cloud-sync.js?v=11.5.7"></script>
 <script src="/js/modules/app-boot.js?v=11.5.1"></script>
 </body>
 </html>

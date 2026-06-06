@@ -451,4 +451,7 @@ if(typeof window!=='undefined'){
   };
 }
 let siT;
-function showSI(){const e=document.getElementById('save-ind');if(!e)return;e.textContent='✓ Tersimpan';clearTimeout(siT);siT=setTimeout(()=>e.textContent='',2000);}
+function showSI(){
+  if(typeof sigajiSetSyncStatus==='function')sigajiSetSyncStatus('local');
+  const e=document.getElementById('save-ind');if(!e)return;e.textContent='✓ Tersimpan';clearTimeout(siT);siT=setTimeout(()=>e.textContent='',2000);
+}

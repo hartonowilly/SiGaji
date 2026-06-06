@@ -438,3 +438,307 @@
     display: none !important;
   }
 }
+
+/* ── Sticky bar periode aktif ── */
+.period-sticky-bar {
+  position: sticky;
+  top: 52px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 1rem;
+  background: linear-gradient(90deg, #eef6ff 0%, #f8fafc 100%);
+  border-bottom: 1px solid #c5d9f5;
+  font-size: 12px;
+}
+.period-sticky-bar.is-hidden {
+  display: none;
+}
+.period-sticky-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-right: 0.35rem;
+}
+.period-sticky-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+}
+#period-sticky-name {
+  color: #1a56a0;
+  font-size: 13px;
+}
+.period-sticky-meta {
+  color: #6b7280;
+  font-size: 11px;
+}
+.period-sticky-side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.period-sticky-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #dde1e9;
+  font-size: 10px;
+  font-weight: 700;
+  color: #374151;
+}
+.period-sticky-chip.is-lock {
+  border-color: #f5a623;
+  color: #7d4800;
+  background: #fffbf5;
+}
+.period-sticky-chip.is-edit {
+  border-color: #86efac;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+/* ── Indikator sync cloud ── */
+.sync-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.sync-status[data-state='local'] {
+  color: #166534;
+  background: #ecfdf5;
+}
+.sync-status[data-state='pending'] {
+  color: #1a56a0;
+  background: #eef6ff;
+  animation: sigaji-pulse 1.2s ease-in-out infinite;
+}
+.sync-status[data-state='synced'] {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+.sync-status[data-state='error'] {
+  color: #9b2121;
+  background: #fdeaea;
+}
+@keyframes sigaji-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ── Skeleton loading ── */
+.sigaji-skeleton-wrap {
+  padding: 0.5rem 0;
+}
+.sigaji-skel {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: sigaji-shimmer 1.2s ease-in-out infinite;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+.sigaji-skel-row {
+  height: 36px;
+}
+.sigaji-skel-block {
+  height: 80px;
+}
+.sigaji-skel-kpi {
+  height: 64px;
+  flex: 1;
+}
+.sigaji-skeleton-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+@keyframes sigaji-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.btn.is-loading {
+  opacity: 0.85;
+  pointer-events: none;
+}
+.btn-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sigaji-spin 0.7s linear infinite;
+  vertical-align: -2px;
+}
+@keyframes sigaji-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Empty state ── */
+.sigaji-empty {
+  text-align: center;
+  padding: 2rem 1.25rem;
+  color: #6b7280;
+}
+.sigaji-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.85;
+}
+.sigaji-empty-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+.sigaji-empty-desc {
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0 0 0.85rem;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Absensi mobile cards ── */
+.ab-grid-mobile {
+  display: none;
+}
+.ab-mobile-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.85rem;
+  margin-bottom: 0.6rem;
+  background: #fff;
+}
+.ab-mobile-card h4 {
+  margin: 0 0 0.35rem;
+  font-size: 14px;
+  color: #1a56a0;
+}
+.ab-mobile-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+.ab-mobile-stat {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+/* ── Toggle kolom penggajian ── */
+.pg-cols-toggle {
+  display: inline-flex;
+  border: 1.5px solid #dde1e9;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0.65rem;
+}
+.pg-cols-toggle button {
+  border: 0;
+  background: #fff;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  cursor: pointer;
+}
+.pg-cols-toggle button.active {
+  background: #1a56a0;
+  color: #fff;
+}
+.pg-col-adv {
+  display: none;
+}
+body[data-pg-cols='lengkap'] .pg-col-adv {
+  display: table-cell;
+}
+body[data-pg-cols='lengkap'] th.pg-col-adv {
+  display: table-cell;
+}
+
+/* ── Wizard lokasi GPS ── */
+.mob-loc-wizard-steps {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+.mob-loc-wiz-dot {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+.mob-loc-wiz-dot.active {
+  background: #1a56a0;
+  color: #fff;
+}
+.mob-loc-wiz-dot.done {
+  background: #e8f4de;
+  color: #2d6a0a;
+}
+.mob-loc-step-hint {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.55;
+  margin-bottom: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+.mob-loc-preview-card {
+  padding: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid #c5d9f5;
+  background: #eef6ff;
+}
+
+@media (max-width: 900px) {
+  .period-sticky-bar {
+    top: 48px;
+    padding: 0.4rem 0.75rem;
+  }
+  .ab-grid-desktop {
+    display: none !important;
+  }
+  .ab-grid-mobile {
+    display: block !important;
+  }
+  .sigaji-skeleton-kpi {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 901px) {
+  .ab-grid-mobile {
+    display: none !important;
+  }
+}

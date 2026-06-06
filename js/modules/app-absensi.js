@@ -66,10 +66,15 @@ function renderAbsensi(){
   populateAbsensiPeriodeSelect();
   var pid=document.getElementById('ab-periode-sel')&&document.getElementById('ab-periode-sel').value;
   var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
-  if(!karyawan.length){hideKalBanner();document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada karyawan.</div>';document.getElementById('ab-rekap-wrap').innerHTML='';return;}
+  if(!karyawan.length){
+    hideKalBanner();
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Import Excel atau tambah manual di Master Karyawan untuk mulai mengisi absensi.',btnLabel:'Tambah karyawan',btnOnclick:"showPg('karyawan')"}):'<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada karyawan.</div>';
+    document.getElementById('ab-rekap-wrap').innerHTML='';
+    return;
+  }
   if(!pAbs||!pAbs.start||!pAbs.end){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Periode gaji belum lengkap',desc:'Atur tanggal mulai dan akhir di Master → Periode Gaji.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
@@ -109,6 +114,7 @@ function renderAbsensi(){
       +(showMon?'<div style="font-size:8px;opacity:.85">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
   });
   html+='<th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px;border-left:2px solid #374151">H</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">C</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">S</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">I</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">A</th></tr></thead><tbody>';
+  var mobileCards='';
   listKar.forEach(function(k,ki){
     var rb=ki%2===0?'#fff':'#f8f9fc';
     html+='<tr style="background:'+rb+'"><td style="position:sticky;left:0;z-index:3;background:'+rb+';padding:5px 6px;text-align:center;font-weight:800;color:#9ca3af;border-right:1px solid #e5e7eb;border-bottom:1px solid #f3f4f6;box-shadow:1px 0 0 #e5e7eb">'+(ki+1)+'</td><td style="position:sticky;left:'+AB_NO+'px;z-index:3;background:'+rb+';padding:5px 10px;font-weight:700;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:'+AB_NAME+'px;width:'+AB_NAME+'px;max-width:320px;box-shadow:1px 0 0 #e5e7eb;vertical-align:middle"><div style="display:flex;align-items:flex-start;gap:6px"><div style="width:24px;height:24px;border-radius:50%;background:#e8f0fb;color:#1a56a0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;margin-top:2px">'+ini(k.nama)+'</div><div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:700;line-height:1.25;word-break:break-word;white-space:normal">'+escapeHtml(k.nama)+'</div><div style="font-size:10px;color:#9ca3af;word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td style="position:sticky;left:'+AB_JAB_L+'px;z-index:3;background:'+rb+';padding:5px 8px;font-size:11px;color:#6b7280;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:112px;box-shadow:1px 0 0 #e5e7eb">'+(k.jabatan||'')+'</td>';
@@ -124,9 +130,19 @@ function renderAbsensi(){
       html+='<td style="background:'+bg+';color:'+tx+';padding:0;text-align:center;border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid #f3f4f6;opacity:'+(canCell?'1':cc?'0.88':'1')+';'+(canCell?'cursor:pointer;':cc?'cursor:not-allowed;':'')+'font-weight:700;font-size:10px" '+(canCell?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
     });
     html+='<td style="text-align:center;font-weight:800;color:#2d6a0a;border-left:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;background:#e8f4de">'+(cH||'')+'</td><td style="text-align:center;font-weight:800;color:#5b21b6;border-bottom:1px solid #f3f4f6;background:#ede9fe">'+(cC||'')+'</td><td style="text-align:center;font-weight:800;color:#7d4800;border-bottom:1px solid #f3f4f6;background:#fef3e2">'+(cS||'')+'</td><td style="text-align:center;font-weight:800;color:#1a56a0;border-bottom:1px solid #f3f4f6;background:#e8f0fb">'+(cI||'')+'</td><td style="text-align:center;font-weight:800;color:#9b2121;border-bottom:1px solid #f3f4f6;background:#fdeaea">'+(cA||'')+'</td></tr>';
+    mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div style="font-size:10px;color:#9ca3af">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
+      +'<div class="ab-mobile-stats">'
+      +'<span class="ab-mobile-stat" style="background:#e8f4de;color:#2d6a0a">H '+cH+'</span>'
+      +'<span class="ab-mobile-stat" style="background:#ede9fe;color:#5b21b6">C '+cC+'</span>'
+      +'<span class="ab-mobile-stat" style="background:#fef3e2;color:#7d4800">S '+cS+'</span>'
+      +'<span class="ab-mobile-stat" style="background:#e8f0fb;color:#1a56a0">I '+cI+'</span>'
+      +'<span class="ab-mobile-stat" style="background:#fdeaea;color:#9b2121">A '+cA+'</span>'
+      +'</div></div>';
   });
   html+='</tbody></table>';
-  document.getElementById('ab-grid-wrap').innerHTML=roBanner+html;
+  document.getElementById('ab-grid-wrap').innerHTML=roBanner
+    +'<div class="table-wrap ab-grid-desktop">'+html+'</div>'
+    +'<div class="ab-grid-mobile">'+mobileCards+'</div>';
   var hkP=hariKerjaRange(pAbs.start,pAbs.end);
   var cbB=0;
   if(masterCuti.cbPotong){
