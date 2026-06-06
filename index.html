@@ -8,15 +8,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/css/styles.css?v=11.5.2">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.12">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.12">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.13">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.13">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.12"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.13"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.12"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.13"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -57,13 +57,24 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <span class="sync-status" id="sync-status" aria-live="polite"></span>
     <span class="save-ind" id="save-ind"></span>
   </div>
-  <div class="tl">
+  <div class="tl topbar-theme-wrap fl gap1" style="align-items:center">
+    <select id="ui-pref-density" class="toolbar-select ui-pref-sel" title="Kepadatan tampilan" onchange="sigajiSetUiPref('density',this.value)">
+      <option value="comfortable">Comfortable</option>
+      <option value="compact">Compact</option>
+    </select>
+    <select id="ui-pref-theme" class="toolbar-select ui-pref-sel" title="Tema warna" onchange="sigajiSetUiPref('theme',this.value)">
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="brand">Brand PT</option>
+    </select>
+    <button type="button" class="btn btn-xs btn-out" onclick="sigajiProductTourStart(true)" title="Tur produk">?</button>
     <button class="notif-btn" onclick="showPg('notifikasi')">&#128276;<span class="ndot" id="ndot"></span></button>
     <div class="av" id="uav">A</div>
     <div><div class="uname" id="uname">-</div><span class="rbadge" id="urbadge">-</span></div>
     <button class="btn btn-sm btn-out topbar-logout" onclick="doLogout()">Keluar</button>
   </div>
 </div>
+<div id="period-timeline-bar" class="period-timeline-bar" role="navigation" aria-label="Timeline periode gaji"></div>
 <div class="period-sticky-bar is-hidden" id="period-sticky-bar" role="region" aria-label="Periode gaji aktif">
   <div class="period-sticky-main">
     <span class="period-sticky-label">Periode gaji aktif</span>
@@ -87,28 +98,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 <!-- DASHBOARD -->
 <div class="pg active" id="pg-dashboard">
-  <div id="pb-dash"></div>
-  <div class="sg4 sg4-kpi">
-    <div class="sc sc-kpi sc-kpi-kar"><span class="sc-kpi-icon" aria-hidden="true">&#128101;</span><div class="sc-kpi-body"><div class="sl">Karyawan aktif</div><div class="sv" id="d-kar">-</div><div class="sv-sub" id="d-kar-sub"></div></div></div>
-    <div class="sc sc-kpi sc-kpi-bruto"><span class="sc-kpi-icon" aria-hidden="true">&#128200;</span><div class="sc-kpi-body"><div class="sl">Estimasi gross PPh</div><div class="sv sv-money" id="d-bruto">-</div><div class="sv-sub" id="d-bruto-sub"></div></div></div>
-    <div class="sc sc-kpi sc-kpi-pph"><span class="sc-kpi-icon" aria-hidden="true">&#128203;</span><div class="sc-kpi-body"><div class="sl">Estimasi PPh 21</div><div class="sv sv-money sv-warn" id="d-pph">-</div><div class="sv-sub" id="d-pph-sub"></div></div></div>
-    <div class="sc sc-kpi sc-kpi-neto"><span class="sc-kpi-icon" aria-hidden="true">&#128176;</span><div class="sc-kpi-body"><div class="sl">Estimasi neto</div><div class="sv sv-money sv-ok" id="d-neto">-</div><div class="sv-sub" id="d-neto-sub"></div></div></div>
+  <div class="dash-bento-toolbar flb" style="margin-bottom:.65rem;flex-wrap:wrap;gap:.5rem">
+    <div style="font-size:12px;color:#6b7280">Dashboard — seret widget untuk ubah urutan · tersimpan per role</div>
+    <button type="button" class="btn btn-xs btn-out" onclick="sigajiResetBentoLayout()">&#8635; Reset layout</button>
   </div>
-  <div id="d-kpi-hint" class="dash-kpi-hint"></div>
-  <div class="card"><div class="ct">&#128197; Kalender kepatuhan Indonesia</div>
-    <p style="font-size:11px;color:#6b7280;margin:0 0 .65rem">Deadline THR, BPJS, e-Bupot/Coretax, dan tanggal bayar periode aktif.</p>
-    <div id="d-compliance-cal"></div></div>
-  <div class="card"><div class="ct">&#9888; Anomali payroll — perlu dicek</div>
-    <p style="font-size:11px;color:#6b7280;margin:0 0 .65rem">Deteksi otomatis sebelum finalisasi gaji periode aktif.</p>
-    <div id="d-payroll-anomalies"></div></div>
-  <div class="card"><div class="ct">&#128200; Tren payroll 12 bulan</div>
-    <p style="font-size:11px;color:#6b7280;margin:0 0 .65rem">Bruto, PPh, neto, dan headcount per periode gaji (12 terakhir).</p>
-    <div id="d-trend-chart" style="min-height:140px;color:#9ca3af;font-size:12px">Memuat tren…</div></div>
-  <div class="card"><div class="ct">Kehadiran bulan ini</div><div id="d-att-chart" style="min-height:120px;color:#9ca3af;font-size:12px">Memuat grafik…</div></div>
-  <div class="card"><div class="ct">Status per Departemen</div>
-    <div class="table-wrap"><table><thead><tr><th>Dept</th><th>Karyawan</th><th>Gross</th><th>Neto</th></tr></thead>
-    <tbody id="d-table"></tbody></table></div></div>
-  <div class="card"><div class="ct">Info & Peringatan</div><div id="d-alerts"></div></div>
+  <div id="dash-bento-grid" class="dash-bento-grid" aria-label="Dashboard bento"></div>
 </div>
 
 <!-- NOTIFIKASI -->
@@ -919,6 +913,28 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 <!-- SLIDE PANEL KARYAWAN (profil SDM saja) -->
 <div class="po" id="panel-overlay" onclick="closeAnyPanel()"></div>
+<div class="po" id="wf-explain-overlay" onclick="sigajiCloseExplain()"></div>
+<aside id="wf-explain-panel" class="wf-explain-panel" aria-label="Penjelasan angka gaji">
+  <div class="wf-explain-head">
+    <strong>Kenapa angka ini?</strong>
+    <button type="button" class="spc" onclick="sigajiCloseExplain()" aria-label="Tutup">&times;</button>
+  </div>
+  <div id="wf-explain-body" class="wf-explain-body"></div>
+</aside>
+<div id="sigaji-tour-overlay" class="sigaji-tour-overlay" aria-hidden="true">
+  <div id="sigaji-tour-popover" class="sigaji-tour-popover">
+    <div id="sigaji-tour-step-lbl" style="font-size:10px;color:#6b7280"></div>
+    <div id="sigaji-tour-title" style="font-weight:800;font-size:14px;margin:.35rem 0"></div>
+    <p id="sigaji-tour-body" style="font-size:12px;color:#374151;margin:0 0 .75rem;line-height:1.55"></p>
+    <div class="fl gap1" style="justify-content:space-between">
+      <button type="button" class="btn btn-xs btn-out" onclick="sigajiProductTourEnd(false)">Lewati</button>
+      <div class="fl gap1">
+        <button type="button" class="btn btn-xs btn-out" id="sigaji-tour-prev" onclick="sigajiProductTourPrev()">&#9664;</button>
+        <button type="button" class="btn btn-xs btn-p" onclick="sigajiProductTourNext()">Lanjut</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="sp" id="slide-panel">
   <div class="sph">
     <div>
@@ -1339,21 +1355,22 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/karyawan-tipe.js?v=11.5.1"></script>
 <script src="/js/storage.js?v=11.5.7"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/modules/app-globals.js?v=11.5.12"></script>
-<script src="/js/modules/app-core.js?v=11.5.12"></script>
-<script src="/js/modules/app-access.js?v=11.5.12"></script>
-<script src="/js/modules/app-hr.js?v=11.5.12"></script>
-<script src="/js/modules/app-slip.js?v=11.5.12"></script>
-<script src="/js/modules/app-reports.js?v=11.5.12"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.12"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.12"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.12"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.12"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.12"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.5.12"></script>
-<script src="/js/modules/app-master.js?v=11.5.12"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.12"></script>
-<script src="/js/modules/app-shell.js?v=11.5.12"></script>
+<script src="/js/modules/app-globals.js?v=11.5.13"></script>
+<script src="/js/modules/app-core.js?v=11.5.13"></script>
+<script src="/js/modules/app-access.js?v=11.5.13"></script>
+<script src="/js/modules/app-hr.js?v=11.5.13"></script>
+<script src="/js/modules/app-slip.js?v=11.5.13"></script>
+<script src="/js/modules/app-reports.js?v=11.5.13"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.13"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.13"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.13"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.13"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.13"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.5.13"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.5.13"></script>
+<script src="/js/modules/app-master.js?v=11.5.13"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.13"></script>
+<script src="/js/modules/app-shell.js?v=11.5.13"></script>
 <script src="/js/pesangon.js?v=11.5.1"></script>
 <script src="/js/config.js?v=10.0.0"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
@@ -1361,6 +1378,6 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="/js/cloud-sync.js?v=11.5.7"></script>
-<script src="/js/modules/app-boot.js?v=11.5.12"></script>
+<script src="/js/modules/app-boot.js?v=11.5.13"></script>
 </body>
 </html>

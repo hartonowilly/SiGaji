@@ -38,59 +38,21 @@ function onSpTipeKerjaChange() {
 function renderDash(){
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
   const thrTag=p.thr_aktif?'<span class="bdg b-pu dash-thr-badge">&#127873; THR '+(p.thr_nama||'')+'</span>':'';
-  document.getElementById('pb-dash').innerHTML=
-    '<div class="dash-hero">'+
-    '<div><div class="dash-hero-label">Periode aktif</div>'+
-    '<div class="dash-hero-title">'+p.nama+thrTag+'</div>'+
-    '<div class="dash-hero-meta">'+fmtDate(p.start)+' — '+fmtDate(p.end)+' · Bayar: '+fmtDate(p.bayar)+
-    (p.thr_aktif?' · THR: '+fmtDate(p.thr_bayar||'-'):'')+'</div></div>'+
-    '<div class="dash-hero-side"><div class="dash-hero-count">'+hP+'</div>'+
-    '<div class="dash-hero-count-lbl">hari menuju penggajian</div></div></div>';
   let tB=0,tP=0,tN=0,tT=0;const depts={};
   const list=karyawanListPeriode(p);
   ensureKarSnapshotPeriode(p.nama,list);
   list.forEach(k=>{const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;if(!depts[k.dept])depts[k.dept]={n:0,b:0,n2:0};depts[k.dept].n++;depts[k.dept].b+=g.grossPPh;depts[k.dept].n2+=g.neto;});
-  document.getElementById('d-kar').textContent=list.length;
-  document.getElementById('d-bruto').textContent=fmt(tB);
-  document.getElementById('d-pph').textContent=fmt(tP);
-  document.getElementById('d-neto').textContent=fmt(tN);
-  var periodeLbl=p.nama+' · '+fmtDate(p.start)+' – '+fmtDate(p.end);
-  var subKar=document.getElementById('d-kar-sub');
-  var subBr=document.getElementById('d-bruto-sub');
-  var subPph=document.getElementById('d-pph-sub');
-  var subNet=document.getElementById('d-neto-sub');
-  if(subKar)subKar.textContent='di periode gaji aktif';
-  if(subBr)subBr.textContent='periode penuh';
-  if(subPph)subPph.textContent='belum final';
-  if(subNet)subNet.textContent='belum final';
-  var hintEl=document.getElementById('d-kpi-hint');
-  if(hintEl){
-    var todayIso=new Date().toISOString().substring(0,10);
-    var periodeBelumSelesai=p.end&&todayIso<p.end;
-    hintEl.innerHTML='<strong>Estimasi payroll</strong> — angka di atas dihitung dari komponen gaji &amp; absensi '
-      +'periode <em>'+escapeHtml(p.nama)+'</em> ('+fmtDate(p.start)+' – '+fmtDate(p.end)+'), '
-      +(periodeBelumSelesai
-        ?'<strong>bukan</strong> akumulasi sampai hari ini. Bulan belum selesai; nilai bisa berubah setelah absensi/lembur/approval diperbarui.'
-        :'bukan slip final — proses &amp; approval di modul Penggajian menentukan angka resmi.')
-      +' Bayar: '+fmtDate(p.bayar)+'.';
-  }
-  document.getElementById('d-table').innerHTML=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
+  var todayIso=new Date().toISOString().substring(0,10);
+  var periodeBelumSelesai=p.end&&todayIso<p.end;
+  var hintHtml='<strong>Estimasi payroll</strong> — periode <em>'+escapeHtml(p.nama)+'</em> ('+fmtDate(p.start)+' – '+fmtDate(p.end)+'), '
+    +(periodeBelumSelesai
+      ?'<strong>bukan</strong> akumulasi s.d. hari ini.'
+      :'bukan slip final — proses penggajian menentukan angka resmi.')
+    +' Bayar: '+fmtDate(p.bayar)+'.';
   const pRet=list.reduce((s,k)=>s+(k.pph_return?.nilai||0),0);
   const pAp=approvals.filter(a=>a.status==='pending'&&a.period===p.nama).length;
-  try{
-    if(typeof sigajiRenderDashAlerts==='function')sigajiRenderDashAlerts({thrAktif:!!p.thr_aktif,thrNama:p.thr_nama,thrTotal:tT,thrBayar:p.thr_bayar,pendingAp:pAp,pphRet:pRet});
-    else{
-      var alerts='';
-      if(p.thr_aktif)alerts+='<div class="alert-item alert-purple">&#127873; THR '+(p.thr_nama||'')+'</div>';
-      if(pAp>0)alerts+='<div class="alert-item alert-amber">'+pAp+' approval tertunda</div>';
-      if(pRet>0)alerts+='<div class="alert-item alert-green">PPh Return: '+fmt(pRet)+'</div>';
-      if(!alerts)alerts='<div class="alert-empty">Tidak ada peringatan.</div>';
-      document.getElementById('d-alerts').innerHTML=alerts;
-    }
-  }catch(eAl){}
-  try{if(typeof renderDashPayrollTrend==='function')renderDashPayrollTrend();}catch(eTr){}
-  var chartEl=document.getElementById('d-att-chart');
-  if(chartEl){
+  var attHtml='';
+  {
     var todayIso=new Date().toISOString().substring(0,10);
     var periodDays=typeof absensiDaysFromPeriode==='function'?absensiDaysFromPeriode(p):[];
     periodDays=periodDays.filter(function(x){return x.date<=todayIso;});
@@ -126,20 +88,25 @@ function renderDash(){
         +(nKar?'<div class="dash-att-bar-sub">'+b.hadir+'/'+nKar+'</div>':'')+'</div>';
     }).join('');
     var avgHadir=nDays&&nKar?Math.round((stats.hadir/(nDays*nKar))*100):0;
-    chartEl.innerHTML='<p class="dash-att-hint">Grafik harian periode <strong>'+escapeHtml(p.nama)+'</strong> ('+fmtDate(p.start)+' – '+fmtDate(p.end)+'): tinggi batang = proporsi karyawan hadir. '
-      +'Kosong di kalender absensi = dianggap <em>hadir</em> (bukan alpha).</p>'
-      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari dalam periode',desc:'Periode aktif belum dimulai atau rentang tanggal belum valid.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div style="color:#9ca3af;padding:1rem">Belum ada data grafik.</div>')
+    attHtml='<p class="dash-att-hint">Grafik harian — proporsi hadir per hari.</p>'
+      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div style="color:#9ca3af;padding:1rem">—</div>')
       +'<div class="dash-att-legend">'
-      +'<span class="lg-hadir" title="Jumlah entri hadir: setiap karyawan per hari dihitung 1">Orang-hari hadir: '+stats.hadir+'</span>'
-      +'<span class="lg-izin">Orang-hari izin: '+stats.izin+'</span>'
-      +'<span class="lg-sakit">Orang-hari sakit: '+stats.sakit+'</span>'
-      +'<span class="lg-alpha">Orang-hari alpha: '+stats.alpha+'</span>'
-      +'<span style="margin-left:auto;color:#9ca3af;text-align:right;line-height:1.4">'
-      +nKar+' karyawan · '+escapeHtml(p.nama)+'<br><span style="font-size:10px">'+nDays+' hari (s.d. hari ini) · rata-rata kehadiran ~'+avgHadir+'%</span></span></div>';
+      +'<span class="lg-hadir">Hadir: '+stats.hadir+'</span>'
+      +'<span class="lg-izin">Izin: '+stats.izin+'</span>'
+      +'<span class="lg-sakit">Sakit: '+stats.sakit+'</span>'
+      +'<span class="lg-alpha">Alpha: '+stats.alpha+'</span>'
+      +'<span style="margin-left:auto;font-size:10px;color:#9ca3af">~'+avgHadir+'% kehadiran</span></div>';
   }
-  try{if(typeof renderDashComplianceCalendar==='function')renderDashComplianceCalendar();}catch(eCc){}
-  try{if(typeof renderDashPayrollAnomalies==='function')renderDashPayrollAnomalies();}catch(eAn){}
+  var deptTableHtml=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
+  try{
+    if(typeof sigajiRenderBentoDashboard==='function')sigajiRenderBentoDashboard({
+      p:p,hP:hP,thrTag:thrTag,tB:tB,tP:tP,tN:tN,tT:tT,nKar:list.length,depts:depts,
+      hintHtml:hintHtml,thrAktif:!!p.thr_aktif,thrNama:p.thr_nama,thrBayar:p.thr_bayar,
+      pRet:pRet,pAp:pAp,attHtml:attHtml,deptTableHtml:deptTableHtml
+    });
+  }catch(eBento){console.error('bento',eBento);}
   try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){}
+  try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){}
 }
 // ── MASTER KARYAWAN ─────────────────────────────
 function karRowHtml(k,no){
@@ -997,7 +964,8 @@ function renderPenggajian(skipTunjVar){
     if(pr.enabled)prAktif++;
     const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'" onclick="setPREnabled(\''+k.nik+'\',\''+p.nama+'\','+(!pr.enabled)+')">'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
     const prInputs=pr.enabled?'<div style="margin-top:4px;display:flex;gap:5px;align-items:center"><span style="font-size:10px;color:#6b7280">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span style="font-size:10px;color:#6b7280">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
-    const thrCell=g.thrBruto>0?'<div style="color:#5b21b6;font-weight:700">'+fmt(g.thrBruto)+'</div><div style="font-size:10px;color:#5b21b6">PPh THR: '+fmt(g.pphAtasThr)+'</div>':'&#8212;';
+    const thrExplain=g.thrBruto>0?' onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Kenapa angka THR ini?"':'';
+    const thrCell=g.thrBruto>0?'<div class="sigaji-money-click" style="color:#5b21b6;font-weight:700"'+thrExplain+'>'+fmt(g.thrBruto)+'</div><div style="font-size:10px;color:#5b21b6">PPh THR: '+fmt(g.pphAtasThr)+'</div>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):''):'&#8212;';
     var rowCls=[];
     if(pr.enabled)rowCls.push('pg-row-prorate');
     if(g.neto<0)rowCls.push('pg-row-neto-neg');
@@ -1007,12 +975,12 @@ function renderPenggajian(skipTunjVar){
       +'<td class="pg-sticky-name"><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div>'
       +'<div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div><small style="color:#6b7280">'+k.dept+'</small></div></div></td>'
       +'<td><div>'+prBtn+prInputs+'</div></td>'
-      +'<td>'+fmt(g.grossPPh)+'</td><td class="pg-col-adv">'+thrCell+'</td>'
+      +'<td><span class="sigaji-money-click" onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Kenapa gross ini?">'+fmt(g.grossPPh)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td><td class="pg-col-adv">'+thrCell+'</td>'
       +'<td class="pg-col-adv">'+fmt(g.brutoTH)+'</td>'
       +'<td class="pg-col-adv">'+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</td>'
-      +'<td>'+fmt(g.pph)+(g.reconciliation&&g.reconciliation.lebihBayar>0?'<div style="font-size:9px;color:#2d6a0a;font-weight:700">&#10003; Lebih Bayar '+fmt(g.reconciliation.lebihBayar)+'</div>':g.reconciliation&&g.reconciliation.kurangBayar>0?'<div style="font-size:9px;color:#9b2121">&#9650; Kurang Bayar '+fmt(g.reconciliation.kurangBayar)+'</div>':'')+'</td>'
+      +'<td><span class="sigaji-money-click" onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Kenapa angka ini?">'+fmt(g.pph)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+(g.reconciliation&&g.reconciliation.lebihBayar>0?'<div style="font-size:9px;color:#2d6a0a;font-weight:700">&#10003; Lebih Bayar '+fmt(g.reconciliation.lebihBayar)+'</div>':g.reconciliation&&g.reconciliation.kurangBayar>0?'<div style="font-size:9px;color:#9b2121">&#9650; Kurang Bayar '+fmt(g.reconciliation.kurangBayar)+'</div>':'')+'</td>'
       +'<td class="pg-col-adv">'+(g.pphRet>0?'<span style="color:#2d6a0a;font-weight:700">+'+fmt(g.pphRet)+'</span>':'&#8212;')+'</td>'
-      +'<td><strong style="color:#2d6a0a">'+fmt(g.neto)+'</strong></td>'
+      +'<td><strong class="sigaji-money-click" style="color:#2d6a0a" onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Waterfall THP">'+fmt(g.neto)+'</strong>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td>'
       +'<td>'+stBdg+'</td>'
       +'<td><button class="btn btn-sm btn-out" onclick="detailGaji(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')">Detail</button></td></tr>';
   });
