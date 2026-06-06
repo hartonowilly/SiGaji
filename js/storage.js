@@ -209,6 +209,25 @@ function migrateStorage(db){
     }
     v=18;
   }
+  if(v<19){
+    var prs19=db.perusahaan||{};
+    if(!Array.isArray(db.cabang))db.cabang=[];
+    db.cabang.forEach(function(c,i){
+      if(!c||typeof c!=='object')return;
+      if(c.id==='utama'||i===0){
+        if(!c.npwp&&prs19.npwp)c.npwp=prs19.npwp;
+        if(c.nitku==null||c.nitku==='')c.nitku=prs19.nitku||'000000';
+        if(!c.alamat&&prs19.alamat)c.alamat=prs19.alamat;
+        if(!c.namaPemotong&&prs19.nama)c.namaPemotong=prs19.nama;
+        if(!c.a1_kota&&prs19.a1_kota)c.a1_kota=prs19.a1_kota;
+        if(!c.a1_ttd_nama&&prs19.a1_ttd_nama)c.a1_ttd_nama=prs19.a1_ttd_nama;
+        if(!c.a1_ttd_jabatan&&prs19.a1_ttd_jabatan)c.a1_ttd_jabatan=prs19.a1_ttd_jabatan;
+        if(c.a1_prefix==null||c.a1_prefix==='')c.a1_prefix=prs19.a1_prefix!=null?prs19.a1_prefix:'A1';
+      }
+      if(c.nitku==null||c.nitku==='')c.nitku='000000';
+    });
+    v=19;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');

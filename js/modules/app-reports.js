@@ -368,7 +368,7 @@ function exportExcelRekonResign(){
 /** Excel: kertas kerja PPh 21 & THP — per karyawan, periode aktif */
 function exportExcelKertasKerjaPPh(){
   var p=PA();
-  var list=sortKaryawanByNik(karyawan.filter(function(k){return karyawanInPeriode(k,p);}));
+  var list=typeof karyawanListPeriode==='function'?karyawanListPeriode(p):sortKaryawanByNik(karyawan.filter(function(k){return karyawanInPeriode(k,p);}));
   if(!list.length){toast('Belum ada karyawan untuk periode aktif');return;}
   ensureXLSX(function(){
     try{
@@ -383,7 +383,9 @@ function exportExcelKertasKerjaPPh(){
       });
       var tunjCols=Object.keys(tunjNames).sort();
       var potCols=Object.keys(potNames).sort();
-      var baseHdr=['No','NIK','Nama','Dept','Jabatan','Status','PTKP','NPWP','Pro-rata aktif','HK prorata','HH prorata','Gaji pokok efektif'];
+      var baseHdr=['No','NIK','Nama'];
+      if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled())baseHdr.push('Cabang','NITKU Pemotong');
+      baseHdr=baseHdr.concat(['Dept','Jabatan','Status','PTKP','NPWP','Pro-rata aktif','HK prorata','HH prorata','Gaji pokok efektif']);
       var tunjHdr=tunjCols.map(function(n){return 'Tunj: '+n;});
       var midHdr=[
         'Natura KP (Gross PPh)','Natura NKP (TH saja)','Lembur','BPJS Prs JKK+JKM+Kes (natura KP)',
@@ -413,7 +415,12 @@ function exportExcelKertasKerjaPPh(){
         var pk=potKhDetailCols(g.potKehadiran.details);
         var r=new Array(hdr.length).fill('');
         var j=0;
-        r[j++]=idx+1;r[j++]=k.nik;r[j++]=k.nama||'';r[j++]=k.dept||'';r[j++]=k.jabatan||'';r[j++]=k.status||'';
+        r[j++]=idx+1;r[j++]=k.nik;r[j++]=k.nama||'';
+        if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()){
+          var pmK=typeof sigajiKarCabangPemotongMeta==='function'?sigajiKarCabangPemotongMeta(k):{};
+          r[j++]=pmK.cabangNama||'';r[j++]=pmK.nitku||'';
+        }
+        r[j++]=k.dept||'';r[j++]=k.jabatan||'';r[j++]=k.status||'';
         r[j++]=k.ptkp||'';r[j++]=k.npwp||'';r[j++]=g.isPR?'Ya':'Tidak';
         r[j++]=g.isPR&&g.pr?g.pr.hk:'';r[j++]=g.isPR&&g.pr?g.pr.hh:'';
         r[j++]=Math.round(g.gapokEff);
@@ -451,7 +458,9 @@ function exportExcelKertasKerjaPPh(){
       var wb=XLSX.utils.book_new();
       var ncol=hdr.length;
       ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:ncol-1}},{s:{r:1,c:0},e:{r:1,c:ncol-1}},{s:{r:2,c:0},e:{r:2,c:ncol-1}}];
-      var cols=[{wch:4},{wch:12},{wch:26},{wch:12},{wch:18},{wch:10},{wch:8},{wch:18},{wch:10},{wch:8},{wch:8},{wch:14}];
+      var cols=[{wch:4},{wch:12},{wch:26}];
+      if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled())cols.push({wch:18},{wch:10});
+      cols=cols.concat([{wch:12},{wch:18},{wch:10},{wch:8},{wch:18},{wch:10},{wch:8},{wch:8},{wch:14}]);
       for(var t=0;t<tunjHdr.length;t++)cols.push({wch:16});
       for(var m=0;m<midHdr.length;m++)cols.push({wch:14});
       for(var p0=0;p0<potHdr.length;p0++)cols.push({wch:14});
@@ -461,7 +470,9 @@ function exportExcelKertasKerjaPPh(){
       ws['!cols']=cols.slice(0,ncol);
       var firstDataRow=5;
       var lastDataRow=firstDataRow+list.length-1;
-      for(var c=11;c<ncol;c++){
+      var numStartCol=11;
+      if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled())numStartCol+=2;
+      for(var c=numStartCol;c<ncol;c++){
         xlsxSetNumFmtRange(ws,c,firstDataRow,lastDataRow,'#,##0');
       }
       XLSX.utils.book_append_sheet(wb,ws,'Kertas Kerja PPh');

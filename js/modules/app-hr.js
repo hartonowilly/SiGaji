@@ -132,7 +132,8 @@ function karRowHtml(k,no){
   const tipeCls=tipe==='tidak_tetap'?'b-warn':'b-teal';
   const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span>`;
   const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out" onclick="openTelegramModalForNik('${k.nik}')">Telegram</button>`:'';
-  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280;font-family:monospace">${k.nik}</div></div></div></td><td><span class="bdg ${tipeCls}">${tipeLbl}</span></td><td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td><td><span class="bdg b-info">${k.ptkp}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
+  var cabCol=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
+  return`<tr><td style="text-align:center;color:#6b7280;font-weight:700">${no}</td><td><div class="fl gap2" style="align-items:center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div style="font-size:10px;color:#6b7280;font-family:monospace">${k.nik}</div></div></div></td><td><span class="bdg ${tipeCls}">${tipeLbl}</span></td>${cabCol}<td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td><td><span class="bdg b-info">${k.ptkp}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -141,13 +142,15 @@ function renderKar(){
   renderKarBody();
 }
 function renderKarBody(){
+  try{if(typeof sigajiSyncKarTableHead==='function')sigajiSyncKarTableHead();}catch(eTh){}
   const p=PA();
   const list=karyawanListPeriode(p).filter(karMatchesTipeFilter);
   const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Data profil SDM';
   try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}
   const tb=document.getElementById('tb-kar');if(!tb)return;
   if(!list.length&&typeof sigajiEmptyState==='function'){
-    tb.innerHTML='<tr><td colspan="9">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnOnclick:"openNewKar('tetap')"})+'</td></tr>';
+    var karColspan=9+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()?1:0);
+    tb.innerHTML='<tr><td colspan="'+karColspan+'">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnOnclick:"openNewKar('tetap')"})+'</td></tr>';
     return;
   }
   tb.innerHTML=list.map((k,i)=>karRowHtml(k,i+1)).join('');
@@ -972,6 +975,7 @@ function renderPenggajian(skipTunjVar){
   renderPenggajianBody(skipTunjVar);
 }
 function renderPenggajianBody(skipTunjVar){
+  try{if(typeof sigajiSyncPgGajiTableHead==='function')sigajiSyncPgGajiTableHead();}catch(eTh2){}
   const p=PA();
   // Buat snapshot master untuk periode aktif (agar periode yang sudah dikerjakan tidak berubah)
   const listPeriode=karyawanListPeriode(p);
@@ -1006,10 +1010,12 @@ function renderPenggajianBody(skipTunjVar){
     if(pr.enabled)rowCls.push('pg-row-prorate');
     if(g.neto<0)rowCls.push('pg-row-neto-neg');
     if(st==='pending')rowCls.push('pg-row-pending');
+    var cabPg=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
     return '<tr class="'+rowCls.join(' ')+'">'
       +'<td class="pg-sticky-no" style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td>'
       +'<td class="pg-sticky-name"><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div>'
       +'<div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div><small style="color:#6b7280">'+k.dept+'</small></div></div></td>'
+      +cabPg
       +'<td><div>'+prBtn+prInputs+'</div></td>'
       +'<td><span class="sigaji-money-click" onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Kenapa gross ini?">'+fmt(g.grossPPh)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td><td class="pg-col-adv">'+thrCell+'</td>'
       +'<td class="pg-col-adv">'+fmt(g.brutoTH)+'</td>'
@@ -1022,7 +1028,8 @@ function renderPenggajianBody(skipTunjVar){
   });
   var tbPg=document.getElementById('tb-penggajian');
   if(!rows.length&&typeof sigajiEmptyState==='function'){
-    tbPg.innerHTML='<tr><td colspan="12">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
+    var pgColspan=12+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()?1:0);
+    tbPg.innerHTML='<tr><td colspan="'+pgColspan+'">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
   }else tbPg.innerHTML=rows.join('');
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
 }

@@ -190,6 +190,15 @@ function formatHPWhatsApp(hp){
 function buildGajiSlipPDF(k,pNama,tglBayar){
   var g=hitungGaji(k,pNama);
   var p=periodes.find(function(x){return x.nama===pNama;})||PA();
+  var pm=typeof sigajiKarCabangPemotongMeta==='function'?sigajiKarCabangPemotongMeta(k):null;
+  var multiBr=typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled();
+  var ptNama=String(perusahaan.nama||'Perusahaan');
+  var ptAlamat=String(perusahaan.alamat||'');
+  if(multiBr&&pm){
+    ptNama=pm.nama||ptNama;
+    if(pm.cabangNama&&pm.cabangNama!=='Kantor Pusat')ptNama+=' — '+pm.cabangNama;
+    if(pm.alamat)ptAlamat=pm.alamat;
+  }
   var tbl=getTERTable(k.ptkp);
   var rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
   var doc=new window.jspdf.jsPDF({format:'a4',unit:'mm'});
@@ -234,21 +243,21 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   }
 
   if(typeof sigajiPdfMagazineCover==='function'){
-    y=sigajiPdfMagazineCover(doc,{eyebrow:'Slip Gaji Resmi',title:'SLIP GAJI',subtitle:String(perusahaan.nama||'Perusahaan'),meta:'Periode: '+pNama+' · Bayar: '+fmtDate(tglBayar||p.bayar||'-')});
+    y=sigajiPdfMagazineCover(doc,{eyebrow:'Slip Gaji Resmi',title:'SLIP GAJI',subtitle:ptNama,meta:'Periode: '+pNama+' · Bayar: '+fmtDate(tglBayar||p.bayar||'-')});
     doc.setTextColor(0,0,0);
     doc.setFontSize(8);doc.setFont(undefined,'normal');
     if(g.isPR)doc.text('Pro-Rata '+g.pr.hh+'/'+g.pr.hk,pw-14,y-2,{align:'right'});
   }else{
     doc.setFillColor(26,86,160);doc.rect(0,0,pw,32,'F');doc.setTextColor(255,255,255);
     doc.setFontSize(12);doc.setFont(undefined,'bold');doc.text('SLIP GAJI',14,11);
-    doc.setFontSize(10);doc.text(String(perusahaan.nama||'Perusahaan'),14,18);
+    doc.setFontSize(10);doc.text(ptNama,14,18);
     doc.setFontSize(8);doc.setFont(undefined,'normal');
     doc.text('Periode: '+pNama,pw-14,11,{align:'right'});
     doc.text('Bayar: '+fmtDate(tglBayar||p.bayar||'-'),pw-14,17,{align:'right'});
     if(g.isPR)doc.text('Pro-Rata '+g.pr.hh+'/'+g.pr.hk,pw-14,23,{align:'right'});
-    if(perusahaan.alamat){
+    if(ptAlamat){
       doc.setFontSize(7.5);doc.setTextColor(230,240,255);
-      var al=doc.splitTextToSize(String(perusahaan.alamat),pw-85);var ay=22;
+      var al=doc.splitTextToSize(String(ptAlamat),pw-85);var ay=22;
       al.slice(0,2).forEach(function(ln){doc.text(ln,14,ay);ay+=3;});
     }
     doc.setTextColor(0,0,0);
@@ -644,6 +653,19 @@ function nextBuktiA1Nomor(tahun){
 /** PDF Form acuan 1721-A1 — judul mengikuti PER-16/PJ/2016; data dari SiGaji (TER PMK 168/2023) */
 function build1721A1PDF(k,tahun,agg,nomorBukti){
   nomorBukti=nomorBukti||'-';
+  var pm=typeof sigajiKarCabangPemotongMeta==='function'?sigajiKarCabangPemotongMeta(k):null;
+  var prs=perusahaan||{};
+  var pem={
+    npwp:pm?pm.npwpRaw||pm.npwp:prs.npwp,
+    nama:pm?pm.nama:prs.nama,
+    alamat:pm?pm.alamat:prs.alamat,
+    a1_kota:pm?pm.a1_kota:prs.a1_kota,
+    a1_ttd_nama:pm?pm.a1_ttd_nama:prs.a1_ttd_nama,
+    a1_ttd_jabatan:pm?pm.a1_ttd_jabatan:prs.a1_ttd_jabatan,
+    cabangNama:pm?pm.cabangNama:'',
+    nitku:pm?pm.nitku:'',
+    idTku:pm?pm.idTku22:''
+  };
   var doc=new window.jspdf.jsPDF({format:'a4',unit:'mm'});
   var pw=doc.internal.pageSize.getWidth();var ph=doc.internal.pageSize.getHeight();
   var m=14;var LM=m;var RM=pw-m;
@@ -666,9 +688,11 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
 
   doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('A. PEMOTONG',LM,y);y+=5;
   doc.setFont(undefined,'normal');doc.setFontSize(8.5);
-  doc.text('NPWP Pemotong : '+(perusahaan.npwp||'-'),LM,y);y+=4.5;
-  doc.text('Nama Pemotong : '+(perusahaan.nama||'-'),LM,y);y+=4.5;
-  y=tx(doc.splitTextToSize('Alamat Pemotong : '+(perusahaan.alamat||'-'),pw-2*m),LM,y);
+  if(pem.cabangNama)doc.text('Cabang / TKU : '+pem.cabangNama+(pem.nitku?' (NITKU '+pem.nitku+')':''),LM,y),y+=4.5;
+  doc.text('NPWP Pemotong : '+(pem.npwp||'-'),LM,y);y+=4.5;
+  doc.text('Nama Pemotong : '+(pem.nama||'-'),LM,y);y+=4.5;
+  y=tx(doc.splitTextToSize('Alamat Pemotong : '+(pem.alamat||'-'),pw-2*m),LM,y);
+  if(pem.idTku)doc.text('ID TKU (22 digit) : '+pem.idTku,LM,y),y+=4.5;
   y+=3;
 
   doc.setFont(undefined,'bold');doc.text('B. PENERIMA PENGHASILAN (PEGAWAI TETAP / PENSIUN / JHT)',LM,y);y+=5;
@@ -707,7 +731,7 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
   y+=8;
   if(y>ph-58){doc.addPage();y=m;}
   var tglBuktiSig=agg.lastBayarIso||new Date().toISOString().split('T')[0];
-  var kotaTtd=(perusahaan.a1_kota||'').trim();
+  var kotaTtd=(pem.a1_kota||'').trim();
   var xMid=pw/2+10;
   doc.setFontSize(9);doc.setFont(undefined,'bold');doc.setTextColor(0);
   doc.text('E. TANDA TANGAN',LM,y);y+=6;
@@ -719,10 +743,10 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
   doc.setDrawColor(100);doc.setLineWidth(0.3);
   doc.line(LM,y,LM+75,y);doc.line(xMid,y,Math.min(xMid+75,RM),y);y+=5;
   doc.setFont(undefined,'bold');
-  doc.text((perusahaan.a1_ttd_nama||'( .................................... )'),LM,y);
+  doc.text((pem.a1_ttd_nama||'( .................................... )'),LM,y);
   doc.text(k.nama,xMid,y);y+=4.5;
   doc.setFont(undefined,'normal');doc.setFontSize(7.8);doc.setTextColor(80);
-  doc.text((perusahaan.a1_ttd_jabatan||'Jabatan'),LM,y);
+  doc.text((pem.a1_ttd_jabatan||'Jabatan'),LM,y);
   doc.text('Pegawai / Penerima penghasilan',xMid,y);y+=10;
   doc.setTextColor(0);
   if(y>ph-28){doc.addPage();y=m;}

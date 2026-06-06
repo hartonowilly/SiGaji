@@ -152,21 +152,43 @@ function ebupotBuildRows(periode) {
   if (!list.length) return { ok: false, error: 'Tidak ada karyawan di periode ini' };
 
   var prs = perusahaan || {};
-  var npwpPemotong = ebupotNpwp16(prs.npwp);
-  var nitku = String(prs.nitku || '').trim();
+  var npwpPusat = ebupotNpwp16(prs.npwp);
+  var nitkuPusat = String(prs.nitku || '').trim();
   var masa = ebupotMasaFromPeriode(periode);
   var warnings = [];
-  if (!npwpPemotong || npwpPemotong.length < 15) {
+  var multiBr =
+    typeof sigajiMultiBranchEnabled === 'function' && sigajiMultiBranchEnabled();
+  if (!npwpPusat || npwpPusat.length < 15) {
     warnings.push('NPWP perusahaan belum lengkap (Master → Profil Perusahaan).');
   }
-  if (!nitku) warnings.push('NITKU belum diisi — wajib untuk impor Coretax.');
+  if (!multiBr && !nitkuPusat) {
+    warnings.push('NITKU belum diisi — wajib untuk impor Coretax.');
+  }
 
   var rows = [];
   var totalBruto = 0;
   var totalPph = 0;
+  var tkuWarned = {};
 
   list.forEach(function (k, idx) {
     if (!k || !k.nik) return;
+    var pm =
+      typeof sigajiKarCabangPemotongMeta === 'function'
+        ? sigajiKarCabangPemotongMeta(k)
+        : null;
+    var npwpPemotong = pm ? pm.npwp : npwpPusat;
+    var nitku = pm ? pm.nitku : nitkuPusat;
+    var idTkuPemotong = pm
+      ? pm.idTku22
+      : ebupotIdTku22(npwpPemotong, nitku);
+    if (!nitku && !tkuWarned[idTkuPemotong || 'x']) {
+      tkuWarned[idTkuPemotong || 'x'] = true;
+      warnings.push(
+        'NITKU cabang kosong: ' +
+          (pm ? pm.cabangNama : 'pusat') +
+          ' — isi di Master Cabang.'
+      );
+    }
     var g = hitungGaji(k, periode.nama);
     var bruto = Math.round(g.grossPPh || 0);
     var pph = Math.round(g.pph || 0);
@@ -188,18 +210,19 @@ function ebupotBuildRows(periode) {
     var kode = ebupotKodeObjek(k);
     var tipeKerja = ebupotKarTipe(k);
     var counterpartTin = ebupotCounterpartTin(k);
-    var idTkuPemotong = ebupotIdTku22(npwpPemotong, nitku);
     rows.push({
       no: idx + 1,
       masaYyyymm: masa.yyyymm,
       masaLabel: masa.label,
       masaBulan: parseInt(masa.bulan, 10) || '',
       masaTahun: masa.tahun,
+      cabangNama: pm ? pm.cabangNama : '',
+      cabangId: pm ? pm.cabangId : 'utama',
       npwpPemotong: npwpPemotong,
       nitkuPemotong: nitku,
       idTkuPemotong: idTkuPemotong,
       idTkuPenerima: ebupotIdTku22(counterpartTin, '000000'),
-      namaPemotong: prs.nama || '',
+      namaPemotong: pm ? pm.nama : prs.nama || '',
       npwpPenerima: npwpKar,
       nikPenerima: nikKar,
       counterpartTin: counterpartTin,
@@ -231,18 +254,47 @@ function ebupotBuildRows(periode) {
     totalBruto: totalBruto,
     totalPph: totalPph,
     warnings: warnings,
-    npwpPemotong: npwpPemotong,
-    nitku: nitku,
+    npwpPemotong: npwpPusat,
+    nitku: nitkuPusat,
+    multiBranch: multiBr,
+    tkuCount: ebupotDistinctTkuCount(rows),
   };
 }
 
+function ebupotDistinctTkuCount(rows) {
+  var s = {};
+  (rows || []).forEach(function (r) {
+    if (r && r.idTkuPemotong) s[r.idTkuPemotong] = true;
+  });
+  return Object.keys(s).length;
+}
+
+function ebupotGroupRowsByTku(rows) {
+  var groups = {};
+  (rows || []).forEach(function (r) {
+    var key = r.idTkuPemotong || 'default';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  });
+  return groups;
+}
+
+function ebupotTkuFileSuffix(rows) {
+  var nit = rows && rows[0] ? String(rows[0].nitkuPemotong || '').replace(/\D/g, '') : '';
+  while (nit.length < 6) nit = '0' + nit;
+  if (nit.length > 6) nit = nit.slice(-6);
+  return nit || '000000';
+}
+
 function ebupotDataHeaders() {
-  return [
+  var hdr = [
     'No',
     'Masa Pajak (YYYYMM)',
     'Masa Pajak (label)',
+    'Cabang',
     'NPWP Pemotong (16 digit)',
     'NITKU Pemotong',
+    'ID TKU Pemotong (22 digit)',
     'Nama Pemotong',
     'NPWP Penerima (16 digit)',
     'NIK Penerima',
@@ -259,6 +311,7 @@ function ebupotDataHeaders() {
     'Periode Gaji SiGaji',
     'Tanggal Bayar Gaji',
   ];
+  return hdr;
 }
 
 function ebupotRowToArray(r) {
@@ -266,8 +319,10 @@ function ebupotRowToArray(r) {
     r.no,
     r.masaYyyymm,
     r.masaLabel,
+    r.cabangNama || '',
     r.npwpPemotong,
     r.nitkuPemotong,
+    r.idTkuPemotong,
     r.namaPemotong,
     r.npwpPenerima,
     r.nikPenerima,
@@ -307,8 +362,13 @@ function exportExcelEbupotBulanan() {
         [],
         ['Periode SiGaji: ' + built.periode.nama],
         ['Masa pajak (acuan): ' + built.masa.label + ' (' + built.masa.yyyymm + ')'],
-        ['NPWP pemotong: ' + (built.npwpPemotong || '(kosong)')],
-        ['NITKU pemotong: ' + (built.nitku || '(kosong — isi di Master Perusahaan)')],
+        ['NPWP pemotong (pusat): ' + (built.npwpPemotong || '(kosong)')],
+        [
+          'TKU / cabang: ' +
+            (built.multiBranch
+              ? built.tkuCount + ' TKU berbeda — kolom Cabang & ID TKU per karyawan'
+              : 'NITKU ' + (built.nitku || '(kosong — isi di Master Perusahaan)')),
+        ],
         ['Total bruto: ' + built.totalBruto],
         ['Total PPh 21: ' + built.totalPph],
         ['Dicetak: ' + new Date().toISOString().split('T')[0]],
@@ -400,10 +460,11 @@ function ebupotBuildMmPayrollXml(built) {
     return r.tipeKerja !== 'tidak_tetap';
   });
   if (!tetap.length) return { ok: false, error: 'Tidak ada pegawai tetap untuk BPMP' };
+  var tin = tetap[0].npwpPemotong || built.npwpPemotong;
   var lines = [
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
-    '\t<TIN>' + ebupotXmlEscape(built.npwpPemotong) + '</TIN>',
+    '\t<TIN>' + ebupotXmlEscape(tin) + '</TIN>',
     '\t<ListOfMmPayroll>',
   ];
   tetap.forEach(function (r) {
@@ -433,10 +494,11 @@ function ebupotBuildBp21Xml(built) {
     return r.tipeKerja === 'tidak_tetap';
   });
   if (!tt.length) return { ok: false, error: 'Tidak ada pegawai tidak tetap untuk BP21' };
+  var tin = tt[0].npwpPemotong || built.npwpPemotong;
   var lines = [
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<Bp21Bulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
-    '\t<TIN>' + ebupotXmlEscape(built.npwpPemotong) + '</TIN>',
+    '\t<TIN>' + ebupotXmlEscape(tin) + '</TIN>',
     '\t<ListOfBp21>',
   ];
   tt.forEach(function (r) {
@@ -477,21 +539,46 @@ function exportXmlEbupotCoretax() {
     return;
   }
 
-  var bpmp = ebupotBuildMmPayrollXml(built);
-  var bp21 = ebupotBuildBp21Xml(built);
+  var groups = ebupotGroupRowsByTku(built.rows);
+  var tkuKeys = Object.keys(groups);
   var slug = String(built.periode.nama).replace(/[^\w\d]+/g, '_');
   var downloaded = 0;
+  var bpmpTotal = 0;
+  var bp21Total = 0;
+  var delay = 0;
 
-  if (bpmp.ok) {
-    ebupotDownloadText('BPMP_SiGaji_' + built.masa.yyyymm + '_' + slug + '.xml', bpmp.xml);
-    downloaded++;
-  }
-  if (bp21.ok) {
-    setTimeout(function () {
-      ebupotDownloadText('BP21_SiGaji_' + built.masa.yyyymm + '_' + slug + '.xml', bp21.xml);
-    }, downloaded ? 350 : 0);
-    downloaded++;
-  }
+  tkuKeys.forEach(function (tkuKey) {
+    var subset = { rows: groups[tkuKey], npwpPemotong: built.npwpPemotong, periode: built.periode, masa: built.masa };
+    var suf = ebupotTkuFileSuffix(groups[tkuKey]);
+    var bpmp = ebupotBuildMmPayrollXml(subset);
+    var bp21 = ebupotBuildBp21Xml(subset);
+    if (bpmp.ok) {
+      (function (xml, cnt, d) {
+        setTimeout(function () {
+          ebupotDownloadText(
+            'BPMP_SiGaji_' + built.masa.yyyymm + '_' + slug + '_TKU' + suf + '.xml',
+            xml
+          );
+        }, d);
+      })(bpmp.xml, bpmp.count, delay);
+      delay += 350;
+      downloaded++;
+      bpmpTotal += bpmp.count;
+    }
+    if (bp21.ok) {
+      (function (xml, cnt, d) {
+        setTimeout(function () {
+          ebupotDownloadText(
+            'BP21_SiGaji_' + built.masa.yyyymm + '_' + slug + '_TKU' + suf + '.xml',
+            xml
+          );
+        }, d);
+      })(bp21.xml, bp21.count, delay);
+      delay += 350;
+      downloaded++;
+      bp21Total += bp21.count;
+    }
+  });
 
   if (!downloaded) {
     toast('Tidak ada data yang bisa diekspor ke XML');
@@ -499,9 +586,10 @@ function exportXmlEbupotCoretax() {
   }
 
   var msg = 'XML Coretax diunduh';
-  if (bpmp.ok) msg += ' · BPMP ' + bpmp.count + ' pegawai tetap';
-  if (bp21.ok) msg += ' · BP21 ' + bp21.count + ' tidak tetap';
-  msg += ' — upload langsung di e-Bupot → Impor Data';
+  if (built.tkuCount > 1) msg += ' (' + built.tkuCount + ' TKU terpisah)';
+  if (bpmpTotal) msg += ' · BPMP ' + bpmpTotal + ' pegawai tetap';
+  if (bp21Total) msg += ' · BP21 ' + bp21Total + ' tidak tetap';
+  msg += ' — upload per file TKU di e-Bupot → Impor Data';
   toast(msg);
 }
 
