@@ -12,7 +12,14 @@ import {
 const MODEL_VERSION = 'mobilefacenet_v4';
 const MIN_DIM = 128;
 const MAX_DIM = 256;
-const MIN_VERIFY_THRESHOLD = 0.76;
+const MIN_VERIFY_THRESHOLD = 0.65;
+const MAX_VERIFY_THRESHOLD = 0.68;
+
+function effectiveVerifyThreshold(stored) {
+  const v = Number(stored);
+  if (!Number.isFinite(v)) return MIN_VERIFY_THRESHOLD;
+  return Math.min(Math.max(v, MIN_VERIFY_THRESHOLD), MAX_VERIFY_THRESHOLD);
+}
 const MIN_ENROLL_SELF_SCORE = 0.6;
 
 function validateEmbedding(raw) {
@@ -146,14 +153,13 @@ export async function onRequestPost({ request, env }) {
           request
         );
       }
-      const vt = Number(data.verify_threshold);
       return jsonResponse(
         200,
         {
           ok: true,
           embedding: data.embedding,
           model_version: data.model_version,
-          verify_threshold: Number.isFinite(vt) ? vt : MIN_VERIFY_THRESHOLD,
+          verify_threshold: effectiveVerifyThreshold(data.verify_threshold),
           updated_at: data.updated_at,
         },
         request
@@ -190,9 +196,7 @@ export async function onRequestPost({ request, env }) {
           request
         );
       }
-      const vt = Number.isFinite(verifyThreshold)
-        ? Math.max(MIN_VERIFY_THRESHOLD, verifyThreshold)
-        : MIN_VERIFY_THRESHOLD;
+      const vt = effectiveVerifyThreshold(verifyThreshold);
 
       const now = new Date().toISOString();
       const { data, error } = await sb

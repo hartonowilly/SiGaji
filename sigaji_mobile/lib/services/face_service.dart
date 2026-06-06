@@ -68,8 +68,9 @@ class FaceService {
       throw Exception('Data wajah tidak valid — daftar ulang');
     }
 
-    final threshold = (j['verify_threshold'] as num?)?.toDouble() ??
-        FaceVerifyService.matchThresholdFloor;
+    final threshold = FaceVerifyService.effectiveThreshold(
+      (j['verify_threshold'] as num?)?.toDouble(),
+    );
 
     _cached = EnrolledFaceProfile(
       embedding: raw.map((e) => (e as num).toDouble()).toList(),

@@ -76,7 +76,10 @@ class FaceLiveness {
   }
 
   Future<({bool ok, Face? face, String? error})> _singleFace(File file) async {
-    final decoded = await InputImageHelper.loadOrientedImage(file);
+    final decoded = await InputImageHelper.loadOrientedImage(
+      file,
+      frontCamera: true,
+    );
     if (decoded == null) {
       return (ok: false, face: null, error: 'Gambar tidak bisa dibaca');
     }

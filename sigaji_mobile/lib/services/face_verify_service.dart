@@ -42,7 +42,14 @@ class EnrollQualityResult {
 /// MobileFaceNet on-device — enrollment 1 foto, absen 1 foto (tanpa kedip).
 class FaceVerifyService {
   /// Cosine similarity pada embedding L2-normalized (MobileFaceNet).
-  static const matchThresholdFloor = 0.76;
+  /// 0.65: realistis untuk kamera depan HP (pencahayaan/jarak beda tiap foto).
+  static const matchThresholdFloor = 0.65;
+  static const matchThresholdCeiling = 0.68;
+
+  static double effectiveThreshold(double? stored) {
+    final v = stored ?? matchThresholdFloor;
+    return v.clamp(matchThresholdFloor, matchThresholdCeiling);
+  }
   static const modelVersion = 'mobilefacenet_v4';
   static const enrollSamples = 1;
 
@@ -138,7 +145,10 @@ class FaceVerifyService {
     File file, {
     bool forVerification = false,
   }) async {
-    final decoded = await InputImageHelper.loadOrientedImage(file);
+    final decoded = await InputImageHelper.loadOrientedImage(
+      file,
+      frontCamera: true,
+    );
     if (decoded == null) {
       return (
         ok: false,

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -8,6 +9,7 @@ import '../config/app_config.dart';
 import '../services/face_service.dart';
 import '../services/face_verify_service.dart';
 import '../services/upload_service.dart';
+import '../widgets/front_camera_preview.dart';
 
 class EnrollFaceScreen extends StatefulWidget {
   const EnrollFaceScreen({super.key, required this.config});
@@ -21,14 +23,33 @@ class EnrollFaceScreen extends StatefulWidget {
 class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
   final _picker = ImagePicker();
   final _verify = FaceVerifyService();
+  CameraController? _camera;
   List<double>? _embedding;
   File? _photo;
   bool _busy = false;
 
   @override
   void dispose() {
+    _camera?.dispose();
     _verify.dispose();
     super.dispose();
+  }
+
+  Future<File?> _capturePhoto() async {
+    final c = _camera;
+    if (c != null && c.value.isInitialized) {
+      try {
+        final x = await c.takePicture();
+        return File(x.path);
+      } catch (_) {}
+    }
+    final x = await _picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 92,
+    );
+    if (x == null) return null;
+    return File(x.path);
   }
 
   Future<void> _captureSample() async {
@@ -37,17 +58,15 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
       _snack('Izin kamera diperlukan');
       return;
     }
-    final x = await _picker.pickImage(
-      source: ImageSource.camera,
-      preferredCameraDevice: CameraDevice.front,
-      imageQuality: 90,
-    );
-    if (x == null) return;
+    final file = await _capturePhoto();
+    if (file == null) return;
 
     setState(() => _busy = true);
     try {
-      final file = File(x.path);
-      final r = await _verify.extractEmbedding(file);
+      final r = await _verify.extractEmbedding(
+        file,
+        forVerification: true,
+      );
       if (!r.ok || r.embedding == null) {
         _snack(r.error ?? 'Gagal baca wajah');
         return;
@@ -119,6 +138,13 @@ class _EnrollFaceScreenState extends State<EnrollFaceScreen> {
               style: TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 16),
+            FrontCameraPreview(
+              onReady: (c) {
+                if (!mounted) return;
+                setState(() => _camera = c);
+              },
+            ),
+            const SizedBox(height: 12),
             if (_photo != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),

@@ -377,7 +377,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Widget _faceScoreBar() {
-    final threshold = _profile?.verifyThreshold ?? 0.76;
+    final threshold = _profile?.verifyThreshold ??
+        FaceVerifyService.matchThresholdFloor;
     final score = _faceScore;
     if (_faceScoreError != null) {
       return Text(
@@ -455,7 +456,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     final canSubmit = _gpsPreview?.canSubmit != false &&
         _faceScore != null &&
-        _faceScore! >= (_profile?.verifyThreshold ?? 0.76);
+        _faceScore! >=
+            (_profile?.verifyThreshold ?? FaceVerifyService.matchThresholdFloor);
 
     return Scaffold(
       appBar: AppBar(

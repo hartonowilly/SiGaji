@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_config.dart';
 import '../services/auth_service.dart';
@@ -46,6 +47,8 @@ class _SetupScreenState extends State<SetupScreen> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
+    final oldSupaUrl = widget.config.supabaseUrl;
+    final oldSupaKey = widget.config.supabaseAnonKey;
     widget.config.apiBaseUrl = _api.text.trim();
     widget.config.supabaseUrl = _supaUrl.text.trim();
     widget.config.supabaseAnonKey = _supaKey.text.trim();
@@ -57,8 +60,15 @@ class _SetupScreenState extends State<SetupScreen> {
       setState(() => _saving = false);
       return;
     }
+    final supaChanged = oldSupaUrl != widget.config.supabaseUrl ||
+        oldSupaKey != widget.config.supabaseAnonKey;
     await widget.config.save();
     AuthService.resetSupabaseInit();
+    if (supaChanged) {
+      try {
+        await Supabase.instance.client.auth.signOut();
+      } catch (_) {}
+    }
     if (!mounted) return;
     setState(() => _saving = false);
     widget.onSaved(widget.config);

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' show File, Platform;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -7,11 +7,19 @@ import 'package:image/image.dart' as img;
 
 /// Normalisasi orientasi foto (khususnya iOS kamera depan) sebelum ML Kit.
 class InputImageHelper {
-  static Future<img.Image?> loadOrientedImage(File file) async {
+  static Future<img.Image?> loadOrientedImage(
+    File file, {
+    bool frontCamera = false,
+  }) async {
     final bytes = await file.readAsBytes();
     final decoded = img.decodeImage(bytes);
     if (decoded == null) return null;
-    return img.bakeOrientation(decoded);
+    var out = img.bakeOrientation(decoded);
+    // Kamera depan iOS: preview cermin, file mentah tidak — samakan agar embedding konsisten.
+    if (frontCamera && Platform.isIOS) {
+      out = img.flipHorizontal(out);
+    }
+    return out;
   }
 
   static InputImage fromRgbImage(img.Image image) {

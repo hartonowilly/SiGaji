@@ -569,9 +569,10 @@ export async function onRequestPost({ request, env }) {
           request
         );
       }
-      const reqScore = Number.isFinite(Number(enr.verify_threshold))
-        ? Math.max(0.76, Number(enr.verify_threshold))
-        : 0.76;
+      const rawVt = Number(enr.verify_threshold);
+      const reqScore = Number.isFinite(rawVt)
+        ? Math.min(Math.max(rawVt, 0.65), 0.68)
+        : 0.65;
       if (!Number.isFinite(faceScore) || faceScore < reqScore) {
         return jsonResponse(
           422,

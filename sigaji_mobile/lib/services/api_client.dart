@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_config.dart';
+import 'session_token.dart';
 
 class ApiClient {
   ApiClient(this.config);
@@ -14,10 +15,9 @@ class ApiClient {
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    final session = Supabase.instance.client.auth.currentSession;
-    final token = session?.accessToken;
-    if (token == null || token.isEmpty) {
-      throw Exception('Sesi habis — login lagi');
+    final token = await SessionToken.bearer();
+    if (token == null) {
+      throw Exception(SessionToken.friendlyAuthError('sesi habis'));
     }
     final uri = Uri.parse(config.apiEndpoint(endpoint));
     final res = await http.post(
@@ -39,6 +39,10 @@ class ApiClient {
     if (res.statusCode >= 400 && data['error'] == null) {
       data['error'] = 'HTTP ${res.statusCode}';
       data['ok'] = false;
+    }
+    final err = data['error']?.toString();
+    if (err != null) {
+      data['error'] = SessionToken.friendlyAuthError(err);
     }
     return data;
   }

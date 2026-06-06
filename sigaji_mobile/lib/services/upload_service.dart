@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_config.dart';
+import 'session_token.dart';
 
 class UploadService {
   UploadService(this.config);
@@ -13,9 +14,10 @@ class UploadService {
   final AppConfig config;
 
   Future<String> uploadFile(File file, {String subfolder = 'attendance'}) async {
-    final session = Supabase.instance.client.auth.currentSession;
-    final token = session?.accessToken;
-    if (token == null) throw Exception('Sesi habis');
+    final token = await SessionToken.bearer();
+    if (token == null) {
+      throw Exception(SessionToken.friendlyAuthError('sesi habis'));
+    }
 
     final uri = Uri.parse(config.apiEndpoint('mobile-upload'));
     final req = http.MultipartRequest('POST', uri);
@@ -56,7 +58,9 @@ class UploadService {
     if (res.statusCode == 404) {
       throw Exception('API mobile-upload belum deploy');
     }
-    final err = data?['error']?.toString() ?? 'Upload gagal (HTTP ${res.statusCode})';
+    final err = SessionToken.friendlyAuthError(
+      data?['error']?.toString() ?? 'Upload gagal (HTTP ${res.statusCode})',
+    );
     throw Exception(err);
   }
 }
