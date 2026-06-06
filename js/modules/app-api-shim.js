@@ -11,7 +11,7 @@ window.sigajiParseFunctionJson = async function (r) {
   }
   return r.json().catch(function () { return null; });
 };
-window.SIGAJI_BUILD = '11.5.1';
+window.SIGAJI_BUILD = '11.5.9';
 (function () {
   try {
     var mqNarrow = window.matchMedia('(max-width:900px)').matches;

@@ -1465,6 +1465,7 @@ function renderSysStatus(){
     var modVers=sigajiDetectModuleCacheVersions();
     var modVerTxt=modVers.length?modVers.join(', '):'-';
     var modOk=sigajiVersionsMatchTarget(modVers);
+    var modBadge=modOk?{cls:'b-ok',txt:'OK'}:modVers.length>1?{cls:'b-warn',txt:'tidak seragam'}:{cls:'b-warn',txt:'lama'};
     var host='';
     try{host=location.hostname+(location.port?':'+location.port:'');}catch(eH){}
     var prot=location.protocol||'';
@@ -1481,7 +1482,10 @@ function renderSysStatus(){
     if(schemaStored!=null&&!schemaOk)schemaLbl+=' - buka app sekali untuk migrasi otomatis';
     var deployWarn=!modOk
       ?'<div id="sysstatus-deploy-warn" class="info-box" style="margin-bottom:.75rem;border-color:#f6d088;background:#fff8e6;color:#713f12">'
-        +'<strong>Cache modul tidak seragam.</strong> Semua <code>js/modules/*.js?v=</code> harus sama. Target: <strong>'+escapeHtml(targetVer)+'</strong>. Push ke GitHub (branch <code>master</code>), tunggu Cloudflare deploy, lalu Ctrl+F5.</div>'
+        +(modVers.length>1
+          ?'<strong>Versi cache tidak seragam di kode lokal.</strong> Browser memuat beberapa <code>?v=</code> ('+escapeHtml(modVerTxt)+') — target <strong>'+escapeHtml(targetVer)+'</strong> (<code>SIGAJI_BUILD</code>). Jalankan <code>node scripts/bump-cache-version.js '+escapeHtml(targetVer)+'</code> atau samakan manual, lalu <code>npm run assemble</code>.'
+          :'<strong>Browser masih cache lama.</strong> Target deploy: <strong>'+escapeHtml(targetVer)+'</strong>, browser: <strong>'+escapeHtml(modVerTxt||'-')+'</strong>. Ctrl+F5; jika tetap beda, push <code>index.html</code> ke GitHub dan tunggu Cloudflare deploy.')
+        +'</div>'
       :'<div id="sysstatus-deploy-warn" style="display:none"></div>';
     el.innerHTML=
       deployWarn
@@ -1490,7 +1494,7 @@ function renderSysStatus(){
       +'<table style="width:100%;border-collapse:collapse"><tbody>'
       +row('Versi aplikasi',escapeHtml(appLabel)+' <span style="color:#6b7280">(label rilis)</span>')
       +row('Target cache (kode)',escapeHtml(targetVer),{cls:'b-info',txt:'deploy'})
-      +row('Modul JS (browser)',escapeHtml(modVerTxt),modOk?{cls:'b-ok',txt:'OK'}:{cls:'b-warn',txt:'lama'})
+      +row('Modul JS (browser)',escapeHtml(modVerTxt),modBadge)
       +row('index.html di server','<span id="sysstatus-server-index">Memeriksa...</span>')
       +row('Schema (kode)',String(schemaExp),{cls:'b-info',txt:'target'})
       +row('Schema (data tersimpan)',escapeHtml(schemaLbl),schemaOk?{cls:'b-ok',txt:'sesuai'}:{cls:'b-warn',txt:'cek'})
@@ -1518,10 +1522,16 @@ function renderSysStatus(){
           var w=document.getElementById('sysstatus-deploy-warn');
           if(w){
             w.style.display='block';
-            w.innerHTML='<strong>index.html di server belum sama dengan aplikasi ini.</strong> Server: <code>'+escapeHtml(txt)+'</code> — diharapkan: <strong>'+escapeHtml(targetVer)+'</strong>. Push <code>index.html</code> + <code>js/modules/*?v='+escapeHtml(targetVer)+'</code> ke GitHub (master), redeploy Cloudflare.';
+            var sameAsBrowser=modVerTxt===txt;
+            w.innerHTML=sameAsBrowser&&modVers.length>1
+              ?'<strong>index.html belum diseragamkan (bukan sekadar belum deploy).</strong> Server &amp; browser sama-sama campur versi: <code>'+escapeHtml(txt)+'</code>. Target: <strong>'+escapeHtml(targetVer)+'</strong>. Jalankan <code>node scripts/bump-cache-version.js '+escapeHtml(targetVer)+'</code>, <code>npm run assemble</code>, push ke GitHub.'
+              :'<strong>index.html di server belum terbaru.</strong> Server: <code>'+escapeHtml(txt)+'</code> — diharapkan satu versi: <strong>'+escapeHtml(targetVer)+'</strong>. Push <code>index.html</code> ke GitHub, tunggu Cloudflare deploy, Ctrl+F5.';
           }
           var rowCell=srvEl.closest('td');
-          if(rowCell)rowCell.innerHTML=escapeHtml(txt)+' <span class="bdg b-warn" style="margin-left:8px">belum deploy</span>';
+          if(rowCell){
+            var srvBadge=vers.length>1?'tidak seragam':(modVerTxt===txt&&modVers.length>1?'tidak seragam':'belum deploy');
+            rowCell.innerHTML=escapeHtml(txt)+' <span class="bdg b-warn" style="margin-left:8px">'+srvBadge+'</span>';
+          }
         }else if(srvEl.closest('td')){
           srvEl.closest('td').innerHTML=escapeHtml(txt)+' <span class="bdg b-ok" style="margin-left:8px">OK</span>';
         }
