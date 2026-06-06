@@ -26,6 +26,61 @@ function periodesSortedByStart(list){
     return String(a.nama||'').localeCompare(String(b.nama||''),'id');
   });
 }
+/** Bulan gaji kanonik periode — dari nama (Januari 2025) lalu tanggal akhir/bayar, bukan tanggal mulai.
+ *  Pola 25–24: Maret = 25 Feb – 24 Mar → bulan gaji = Maret (end), bukan Februari (start). */
+function sigajiPeriodePayrollMeta(p){
+  var blnLong=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
+  var blnShort=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  if(!p)return{ym:'',month:0,year:0,label:'-',crossesPriorMonth:false,priorDays:0};
+  var nama=String(p.nama||'').toLowerCase();
+  var month=0,year=0,i;
+  for(i=0;i<blnLong.length;i++){
+    if(nama.indexOf(blnLong[i])>=0){month=i+1;break;}
+  }
+  var yearMatch=String(p.nama||'').match(/(20\d{2})/);
+  if(yearMatch)year=parseInt(yearMatch[1],10);
+  var ref=String(p.end||p.bayar||p.start||'').trim();
+  if(!month&&ref.length>=7){
+    month=parseInt(ref.substring(5,7),10);
+    if(!year)year=parseInt(ref.substring(0,4),10);
+  }
+  if(!month&&p.start){
+    month=parseInt(String(p.start).substring(5,7),10);
+    if(!year)year=parseInt(String(p.start).substring(0,4),10);
+  }
+  var ym=year&&month?year+'-'+String(month).padStart(2,'0'):(ref.length>=7?ref.substring(0,7):'');
+  var startYm=p.start?String(p.start).substring(0,7):'';
+  var endYm=p.end?String(p.end).substring(0,7):'';
+  var crossesPriorMonth=!!(startYm&&endYm&&startYm!==endYm);
+  var priorDays=0;
+  if(crossesPriorMonth&&p.start&&p.end){
+    var cur=new Date(String(p.start).trim()+'T12:00:00');
+    var end=new Date(String(p.end).trim()+'T12:00:00');
+    var endYmKey=endYm;
+    while(!isNaN(cur.getTime())&&cur<=end){
+      var iso=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+      if(iso.substring(0,7)!==endYmKey)priorDays++;
+      cur.setDate(cur.getDate()+1);
+    }
+  }
+  return{
+    ym:ym,
+    month:month,
+    year:year,
+    label:blnShort[month]||(p.nama||'-'),
+    crossesPriorMonth:crossesPriorMonth,
+    priorDays:priorDays
+  };
+}
+function sortPeriodesByPayrollYm(list,desc){
+  return (list||[]).slice().sort(function(a,b){
+    var ma=sigajiPeriodePayrollMeta(a).ym||'';
+    var mb=sigajiPeriodePayrollMeta(b).ym||'';
+    if(ma&&mb&&ma!==mb)return desc?mb.localeCompare(ma):ma.localeCompare(mb);
+    var ta=String((a&&a.start)||'').localeCompare(String((b&&b.start)||''));
+    return desc?-ta:ta;
+  });
+}
 const isHL=d=>hariLibur.some(l=>l.tgl===d);
 const namaHL=d=>{const l=hariLibur.find(x=>x.tgl===d);return l?l.nama:'';};
 function isHariLiburKerja(dow){const hk=perusahaan.hariKerja||6;return hk===5?(dow===0||dow===6):(dow===0);}

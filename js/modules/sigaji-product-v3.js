@@ -480,35 +480,60 @@
   /* ── Period timeline ── */
   window.sigajiRenderPeriodTimeline = function () {
     var bar = document.getElementById('period-timeline-bar');
-    if (!bar || typeof sortPeriodesByStart !== 'function') return;
-    var sorted = sortPeriodesByStart(periodes || [], false);
+    if (!bar || typeof sigajiPeriodePayrollMeta !== 'function') return;
     var yr = new Date().getFullYear();
-    var items = sorted.filter(function (p) {
-      if (!p.start) return true;
-      return String(p.start).substring(0, 4) === String(yr) || String(p.end || '').substring(0, 4) === String(yr);
+    var sorted =
+      typeof sortPeriodesByPayrollYm === 'function'
+        ? sortPeriodesByPayrollYm(periodes || [], false)
+        : periodes || [];
+    var filtered = sorted.filter(function (p) {
+      var meta = sigajiPeriodePayrollMeta(p);
+      return meta.year === yr;
     });
-    if (items.length < 3) items = sorted.slice(-12);
+    if (filtered.length < 3) {
+      filtered = sorted.slice(-12);
+    }
+    var byYm = {};
+    filtered.forEach(function (p) {
+      var meta = sigajiPeriodePayrollMeta(p);
+      if (!meta.ym) return;
+      var prev = byYm[meta.ym];
+      if (
+        !prev ||
+        p.status === 'aktif' ||
+        (prev.status !== 'aktif' && String(p.end || '') > String(prev.end || ''))
+      ) {
+        byYm[meta.ym] = p;
+      }
+    });
+    var items = Object.keys(byYm)
+      .sort()
+      .map(function (k) {
+        return byYm[k];
+      });
+    if (!items.length) items = sorted.slice(-12);
     var active = typeof PA === 'function' ? PA() : null;
     bar.innerHTML =
       '<div class="ptl-scroll">' +
       items
         .map(function (p) {
-          var lbl = p.nama || '-';
-          if (p.start) {
-            var m = parseInt(String(p.start).substring(5, 7), 10);
-            var bln = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-            lbl = bln[m] || lbl;
+          var meta = sigajiPeriodePayrollMeta(p);
+          var lbl = meta.label || p.nama || '-';
+          var tip = (p.nama || '-') + ' · ' + (typeof fmtDate === 'function' ? fmtDate(p.start) : p.start) + ' – ' + (typeof fmtDate === 'function' ? fmtDate(p.end) : p.end);
+          if (meta.crossesPriorMonth && meta.priorDays > 0) {
+            tip += ' (termasuk ' + meta.priorDays + ' hari bulan sebelumnya)';
           }
           var cls = 'ptl-item';
           if (active && (active.id === p.id || active.nama === p.nama)) cls += ' active';
           if (p.snapshot_locked) cls += ' locked';
+          if (meta.crossesPriorMonth) cls += ' ptl-cross';
           return (
             '<button type="button" class="' +
             cls +
             '" onclick="sigajiSwitchPeriodeTimeline(\'' +
             String(p.id).replace(/'/g, "\\'") +
             '\')" title="' +
-            escapeHtml(p.nama) +
+            escapeHtml(tip) +
             '">' +
             escapeHtml(lbl) +
             '</button>'
@@ -519,6 +544,7 @@
   };
 
   window.sigajiSwitchPeriodeTimeline = function (id) {
+    window.__sigajiAbMonth = '';
     if (typeof aktifkanPeriode === 'function') aktifkanPeriode(id);
     sigajiRenderPeriodTimeline();
     try {

@@ -1167,6 +1167,7 @@ tr.pg-row-pending td.pg-sticky-name { background: #fffbeb !important; }
   color: #fff;
 }
 .ptl-item.locked::after { content: ' 🔒'; font-size: 9px; }
+.ptl-item.ptl-cross { border-style: dashed; }
 
 .wf-explain-panel {
   position: fixed;
