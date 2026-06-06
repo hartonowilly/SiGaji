@@ -77,12 +77,18 @@ function renderDash(){
   document.getElementById('d-table').innerHTML=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
   const pRet=list.reduce((s,k)=>s+(k.pph_return?.nilai||0),0);
   const pAp=approvals.filter(a=>a.status==='pending'&&a.period===p.nama).length;
-  var alerts='';
-  if(p.thr_aktif)alerts+='<div class="alert-item alert-purple">&#127873; <strong>Periode ini ada THR ('+(p.thr_nama||'')+')</strong> — Total THR Bruto: <strong>'+fmt(tT)+'</strong> · Bayar THR: <strong>'+(p.thr_bayar||'-')+'</strong> · PPh THR digabung ke gaji akhir bulan.</div>';
-  if(pAp>0)alerts+='<div class="alert-item alert-amber"><strong>'+pAp+' approval tertunda</strong> — periksa modul Approval.</div>';
-  if(pRet>0)alerts+='<div class="alert-item alert-green"><strong>Pengembalian PPh 21:</strong> '+fmt(pRet)+'</div>';
-  if(!alerts)alerts='<div class="alert-empty">Tidak ada peringatan untuk periode ini.</div>';
-  document.getElementById('d-alerts').innerHTML=alerts;
+  try{
+    if(typeof sigajiRenderDashAlerts==='function')sigajiRenderDashAlerts({thrAktif:!!p.thr_aktif,thrNama:p.thr_nama,thrTotal:tT,thrBayar:p.thr_bayar,pendingAp:pAp,pphRet:pRet});
+    else{
+      var alerts='';
+      if(p.thr_aktif)alerts+='<div class="alert-item alert-purple">&#127873; THR '+(p.thr_nama||'')+'</div>';
+      if(pAp>0)alerts+='<div class="alert-item alert-amber">'+pAp+' approval tertunda</div>';
+      if(pRet>0)alerts+='<div class="alert-item alert-green">PPh Return: '+fmt(pRet)+'</div>';
+      if(!alerts)alerts='<div class="alert-empty">Tidak ada peringatan.</div>';
+      document.getElementById('d-alerts').innerHTML=alerts;
+    }
+  }catch(eAl){}
+  try{if(typeof renderDashPayrollTrend==='function')renderDashPayrollTrend();}catch(eTr){}
   var chartEl=document.getElementById('d-att-chart');
   if(chartEl){
     var todayIso=new Date().toISOString().substring(0,10);
@@ -157,6 +163,10 @@ function renderKar(){
   const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Data profil SDM';
   try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}
   const tb=document.getElementById('tb-kar');if(!tb)return;
+  if(!list.length&&typeof sigajiEmptyState==='function'){
+    tb.innerHTML='<tr><td colspan="9">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnOnclick:"openNewKar('tetap')"})+'</td></tr>';
+    return;
+  }
   tb.innerHTML=list.map((k,i)=>karRowHtml(k,i+1)).join('');
 }
 function filterKar(q){
@@ -231,6 +241,7 @@ function openPanel(nik){
   updatePTKPVal();
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(true);}catch(eDock){}
   try{
     var spTg=document.getElementById('sp-btn-telegram');
     if(spTg)spTg.style.display=CU&&(CU.role==='Admin'||CU.role==='HRD')?'inline-block':'none';
@@ -265,8 +276,10 @@ async function tgBuatKode(){
 function closePanel(){
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.remove('show');
-  if(!document.getElementById('slide-panel-payroll').classList.contains('show'))
+  if(!document.getElementById('slide-panel-payroll').classList.contains('show')){
     document.getElementById('panel-overlay').classList.remove('show');
+    try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);}catch(eDock){}
+  }
   cpNik=null;
 }
 function closeAnyPanel(){closePanel();closePayrollPanel();}
@@ -335,6 +348,7 @@ function openPayrollPanel(nik){
   if(canAccessPayrollSub('pphret'))renderPPhRetPanel(kp);else{const el=document.getElementById('pphret-preview');if(el)el.innerHTML='';}
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel-payroll').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(true);}catch(eDock){}
   if(!applyPayrollSlideTabsVisibility()){closePayrollPanel();return;}
   setSpPayrollView('periode');
   syncPphReturnFieldState();
@@ -344,8 +358,10 @@ function openPayrollPanel(nik){
 function closePayrollPanel(){
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel-payroll').classList.remove('show');
-  if(!document.getElementById('slide-panel').classList.contains('show'))
+  if(!document.getElementById('slide-panel').classList.contains('show')){
     document.getElementById('panel-overlay').classList.remove('show');
+    try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);}catch(eDock){}
+  }
   cpNik=null;
 }
 function simpanPayrollPanel(){
@@ -398,19 +414,21 @@ function renderTunjPanel(k){
     const thrIkut=showThr&&t.thr_ikut!==false;
     const prIkut=t.prorata_ikut!==false;
     const sel1=Object.entries(TUNJ_TYPES).map(function(e){return'<option value="'+e[0]+'" '+(t.tipe===e[0]?'selected':'')+'>'+e[1]+'</option>';}).join('');
-    return '<div class="tr-row" style="grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto">'
-      +'<input value="'+t.nama+'" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="nama" onchange="updTunjEl(this)">'
-      +'<input type="text" class="inp-rp" value="'+t.nilai+'" '+(snapMode?'':'readonly title="Nominal tunjangan diisi pada mode Snapshot Periode"')+' style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none;'+nilaiStyle+'" data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-rp="1" onchange="updTunjEl(this)">'
-      +'<select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="tipe" onchange="updTunjEl(this);refreshTunjPanel(this.dataset.nik)">'+sel1+'</select>'
-      +'<select title="Ikut THR?" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:10px;font-family:inherit;outline:none;'+(showThr?'':'opacity:.35;pointer-events:none')+'" data-nik="'+nik+'" data-i="'+i+'" data-f="thr_ikut" onchange="updTunjEl(this)">'
-        +'<option value="ya" '+(thrIkut?'selected':'')+'>&#127873;THR</option>'
-        +'<option value="tidak" '+(!thrIkut?'selected':'')+'>Excl</option>'
-      +'</select>'
-      +'<select title="Ikut perhitungan prorata gaji?" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:10px;font-family:inherit;outline:none" data-nik="'+nik+'" data-i="'+i+'" data-f="prorata_ikut" onchange="updTunjEl(this)">'
-        +'<option value="ya" '+(prIkut?'selected':'')+'>Prorata</option>'
+    return '<div class="comp-row-card comp-row-tunj">'
+      +'<div class="comp-row-grid comp-row-grid-tunj">'
+      +'<div class="fg" style="margin:0"><label>Nama</label><input value="'+t.nama+'" data-nik="'+nik+'" data-i="'+i+'" data-f="nama" onchange="updTunjEl(this)"></div>'
+      +'<div class="fg" style="margin:0"><label>Nominal</label><input type="text" class="inp-rp" value="'+t.nilai+'" '+(snapMode?'':'readonly title="Nominal tunjangan diisi pada mode Snapshot Periode"')+' style="'+nilaiStyle+'" data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-rp="1" onchange="updTunjEl(this)"></div>'
+      +'<div class="fg" style="margin:0"><label>Tipe</label><select data-nik="'+nik+'" data-i="'+i+'" data-f="tipe" onchange="updTunjEl(this);refreshTunjPanel(this.dataset.nik)">'+sel1+'</select></div>'
+      +'<div class="fg" style="margin:0"><label>THR</label><select title="Ikut THR?" style="'+(showThr?'':'opacity:.35;pointer-events:none')+'" data-nik="'+nik+'" data-i="'+i+'" data-f="thr_ikut" onchange="updTunjEl(this)">'
+        +'<option value="ya" '+(thrIkut?'selected':'')+'>&#127873; Ikut</option>'
+        +'<option value="tidak" '+(!thrIkut?'selected':'')+'>Exclude</option>'
+      +'</select></div>'
+      +'<div class="fg" style="margin:0"><label>Prorata</label><select data-nik="'+nik+'" data-i="'+i+'" data-f="prorata_ikut" onchange="updTunjEl(this)">'
+        +'<option value="ya" '+(prIkut?'selected':'')+'>Ikut</option>'
         +'<option value="tidak" '+(!prIkut?'selected':'')+'>Penuh</option>'
-      +'</select>'
-      +'<button class="btn btn-xs btn-r" data-nik="'+nik+'" data-i="'+i+'" onclick="delTunjEl(this)">&#10007;</button>'
+      +'</select></div>'
+      +'</div>'
+      +'<button type="button" class="btn btn-xs btn-r comp-row-del" data-nik="'+nik+'" data-i="'+i+'" onclick="delTunjEl(this)">&#10007;</button>'
     +'</div>';
   }).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada tunjangan.</div>';
   sigajiBindRpInputs(document.getElementById('tunj-list'));
@@ -430,7 +448,7 @@ function updTunjEl(el){
   updTunj(nik,i,f,v);
 }
 function delTunjEl(el){delTunj(el.dataset.nik,parseInt(el.dataset.i));}
-function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.4rem;align-items:center;padding:.5rem .6rem;background:#fdeaea;border-radius:7px;border:1px solid #f5a3a3;margin-bottom:.4rem"><input value="${p.nama}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'nama',this.value)"><input type="text" class="inp-rp" value="${p.nilai}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" data-rp="1" onchange="updPot('${k.nik}',${i},'nilai',parseRpInput(this.value))"><input value="${p.ket||''}" placeholder="Ket." style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none" onchange="updPot('${k.nik}',${i},'ket',this.value)"><button class="btn btn-xs btn-r" onclick="delPot('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';sigajiBindRpInputs(document.getElementById('pot-list'));}
+function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div class="comp-row-card comp-row-pot"><div class="comp-row-grid comp-row-grid-pot"><div class="fg" style="margin:0"><label>Nama</label><input value="${p.nama}" onchange="updPot('${k.nik}',${i},'nama',this.value)"></div><div class="fg" style="margin:0"><label>Nominal</label><input type="text" class="inp-rp" value="${p.nilai}" data-rp="1" onchange="updPot('${k.nik}',${i},'nilai',parseRpInput(this.value))"></div><div class="fg" style="margin:0"><label>Keterangan</label><input value="${p.ket||''}" placeholder="Opsional" onchange="updPot('${k.nik}',${i},'ket',this.value)"></div></div><button type="button" class="btn btn-xs btn-r comp-row-del" onclick="delPot('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada potongan.</div>';sigajiBindRpInputs(document.getElementById('pot-list'));}
 function addTunj(){
   if(!canAccessPayrollSub('gaji'))return;
   if(!guardPayrollEditUnlocked())return;
@@ -980,9 +998,13 @@ function renderPenggajian(skipTunjVar){
     const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'" onclick="setPREnabled(\''+k.nik+'\',\''+p.nama+'\','+(!pr.enabled)+')">'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
     const prInputs=pr.enabled?'<div style="margin-top:4px;display:flex;gap:5px;align-items:center"><span style="font-size:10px;color:#6b7280">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span style="font-size:10px;color:#6b7280">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
     const thrCell=g.thrBruto>0?'<div style="color:#5b21b6;font-weight:700">'+fmt(g.thrBruto)+'</div><div style="font-size:10px;color:#5b21b6">PPh THR: '+fmt(g.pphAtasThr)+'</div>':'&#8212;';
-    return '<tr class="'+(pr.enabled?'pr-row-tbl':'')+'">'
-      +'<td style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td>'
-      +'<td><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div>'
+    var rowCls=[];
+    if(pr.enabled)rowCls.push('pg-row-prorate');
+    if(g.neto<0)rowCls.push('pg-row-neto-neg');
+    if(st==='pending')rowCls.push('pg-row-pending');
+    return '<tr class="'+rowCls.join(' ')+'">'
+      +'<td class="pg-sticky-no" style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td>'
+      +'<td class="pg-sticky-name"><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div>'
       +'<div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div><small style="color:#6b7280">'+k.dept+'</small></div></div></td>'
       +'<td><div>'+prBtn+prInputs+'</div></td>'
       +'<td>'+fmt(g.grossPPh)+'</td><td class="pg-col-adv">'+thrCell+'</td>'

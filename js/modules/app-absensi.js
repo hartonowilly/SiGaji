@@ -60,6 +60,25 @@ function absensiMobileTip(nik,date){
   var t=m[nik+'|'+date];
   return t?' title="Check-in mobile: '+t+' WIB"':'';
 }
+function abMonthLabel(ym){
+  if(!ym)return '-';
+  var p=ym.split('-');
+  var bln=['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  return (bln[parseInt(p[1],10)]||p[1])+' '+p[0];
+}
+function abSetViewMonth(ym){
+  window.__sigajiAbMonth=ym||'';
+  renderAbsensi();
+}
+function abShiftViewMonth(delta){
+  var keys=window.__sigajiAbMonthKeys||[];
+  if(!keys.length)return;
+  var cur=window.__sigajiAbMonth||keys[0];
+  var i=keys.indexOf(cur);
+  if(i<0)i=0;
+  i=Math.max(0,Math.min(keys.length-1,i+(delta||0)));
+  abSetViewMonth(keys[i]);
+}
 function renderAbsensi(){
   var infoEl=document.getElementById('ab-kal-periode-info');
   function hideKalBanner(){if(infoEl){infoEl.style.display='none';infoEl.textContent='';}}
@@ -82,14 +101,29 @@ function renderAbsensi(){
   const ST_BG={hadir:'#e8f4de',cuti:'#ede9fe',izin:'#e8f0fb',sakit:'#fef3e2',setengah_sakit:'#fff0e0',setengah_ijin:'#e0f0ff',alpha:'#fdeaea',libur:'#f3f4f6',libnas:'#fef9c3'};
   const ST_TX={hadir:'#2d6a0a',cuti:'#5b21b6',izin:'#1a56a0',sakit:'#7d4800',setengah_sakit:'#b45309',setengah_ijin:'#0369a1',alpha:'#9b2121',libur:'#9ca3af',libnas:'#713f12'};
   const bulanSingkat=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  const days=absensiDaysFromPeriode(pAbs);
-  if(!days.length){
+  const daysAll=absensiDaysFromPeriode(pAbs);
+  if(!daysAll.length){
     hideKalBanner();
     document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Rentang periode tidak valid.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
-  var hdrSub='Kalender absensi — '+pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+days.length+' hari';
+  var monthMap={};
+  daysAll.forEach(function(x){monthMap[x.date.substring(0,7)]=x.m;});
+  var monthKeys=Object.keys(monthMap).sort();
+  window.__sigajiAbMonthKeys=monthKeys;
+  if(!window.__sigajiAbMonth||monthKeys.indexOf(window.__sigajiAbMonth)<0)
+    window.__sigajiAbMonth=monthKeys[0]||'';
+  var days=daysAll.filter(function(x){return x.date.substring(0,7)===window.__sigajiAbMonth;});
+  var mi=monthKeys.indexOf(window.__sigajiAbMonth);
+  var monthNav='<div class="ab-month-nav">'
+    +'<button type="button" class="btn btn-xs btn-out" onclick="abShiftViewMonth(-1)"'+(mi<=0?' disabled':'')+'>&#9664;</button>'
+    +'<span class="ab-month-lbl">'+abMonthLabel(window.__sigajiAbMonth)+'</span>'
+    +'<button type="button" class="btn btn-xs btn-out" onclick="abShiftViewMonth(1)"'+(mi>=monthKeys.length-1?' disabled':'')+'>&#9654;</button>'
+    +'<select class="toolbar-select ab-month-sel" onchange="abSetViewMonth(this.value)">'
+    +monthKeys.map(function(k){return'<option value="'+k+'" '+(k===window.__sigajiAbMonth?'selected':'')+'>'+abMonthLabel(k)+'</option>';}).join('')
+    +'</select></div>';
+  var hdrSub='Kalender absensi — '+pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+daysAll.length+' hari (tampil: '+days.length+' hari)';
   if(infoEl){infoEl.style.display='block';infoEl.textContent=hdrSub;}
   var adaSelTerkunci=CU&&CU.role!=='Admin'&&days.some(function(x){return !canEditDataPadaTanggalIso(x.date);});
   var roBanner=adaSelTerkunci?'<div class="info-box info-amber" style="font-size:11px;margin-bottom:.65rem">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
@@ -140,7 +174,7 @@ function renderAbsensi(){
       +'</div></div>';
   });
   html+='</tbody></table>';
-  document.getElementById('ab-grid-wrap').innerHTML=roBanner
+  document.getElementById('ab-grid-wrap').innerHTML=roBanner+monthNav
     +'<div class="table-wrap ab-grid-desktop">'+html+'</div>'
     +'<div class="ab-grid-mobile">'+mobileCards+'</div>';
   var hkP=hariKerjaRange(pAbs.start,pAbs.end);
@@ -222,9 +256,9 @@ function renderLemburList(){
           +'<span style="font-size:11px;color:#6b7280;min-width:90px">'+(j>0?fmt(Math.round(h)):'')+'</span>'
           +(lemRo?'':'<button class="btn btn-sm btn-r" onclick="delLembur(\''+k.nik+'\','+i+')">&#10007;</button>')+'</div>';
       }).join('')+'</div>';
-  }).join('')||'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>';
+  }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnOnclick:'addLemburForKar()'}):'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>');
   let tot=0;karyawan.forEach(function(k){const upj=k.gapok/173;(lembur[k.nik]||[]).forEach(function(r){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);tot+=Math.round(h);});});
-  const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>';
+  const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128200;',title:'Rekap kosong',desc:'Total lembur muncul setelah ada input jam.'}):'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>');
 }
 function updLembur(nik,i,f,v){
   if(!lembur[nik])lembur[nik]=[];

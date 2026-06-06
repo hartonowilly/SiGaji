@@ -678,11 +678,13 @@ function getKarSnapshotProgress(pNama,list){
   return{done:done,total:total,ok:total>0&&done===total};
 }
 // ── HITUNG GAJI (dengan integrasi THR v9) ────────
-function hitungGaji(k,pNama){
+function hitungGaji(k,pNama,opts){
+  opts=opts||{};
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
-  // Pastikan snapshot periode ada sebelum hitung (sekali saja per periode/karyawan)
-  ensureKarSnapshotPeriode(pn,[k]);
-  k=resolveKarForPeriode(k,pn);
+  if(!opts.skipResolve){
+    ensureKarSnapshotPeriode(pn,[k]);
+    k=resolveKarForPeriode(k,pn);
+  }
   const hkP=hariKerjaRange(p.start,p.end);
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
   const prF=isPR?pr.hh/pr.hk:1;const gapokEff=Math.round(k.gapok*prF);

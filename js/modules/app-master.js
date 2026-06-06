@@ -351,16 +351,22 @@ function renderMyCuti(){
 }
 // ── SELECTS & BACKUP ─────────────────────────────
 function populateSelects(){
-  var sc=document.getElementById('slip-kar');
-  if(!sc)return;
   var pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
   var p=periodesFindById(pid)||PA();
   var list=karyawanListPeriode(p);
   var opts=list.map(function(k){return '<option value="'+k.nik+'">'+k.nik+' — '+k.nama+'</option>';}).join('');
-  sc.innerHTML='<option value="">-- Pilih Karyawan --</option>'+opts;
-  // Jika pilihan sebelumnya sudah tidak valid utk periode ini, kosongkan agar tidak "nyangkut"
-  if(sc.value&&!list.find(function(k){return k.nik===sc.value;}))sc.value='';
-  renderSlipSendBatchChecklist();
+  var sc=document.getElementById('slip-kar');
+  if(sc){
+    sc.innerHTML='<option value="">-- Pilih Karyawan --</option>'+opts;
+    if(sc.value&&!list.find(function(k){return k.nik===sc.value;}))sc.value='';
+    renderSlipSendBatchChecklist();
+  }
+  var simNik=document.getElementById('sim-nik');
+  if(simNik){
+    var cur=simNik.value;
+    simNik.innerHTML='<option value="">Semua karyawan</option>'+opts;
+    if(cur&&list.find(function(k){return k.nik===cur;}))simNik.value=cur;
+  }
 }
 function renderPeriodeSelects(){
   var aktif = PA().id;

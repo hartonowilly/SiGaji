@@ -480,7 +480,14 @@ function renderTHR(){
   const lbl=document.getElementById('thr-hari-lbl');if(lbl)lbl.textContent=hari;
   let total=0,eligible=0;const p=PA();const periodeAdaTHR=!!p.thr_aktif;
   const pNama=p.nama;
-  document.getElementById('tb-thr').innerHTML=sortKaryawanByNik(karyawan||[]).map(function(k,idx){
+  const tbThr=document.getElementById('tb-thr');
+  if(!tbThr)return;
+  if(!(karyawan||[]).length&&typeof sigajiEmptyState==='function'){
+    tbThr.innerHTML='<tr><td colspan="9">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah karyawan untuk menghitung preview THR.',btnLabel:'Master karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
+    const sum=document.getElementById('thr-summary');if(sum)sum.innerHTML='';
+    return;
+  }
+  tbThr.innerHTML=sortKaryawanByNik(karyawan||[]).map(function(k,idx){
     const t=hitungTHRBruto(k,pNama);const isE=t.eligible;if(isE){total+=t.nilai;eligible++;}
     const mb=Math.floor(t.mb/12)+'thn '+t.mb%12+'bln';
     const g=isE&&periodeAdaTHR?hitungGaji(k,pNama):null;const pphEst=g?g.pphAtasThr:0;

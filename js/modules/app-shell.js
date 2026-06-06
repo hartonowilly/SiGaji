@@ -241,6 +241,7 @@ function showPg(pg){
   if(pg==='kompgaji')setTimeout(function(){applyKompgajiSubtabVisibility();},30);
   if(pg==='lembur')setTimeout(function(){initLemburPage();},30);
   if(pg==='penggajian')setTimeout(function(){renderPenggajian();},0);
+  if(pg==='simulasi')setTimeout(function(){if(typeof renderSimulasiGaji==='function')renderSimulasiGaji();},30);
   sigajiPersistLastPg(pg);
 }
 function applyMasterSubtabVisibility(){

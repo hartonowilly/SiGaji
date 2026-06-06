@@ -8,15 +8,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/css/styles.css?v=11.5.2">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.11">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.11">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.12">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.12">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.11"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.12"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.11"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.12"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -101,6 +101,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="card"><div class="ct">&#9888; Anomali payroll — perlu dicek</div>
     <p style="font-size:11px;color:#6b7280;margin:0 0 .65rem">Deteksi otomatis sebelum finalisasi gaji periode aktif.</p>
     <div id="d-payroll-anomalies"></div></div>
+  <div class="card"><div class="ct">&#128200; Tren payroll 12 bulan</div>
+    <p style="font-size:11px;color:#6b7280;margin:0 0 .65rem">Bruto, PPh, neto, dan headcount per periode gaji (12 terakhir).</p>
+    <div id="d-trend-chart" style="min-height:140px;color:#9ca3af;font-size:12px">Memuat tren…</div></div>
   <div class="card"><div class="ct">Kehadiran bulan ini</div><div id="d-att-chart" style="min-height:120px;color:#9ca3af;font-size:12px">Memuat grafik…</div></div>
   <div class="card"><div class="ct">Status per Departemen</div>
     <div class="table-wrap"><table><thead><tr><th>Dept</th><th>Karyawan</th><th>Gross</th><th>Neto</th></tr></thead>
@@ -276,6 +279,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-thr">
   <div class="ph page-header">
     <div><div class="pt">THR — Tunjangan Hari Raya</div><div class="pst">THR diatur per Periode Gaji di Master → Periode Gaji &amp; THR</div></div>
+    <div class="page-actions"><button class="btn btn-sm btn-p" onclick="renderTHR()">&#9654; Hitung Preview</button></div>
   </div>
   <div class="card" style="background:#f5f0ff;border-color:#c4b5fd">
     <div class="ct" style="color:#5b21b6">&#127873; Preview Perhitungan THR</div>
@@ -312,6 +316,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Proses Penggajian</div><div class="pst" id="pg-periode-lbl">-</div></div>
     <div class="page-actions fl gap1">
+    <button class="btn btn-sm btn-out" onclick="showPg('simulasi')" title="Sandbox naik gaji / tunjangan">&#128202; Simulasi</button>
     <button class="btn btn-sm btn-out" onclick="hitungUlangPenggajian()" title="Hitung ulang tabel gaji periode aktif">&#8635; Hitung Ulang</button>
     <button class="btn btn-sm btn-g" onclick="exportExcelDaftarRekening()" title="Format daftar transfer bank">&#128196; Excel Daftar Rekening</button>
     <button class="btn btn-sm btn-g" onclick="exportExcelBPJS()" title="Rekap iuran BPJS per karyawan">&#128196; Excel BPJS</button>
@@ -331,8 +336,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button type="button" data-pg-cols="ringkas" class="active" onclick="sigajiSetPgGajiCols('ringkas')">Ringkas</button>
     <button type="button" data-pg-cols="lengkap" onclick="sigajiSetPgGajiCols('lengkap')">Lengkap</button>
   </div>
-  <div class="card"><div class="table-wrap">
-  <table><thead><tr><th>No</th><th>Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
+  <div class="card pg-table-sticky"><div class="table-wrap">
+  <table><thead><tr><th class="pg-sticky-no">No</th><th class="pg-sticky-name">Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
   <tbody id="tb-penggajian"></tbody></table></div></div>
   </div>
 </div>
@@ -346,6 +351,34 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="tabs"><div class="tab active" data-aptab="pend" data-panel="ap-pend" onclick="switchTab(this,'ap-pend')">Menunggu</div><div class="tab" data-aptab="hist" data-panel="ap-hist" onclick="switchTab(this,'ap-hist')">Riwayat</div></div>
   <div id="ap-pend"><div id="ap-pend-list"></div></div>
   <div id="ap-hist" style="display:none"><div id="ap-hist-list"></div></div>
+</div>
+
+<!-- SIMULASI GAJI -->
+<div class="pg" id="pg-simulasi">
+  <div class="ph page-header">
+    <div><div class="pt">Simulasi Gaji (What-if)</div><div class="pst">Sandbox perubahan gapok/tunjangan — tidak mengubah snapshot</div></div>
+    <div class="page-actions fl gap1">
+      <button class="btn btn-sm btn-out" onclick="sigajiSimReset()">&#8635; Reset</button>
+      <button class="btn btn-sm btn-p" onclick="renderSimulasiGaji()">Hitung ulang</button>
+    </div>
+  </div>
+  <div class="card" style="border-left:4px solid #2563eb">
+    <div class="ct" style="color:#1d4ed8">Parameter simulasi</div>
+    <div class="fg2">
+      <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-gapok-pct" step="0.5" value="0" onchange="sigajiSimSet('gapokPct',parseFloat(this.value)||0)"></div>
+      <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-tunj-pct" step="0.5" value="0" onchange="sigajiSimSet('tunjPct',parseFloat(this.value)||0)"></div>
+      <div class="fg"><label>Filter dept</label>
+        <select id="sim-dept" onchange="sigajiSimSet('dept',this.value)"><option value="">Semua</option>
+          <option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option>
+        </select></div>
+      <div class="fg"><label>Filter NIK</label><select id="sim-nik" onchange="sigajiSimSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
+    </div>
+    <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Contoh: +5% gapok untuk dept Operasional — lihat dampak PPh &amp; neto sebelum keputusan naik gaji.</p>
+  </div>
+  <div id="sim-summary" class="card" style="background:#f8fafc"></div>
+  <div class="card"><div class="ct">Perbandingan per karyawan</div>
+    <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>Neto sekarang</th><th>Neto simulasi</th><th>Δ Neto</th><th>PPh simulasi</th></tr></thead>
+    <tbody id="sim-results"></tbody></table></div></div>
 </div>
 
 <!-- SLIP -->
@@ -1166,6 +1199,24 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
 </div>
 
+<!-- MODAL SETUP WIZARD -->
+<div class="mbd" id="m-setup-wizard">
+  <div class="modal" style="max-width:520px;border-top:4px solid #1a56a0">
+    <button class="mclose" onclick="sigajiSetupWizardSkip()">&times;</button>
+    <div class="mtit" style="color:#1a56a0">&#128640; Setup SiGaji — pertama kali</div>
+    <div id="wiz-step-lbl" style="font-size:11px;color:#6b7280;margin-bottom:.75rem">Langkah 1 / 5</div>
+    <div class="wiz-progress"><span class="wiz-dot active"></span><span class="wiz-dot"></span><span class="wiz-dot"></span><span class="wiz-dot"></span><span class="wiz-dot"></span></div>
+    <div id="wiz-body"></div>
+    <div class="mfoot" style="justify-content:space-between">
+      <button type="button" class="btn btn-sm btn-out" onclick="sigajiSetupWizardSkip()">Lewati</button>
+      <div class="fl gap1">
+        <button type="button" class="btn btn-sm btn-out" id="wiz-btn-prev" onclick="sigajiSetupWizardPrev()">&#9664; Kembali</button>
+        <button type="button" class="btn btn-sm btn-p" id="wiz-btn-next" onclick="sigajiSetupWizardNext()">Lanjut</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL KONFIRMASI -->
 <div class="mbd" id="m-confirm" onclick="if(event.target===this)sigajiConfirmClose(false)">
   <div class="modal modal-sm modal-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
@@ -1288,20 +1339,21 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/karyawan-tipe.js?v=11.5.1"></script>
 <script src="/js/storage.js?v=11.5.7"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/modules/app-globals.js?v=11.5.11"></script>
-<script src="/js/modules/app-core.js?v=11.5.11"></script>
-<script src="/js/modules/app-access.js?v=11.5.11"></script>
-<script src="/js/modules/app-hr.js?v=11.5.11"></script>
-<script src="/js/modules/app-slip.js?v=11.5.11"></script>
-<script src="/js/modules/app-reports.js?v=11.5.11"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.11"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.11"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.11"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.11"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.11"></script>
-<script src="/js/modules/app-master.js?v=11.5.11"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.11"></script>
-<script src="/js/modules/app-shell.js?v=11.5.11"></script>
+<script src="/js/modules/app-globals.js?v=11.5.12"></script>
+<script src="/js/modules/app-core.js?v=11.5.12"></script>
+<script src="/js/modules/app-access.js?v=11.5.12"></script>
+<script src="/js/modules/app-hr.js?v=11.5.12"></script>
+<script src="/js/modules/app-slip.js?v=11.5.12"></script>
+<script src="/js/modules/app-reports.js?v=11.5.12"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.12"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.12"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.12"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.12"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.12"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.5.12"></script>
+<script src="/js/modules/app-master.js?v=11.5.12"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.12"></script>
+<script src="/js/modules/app-shell.js?v=11.5.12"></script>
 <script src="/js/pesangon.js?v=11.5.1"></script>
 <script src="/js/config.js?v=10.0.0"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
@@ -1309,6 +1361,6 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="/js/cloud-sync.js?v=11.5.7"></script>
-<script src="/js/modules/app-boot.js?v=11.5.11"></script>
+<script src="/js/modules/app-boot.js?v=11.5.12"></script>
 </body>
 </html>
