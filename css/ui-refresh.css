@@ -969,6 +969,11 @@ html.sigaji-mobile-nav .nav-drawer-btn {
   border-left-color: #059669;
   color: #065f46;
 }
+.alert-blue {
+  background: linear-gradient(90deg, #eff6ff, #fff);
+  border-left-color: #2563eb;
+  color: #1e3a8a;
+}
 .alert-empty {
   text-align: center;
   color: var(--ink-muted);

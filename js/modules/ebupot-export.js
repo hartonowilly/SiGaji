@@ -90,10 +90,14 @@ function ebupotIdTku22(npwpRaw, nitkuSuffix) {
   return np + suf;
 }
 
+function ebupotKarKtpNik16(k) {
+  return ebupotNik16(k && k.ktp);
+}
+
 function ebupotCounterpartTin(k) {
   var npwp = ebupotNpwp16(k && k.npwp);
   if (npwp && npwp.length >= 15) return npwp;
-  return ebupotNik16(k && k.nik);
+  return ebupotKarKtpNik16(k);
 }
 
 function ebupotWithholdingDateIso(periode) {
@@ -173,9 +177,13 @@ function ebupotBuildRows(periode) {
         ? terInfoForExport(k.ptkp, g.grossPPh)
         : { lampiran: '', ratePct: 0 };
     var npwpKar = ebupotNpwp16(k.npwp);
-    var nikKar = ebupotNik16(k.nik);
-    if (!npwpKar && nikKar.length < 15) {
-      warnings.push('NIK/NPWP kurang lengkap: ' + (k.nama || k.nik));
+    var nikKar = ebupotKarKtpNik16(k);
+    if (!npwpKar && nikKar.length < 16) {
+      warnings.push(
+        nikKar.length > 0
+          ? 'NPWP kosong & NIK KTP tidak 16 digit: ' + (k.nama || k.nik)
+          : 'NPWP kosong — NIK KTP juga kosong: ' + (k.nama || k.nik)
+      );
     }
     var kode = ebupotKodeObjek(k);
     var tipeKerja = ebupotKarTipe(k);

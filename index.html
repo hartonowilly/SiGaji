@@ -8,15 +8,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/css/styles.css?v=11.5.2">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.2">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.10">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.11">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.11">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.10"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.11"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.10"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.11"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -915,8 +915,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg ff"><label>Nama Lengkap</label><input id="sp-nama-f" oninput="onNamaChange()"></div>
         <div class="fg"><label>Jenis Kelamin</label><select id="sp-jk-f"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
         <div class="fg"><label>Agama</label><select id="sp-agama-f"><option>Islam</option><option>Kristen</option><option>Katolik</option><option>Hindu</option><option>Buddha</option></select></div>
-        <div class="fg"><label>No. KTP</label><input id="sp-ktp-f"></div>
-        <div class="fg"><label>No. NPWP</label><input id="sp-npwp-f" maxlength="20" oninput="formatNPWP(this)" inputmode="numeric"></div>
+        <div class="fg"><label>No. KTP <span style="font-weight:500;color:#6b7280">(NIK 16 digit)</span></label><input id="sp-ktp-f" inputmode="numeric" maxlength="16" oninput="sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()">
+          <div id="sp-ktp-hint" style="font-size:10px;color:#6b7280;margin-top:.25rem"></div>
+        </div>
+        <div class="fg"><label>No. NPWP <span style="font-weight:500;color:#6b7280">(opsional jika KTP 16 digit)</span></label><input id="sp-npwp-f" maxlength="20" oninput="formatNPWP(this);sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()" inputmode="numeric">
+          <div id="sp-npwp-hint" style="font-size:10px;color:#6b7280;margin-top:.25rem"></div>
+          <button type="button" class="btn btn-xs btn-out" style="margin-top:4px" onclick="sigajiOpenDjpNikValidasi(document.getElementById('sp-ktp-f')&&document.getElementById('sp-ktp-f').value)">Cek validasi NIK (portal DJP)</button>
+        </div>
         <div class="fg"><label>No. HP</label><input id="sp-hp-f"></div>
         <div class="fg"><label>Email</label><input id="sp-email-f"></div>
         <div class="fg ff"><label>Alamat</label><input id="sp-alamat-f"></div>
@@ -1283,20 +1288,20 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/karyawan-tipe.js?v=11.5.1"></script>
 <script src="/js/storage.js?v=11.5.7"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/modules/app-globals.js?v=11.5.10"></script>
-<script src="/js/modules/app-core.js?v=11.5.10"></script>
-<script src="/js/modules/app-access.js?v=11.5.10"></script>
-<script src="/js/modules/app-hr.js?v=11.5.10"></script>
-<script src="/js/modules/app-slip.js?v=11.5.10"></script>
-<script src="/js/modules/app-reports.js?v=11.5.10"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.10"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.10"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.10"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.10"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.10"></script>
-<script src="/js/modules/app-master.js?v=11.5.10"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.10"></script>
-<script src="/js/modules/app-shell.js?v=11.5.10"></script>
+<script src="/js/modules/app-globals.js?v=11.5.11"></script>
+<script src="/js/modules/app-core.js?v=11.5.11"></script>
+<script src="/js/modules/app-access.js?v=11.5.11"></script>
+<script src="/js/modules/app-hr.js?v=11.5.11"></script>
+<script src="/js/modules/app-slip.js?v=11.5.11"></script>
+<script src="/js/modules/app-reports.js?v=11.5.11"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.11"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.11"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.11"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.11"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.11"></script>
+<script src="/js/modules/app-master.js?v=11.5.11"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.11"></script>
+<script src="/js/modules/app-shell.js?v=11.5.11"></script>
 <script src="/js/pesangon.js?v=11.5.1"></script>
 <script src="/js/config.js?v=10.0.0"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
@@ -1304,6 +1309,6 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="/js/cloud-sync.js?v=11.5.7"></script>
-<script src="/js/modules/app-boot.js?v=11.5.10"></script>
+<script src="/js/modules/app-boot.js?v=11.5.11"></script>
 </body>
 </html>

@@ -37,6 +37,98 @@
     return k ? k.nama : nik || '-';
   }
 
+  function sigajiDigitsOnly(s) {
+    return String(s || '').replace(/\D/g, '');
+  }
+
+  /** NIK Dukcapil 16 digit — dari field No. KTP */
+  window.sigajiKarKtpNik16 = function (k) {
+    var d = sigajiDigitsOnly(k && k.ktp);
+    if (d.length >= 16) return d.substring(0, 16);
+    return d;
+  };
+
+  window.sigajiKarNpwp16 = function (k) {
+    var d = sigajiDigitsOnly(k && k.npwp);
+    if (d.length === 16) return d;
+    if (d.length === 15) return d + '0';
+    return d;
+  };
+
+  /** has_npwp | npwp_empty_ok_nik | nik_incomplete | npwp_nik_missing */
+  window.sigajiKarTaxIdStatus = function (k) {
+    var npwp = sigajiKarNpwp16(k);
+    if (npwp && npwp.length >= 15) return 'has_npwp';
+    var nik = sigajiKarKtpNik16(k);
+    if (nik.length === 16) return 'npwp_empty_ok_nik';
+    if (nik.length > 0) return 'nik_incomplete';
+    return 'npwp_nik_missing';
+  };
+
+  window.sigajiDjpNikPortalUrl = function () {
+    return 'https://portalnpwp.pajak.go.id/';
+  };
+
+  window.sigajiOpenDjpNikValidasi = function (ktpRaw) {
+    var nik = sigajiDigitsOnly(ktpRaw);
+    var url = sigajiDjpNikPortalUrl();
+    if (nik.length >= 16) {
+      nik = nik.substring(0, 16);
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(nik).then(
+            function () {
+              toast('NIK disalin — tempel di portal DJP untuk cek validasi.');
+            },
+            function () {
+              toast('Buka portal DJP — NIK: ' + nik);
+            }
+          );
+        } else {
+          toast('Buka portal DJP — NIK: ' + nik);
+        }
+      } catch (eClip) {
+        toast('Buka portal DJP untuk cek validasi NIK.');
+      }
+    } else {
+      toast('Isi No. KTP (NIK 16 digit) di profil karyawan terlebih dahulu.');
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  window.sigajiRefreshSpTaxIdHint = function () {
+    var ktpEl = document.getElementById('sp-ktp-f');
+    var npwpEl = document.getElementById('sp-npwp-f');
+    var ktpHint = document.getElementById('sp-ktp-hint');
+    var npwpHint = document.getElementById('sp-npwp-hint');
+    if (!ktpEl) return;
+    var st = sigajiKarTaxIdStatus({ ktp: ktpEl.value, npwp: npwpEl ? npwpEl.value : '' });
+    if (ktpHint) {
+      if (st === 'npwp_empty_ok_nik' || st === 'has_npwp') {
+        ktpHint.innerHTML = '<span style="color:#059669">✓ NIK 16 digit terisi — boleh dipakai e-Bupot jika NPWP kosong</span>';
+      } else if (st === 'nik_incomplete') {
+        ktpHint.innerHTML =
+          '<span style="color:#d97706">NIK belum 16 digit — wajib untuk e-Bupot bila NPWP kosong</span>';
+      } else {
+        ktpHint.textContent = 'NIK Dukcapil (16 digit) — dipakai Coretax jika NPWP tidak diisi';
+      }
+    }
+    if (npwpHint) {
+      if (st === 'has_npwp') {
+        npwpHint.innerHTML = '<span style="color:#059669">✓ NPWP terisi</span>';
+      } else if (st === 'npwp_empty_ok_nik') {
+        npwpHint.innerHTML =
+          '<span style="color:#2563eb">NPWP kosong — OK jika NIK 16 digit terisi. <a href="#" onclick="sigajiOpenDjpNikValidasi(document.getElementById(\'sp-ktp-f\').value);return false" style="color:#1d4ed8">Cek validasi di portal DJP</a></span>';
+      } else if (st === 'nik_incomplete') {
+        npwpHint.innerHTML =
+          '<span style="color:#d97706">NPWP kosong &amp; NIK tidak lengkap — isi NPWP atau lengkapi KTP 16 digit</span>';
+      } else {
+        npwpHint.innerHTML =
+          '<span style="color:#9b2121">NPWP kosong — NIK juga kosong. Isi NPWP atau No. KTP 16 digit sebelum e-Bupot.</span>';
+      }
+    }
+  };
+
   window.sigajiPayrollCompKey = function (k, pNama) {
     if (!k) return '';
     var row = k;
@@ -170,14 +262,36 @@
       var g = hitungGaji(k, p.nama);
       var nama = k.nama || k.nik;
 
-      if (!String(k.npwp || '').replace(/\D/g, '')) {
+      var taxSt = sigajiKarTaxIdStatus(k);
+      if (taxSt === 'npwp_empty_ok_nik') {
         out.push({
-          severity: 'warn',
+          severity: 'info',
           nik: k.nik,
           nama: nama,
-          code: 'no_npwp',
-          title: 'NPWP kosong',
-          desc: 'Karyawan aktif tanpa NPWP — risiko e-Bupot/Coretax ditolak.',
+          code: 'npwp_ok_nik',
+          title: 'NPWP kosong — OK jika NIK 16 digit terisi',
+          desc:
+            'No. KTP dipakai untuk e-Bupot/Coretax. Validasi padanan NIK di portal DJP sebelum unggah.',
+          ktpNik: sigajiKarKtpNik16(k),
+        });
+      } else if (taxSt === 'nik_incomplete') {
+        out.push({
+          severity: 'high',
+          nik: k.nik,
+          nama: nama,
+          code: 'no_tax_id',
+          title: 'NPWP kosong — NIK tidak lengkap',
+          desc:
+            'No. KTP kurang dari 16 digit dan NPWP kosong — e-Bupot/Coretax akan ditolak.',
+        });
+      } else if (taxSt === 'npwp_nik_missing') {
+        out.push({
+          severity: 'high',
+          nik: k.nik,
+          nama: nama,
+          code: 'no_tax_id',
+          title: 'NPWP kosong — NIK juga kosong',
+          desc: 'Isi NPWP atau No. KTP (NIK 16 digit) di profil karyawan sebelum final gaji.',
         });
       }
 
@@ -256,7 +370,7 @@
       }
     });
 
-    var order = { high: 0, warn: 1 };
+    var order = { high: 0, warn: 1, info: 2 };
     out.sort(function (a, b) {
       return (order[a.severity] || 9) - (order[b.severity] || 9);
     });
@@ -400,8 +514,23 @@
       list
         .slice(0, 12)
         .map(function (a) {
-          var cls = a.severity === 'high' ? 'alert-amber' : 'alert-item';
+          var cls =
+            a.severity === 'high'
+              ? 'alert-amber'
+              : a.severity === 'info'
+                ? 'alert-blue'
+                : 'alert-item';
           var nikEsc = String(a.nik).replace(/'/g, "\\'");
+          var ktpArg =
+            a.ktpNik != null
+              ? String(a.ktpNik).replace(/'/g, "\\'")
+              : '';
+          var djpBtn =
+            a.code === 'npwp_ok_nik'
+              ? '<button type="button" class="btn btn-xs btn-out" style="margin-top:4px;margin-right:4px" onclick="sigajiOpenDjpNikValidasi(\'' +
+                ktpArg +
+                '\')">Cek validasi NIK (DJP)</button>'
+              : '';
           return (
             '<div class="alert-item ' +
             cls +
@@ -415,7 +544,8 @@
             ')</span><br>' +
             '<span style="font-size:11px">' +
             escapeHtml(a.desc) +
-            '</span> ' +
+            '</span><br>' +
+            djpBtn +
             '<button type="button" class="btn btn-xs btn-out" style="margin-top:4px" onclick="openPanel(\'' +
             nikEsc +
             '\')">Buka profil</button></div>'
