@@ -96,6 +96,17 @@
     return id;
   };
 
+  /** Prefiks NIK internal cabang (bukan pusat): C2-K0001 — urutan terpisah per lokasi */
+  window.sigajiBranchNikPrefix = function (cabangId) {
+    if (!cabangId || cabangId === 'utama') return '';
+    var c = sigajiCabangById(cabangId);
+    var k = String((c && c.kode) || '')
+      .replace(/[^A-Za-z0-9]/g, '')
+      .toUpperCase();
+    if (!k) k = 'CB';
+    return k.slice(0, 6) + '-';
+  };
+
   window.sigajiKarCabangLabel = function (k) {
     var c = sigajiCabangById(sigajiKarCabangId(k));
     return c ? c.nama || c.id : 'Kantor Pusat';
@@ -234,9 +245,21 @@
       (nKar
         ? '<div class="sigaji-branch-ws-meta">' +
           nKar +
-          ' karyawan di cabang ini</div>'
+          ' karyawan · NIK otomatis: <code>' +
+          escapeHtml(
+            (typeof sigajiBranchNikPrefix === 'function'
+              ? sigajiBranchNikPrefix(f)
+              : '') + 'K0001'
+          ) +
+          '</code> (terpisah dari pusat)</div>'
         : '<div class="sigaji-branch-ws-empty">' +
-          'Belum ada karyawan di cabang ini. Mulai isi data seperti instalasi baru.' +
+          'Belum ada karyawan di cabang ini. NIK dimulai dari <code>' +
+          escapeHtml(
+            (typeof sigajiBranchNikPrefix === 'function'
+              ? sigajiBranchNikPrefix(f)
+              : '') + 'K0001'
+          ) +
+          ' — tidak melanjutkan nomor kantor pusat.' +
           ' <button type="button" class="btn btn-xs btn-p" onclick="showPg(\'karyawan\');openNewKar(\'tetap\')">+ Pegawai</button>' +
           ' <button type="button" class="btn btn-xs btn-out" onclick="sigajiSetCabangFilter(\'\')">Kembali gabungan</button>' +
           '</div>') +

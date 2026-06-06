@@ -202,8 +202,9 @@ function openNewKar(tipe){
   if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}
   if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;
   tipe=(tipe==='tidak_tetap')?'tidak_tetap':'tetap';
-  var sk=typeof sigajiNewKaryawanSkeleton==='function'?sigajiNewKaryawanSkeleton(tipe):{nik:nextNikOtomatis(tipe),tipe_kerja:tipe,nama:'Karyawan Baru',status:'Tetap',dept:'Operasional',jabatan:'Staff',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{},natura:[],pph_return:{nilai:0,ket:''},_new:true};
-  if(typeof sigajiGetCabangFilter==='function'){var cf=sigajiGetCabangFilter();if(cf)sk.cabangId=cf;}
+  var cf=typeof sigajiGetCabangFilter==='function'?sigajiGetCabangFilter():'';
+  var sk=typeof sigajiNewKaryawanSkeleton==='function'?sigajiNewKaryawanSkeleton(tipe,cf||'utama'):{nik:nextNikOtomatis(tipe),tipe_kerja:tipe,nama:'Karyawan Baru',status:'Tetap',dept:'Operasional',jabatan:'Staff',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{},natura:[],pph_return:{nilai:0,ket:''},_new:true};
+  if(cf)sk.cabangId=cf;
   karyawan.push(sk);
   saveAll();renderKar();populateSelects();openPanel(sk.nik);
   toast((tipe==='tidak_tetap'?'Pegawai tidak tetap':'Pegawai tetap')+' '+sk.nik+' dibuat');

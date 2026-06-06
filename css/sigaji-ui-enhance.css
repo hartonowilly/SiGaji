@@ -1635,3 +1635,6 @@ html.sidebar-collapsed .ni .nbadge { display: none; }
   border-color: #334155;
 }
 [data-theme="dark"] .sigaji-cabang-card-head { border-bottom-color: #334155; }
+
+.master-tab-panel[hidden] { display: none !important; }
+.master-tab-panel-active { display: block !important; }

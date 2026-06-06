@@ -1,6 +1,7 @@
 /**
  * SiGaji — pemisahan ID karyawan tetap vs tidak tetap.
  * Tetap: K0001, K0002, … | Tidak tetap: NT0001, NT0002, … (tidak berbagi urutan angka).
+ * Multi-cabang: cabang selain pusat → {KODE}-K0001 (urutan & prefiks terpisah per lokasi).
  */
 (function () {
   var PFX = { tetap: 'K', tidak_tetap: 'NT' };
@@ -9,7 +10,7 @@
     if (tipe === 'tidak_tetap' || tipe === 'tetap') return tipe;
     if (k && (k.tipe_kerja === 'tidak_tetap' || k.tipe_kerja === 'tetap')) return k.tipe_kerja;
     var n = String((k && k.nik) || '').trim().toUpperCase();
-    if (/^NT\d/.test(n)) return 'tidak_tetap';
+    if (/^([A-Z0-9]{1,6}-)?NT\d/.test(n)) return 'tidak_tetap';
     return 'tetap';
   }
 
@@ -17,26 +18,68 @@
     return PFX[normalizeTipe(tipe)] || PFX.tetap;
   }
 
-  function isNikForTipe(nik, tipe) {
+  function parseNikCore(nik) {
     var n = String(nik || '').trim().toUpperCase();
-    var p = nikPrefixForTipe(tipe).toUpperCase();
-    return n.length > p.length && n.indexOf(p) === 0 && /^\d+$/.test(n.slice(p.length));
+    var m = n.match(/^([A-Z0-9]{1,6}-)?(K|NT)(\d+)$/i);
+    if (!m) return null;
+    return {
+      branch: m[1] || '',
+      prefix: m[2].toUpperCase(),
+      num: m[3],
+    };
   }
 
-  function nextNik(tipe) {
+  function isNikForTipe(nik, tipe) {
+    var parsed = parseNikCore(nik);
+    if (!parsed) return false;
+    return parsed.prefix === nikPrefixForTipe(tipe).toUpperCase();
+  }
+
+  function branchNikPrefixFor(cabangId) {
+    if (
+      typeof sigajiMultiBranchEnabled === 'function' &&
+      !sigajiMultiBranchEnabled()
+    )
+      return '';
+    if (!cabangId || cabangId === 'utama') return '';
+    if (typeof sigajiBranchNikPrefix === 'function')
+      return sigajiBranchNikPrefix(cabangId);
+    return '';
+  }
+
+  function resolveCabangIdForNik(cabangId) {
+    if (cabangId) return cabangId;
+    if (typeof sigajiGetCabangFilter === 'function') {
+      var f = sigajiGetCabangFilter();
+      if (f) return f;
+    }
+    return 'utama';
+  }
+
+  function nextNik(tipe, cabangId) {
     tipe = normalizeTipe(tipe);
     var p = nikPrefixForTipe(tipe);
+    cabangId = resolveCabangIdForNik(cabangId);
+    var brPrefix = branchNikPrefixFor(cabangId);
     var maxNum = 0;
-    var re = new RegExp('^' + p + '(\\d+)$', 'i');
-    var list = typeof karyawan !== 'undefined' && Array.isArray(karyawan) ? karyawan : [];
+    var esc = brPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp('^' + esc + p + '(\\d+)$', 'i');
+    var list =
+      typeof karyawan !== 'undefined' && Array.isArray(karyawan) ? karyawan : [];
     list.forEach(function (k) {
+      if (
+        cabangId &&
+        typeof sigajiKarCabangId === 'function' &&
+        sigajiKarCabangId(k) !== cabangId
+      )
+        return;
       var m = String((k && k.nik) || '').trim().match(re);
       if (m) {
         var n = parseInt(m[1], 10);
         if (!isNaN(n) && n > maxNum) maxNum = n;
       }
     });
-    return p + String(maxNum + 1).padStart(4, '0');
+    return brPrefix + p + String(maxNum + 1).padStart(4, '0');
   }
 
   function validateNik(nik, tipe, exceptNik) {
@@ -44,27 +87,44 @@
     tipe = normalizeTipe(tipe);
     if (!nik) return { ok: false, msg: 'NIK wajib diisi' };
     if (!isNikForTipe(nik, tipe)) {
+      var brHint =
+        typeof sigajiMultiBranchEnabled === 'function' &&
+        sigajiMultiBranchEnabled()
+          ? ' (cabang non-pusat: {KODE}-K0001, contoh C2-K0001)'
+          : '';
       return {
         ok: false,
         msg:
           'NIK harus format ' +
           nikPrefixForTipe(tipe) +
-          '0001 (contoh ' +
-          nikPrefixForTipe(tipe) +
-          '0001) untuk ' +
+          '0001' +
+          brHint +
+          ' untuk ' +
           (tipe === 'tidak_tetap' ? 'pegawai tidak tetap' : 'pegawai tetap'),
       };
     }
+    var parsed = parseNikCore(nik);
     var lain = tipe === 'tidak_tetap' ? 'tetap' : 'tidak_tetap';
-    if (isNikForTipe(nik, lain)) {
+    if (parsed && parsed.prefix === nikPrefixForTipe(lain).toUpperCase()) {
       return {
         ok: false,
-        msg: 'NIK ' + nik + ' memakai prefiks ' + nikPrefixForTipe(lain) + ' — gunakan ' + nikPrefixForTipe(tipe),
+        msg:
+          'NIK ' +
+          nik +
+          ' memakai prefiks ' +
+          nikPrefixForTipe(lain) +
+          ' — gunakan ' +
+          nikPrefixForTipe(tipe),
       };
     }
-    var list = typeof karyawan !== 'undefined' && Array.isArray(karyawan) ? karyawan : [];
+    var list =
+      typeof karyawan !== 'undefined' && Array.isArray(karyawan) ? karyawan : [];
     var dup = list.some(function (k) {
-      return k && String(k.nik).trim() === nik && String(k.nik).trim() !== String(exceptNik || '').trim();
+      return (
+        k &&
+        String(k.nik).trim().toUpperCase() === nik.toUpperCase() &&
+        String(k.nik).trim() !== String(exceptNik || '').trim()
+      );
     });
     if (dup) return { ok: false, msg: 'NIK sudah dipakai karyawan lain' };
     return { ok: true };
@@ -88,12 +148,14 @@
     };
   }
 
-  function newKaryawanSkeleton(tipe) {
+  function newKaryawanSkeleton(tipe, cabangId) {
     tipe = normalizeTipe(tipe);
-    var nik = nextNik(tipe);
+    cabangId = resolveCabangIdForNik(cabangId);
+    var nik = nextNik(tipe, cabangId);
     var sk = {
       nik: nik,
       tipe_kerja: tipe,
+      cabangId: cabangId,
       nama: tipe === 'tidak_tetap' ? 'Pegawai Tidak Tetap Baru' : 'Karyawan Baru',
       dept: 'Operasional',
       jabatan: tipe === 'tidak_tetap' ? 'Tenaga Tidak Tetap' : 'Staff',

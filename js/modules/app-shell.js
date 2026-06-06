@@ -266,9 +266,8 @@ function applyMasterSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first=t;
   });
-  ['m-prs','m-periode','m-umk','m-libur','m-potongan','m-ter','m-lanjut','m-cabang'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
-  try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab){}
-  if(first&&first.dataset.panel)switchTab(first,first.dataset.panel);
+  if(typeof hideAllMasterTabPanels==='function')hideAllMasterTabPanels();
+  if(first&&first.dataset.panel)switchMasterTab(first,first.dataset.panel);
   else toast('Tidak ada sub-tab Master Perusahaan yang diizinkan untuk role ini.');
 }
 function applyLaporanSubtabVisibility(){
@@ -335,27 +334,63 @@ function applyAbsensiSubtabVisibility(){
   if(first&&first.dataset.abpanel)switchAbTab(first,first.dataset.abpanel);
   else toast('Tidak ada sub-tab Absensi yang diizinkan untuk role ini.');
 }
-function switchTab(el,tid){
+var MASTER_TAB_PANEL_IDS=['m-prs','m-periode','m-umk','m-libur','m-potongan','m-ter','m-cabang'];
+function hideAllMasterTabPanels(){
+  MASTER_TAB_PANEL_IDS.forEach(function(id){
+    var d=document.getElementById(id);
+    if(!d)return;
+    d.style.display='none';
+    d.setAttribute('hidden','');
+    d.classList.remove('master-tab-panel-active');
+  });
+}
+function showMasterTabPanel(tid){
+  var d=document.getElementById(tid);
+  if(!d)return;
+  d.style.display='block';
+  d.removeAttribute('hidden');
+  d.classList.add('master-tab-panel-active');
+}
+function switchMasterTab(el,tid){
   var masterSubs={'m-prs':'prs','m-periode':'periode','m-umk':'umk','m-libur':'libur','m-potongan':'potongan','m-ter':'ter','m-cabang':'cabang'};
-  var apprSubs={'ap-pend':'pend','ap-hist':'hist'};
   if(tid==='m-lanjut'){
     if(!canAccessSubTab('master','potongan')&&!canAccessSubTab('master','ter')){toast('Tidak punya akses ke pengaturan lanjutan');return;}
   }else if(masterSubs[tid]&&!canAccessSubTab('master',masterSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
-  if(apprSubs[tid]&&!canAccessSubTab('approval',apprSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
-  el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');
-  ['m-prs','m-periode','m-umk','m-libur','m-potongan','m-ter','m-lanjut','m-cabang','ap-pend','ap-hist'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  if(el&&el.parentElement){
+    el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    el.classList.add('active');
+  }
+  hideAllMasterTabPanels();
   if(tid==='m-lanjut'){
     var po=document.getElementById('m-potongan');var te=document.getElementById('m-ter');
-    if(po){po.style.display=canAccessSubTab('master','potongan')?'block':'none';loadAturanPotongan();}
-    if(te){te.style.display=canAccessSubTab('master','ter')?'block':'none';renderPTKPForm();renderTERTable();}
+    if(po&&canAccessSubTab('master','potongan'))showMasterTabPanel('m-potongan');
+    if(te&&canAccessSubTab('master','ter'))showMasterTabPanel('m-ter');
+    if(po)loadAturanPotongan();
+    if(te){renderPTKPForm();renderTERTable();}
     return;
   }
-  var d=document.getElementById(tid);if(d)d.style.display='block';
+  showMasterTabPanel(tid);
   if(tid==='m-potongan')loadAturanPotongan();
   if(tid==='m-ter'){renderPTKPForm();renderTERTable();}
   if(tid==='m-umk')renderUmkPanel();
   if(tid==='m-libur'){initLibnasYearSelect();renderHariLibur();renderCutiRekap();}
+  if(tid==='m-prs'){try{if(typeof loadPrsForm==='function')loadPrsForm();}catch(ePrs){}}
   if(tid==='m-cabang'){try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab3){}}
+}
+if(typeof window!=='undefined'){
+  window.hideAllMasterTabPanels=hideAllMasterTabPanels;
+  window.switchMasterTab=switchMasterTab;
+}
+function switchTab(el,tid){
+  if(MASTER_TAB_PANEL_IDS.indexOf(tid)>=0||tid==='m-lanjut'){switchMasterTab(el,tid);return;}
+  var apprSubs={'ap-pend':'pend','ap-hist':'hist'};
+  if(apprSubs[tid]&&!canAccessSubTab('approval',apprSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
+  if(el&&el.parentElement){
+    el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    el.classList.add('active');
+  }
+  ['ap-pend','ap-hist'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  var d=document.getElementById(tid);if(d)d.style.display='block';
 }
 function switchAbTab(el,tid){
   var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti','abt-lokasi':'lokasi','abt-pengajuan':'pengajuan'};
