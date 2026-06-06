@@ -131,7 +131,7 @@
     var locked =
       typeof isPeriodeSnapshotLocked === 'function' && isPeriodeSnapshotLocked(p.nama);
     if (lockEl) {
-      lockEl.textContent = locked ? '&#128274; Snapshot terkunci' : '&#9998; Dapat diedit';
+      lockEl.textContent = locked ? '\uD83D\uDD12 Snapshot terkunci' : '\u270E Dapat diedit';
       lockEl.className = 'period-sticky-chip ' + (locked ? 'is-lock' : 'is-edit');
     }
     if (daysEl) {
