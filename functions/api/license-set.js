@@ -47,23 +47,6 @@ export async function onRequestPost({ request, env }) {
           ? String(body.plan_label).trim() || null
           : null;
 
-    const multiBranchEnabled =
-      body.multiBranchEnabled != null
-        ? !!body.multiBranchEnabled
-        : body.multi_branch_enabled != null
-          ? !!body.multi_branch_enabled
-          : undefined;
-    const maxBranchesRaw =
-      body.maxBranches != null ? body.maxBranches : body.max_branches;
-    let maxBranches;
-    if (maxBranchesRaw != null && String(maxBranchesRaw).trim() !== '') {
-      const mb = parseInt(maxBranchesRaw, 10);
-      if (!Number.isFinite(mb) || mb < 1 || mb > 99) {
-        return jsonResponse(400, { ok: false, error: 'maxBranches must be 1–99' }, request);
-      }
-      maxBranches = mb;
-    }
-
     const tenant = getTenantKey(env, body);
     const sb = createClient(
       requireEnv(env, 'SIGAJI_SUPABASE_URL'),
@@ -84,9 +67,6 @@ export async function onRequestPost({ request, env }) {
       updated_at: new Date().toISOString(),
       schema_version: existing && existing.schema_version != null ? existing.schema_version : 10,
     };
-    if (multiBranchEnabled !== undefined) row.multi_branch_enabled = multiBranchEnabled;
-    if (maxBranches !== undefined) row.max_branches = maxBranches;
-
     const { error } = await sb.from('sigaji_tenant_meta').upsert(row, { onConflict: 'tenant_key' });
     if (error) return jsonResponse(500, { ok: false, error: error.message }, request);
 

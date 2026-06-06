@@ -1,40 +1,21 @@
-/* SiGaji — multi-cabang (diaktifkan creator/penjual, dikelola Admin/HRD) */
+/* SiGaji — multi-cabang: kebijakan hanya via SQL Supabase (penjual); Admin kelola; HRD isi profil */
 (function () {
   var CABANG_FILTER_KEY = 'sigaji_cabang_filter';
 
-  function creatorEmails() {
-    return String(window.SIGAJI_CREATOR_EMAILS || '')
-      .split(/[,;]/)
-      .map(function (s) {
-        return s.trim().toLowerCase();
-      })
-      .filter(Boolean);
-  }
-
-  window.sigajiIsCreator = function () {
-    if (typeof CU === 'undefined' || !CU) return false;
-    var emails = creatorEmails();
-    if (!emails.length) return false;
-    var me = String(CU.email || CU.username || '')
-      .trim()
-      .toLowerCase();
-    return emails.indexOf(me) >= 0;
+  window.sigajiCanManageCabang = function () {
+    return typeof CU !== 'undefined' && CU && CU.role === 'Admin';
   };
 
-  function configBranchEnabled() {
-    return !!(
-      typeof window.SIGAJI_MULTI_BRANCH_ENABLED !== 'undefined' &&
-      window.SIGAJI_MULTI_BRANCH_ENABLED
+  /** HRD + Admin boleh pilih cabang di profil karyawan & filter topbar */
+  window.sigajiCanAssignCabang = function () {
+    return (
+      typeof CU !== 'undefined' &&
+      CU &&
+      (CU.role === 'Admin' || CU.role === 'HRD')
     );
-  }
-
-  function configMaxBranches() {
-    var n = parseInt(window.SIGAJI_MAX_BRANCHES, 10);
-    return n > 0 ? n : 0;
-  }
+  };
 
   window.sigajiMultiBranchEnabled = function () {
-    if (configBranchEnabled()) return true;
     if (typeof tenantLicense !== 'undefined' && tenantLicense) {
       return !!tenantLicense.multiBranchEnabled;
     }
@@ -42,8 +23,6 @@
   };
 
   window.sigajiMaxBranches = function () {
-    var cfg = configMaxBranches();
-    if (cfg > 0) return cfg;
     if (typeof tenantLicense !== 'undefined' && tenantLicense) {
       var n = parseInt(tenantLicense.maxBranches, 10);
       return n > 0 ? n : 1;
@@ -89,7 +68,7 @@
   };
 
   window.sigajiGetCabangFilter = function () {
-    if (!sigajiMultiBranchEnabled()) return '';
+    if (!sigajiMultiBranchEnabled() || !sigajiCanAssignCabang()) return '';
     try {
       return String(sessionStorage.getItem(CABANG_FILTER_KEY) || '').trim();
     } catch (e) {
@@ -98,6 +77,7 @@
   };
 
   window.sigajiSetCabangFilter = function (id) {
+    if (!sigajiCanAssignCabang()) return;
     try {
       if (!id) sessionStorage.removeItem(CABANG_FILTER_KEY);
       else sessionStorage.setItem(CABANG_FILTER_KEY, String(id));
@@ -123,23 +103,18 @@
 
   window.sigajiApplyBranchPolicyFromObject = function (lic) {
     if (!lic || typeof lic !== 'object' || typeof tenantLicense === 'undefined') return;
-    if (configBranchEnabled()) {
-      tenantLicense.multiBranchEnabled = true;
-      if (configMaxBranches() > 0) tenantLicense.maxBranches = configMaxBranches();
-    } else {
-      if (lic.multiBranchEnabled != null)
-        tenantLicense.multiBranchEnabled = !!lic.multiBranchEnabled;
-      if (lic.maxBranches != null) {
-        var n = parseInt(lic.maxBranches, 10);
-        tenantLicense.maxBranches = n > 0 ? n : 1;
-      }
+    if (lic.multiBranchEnabled != null)
+      tenantLicense.multiBranchEnabled = !!lic.multiBranchEnabled;
+    if (lic.maxBranches != null) {
+      var n = parseInt(lic.maxBranches, 10);
+      tenantLicense.maxBranches = n > 0 ? n : 1;
     }
   };
 
   window.sigajiRenderCabangTopbar = function () {
     var wrap = document.getElementById('sigaji-cabang-topbar');
     if (!wrap) return;
-    if (!sigajiMultiBranchEnabled()) {
+    if (!sigajiMultiBranchEnabled() || !sigajiCanAssignCabang()) {
       wrap.style.display = 'none';
       wrap.innerHTML = '';
       return;
@@ -170,22 +145,25 @@
   window.sigajiRenderCabangMasterTab = function () {
     var tab = document.getElementById('mstab-cabang');
     var panel = document.getElementById('m-cabang');
-    var on = sigajiMultiBranchEnabled();
+    var on = sigajiMultiBranchEnabled() && sigajiCanManageCabang();
     if (tab) tab.style.display = on ? '' : 'none';
-    if (!panel || !on) return;
+    if (!panel || !on) {
+      if (panel) panel.innerHTML = '';
+      return;
+    }
     var list = sigajiEnsureCabangDefault();
     var max = sigajiMaxBranches();
     panel.innerHTML =
       '<div class="card" style="border-left:4px solid #1a56a0">' +
       '<div class="ct" style="color:#1a56a0">&#127970; Master Cabang</div>' +
-      '<p style="font-size:12px;color:#374151;margin:0 0 .75rem">Satu perusahaan — beberapa cabang/lokasi. Filter cabang di topbar memengaruhi tabel karyawan, penggajian, dan dashboard.</p>' +
+      '<p style="font-size:12px;color:#374151;margin:0 0 .75rem">Kelola cabang perusahaan. Fitur &amp; kuota diaktifkan penjual SiGaji lewat Supabase (bukan dari aplikasi).</p>' +
       '<div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem">Maks <strong>' +
       max +
-      '</strong> cabang (diatur penjual SiGaji). Aktif: <strong>' +
+      '</strong> cabang · aktif <strong>' +
       list.filter(function (c) {
         return c && c.aktif !== false;
       }).length +
-      '</strong>.</div>' +
+      '</strong>. HRD hanya mengisi cabang di profil karyawan.</div>' +
       '<div class="table-wrap"><table><thead><tr><th>Nama</th><th>Kode</th><th>Status</th><th></th></tr></thead><tbody id="tb-cabang"></tbody></table></div>' +
       '<div class="fl gap1" style="margin-top:.65rem;flex-wrap:wrap">' +
       '<button type="button" class="btn btn-sm btn-p" onclick="sigajiCabangTambah()">+ Cabang</button>' +
@@ -221,8 +199,12 @@
   };
 
   window.sigajiCabangSimpan = function () {
+    if (!sigajiCanManageCabang()) {
+      toast('Hanya Admin yang boleh mengelola cabang');
+      return;
+    }
     if (!sigajiMultiBranchEnabled()) {
-      toast('Multi-cabang belum diaktifkan penjual');
+      toast('Multi-cabang belum diaktifkan — hubungi penjual SiGaji');
       return;
     }
     var list = sigajiEnsureCabangDefault().slice();
@@ -243,6 +225,10 @@
   };
 
   window.sigajiCabangTambah = function () {
+    if (!sigajiCanManageCabang()) {
+      toast('Hanya Admin yang boleh menambah cabang');
+      return;
+    }
     if (!sigajiMultiBranchEnabled()) return;
     var list = sigajiEnsureCabangDefault();
     var max = sigajiMaxBranches();
@@ -267,6 +253,10 @@
   };
 
   window.sigajiCabangHapus = function (idx) {
+    if (!sigajiCanManageCabang()) {
+      toast('Hanya Admin yang boleh menghapus cabang');
+      return;
+    }
     var list = sigajiEnsureCabangDefault();
     var c = list[idx];
     if (!c || c.id === 'utama') return;
@@ -289,7 +279,7 @@
     var row = document.getElementById('sp-cabang-row');
     var sel = document.getElementById('sp-cabang-f');
     if (!row || !sel) return;
-    if (!sigajiMultiBranchEnabled()) {
+    if (!sigajiMultiBranchEnabled() || !sigajiCanAssignCabang()) {
       row.style.display = 'none';
       return;
     }
@@ -308,107 +298,9 @@
       .join('');
   };
 
-  window.sigajiRenderCreatorBranchPanel = function () {
-    var el = document.getElementById('creator-branch-panel');
-    if (!el) return;
-    if (!sigajiIsCreator()) {
-      el.style.display = 'none';
-      return;
-    }
-    el.style.display = '';
-    var on = sigajiMultiBranchEnabled();
-    var max = sigajiMaxBranches();
-    el.innerHTML =
-      '<div class="card" style="border-left:4px solid #7c3aed">' +
-      '<div class="ct" style="color:#5b21b6">&#128272; Multi-cabang (khusus Creator)</div>' +
-      '<p style="font-size:12px;color:#374151;margin:0 0 .65rem">Hanya <strong>Anda (penjual/creator)</strong> yang bisa mengaktifkan fitur ini — Admin perusahaan tidak bisa. Setelah aktif, Admin/HRD mengelola daftar cabang di Master → Cabang.</p>' +
-      '<div class="fg2" style="align-items:flex-end">' +
-      '<label style="display:flex;align-items:center;gap:.45rem;font-size:13px;cursor:pointer">' +
-      '<input type="checkbox" id="creator-mb-enabled"' +
-      (on ? ' checked' : '') +
-      ' style="width:16px;height:16px;accent-color:#5b21b6"> Aktifkan multi-cabang tenant ini</label>' +
-      '<div class="fg"><label>Maks cabang</label><input type="number" id="creator-mb-max" min="1" max="99" value="' +
-      max +
-      '" style="max-width:88px"></div>' +
-      '<button type="button" class="btn btn-sm btn-p" onclick="sigajiCreatorSaveBranchPolicy()">Simpan ke cloud</button>' +
-      '</div>' +
-      '<div id="creator-mb-status" style="font-size:11px;color:#6b7280;margin-top:.5rem"></div></div>';
-  };
-
-  window.sigajiCreatorSaveBranchPolicy = async function () {
-    if (!sigajiIsCreator()) {
-      toast('Hanya creator');
-      return;
-    }
-    var en = !!(document.getElementById('creator-mb-enabled') && document.getElementById('creator-mb-enabled').checked);
-    var max = parseInt(
-      document.getElementById('creator-mb-max') && document.getElementById('creator-mb-max').value,
-      10
-    );
-    if (!max || max < 1) max = 1;
-    var st = document.getElementById('creator-mb-status');
-    if (st) st.textContent = 'Menyimpan…';
-    try {
-      var t =
-        typeof getCloudAccessToken === 'function' ? await getCloudAccessToken() : '';
-      if (!t) {
-        if (st) st.textContent = 'Login cloud diperlukan.';
-        toast('Login Supabase diperlukan');
-        return;
-      }
-      var r = await fetch(
-        (typeof sigajiFunctionUrl === 'function'
-          ? sigajiFunctionUrl('branch-policy-set')
-          : '/api/branch-policy-set'),
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            authorization: 'Bearer ' + t,
-          },
-          body: JSON.stringify({
-            multiBranchEnabled: en,
-            maxBranches: max,
-          }),
-        }
-      );
-      var j = await r.json().catch(function () {
-        return null;
-      });
-      if (!r.ok || !j || !j.ok) {
-        var err = (j && j.error) || 'Gagal menyimpan';
-        if (st) st.textContent = err;
-        toast(err);
-        return;
-      }
-      if (typeof tenantLicense !== 'undefined') {
-        tenantLicense.multiBranchEnabled = en;
-        tenantLicense.maxBranches = max;
-      }
-      if (typeof window.sigajiApplyBranchPolicyFromObject === 'function') {
-        window.sigajiApplyBranchPolicyFromObject({
-          multiBranchEnabled: en,
-          maxBranches: max,
-        });
-      }
-      if (en) sigajiEnsureCabangDefault();
-      saveAll();
-      sigajiRenderCreatorBranchPanel();
-      sigajiRenderCabangTopbar();
-      sigajiRenderCabangMasterTab();
-      sigajiPopulateKarCabangSelect();
-      if (st) st.textContent = 'Tersimpan. Minta Admin refresh (F5) di perangkat lain.';
-      toast('Kebijakan multi-cabang disimpan');
-    } catch (e) {
-      if (st) st.textContent = String(e.message || e);
-      toast('Gagal: ' + (e.message || e));
-    }
-  };
-
   window.sigajiUiCabangAfterRender = function () {
     sigajiRenderCabangTopbar();
     sigajiRenderCabangMasterTab();
-    sigajiRenderCreatorBranchPanel();
     sigajiPopulateKarCabangSelect();
   };
 })();
