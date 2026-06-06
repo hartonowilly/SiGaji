@@ -224,9 +224,20 @@ function migrateStorage(db){
         if(!c.a1_ttd_jabatan&&prs19.a1_ttd_jabatan)c.a1_ttd_jabatan=prs19.a1_ttd_jabatan;
         if(c.a1_prefix==null||c.a1_prefix==='')c.a1_prefix=prs19.a1_prefix!=null?prs19.a1_prefix:'A1';
       }
-      if(c.nitku==null||c.nitku==='')c.nitku='000000';
     });
     v=19;
+  }
+  if(v<20){
+    var prs20=db.perusahaan||{};
+    var pusatNit=String(prs20.nitku||'000000').trim();
+    if(!Array.isArray(db.cabang))db.cabang=[];
+    db.cabang.forEach(function(c,i){
+      if(!c||typeof c!=='object')return;
+      if(c.id==='utama'||i===0)return;
+      var n=String(c.nitku!=null?c.nitku:'').trim();
+      if(!n||n===pusatNit||n==='000000')c.nitku='';
+    });
+    v=20;
   }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD

@@ -42,6 +42,7 @@ function renderDash(){
   renderDashBody();
 }
 function renderDashBody(){
+  try{if(typeof sigajiRenderBranchWorkspaceBanner==='function')sigajiRenderBranchWorkspaceBanner();}catch(eWs){}
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
   const thrTag=p.thr_aktif?'<span class="bdg b-pu dash-thr-badge">&#127873; THR '+(p.thr_nama||'')+'</span>':'';
   let tB=0,tP=0,tN=0,tT=0;const depts={};
@@ -149,7 +150,7 @@ function renderKarBody(){
   try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}
   const tb=document.getElementById('tb-kar');if(!tb)return;
   if(!list.length&&typeof sigajiEmptyState==='function'){
-    var karColspan=9+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()?1:0);
+    var karColspan=9+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
     tb.innerHTML='<tr><td colspan="'+karColspan+'">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnOnclick:"openNewKar('tetap')"})+'</td></tr>';
     return;
   }
@@ -202,6 +203,7 @@ function openNewKar(tipe){
   if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;
   tipe=(tipe==='tidak_tetap')?'tidak_tetap':'tetap';
   var sk=typeof sigajiNewKaryawanSkeleton==='function'?sigajiNewKaryawanSkeleton(tipe):{nik:nextNikOtomatis(tipe),tipe_kerja:tipe,nama:'Karyawan Baru',status:'Tetap',dept:'Operasional',jabatan:'Staff',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{},natura:[],pph_return:{nilai:0,ket:''},_new:true};
+  if(typeof sigajiGetCabangFilter==='function'){var cf=sigajiGetCabangFilter();if(cf)sk.cabangId=cf;}
   karyawan.push(sk);
   saveAll();renderKar();populateSelects();openPanel(sk.nik);
   toast((tipe==='tidak_tetap'?'Pegawai tidak tetap':'Pegawai tetap')+' '+sk.nik+' dibuat');
@@ -1028,7 +1030,7 @@ function renderPenggajianBody(skipTunjVar){
   });
   var tbPg=document.getElementById('tb-penggajian');
   if(!rows.length&&typeof sigajiEmptyState==='function'){
-    var pgColspan=12+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()?1:0);
+    var pgColspan=12+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
     tbPg.innerHTML='<tr><td colspan="'+pgColspan+'">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
   }else tbPg.innerHTML=rows.join('');
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';

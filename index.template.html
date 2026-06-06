@@ -7,16 +7,16 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/css/styles.css?v=11.5.20">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.20">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.20">
+<link rel="stylesheet" href="/css/styles.css\?v=11.5.21">
+<link rel="stylesheet" href="/css/ui-refresh.css\?v=11.5.21">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css\?v=11.5.21">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.20"></script>
+<script src="/js/modules/app-api-shim.js\?v=11.5.21"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.20"></script>
+<script src="/js/modules/app-boot-resume.js\?v=11.5.21"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -100,6 +100,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 <!-- DASHBOARD -->
 <div class="pg active" id="pg-dashboard">
+  <div id="sigaji-branch-workspace-banner" class="sigaji-branch-workspace-banner" style="display:none" aria-live="polite"></div>
   <div class="dash-bento-toolbar flb" style="margin-bottom:.65rem;flex-wrap:wrap;gap:.5rem">
     <div style="font-size:12px;color:#6b7280">Dashboard — seret widget · layout tersimpan per role (cloud sync)</div>
     <button type="button" class="btn btn-xs btn-out" onclick="sigajiResetBentoLayout()">&#8635; Reset layout</button>
@@ -456,7 +457,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.75rem">
         SiGaji menghasilkan <strong>XML siap upload</strong> dari periode gaji aktif — tanpa copy-paste ke template DJP.
         Pegawai <strong>tetap</strong> → file <strong>BPMP</strong>; <strong>tidak tetap</strong> → file <strong>BP21</strong> (jika ada).
-        Upload di Coretax → <strong>e-Bupot → Impor Data</strong>. Isi <strong>NPWP</strong> dan <strong>NITKU</strong> (6 digit cabang) di Master → Profil Perusahaan.
+        Upload di Coretax → <strong>e-Bupot → Impor Data</strong>. Isi <strong>NPWP</strong> di Profil Perusahaan; <strong>NITKU unik per cabang</strong> di Master → Daftar Cabang.
       </div>
       <div class="fl gap1" style="flex-wrap:wrap">
         <button type="button" class="btn btn-sm btn-p" onclick="exportXmlEbupotCoretax()">Unduh XML Coretax</button>
@@ -497,7 +498,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="tab" data-mstab="libur" data-panel="m-libur" onclick="switchTab(this,'m-libur')">&#127976; Hari Libur &amp; Cuti</div>
     <div class="tab" data-mstab="potongan" data-panel="m-potongan" data-master-adv="1" onclick="switchTab(this,'m-potongan')">&#9998; Aturan Potongan</div>
     <div class="tab" data-mstab="ter" data-panel="m-ter" data-master-adv="1" onclick="switchTab(this,'m-ter')">&#9878; PTKP &amp; TER</div>
-    <div class="tab" data-mstab="cabang" data-panel="m-cabang" id="mstab-cabang" onclick="switchTab(this,'m-cabang')" style="display:none">&#127970; Cabang</div>
+    <div class="tab" data-mstab="cabang" data-panel="m-cabang" id="mstab-cabang" onclick="switchTab(this,'m-cabang')" style="display:none">&#128209; Daftar Cabang</div>
     <div class="tab" data-mstab="lanjut" data-panel="m-lanjut" onclick="switchTab(this,'m-lanjut')">&#9881; Pengaturan lanjutan</div>
   </div>
   <div id="m-cabang" style="display:none"></div>
@@ -525,7 +526,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fg2">
         <div class="fg"><label>Nama Perusahaan</label><input id="prs-nama" placeholder="PT Maju Bersama Indonesia"></div>
         <div class="fg"><label>NPWP Perusahaan</label><input id="prs-npwp" placeholder="01.234.567.8-601.000"></div>
-        <div class="fg"><label>NITKU cabang (6 digit)</label><input id="prs-nitku" placeholder="000000" maxlength="6" title="6 digit cabang TKU — digabung otomatis dengan NPWP menjadi ID TKU 22 digit saat export XML"></div>
+        <div class="fg" id="prs-nitku-row"><label>NITKU (6 digit TKU)</label><input id="prs-nitku" placeholder="000000" maxlength="6" title="6 digit TKU — digabung dengan NPWP menjadi ID TKU 22 digit saat export e-Bupot"></div>
+        <div class="fg ff" id="prs-nitku-cabang-hint" style="display:none"><div class="info-box info-blue" style="font-size:11px;margin:0">Multi-cabang aktif: <strong>NITKU diisi per cabang</strong> di tab <em>Daftar Cabang</em>, bukan di profil pusat. Setiap cabang wajib punya kode TKU unik.</div></div>
         <div class="fg ff"><label>Alamat Lengkap</label><input id="prs-alamat" placeholder="Jl. ..."></div>
         <div class="fg"><label>Telepon</label><input id="prs-telp"></div>
         <div class="fg"><label>Email HR</label><input id="prs-email"></div>
@@ -974,7 +976,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           <select id="sp-dept-f"><option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option></select>
         </div>
         <div class="fg" id="sp-cabang-row" style="display:none">
-          <label>Cabang</label>
+          <label>Lokasi / cabang</label>
           <select id="sp-cabang-f"></select>
         </div>
         <div class="fg"><label>Jabatan</label><input id="sp-jabatan-f"></div>
@@ -1354,38 +1356,38 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.5.20"></script>
-<script src="/js/sigaji-icons.js?v=11.5.20"></script>
-<script src="/js/sigaji-ui.js?v=11.5.20"></script>
-<script src="/js/karyawan-tipe.js?v=11.5.20"></script>
-<script src="/js/storage.js?v=11.5.20"></script>
-<script src="/js/ptkp.js?v=11.5.20"></script>
-<script src="/js/modules/app-globals.js?v=11.5.20"></script>
-<script src="/js/modules/app-core.js?v=11.5.20"></script>
-<script src="/js/modules/app-access.js?v=11.5.20"></script>
-<script src="/js/modules/app-hr.js?v=11.5.20"></script>
-<script src="/js/modules/app-slip.js?v=11.5.20"></script>
-<script src="/js/modules/app-reports.js?v=11.5.20"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.20"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.20"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.20"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.20"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.20"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.5.20"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.5.20"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.20"></script>
-<script src="/js/modules/app-master.js?v=11.5.20"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.20"></script>
-<script src="/js/modules/app-shell.js?v=11.5.20"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.5.20"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.5.20"></script>
-<script src="/js/pesangon.js?v=11.5.20"></script>
-<script src="/js/config.js?v=11.5.20"></script>
+<script src="/js/constants.js\?v=11.5.21"></script>
+<script src="/js/sigaji-icons.js\?v=11.5.21"></script>
+<script src="/js/sigaji-ui.js\?v=11.5.21"></script>
+<script src="/js/karyawan-tipe.js\?v=11.5.21"></script>
+<script src="/js/storage.js\?v=11.5.21"></script>
+<script src="/js/ptkp.js\?v=11.5.21"></script>
+<script src="/js/modules/app-globals.js\?v=11.5.21"></script>
+<script src="/js/modules/app-core.js\?v=11.5.21"></script>
+<script src="/js/modules/app-access.js\?v=11.5.21"></script>
+<script src="/js/modules/app-hr.js\?v=11.5.21"></script>
+<script src="/js/modules/app-slip.js\?v=11.5.21"></script>
+<script src="/js/modules/app-reports.js\?v=11.5.21"></script>
+<script src="/js/modules/ebupot-export.js\?v=11.5.21"></script>
+<script src="/js/modules/app-absensi.js\?v=11.5.21"></script>
+<script src="/js/modules/app-mobile.js\?v=11.5.21"></script>
+<script src="/js/modules/sigaji-hrd-ux.js\?v=11.5.21"></script>
+<script src="/js/modules/sigaji-payroll-insights.js\?v=11.5.21"></script>
+<script src="/js/modules/sigaji-features-v2.js\?v=11.5.21"></script>
+<script src="/js/modules/sigaji-product-v3.js\?v=11.5.21"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js\?v=11.5.21"></script>
+<script src="/js/modules/app-master.js\?v=11.5.21"></script>
+<script src="/js/modules/app-migrasi-pph.js\?v=11.5.21"></script>
+<script src="/js/modules/app-shell.js\?v=11.5.21"></script>
+<script src="/js/modules/sigaji-ui-polish.js\?v=11.5.21"></script>
+<script src="/js/modules/sigaji-cabang.js\?v=11.5.21"></script>
+<script src="/js/pesangon.js\?v=11.5.21"></script>
+<script src="/js/config.js\?v=11.5.21"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.5.20"></script>
-<script src="/js/cloud-tables.js?v=11.5.20"></script>
+<script src="/js/cloud-branding.js\?v=11.5.21"></script>
+<script src="/js/cloud-tables.js\?v=11.5.21"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.5.20"></script>
-<script src="/js/modules/app-boot.js?v=11.5.20"></script>
+<script src="/js/cloud-sync.js\?v=11.5.21"></script>
+<script src="/js/modules/app-boot.js\?v=11.5.21"></script>
 </body>
 </html>

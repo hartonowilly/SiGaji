@@ -29,12 +29,16 @@
     return 1;
   };
 
+  function isUtamaCabang(c, i) {
+    return !!(c && (c.id === 'utama' || i === 0));
+  }
+
   function migrateCabangTaxFields(list) {
     var prs = typeof perusahaan !== 'undefined' ? perusahaan : {};
     return (list || []).map(function (c, i) {
       if (!c || typeof c !== 'object') return c;
       var out = Object.assign({}, c);
-      if (out.id === 'utama' || i === 0) {
+      if (isUtamaCabang(out, i)) {
         if (!out.npwp && prs.npwp) out.npwp = prs.npwp;
         if (out.nitku == null || out.nitku === '') out.nitku = prs.nitku || '000000';
         if (!out.alamat && prs.alamat) out.alamat = prs.alamat;
@@ -46,10 +50,13 @@
         if (out.a1_prefix == null || out.a1_prefix === '')
           out.a1_prefix = prs.a1_prefix != null ? prs.a1_prefix : 'A1';
       }
-      if (out.nitku == null || out.nitku === '') out.nitku = '000000';
       return out;
     });
   }
+
+  window.sigajiInBranchWorkspace = function () {
+    return !!(sigajiMultiBranchEnabled() && sigajiGetCabangFilter());
+  };
 
   window.sigajiEnsureCabangDefault = function () {
     if (typeof cabang === 'undefined') cabang = [];
@@ -100,8 +107,9 @@
     var prs = typeof perusahaan !== 'undefined' ? perusahaan : {};
     var c = sigajiCabangById(cabangId || 'utama') || {};
     var npwpRaw = String(c.npwp || '').trim() || String(prs.npwp || '').trim();
+    var isUtama = !cabangId || cabangId === 'utama' || c.id === 'utama';
     var nitku = String(c.nitku != null ? c.nitku : '').trim();
-    if (!nitku) nitku = String(prs.nitku || '').trim() || '000000';
+    if (!nitku && isUtama) nitku = String(prs.nitku || '').trim() || '000000';
     var npwp16 =
       typeof ebupotNpwp16 === 'function' ? ebupotNpwp16(npwpRaw) : npwpRaw;
     var idTku22 =
@@ -153,7 +161,9 @@
       if (!id) sessionStorage.removeItem(CABANG_FILTER_KEY);
       else sessionStorage.setItem(CABANG_FILTER_KEY, String(id));
     } catch (e2) {}
-    if (typeof renderAll === 'function') renderAll();
+    sigajiUpdateWorkspaceChrome();
+    if (id && typeof showPg === 'function') showPg('dashboard');
+    else if (typeof renderAll === 'function') renderAll();
     else {
       try {
         if (typeof renderKar === 'function') renderKar();
@@ -161,6 +171,84 @@
         if (typeof renderDash === 'function') renderDash();
       } catch (e3) {}
     }
+    if (id) {
+      var c = sigajiCabangById(id);
+      toast(
+        'Workspace: ' +
+          (c ? c.nama || id : id) +
+          ' — data payroll & laporan hanya untuk lokasi ini'
+      );
+    } else if (sigajiMultiBranchEnabled()) toast('Mode gabungan — semua lokasi');
+  };
+
+  window.sigajiBranchKarCount = function (cabangId) {
+    if (!cabangId) return (karyawan || []).length;
+    return (karyawan || []).filter(function (k) {
+      return sigajiKarCabangId(k) === cabangId;
+    }).length;
+  };
+
+  window.sigajiUpdateWorkspaceChrome = function () {
+    sigajiRenderCabangTopbar();
+    sigajiRenderBranchWorkspaceBanner();
+    sigajiSyncKarTableHead();
+    sigajiSyncPgGajiTableHead();
+    var tn = document.getElementById('topbar-nama');
+    if (!tn || !sigajiMultiBranchEnabled()) return;
+    var f = sigajiGetCabangFilter();
+    var base =
+      (typeof perusahaan !== 'undefined' && perusahaan && perusahaan.nama) || 'SiGaji';
+    if (f) {
+      var c = sigajiCabangById(f);
+      tn.textContent = base + ' · ' + (c ? c.nama || f : f);
+      tn.title = 'Workspace cabang aktif — klik Lokasi di toolbar untuk ganti';
+    } else {
+      tn.textContent = base;
+      tn.title = '';
+      if (typeof applyBranding === 'function') applyBranding();
+    }
+  };
+
+  window.sigajiRenderBranchWorkspaceBanner = function () {
+    var el = document.getElementById('sigaji-branch-workspace-banner');
+    if (!el) return;
+    var f = sigajiGetCabangFilter();
+    if (!f || !sigajiMultiBranchEnabled()) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+    var c = sigajiCabangById(f);
+    var nama = c ? c.nama || f : f;
+    var nKar = sigajiBranchKarCount(f);
+    var nitku = c && c.nitku != null ? String(c.nitku).trim() : '';
+    el.style.display = '';
+    el.innerHTML =
+      '<div class="sigaji-branch-ws-inner">' +
+      '<div class="sigaji-branch-ws-title">&#127970; Workspace: <strong>' +
+      escapeHtml(nama) +
+      '</strong></div>' +
+      '<div class="sigaji-branch-ws-desc">Payroll, karyawan, dan laporan di halaman ini hanya untuk cabang ini — terpisah dari lokasi lain.' +
+      (nitku ? ' NITKU: <code>' + escapeHtml(nitku) + '</code>.' : ' <span style="color:#b45309">NITKU belum diisi — Admin isi di Master → Daftar Cabang.</span>') +
+      '</div>' +
+      (nKar
+        ? '<div class="sigaji-branch-ws-meta">' +
+          nKar +
+          ' karyawan di cabang ini</div>'
+        : '<div class="sigaji-branch-ws-empty">' +
+          'Belum ada karyawan di cabang ini. Mulai isi data seperti instalasi baru.' +
+          ' <button type="button" class="btn btn-xs btn-p" onclick="showPg(\'karyawan\');openNewKar(\'tetap\')">+ Pegawai</button>' +
+          ' <button type="button" class="btn btn-xs btn-out" onclick="sigajiSetCabangFilter(\'\')">Kembali gabungan</button>' +
+          '</div>') +
+      '</div>';
+  };
+
+  window.sigajiTogglePrsNitkuField = function () {
+    var row = document.getElementById('prs-nitku-row');
+    var hint = document.getElementById('prs-nitku-cabang-hint');
+    var on = sigajiMultiBranchEnabled();
+    if (row) row.style.display = on ? 'none' : '';
+    if (hint) hint.style.display = on ? '' : 'none';
   };
 
   window.sigajiFilterKaryawanByCabang = function (list) {
@@ -183,12 +271,12 @@
   };
 
   window.sigajiCabangColTh = function () {
-    if (!sigajiMultiBranchEnabled()) return '';
-    return '<th>Cabang</th>';
+    if (!sigajiMultiBranchEnabled() || sigajiInBranchWorkspace()) return '';
+    return '<th>Lokasi</th>';
   };
 
   window.sigajiCabangColTd = function (k) {
-    if (!sigajiMultiBranchEnabled()) return '';
+    if (!sigajiMultiBranchEnabled() || sigajiInBranchWorkspace()) return '';
     var pm = sigajiKarCabangPemotongMeta(k);
     return (
       '<td><span class="bdg b-info" title="TKU: ' +
@@ -204,7 +292,7 @@
     if (!row) return;
     var base =
       '<th>No</th><th>Karyawan</th><th>Tipe</th>' +
-      (sigajiMultiBranchEnabled() ? '<th>Cabang</th>' : '') +
+      (sigajiMultiBranchEnabled() && !sigajiInBranchWorkspace() ? '<th>Lokasi</th>' : '') +
       '<th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th>';
     row.innerHTML = base;
   };
@@ -212,7 +300,8 @@
   window.sigajiSyncPgGajiTableHead = function () {
     var tables = document.querySelectorAll('#pg-penggajian table thead tr');
     if (!tables.length) return;
-    var cab = sigajiMultiBranchEnabled() ? '<th>Cabang</th>' : '';
+    var cab =
+      sigajiMultiBranchEnabled() && !sigajiInBranchWorkspace() ? '<th>Lokasi</th>' : '';
     tables[0].innerHTML =
       '<th class="pg-sticky-no">No</th><th class="pg-sticky-name">Karyawan</th>' +
       cab +
@@ -231,9 +320,11 @@
     var cur = sigajiGetCabangFilter();
     wrap.style.display = '';
     wrap.innerHTML =
-      '<label class="sigaji-cabang-lbl" for="sigaji-cabang-sel">Cabang</label>' +
-      '<select id="sigaji-cabang-sel" class="toolbar-select sigaji-cabang-sel" title="Filter tampilan &amp; laporan per cabang" onchange="sigajiSetCabangFilter(this.value)">' +
-      '<option value="">Semua cabang</option>' +
+      '<label class="sigaji-cabang-lbl" for="sigaji-cabang-sel">Lokasi</label>' +
+      '<select id="sigaji-cabang-sel" class="toolbar-select sigaji-cabang-sel' +
+      (cur ? ' sigaji-cabang-sel-active' : '') +
+      '" title="Buka workspace cabang — data payroll terpisah per lokasi" onchange="sigajiSetCabangFilter(this.value)">' +
+      '<option value="">Gabungan (semua)</option>' +
       list
         .map(function (c) {
           return (
@@ -428,6 +519,10 @@
     var nitkus = {};
     for (var i = 0; i < list.length; i++) {
       var nit = String(list[i].nitku || '').replace(/\D/g, '');
+      if (!nit && list[i].id !== 'utama') {
+        toast('NITKU wajib diisi untuk setiap cabang (bukan pusat)');
+        return;
+      }
       while (nit.length < 6) nit = '0' + nit;
       if (nit.length > 6) nit = nit.slice(-6);
       list[i].nitku = nit;
@@ -524,10 +619,9 @@
   };
 
   window.sigajiUiCabangAfterRender = function () {
-    sigajiRenderCabangTopbar();
+    sigajiUpdateWorkspaceChrome();
     sigajiRenderCabangMasterTab();
     sigajiPopulateKarCabangSelect();
-    sigajiSyncKarTableHead();
-    sigajiSyncPgGajiTableHead();
+    sigajiTogglePrsNitkuField();
   };
 })();
