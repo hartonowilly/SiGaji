@@ -131,6 +131,8 @@ function renderDash(){
       +'<span style="margin-left:auto;color:#9ca3af;text-align:right;line-height:1.4">'
       +nKar+' karyawan · '+escapeHtml(p.nama)+'<br><span style="font-size:10px">'+nDays+' hari (s.d. hari ini) · rata-rata kehadiran ~'+avgHadir+'%</span></span></div>';
   }
+  try{if(typeof renderDashComplianceCalendar==='function')renderDashComplianceCalendar();}catch(eCc){}
+  try{if(typeof renderDashPayrollAnomalies==='function')renderDashPayrollAnomalies();}catch(eAn){}
   try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){}
 }
 // ── MASTER KARYAWAN ─────────────────────────────

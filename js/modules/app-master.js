@@ -537,19 +537,23 @@ function renderAuditLog(){
     var s=(e.ts+' '+e.periode+' '+e.nik+' '+e.by+' '+e.action+' '+e.detail).toLowerCase();
     return s.indexOf(q)>=0;
   }).slice(0,200);
-  if(!list.length){wrap.innerHTML='<div style="padding:12px;color:#6b7280;font-size:12px">Belum ada audit log.</div>';return;}
-  wrap.innerHTML=list.map(function(e){
-    var t=String(e.ts||'').replace('T',' ').replace('Z','');
-    return '<div style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-size:12px">'
-      +'<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">'
-      +'<div><strong>'+escapeHtml(e.action||'-')+'</strong> <span style="color:#6b7280">('+escapeHtml(e.periode||'')+')</span></div>'
-      +'<div style="color:#6b7280;font-size:11px">'+escapeHtml(t)+'</div>'
-      +'</div>'
-      +'<div style="margin-top:4px;color:#374151"><span class="bdg b-info" style="margin-right:6px">'+escapeHtml(e.nik||'-')+'</span>'
-      +'<span style="color:#6b7280">oleh</span> <strong>'+escapeHtml(e.by||'-')+'</strong> <span style="color:#6b7280">('+escapeHtml(e.role||'')+')</span></div>'
-      +'<div style="margin-top:4px;color:#6b7280;font-size:11px">'+escapeHtml(e.detail||'')+'</div>'
-      +'</div>';
-  }).join('');
+  if(!list.length){
+    wrap.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128221;',title:'Belum ada jejak audit',desc:'Perubahan komponen gaji, tunjangan, dan potongan akan tercatat otomatis.',btnLabel:'Buka Komponen Gaji',btnOnclick:"showPg('kompgaji')"}):'<div style="padding:12px;color:#6b7280;font-size:12px">Belum ada audit log.</div>';
+    return;
+  }
+  wrap.innerHTML='<div class="sigaji-audit-timeline-inner">'+list.map(function(e,idx){
+    var t=typeof sigajiFmtAuditTimeline==='function'?sigajiFmtAuditTimeline(e):escapeHtml(e.action||'-');
+    var ts=typeof sigajiFmtAuditTimeline==='function'&&e.ts?new Date(e.ts).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):String(e.ts||'').replace('T',' ').substring(0,16);
+    return '<div class="sigaji-audit-item'+(idx===0?' is-latest':'')+'">'
+      +'<div class="sigaji-audit-dot" aria-hidden="true"></div>'
+      +'<div class="sigaji-audit-body">'
+      +'<div class="sigaji-audit-line">'+t+'</div>'
+      +'<div class="sigaji-audit-meta">'
+      +'<span class="bdg b-gray">'+escapeHtml(e.periode||'-')+'</span> '
+      +'<span>'+escapeHtml(ts)+'</span>'
+      +(e.role?(' · <span style="color:#9ca3af">'+escapeHtml(e.role)+'</span>'):'')
+      +'</div></div></div>';
+  }).join('')+'</div>';
 }
 function renderMigrationStatus(){
   var el=document.getElementById('migration-status');

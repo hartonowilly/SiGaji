@@ -742,3 +742,80 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
     display: none !important;
   }
 }
+
+/* ── Kalender kepatuhan ── */
+.sigaji-comp-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 12px;
+}
+.sigaji-comp-item:last-child {
+  border-bottom: 0;
+}
+.sigaji-comp-meta {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 0.2rem;
+  line-height: 1.45;
+}
+.sigaji-comp-count {
+  flex-shrink: 0;
+}
+
+/* ── Audit timeline ── */
+.sigaji-audit-timeline {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--bd, #e5e7eb);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.65rem 0.85rem;
+}
+.sigaji-audit-timeline-inner {
+  position: relative;
+  padding-left: 1.25rem;
+}
+.sigaji-audit-timeline-inner::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: #e5e7eb;
+}
+.sigaji-audit-item {
+  position: relative;
+  padding: 0.45rem 0 0.65rem 0.65rem;
+  font-size: 12px;
+}
+.sigaji-audit-item.is-latest .sigaji-audit-dot {
+  background: #1a56a0;
+  box-shadow: 0 0 0 3px #eef6ff;
+}
+.sigaji-audit-dot {
+  position: absolute;
+  left: -1.25rem;
+  top: 0.65rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #9ca3af;
+  margin-left: 1px;
+}
+.sigaji-audit-line {
+  color: #374151;
+  line-height: 1.5;
+}
+.sigaji-audit-meta {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
+.lap-var-dept-row:hover {
+  background: #f8fafc;
+}

@@ -9,14 +9,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/css/styles.css?v=11.5.2">
 <link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.2">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.7">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.10">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.9"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.10"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.9"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.10"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -95,6 +95,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="sc sc-kpi sc-kpi-neto"><span class="sc-kpi-icon" aria-hidden="true">&#128176;</span><div class="sc-kpi-body"><div class="sl">Estimasi neto</div><div class="sv sv-money sv-ok" id="d-neto">-</div><div class="sv-sub" id="d-neto-sub"></div></div></div>
   </div>
   <div id="d-kpi-hint" class="dash-kpi-hint"></div>
+  <div class="card"><div class="ct">&#128197; Kalender kepatuhan Indonesia</div>
+    <p style="font-size:11px;color:#6b7280;margin:0 0 .65rem">Deadline THR, BPJS, e-Bupot/Coretax, dan tanggal bayar periode aktif.</p>
+    <div id="d-compliance-cal"></div></div>
+  <div class="card"><div class="ct">&#9888; Anomali payroll — perlu dicek</div>
+    <p style="font-size:11px;color:#6b7280;margin:0 0 .65rem">Deteksi otomatis sebelum finalisasi gaji periode aktif.</p>
+    <div id="d-payroll-anomalies"></div></div>
   <div class="card"><div class="ct">Kehadiran bulan ini</div><div id="d-att-chart" style="min-height:120px;color:#9ca3af;font-size:12px">Memuat grafik…</div></div>
   <div class="card"><div class="ct">Status per Departemen</div>
     <div class="table-wrap"><table><thead><tr><th>Dept</th><th>Karyawan</th><th>Gross</th><th>Neto</th></tr></thead>
@@ -349,12 +355,17 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
   <div class="tabs">
     <div class="tab active" data-laptab="rekap" data-panel="lap-tab-rekap" onclick="switchLaporanTab(this,'lap-tab-rekap')">&#128196; Rekap</div>
-    <div class="tab" data-laptab="pph" data-panel="lap-tab-pph" onclick="switchLaporanTab(this,'lap-tab-pph')">&#128200; PPh 21</div>
+    <div class="tab" data-laptab="variance" data-panel="lap-tab-variance" onclick="switchLaporanTab(this,'lap-tab-variance')">&#128200; Variance</div>
+    <div class="tab" data-laptab="pph" data-panel="lap-tab-pph" onclick="switchLaporanTab(this,'lap-tab-pph')">&#128203; PPh 21</div>
   </div>
   <div id="lap-tab-rekap">
     <div id="lap-rekap-hint" class="dash-kpi-hint" style="margin-bottom:.75rem"></div>
     <div class="card"><div class="table-wrap"><table><thead><tr><th>Periode</th><th>Karyawan</th><th>Total Gross</th><th>Total THR</th><th>Total PPh</th><th>Total Neto</th><th>Status</th></tr></thead>
     <tbody id="tb-lap"></tbody></table></div></div>
+  </div>
+  <div id="lap-tab-variance" style="display:none">
+    <div id="lap-variance-hint" class="dash-kpi-hint" style="margin-bottom:.75rem"></div>
+    <div class="card"><div id="lap-variance-wrap"></div></div>
   </div>
   <div id="lap-tab-pph" style="display:none">
     <div class="card">
@@ -764,7 +775,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <input id="audit-q" placeholder="Cari NIK / nama / aksi…" style="width:220px" oninput="renderAuditLog()">
         <button class="btn btn-sm btn-out" onclick="renderAuditLog()">&#8635;</button>
       </div>
-      <div id="audit-log" style="max-height:220px;overflow:auto;border:1px solid var(--bd);border-radius:10px;background:#fff"></div>
+      <div id="audit-log" class="sigaji-audit-timeline"></div>
     </div>
   </div>
   <div id="bk-saldo" style="display:none">
@@ -1207,19 +1218,20 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/karyawan-tipe.js?v=11.5.1"></script>
 <script src="/js/storage.js?v=11.5.7"></script>
 <script src="/js/ptkp.js?v=10.0.0"></script>
-<script src="/js/modules/app-globals.js?v=11.5.9"></script>
-<script src="/js/modules/app-core.js?v=11.5.9"></script>
-<script src="/js/modules/app-access.js?v=11.5.9"></script>
-<script src="/js/modules/app-hr.js?v=11.5.9"></script>
-<script src="/js/modules/app-slip.js?v=11.5.9"></script>
-<script src="/js/modules/app-reports.js?v=11.5.9"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.9"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.9"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.9"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.9"></script>
-<script src="/js/modules/app-master.js?v=11.5.9"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.9"></script>
-<script src="/js/modules/app-shell.js?v=11.5.9"></script>
+<script src="/js/modules/app-globals.js?v=11.5.10"></script>
+<script src="/js/modules/app-core.js?v=11.5.10"></script>
+<script src="/js/modules/app-access.js?v=11.5.10"></script>
+<script src="/js/modules/app-hr.js?v=11.5.10"></script>
+<script src="/js/modules/app-slip.js?v=11.5.10"></script>
+<script src="/js/modules/app-reports.js?v=11.5.10"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.10"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.10"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.10"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.10"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.10"></script>
+<script src="/js/modules/app-master.js?v=11.5.10"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.10"></script>
+<script src="/js/modules/app-shell.js?v=11.5.10"></script>
 <script src="/js/pesangon.js?v=11.5.1"></script>
 <script src="/js/config.js?v=10.0.0"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
@@ -1227,6 +1239,6 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/cloud-tables.js?v=11.3.0"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="/js/cloud-sync.js?v=11.5.7"></script>
-<script src="/js/modules/app-boot.js?v=11.5.9"></script>
+<script src="/js/modules/app-boot.js?v=11.5.10"></script>
 </body>
 </html>

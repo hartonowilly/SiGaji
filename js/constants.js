@@ -107,7 +107,7 @@ const SUBTAB_LBL={
   'absensi.lokasi':'Lokasi & Penugasan','absensi.pengajuan':'Persetujuan Cuti',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR','master.umk':'UMK',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
-  'laporan.rekap':'Rekap Penggajian','laporan.pph':'PPh 21 & Bukti Potong',
+  'laporan.rekap':'Rekap Penggajian','laporan.variance':'Variance Bulanan','laporan.pph':'PPh 21 & Bukti Potong',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
 };
 /** UI ringkas UKM: tab payroll/master jarang dipakai disembunyikan (bisa dibuka). */
@@ -173,4 +173,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.5.9';
+const SIGAJI_MODULES_CACHE='11.5.10';

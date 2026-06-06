@@ -273,7 +273,7 @@ function applyLaporanSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first=t;
   });
-  ['lap-tab-rekap','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  ['lap-tab-rekap','lap-tab-variance','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
   if(first&&first.dataset.panel)switchLaporanTab(first,first.dataset.panel);
 }
 function switchSubTab(opts){
@@ -289,15 +289,16 @@ function switchSubTab(opts){
 }
 if(typeof window!=='undefined')window.switchSubTab=switchSubTab;
 function switchLaporanTab(el,panelId){
-  var lapMap={'lap-tab-rekap':'rekap','lap-tab-pph':'pph'};
+  var lapMap={'lap-tab-rekap':'rekap','lap-tab-variance':'rekap','lap-tab-pph':'pph'};
   var sub=lapMap[panelId];
   if(sub&&!canAccessSubTab('laporan',sub)){toast('Tidak punya akses ke tab ini');return;}
   if(el&&el.parentElement){
     el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
     el.classList.add('active');
   }
-  ['lap-tab-rekap','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===panelId?'block':'none';});
+  ['lap-tab-rekap','lap-tab-variance','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===panelId?'block':'none';});
   if(panelId==='lap-tab-pph')renderPPH();
+  else if(panelId==='lap-tab-variance'){try{if(typeof renderLaporanVariance==='function')renderLaporanVariance();}catch(eV){}}
   else renderLaporan();
 }
 if(typeof window!=='undefined')window.switchLaporanTab=switchLaporanTab;
