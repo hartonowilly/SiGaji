@@ -253,6 +253,7 @@
 
     window.sigajiCloudLogout = function () {
       try { localStorage.removeItem('sigaji_resume_hint'); } catch (e) {}
+      try { localStorage.removeItem('sigaji_last_pg'); } catch (e) {}
       if (!window.sigajiSupabase) return Promise.resolve();
       return window.sigajiSupabase.auth.signOut();
     };

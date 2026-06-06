@@ -1221,9 +1221,8 @@ function enterAppWithUser(user){
   applyBranding();renderSidebar();renderAll();
   try{sigajiUpdateCloudBackupUi();}catch(eCu){}
   try{sigajiApplyMobileNavMode();initSigajiNavDrawer();}catch(e){}
-  const firstPg=MODULES.map(m=>m.id).find(id=>canAccessModule(id))||'notifikasi';
-  if(CU.role==='Karyawan'&&canAccessModule('myslip'))showPg('myslip');
-  else showPg(canAccessModule('dashboard')?'dashboard':firstPg);
+  var startPg=typeof sigajiResolveStartupPg==='function'?sigajiResolveStartupPg():'dashboard';
+  showPg(startPg);
   updateNotifBadge();
   initIdleSession();
 }
@@ -1371,7 +1370,13 @@ window.sigajiCheckIdleExpiredNow=function(){
 function doLogout(){
   sigajiCloseNavDrawer();
   try{localStorage.removeItem('sigaji_resume_hint');}catch(e){}
+  try{localStorage.removeItem('sigaji_last_pg');}catch(e){}
   try{localStorage.removeItem(window.SIGAJI_LAST_ACTIVITY_KEY);}catch(e){}
+  try{
+    if(window.history&&window.history.replaceState){
+      window.history.replaceState(null,'',window.location.pathname+(window.location.search||''));
+    }
+  }catch(e){}
   destroyIdleSession();
   try{if(typeof window.sigajiCloudLogout==='function')window.sigajiCloudLogout().catch(function(){});}catch(e){}
   document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';

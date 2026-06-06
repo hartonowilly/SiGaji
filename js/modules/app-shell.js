@@ -178,6 +178,37 @@ if(typeof window!=='undefined'){
   window.refreshBackupTabContent=refreshBackupTabContent;
   window.bindBackupTabsOnce=bindBackupTabsOnce;
 }
+function sigajiPersistLastPg(pg){
+  if(!pg)return;
+  try{localStorage.setItem('sigaji_last_pg',pg);}catch(e){}
+  try{
+    if(window.history&&window.history.replaceState){
+      var base=window.location.pathname+(window.location.search||'');
+      window.history.replaceState(null,'',base+'#'+encodeURIComponent(pg));
+    }
+  }catch(e){}
+}
+function sigajiReadLastPg(){
+  try{
+    var h=window.location.hash;
+    if(h&&h.length>1){
+      var fromHash=decodeURIComponent(h.substring(1).split('?')[0].trim());
+      if(fromHash)return fromHash;
+    }
+  }catch(e){}
+  try{return localStorage.getItem('sigaji_last_pg')||'';}catch(e){return '';}
+}
+function sigajiResolveStartupPg(){
+  var firstPg=MODULES.map(function(m){return m.id;}).find(function(id){return canAccessModule(id);})||'notifikasi';
+  var saved=sigajiReadLastPg();
+  if(saved&&canAccess(saved))return saved;
+  if(CU&&CU.role==='Karyawan'&&canAccessModule('myslip'))return 'myslip';
+  return canAccessModule('dashboard')?'dashboard':firstPg;
+}
+if(typeof window!=='undefined'){
+  window.sigajiPersistLastPg=sigajiPersistLastPg;
+  window.sigajiResolveStartupPg=sigajiResolveStartupPg;
+}
 function showPg(pg){
   if(pg==='pph'){showPg('laporan');setTimeout(function(){var t=document.querySelector('#pg-laporan .tab[data-laptab="pph"]');if(t)switchLaporanTab(t,'lap-tab-pph');},80);return;}
   if(pg==='sysstatus'){showPg('backup');setTimeout(function(){switchBackupTab(null,'bk-ringkas');},50);return;}
@@ -210,6 +241,7 @@ function showPg(pg){
   if(pg==='kompgaji')setTimeout(function(){applyKompgajiSubtabVisibility();},30);
   if(pg==='lembur')setTimeout(function(){initLemburPage();},30);
   if(pg==='penggajian')setTimeout(function(){renderPenggajian();},0);
+  sigajiPersistLastPg(pg);
 }
 function applyMasterSubtabVisibility(){
   var simple=typeof SIGAJI_UI_SIMPLE!=='undefined'&&SIGAJI_UI_SIMPLE;
