@@ -61,28 +61,74 @@
     },
   ];
 
+  function currentRole() {
+    return (typeof CU !== 'undefined' && CU && CU.role) || 'Guest';
+  }
+
   function layoutKey() {
-    var role = (typeof CU !== 'undefined' && CU && CU.role) || 'Guest';
-    return 'sigaji_bento_layout_' + role;
+    return 'sigaji_bento_layout_' + currentRole();
+  }
+
+  function migrateBentoFromLocalStorage() {
+    if (typeof bentoLayouts === 'undefined' || !bentoLayouts || typeof bentoLayouts !== 'object') {
+      bentoLayouts = {};
+    }
+    var migrated = false;
+    ['Admin', 'HRD', 'Guest'].forEach(function (role) {
+      if (bentoLayouts[role] && bentoLayouts[role].length) return;
+      try {
+        var raw = localStorage.getItem('sigaji_bento_layout_' + role);
+        if (!raw) return;
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) {
+          bentoLayouts[role] = arr.filter(function (id) {
+            return WIDGET_DEFS[id];
+          });
+          migrated = true;
+        }
+      } catch (e) {}
+    });
+    if (migrated && typeof saveAll === 'function') {
+      try {
+        saveAll();
+      } catch (e2) {}
+    }
   }
 
   function loadLayout() {
+    migrateBentoFromLocalStorage();
+    var role = currentRole();
+    var arr =
+      typeof bentoLayouts !== 'undefined' && bentoLayouts && bentoLayouts[role];
+    if (Array.isArray(arr) && arr.length) {
+      return arr.filter(function (id) {
+        return WIDGET_DEFS[id];
+      });
+    }
     try {
       var raw = localStorage.getItem(layoutKey());
       if (raw) {
-        var arr = JSON.parse(raw);
-        if (Array.isArray(arr) && arr.length) return arr.filter(function (id) {
+        var local = JSON.parse(raw);
+        if (Array.isArray(local) && local.length) return local.filter(function (id) {
           return WIDGET_DEFS[id];
         });
       }
-    } catch (e) {}
+    } catch (e3) {}
     return DEFAULT_ORDER.slice();
   }
 
   function saveLayout(order) {
+    var role = currentRole();
+    if (typeof bentoLayouts === 'undefined' || !bentoLayouts || typeof bentoLayouts !== 'object') {
+      bentoLayouts = {};
+    }
+    bentoLayouts[role] = order.slice();
     try {
       localStorage.setItem(layoutKey(), JSON.stringify(order));
     } catch (e2) {}
+    try {
+      if (typeof saveAll === 'function') saveAll();
+    } catch (e4) {}
   }
 
   function sparklineSvg(values, w, h) {
@@ -318,10 +364,17 @@
   }
 
   window.sigajiResetBentoLayout = function () {
+    var role = currentRole();
+    if (typeof bentoLayouts !== 'undefined' && bentoLayouts) delete bentoLayouts[role];
     localStorage.removeItem(layoutKey());
+    try {
+      if (typeof saveAll === 'function') saveAll();
+    } catch (e) {}
     if (typeof renderDash === 'function') renderDash();
-    toast('Layout dashboard direset');
+    toast('Layout dashboard direset (tersimpan ke cloud)');
   };
+
+  window.sigajiMigrateBentoLayouts = migrateBentoFromLocalStorage;
 
   /* ── Waterfall explain ── */
   window.sigajiBuildWaterfallHtml = function (k, pNama, g) {

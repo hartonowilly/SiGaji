@@ -122,7 +122,7 @@ const MODULES=[
   {id:'thr',lbl:'THR',icon:'&#127873;',sec:'THR & Lembur'},
   {id:'pesangon',lbl:'Pesangon & PHK',icon:'&#9878;',sec:'Penggajian'},
   {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
-  {id:'simulasi',lbl:'Simulasi Gaji',icon:'&#128202;',sec:'Penggajian'},
+  {id:'simulasi',lbl:'Simulasi What-if',icon:'&#128202;',sec:'Penggajian'},
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
   {id:'laporan',lbl:'Laporan & PPh',icon:'&#128196;',sec:'Laporan',subtabs:['rekap','pph']},
   {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter']},
@@ -168,10 +168,10 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=16;
+const SCHEMA_VERSION=17;
 /** Hanya login Supabase + data cloud; tidak ada login username admin/hrd lokal. */
 window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.5.13';
+const SIGAJI_MODULES_CACHE='11.5.15';

@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/css/styles.css?v=11.5.2">
 <link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.13">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.14">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.15">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.13"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.15"></script>
 </head>
 <body>
 <script src="/js/modules/app-boot-resume.js?v=11.5.13"></script>
@@ -99,7 +99,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- DASHBOARD -->
 <div class="pg active" id="pg-dashboard">
   <div class="dash-bento-toolbar flb" style="margin-bottom:.65rem;flex-wrap:wrap;gap:.5rem">
-    <div style="font-size:12px;color:#6b7280">Dashboard — seret widget untuk ubah urutan · tersimpan per role</div>
+    <div style="font-size:12px;color:#6b7280">Dashboard — seret widget · layout tersimpan per role (cloud sync)</div>
     <button type="button" class="btn btn-xs btn-out" onclick="sigajiResetBentoLayout()">&#8635; Reset layout</button>
   </div>
   <div id="dash-bento-grid" class="dash-bento-grid" aria-label="Dashboard bento"></div>
@@ -282,32 +282,86 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="ap-hist" style="display:none"><div id="ap-hist-list"></div></div>
 </div>
 
-<!-- SIMULASI GAJI -->
+<!-- SIMULASI SANDBOX -->
 <div class="pg" id="pg-simulasi">
   <div class="ph page-header">
-    <div><div class="pt">Simulasi Gaji (What-if)</div><div class="pst">Sandbox perubahan gapok/tunjangan — tidak mengubah snapshot</div></div>
-    <div class="page-actions fl gap1">
+    <div><div class="pt">Simulasi What-if</div><div class="pst">Sandbox gaji, THR, dan pesangon — tidak mengubah snapshot atau profil</div></div>
+  </div>
+  <div class="tabs sim-sandbox-tabs" role="tablist" style="margin-bottom:.75rem">
+    <button type="button" class="tab active" data-simtab="gaji" onclick="sigajiSimSwitchTab('gaji')">&#128176; Gaji</button>
+    <button type="button" class="tab" data-simtab="thr" onclick="sigajiSimSwitchTab('thr')">&#127873; THR</button>
+    <button type="button" class="tab" data-simtab="pesangon" onclick="sigajiSimSwitchTab('pesangon')">&#9878; Pesangon</button>
+  </div>
+
+  <div id="sim-panel-gaji">
+    <div class="page-actions fl gap1" style="margin-bottom:.65rem;justify-content:flex-end">
       <button class="btn btn-sm btn-out" onclick="sigajiSimReset()">&#8635; Reset</button>
       <button class="btn btn-sm btn-p" onclick="renderSimulasiGaji()">Hitung ulang</button>
     </div>
-  </div>
-  <div class="card" style="border-left:4px solid #2563eb">
-    <div class="ct" style="color:#1d4ed8">Parameter simulasi</div>
-    <div class="fg2">
-      <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-gapok-pct" step="0.5" value="0" onchange="sigajiSimSet('gapokPct',parseFloat(this.value)||0)"></div>
-      <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-tunj-pct" step="0.5" value="0" onchange="sigajiSimSet('tunjPct',parseFloat(this.value)||0)"></div>
-      <div class="fg"><label>Filter dept</label>
-        <select id="sim-dept" onchange="sigajiSimSet('dept',this.value)"><option value="">Semua</option>
-          <option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option>
-        </select></div>
-      <div class="fg"><label>Filter NIK</label><select id="sim-nik" onchange="sigajiSimSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
+    <div class="card" style="border-left:4px solid #2563eb">
+      <div class="ct" style="color:#1d4ed8">Parameter simulasi gaji</div>
+      <div class="fg2">
+        <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-gapok-pct" step="0.5" value="0" onchange="sigajiSimSet('gapokPct',parseFloat(this.value)||0)"></div>
+        <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-tunj-pct" step="0.5" value="0" onchange="sigajiSimSet('tunjPct',parseFloat(this.value)||0)"></div>
+        <div class="fg"><label>Filter dept</label>
+          <select id="sim-dept" onchange="sigajiSimSet('dept',this.value)"><option value="">Semua</option>
+            <option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option>
+          </select></div>
+        <div class="fg"><label>Filter NIK</label><select id="sim-nik" onchange="sigajiSimSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
+      </div>
+      <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Contoh: +5% gapok dept Operasional — lihat dampak PPh &amp; neto sebelum keputusan naik gaji.</p>
     </div>
-    <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Contoh: +5% gapok untuk dept Operasional — lihat dampak PPh &amp; neto sebelum keputusan naik gaji.</p>
+    <div id="sim-summary" class="card" style="background:#f8fafc"></div>
+    <div class="card"><div class="ct">Perbandingan per karyawan</div>
+      <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>Neto sekarang</th><th>Neto simulasi</th><th>Δ Neto</th><th>PPh simulasi</th></tr></thead>
+      <tbody id="sim-results"></tbody></table></div></div>
   </div>
-  <div id="sim-summary" class="card" style="background:#f8fafc"></div>
-  <div class="card"><div class="ct">Perbandingan per karyawan</div>
-    <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>Neto sekarang</th><th>Neto simulasi</th><th>Δ Neto</th><th>PPh simulasi</th></tr></thead>
-    <tbody id="sim-results"></tbody></table></div></div>
+
+  <div id="sim-panel-thr" style="display:none">
+    <div class="page-actions fl gap1" style="margin-bottom:.65rem;justify-content:flex-end">
+      <button class="btn btn-sm btn-out" onclick="sigajiSimThrReset()">&#8635; Reset</button>
+      <button class="btn btn-sm btn-p" onclick="renderSimulasiThr()">Hitung ulang</button>
+    </div>
+    <div class="card" style="border-left:4px solid #7c3aed">
+      <div class="ct" style="color:#5b21b6">Parameter simulasi THR</div>
+      <div class="fg2">
+        <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-thr-gapok-pct" step="0.5" value="0" onchange="sigajiSimThrSet('gapokPct',parseFloat(this.value)||0)"></div>
+        <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-thr-tunj-pct" step="0.5" value="0" onchange="sigajiSimThrSet('tunjPct',parseFloat(this.value)||0)"></div>
+        <div class="fg"><label>Masa kerja simulasi (bulan)</label><input type="number" id="sim-thr-mk" min="0" max="120" step="1" placeholder="Kosong = profil" onchange="sigajiSimThrSet('mkBulan',this.value)"></div>
+        <div class="fg"><label>Filter dept</label>
+          <select id="sim-thr-dept" onchange="sigajiSimThrSet('dept',this.value)"><option value="">Semua</option>
+            <option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option>
+          </select></div>
+        <div class="fg"><label>Filter NIK</label><select id="sim-thr-nik" onchange="sigajiSimThrSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
+      </div>
+      <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Contoh: hire baru 8 bulan — eligible THR proporsional? Naik gapok 10% — berapa tambahan THR?</p>
+    </div>
+    <div id="sim-thr-summary" class="card" style="background:#faf5ff"></div>
+    <div class="card"><div class="ct">Perbandingan THR per karyawan</div>
+      <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>THR sekarang</th><th>THR simulasi</th><th>Δ THR</th><th>Proporsi</th></tr></thead>
+      <tbody id="sim-thr-results"></tbody></table></div></div>
+  </div>
+
+  <div id="sim-panel-pesangon" style="display:none">
+    <div class="page-actions fl gap1" style="margin-bottom:.65rem;justify-content:flex-end">
+      <button class="btn btn-sm btn-out" onclick="sigajiSimPsgReset()">&#8635; Reset</button>
+      <button class="btn btn-sm btn-p" onclick="renderSimulasiPesangon()">Hitung ulang</button>
+    </div>
+    <div class="card" style="border-left:4px solid #b45309">
+      <div class="ct" style="color:#92400e">Parameter simulasi pesangon / PHK</div>
+      <div class="fg2">
+        <div class="fg ff"><label>Karyawan</label><select id="sim-psg-nik" onchange="sigajiSimPsgSet('nik',this.value)"><option value="">— Pilih —</option></select></div>
+        <div class="fg"><label>Tgl. berhenti (simulasi)</label><input type="date" id="sim-psg-tgl" onchange="sigajiSimPsgSet('tglBerhenti',this.value)"></div>
+        <div class="fg ff"><label>Alasan PHK</label><select id="sim-psg-alasan" onchange="sigajiSimPsgSet('alasan',this.value)"><option value="phk_1x">—</option></select></div>
+        <div class="fg"><label>Sisa cuti (hari, kosong=otomatis)</label><input type="number" min="0" id="sim-psg-sisa-cuti" placeholder="Otomatis" onchange="sigajiSimPsgSet('sisaCuti',this.value)"></div>
+        <div class="fg"><label>UPH tambahan (Rp)</label><input type="number" min="0" id="sim-psg-uph-tambahan" placeholder="0" onchange="sigajiSimPsgSet('uphTambahan',this.value)"></div>
+        <div class="fg"><label>Uang pisah (Rp)</label><input type="number" min="0" id="sim-psg-pisah" placeholder="0" onchange="sigajiSimPsgSet('pisah',this.value)"></div>
+      </div>
+      <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Untuk direksi: bandingkan skenario PHK sebelum putusan — tidak menulis ke profil karyawan.</p>
+    </div>
+    <div id="sim-psg-results" class="card" style="background:#fffbeb"></div>
+    <div id="sim-psg-detail"></div>
+  </div>
 </div>
 
 <!-- SLIP -->
@@ -1302,15 +1356,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/modules/sigaji-hrd-ux.js?v=11.5.13"></script>
 <script src="/js/modules/sigaji-payroll-insights.js?v=11.5.13"></script>
 <script src="/js/modules/sigaji-features-v2.js?v=11.5.13"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.5.14"></script>
-<script src="/js/modules/app-master.js?v=11.5.13"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.13"></script>
-<script src="/js/modules/app-shell.js?v=11.5.13"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.5.15"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.15"></script>
+<script src="/js/modules/app-master.js?v=11.5.15"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.15"></script>
+<script src="/js/modules/app-shell.js?v=11.5.15"></script>
 <script src="/js/pesangon.js?v=11.5.1"></script>
 <script src="/js/config.js?v=10.0.0"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
 <script src="/js/cloud-branding.js?v=10.0.0"></script>
-<script src="/js/cloud-tables.js?v=11.3.0"></script>
+<script src="/js/cloud-tables.js?v=11.5.15"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
 <script src="/js/cloud-sync.js?v=11.5.7"></script>
 <script src="/js/modules/app-boot.js?v=11.5.13"></script>

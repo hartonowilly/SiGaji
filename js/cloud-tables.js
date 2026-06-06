@@ -25,6 +25,7 @@
     'tunjVarLabels',
     'karSnapshot',
     'auditLog',
+    'bentoLayouts',
   ];
 
   function storageMode() {
@@ -209,6 +210,7 @@
           ],
       karSnapshot: store.karSnapshot || {},
       auditLog: store.auditLog || [],
+      bentoLayouts: store.bentoLayouts || {},
     };
     return payload;
   }
@@ -365,6 +367,7 @@
       tunjVarLabels: p.tunjVarLabels || {},
       karSnapshot: p.karSnapshot || {},
       auditLog: p.auditLog || [],
+      bentoLayouts: p.bentoLayouts || {},
     };
 
     for (var si = 0; si < STORE_KEYS.length; si++) {

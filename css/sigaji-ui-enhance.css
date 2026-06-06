@@ -1054,6 +1054,33 @@ tr.pg-row-pending td.pg-sticky-name { background: #fffbeb !important; }
   font-size: 12px;
 }
 
+/* Simulasi sandbox tabs */
+.sim-sandbox-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px;
+  background: var(--bento-surface-2, #f8fafc);
+  border-radius: 12px;
+  border: 1px solid var(--bento-border, #e5e7eb);
+}
+.sim-sandbox-tabs .tab {
+  border: 0;
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--bento-muted, #6b7280);
+}
+.sim-sandbox-tabs .tab.active {
+  background: var(--ux-accent, #1a56a0);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
 /* ══ Product v3: bento, timeline, tema, waterfall, tour ══ */
 .dash-bento-grid {
   display: grid;
