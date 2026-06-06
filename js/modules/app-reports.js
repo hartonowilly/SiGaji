@@ -28,16 +28,37 @@ function renderPPH(){
     if(prev&&karyawan.some(function(k){return k.nik===prev;}))selK.value=prev;
   }
 }
+function sortPeriodesByStart(list,desc){
+  return (list||[]).slice().sort(function(a,b){
+    var ta=new Date(String((a&&a.start)||'1970-01-01')+'T12:00:00').getTime();
+    var tb=new Date(String((b&&b.start)||'1970-01-01')+'T12:00:00').getTime();
+    if(isNaN(ta))ta=0;if(isNaN(tb))tb=0;
+    return desc?tb-ta:ta-tb;
+  });
+}
 function renderLaporan(){
-  document.getElementById('tb-lap').innerHTML=periodes.map(function(p){
+  var sorted=sortPeriodesByStart(periodes,false);
+  var hint=document.getElementById('lap-rekap-hint');
+  if(hint){
+    hint.innerHTML='<strong>Cara baca tabel</strong> — baris diurutkan <em>kronologis</em> (Jan → Des) menurut tanggal mulai periode. '
+      +'<strong>Proses</strong> = periode gaji <em>aktif</em> (masih berjalan; angka estimasi dari data sekarang). '
+      +'<strong>Selesai</strong> = periode sudah <em>tutup</em> di Master → Periode Gaji. '
+      +'Total gross/PPh/neto = jumlah hitungGaji semua karyawan periode itu (bukan transfer bank yang sudah cair).';
+  }
+  document.getElementById('tb-lap').innerHTML=sorted.map(function(p){
     let tB=0,tP=0,tN=0,tT=0;
     var list=karyawanListPeriode(p);
     list.forEach(function(k){const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;});
+    var rentang=(p.start&&p.end)?('<div style="font-size:10px;color:#9ca3af;font-weight:400">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div>'):'';
+    var stLbl=p.status==='aktif'?'Proses':'Selesai';
+    var stTip=p.status==='aktif'
+      ?'Periode aktif — estimasi, bisa berubah sebelum tutup periode'
+      :'Periode tutup — rekap arsip periode tersebut';
     return '<tr '+(p.status==='aktif'?'style="background:#e8f4de"':'')+'>'
-      +'<td><strong>'+p.nama+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+'</td>'
+      +'<td><strong>'+escapeHtml(p.nama)+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+rentang+'</td>'
       +'<td>'+list.length+'</td><td>'+fmt(tB)+'</td><td>'+(tT>0?fmt(tT):'&#8212;')+'</td>'
       +'<td>'+fmt(tP)+'</td><td>'+fmt(tN)+'</td>'
-      +'<td><span class="bdg '+(p.status==='aktif'?'b-warn':'b-ok')+'">'+(p.status==='aktif'?'Proses':'Selesai')+'</span></td></tr>';
+      +'<td><span class="bdg '+(p.status==='aktif'?'b-warn':'b-ok')+'" title="'+escapeHtml(stTip)+'">'+stLbl+'</span></td></tr>';
   }).join('');
 }
 function exportCSV(){

@@ -76,11 +76,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg active" id="pg-dashboard">
   <div id="pb-dash"></div>
   <div class="sg4 sg4-kpi">
-    <div class="sc sc-kpi sc-kpi-kar"><span class="sc-kpi-icon" aria-hidden="true">&#128101;</span><div class="sc-kpi-body"><div class="sl">Total Karyawan</div><div class="sv" id="d-kar">-</div></div></div>
-    <div class="sc sc-kpi sc-kpi-bruto"><span class="sc-kpi-icon" aria-hidden="true">&#128200;</span><div class="sc-kpi-body"><div class="sl">Gross PPh</div><div class="sv sv-money" id="d-bruto">-</div></div></div>
-    <div class="sc sc-kpi sc-kpi-pph"><span class="sc-kpi-icon" aria-hidden="true">&#128203;</span><div class="sc-kpi-body"><div class="sl">Total PPh 21</div><div class="sv sv-money sv-warn" id="d-pph">-</div></div></div>
-    <div class="sc sc-kpi sc-kpi-neto"><span class="sc-kpi-icon" aria-hidden="true">&#128176;</span><div class="sc-kpi-body"><div class="sl">Total Neto</div><div class="sv sv-money sv-ok" id="d-neto">-</div></div></div>
+    <div class="sc sc-kpi sc-kpi-kar"><span class="sc-kpi-icon" aria-hidden="true">&#128101;</span><div class="sc-kpi-body"><div class="sl">Karyawan aktif</div><div class="sv" id="d-kar">-</div><div class="sv-sub" id="d-kar-sub"></div></div></div>
+    <div class="sc sc-kpi sc-kpi-bruto"><span class="sc-kpi-icon" aria-hidden="true">&#128200;</span><div class="sc-kpi-body"><div class="sl">Estimasi gross PPh</div><div class="sv sv-money" id="d-bruto">-</div><div class="sv-sub" id="d-bruto-sub"></div></div></div>
+    <div class="sc sc-kpi sc-kpi-pph"><span class="sc-kpi-icon" aria-hidden="true">&#128203;</span><div class="sc-kpi-body"><div class="sl">Estimasi PPh 21</div><div class="sv sv-money sv-warn" id="d-pph">-</div><div class="sv-sub" id="d-pph-sub"></div></div></div>
+    <div class="sc sc-kpi sc-kpi-neto"><span class="sc-kpi-icon" aria-hidden="true">&#128176;</span><div class="sc-kpi-body"><div class="sl">Estimasi neto</div><div class="sv sv-money sv-ok" id="d-neto">-</div><div class="sv-sub" id="d-neto-sub"></div></div></div>
   </div>
+  <div id="d-kpi-hint" class="dash-kpi-hint"></div>
   <div class="card"><div class="ct">Kehadiran bulan ini</div><div id="d-att-chart" style="min-height:120px;color:#9ca3af;font-size:12px">Memuat grafik…</div></div>
   <div class="card"><div class="ct">Status per Departemen</div>
     <div class="table-wrap"><table><thead><tr><th>Dept</th><th>Karyawan</th><th>Gross</th><th>Neto</th></tr></thead>
@@ -395,6 +396,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="tab" data-laptab="pph" data-panel="lap-tab-pph" onclick="switchLaporanTab(this,'lap-tab-pph')">&#128200; PPh 21</div>
   </div>
   <div id="lap-tab-rekap">
+    <div id="lap-rekap-hint" class="dash-kpi-hint" style="margin-bottom:.75rem"></div>
     <div class="card"><div class="table-wrap"><table><thead><tr><th>Periode</th><th>Karyawan</th><th>Total Gross</th><th>Total THR</th><th>Total PPh</th><th>Total Neto</th><th>Status</th></tr></thead>
     <tbody id="tb-lap"></tbody></table></div></div>
   </div>

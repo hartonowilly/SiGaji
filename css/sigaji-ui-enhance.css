@@ -193,6 +193,35 @@
   color: var(--muted, #6b7280);
   margin-top: 4px;
 }
+.dash-att-bar-sub {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--blue, #1a56a0);
+  margin-top: 1px;
+}
+.dash-att-hint {
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+  line-height: 1.5;
+  margin: 0 0 0.5rem;
+}
+.dash-kpi-hint {
+  font-size: 11px;
+  color: #4b5563;
+  line-height: 1.55;
+  background: #f0f6ff;
+  border: 1px solid #c5d9f5;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin: 0 0 0.85rem;
+}
+.sc-kpi .sv-sub {
+  font-size: 9px;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
 .dash-att-legend {
   display: flex;
   flex-wrap: wrap;

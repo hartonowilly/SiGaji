@@ -50,7 +50,30 @@ function renderDash(){
   const list=karyawanListPeriode(p);
   ensureKarSnapshotPeriode(p.nama,list);
   list.forEach(k=>{const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;if(!depts[k.dept])depts[k.dept]={n:0,b:0,n2:0};depts[k.dept].n++;depts[k.dept].b+=g.grossPPh;depts[k.dept].n2+=g.neto;});
-  document.getElementById('d-kar').textContent=list.length;document.getElementById('d-bruto').textContent=fmt(tB);document.getElementById('d-pph').textContent=fmt(tP);document.getElementById('d-neto').textContent=fmt(tN);
+  document.getElementById('d-kar').textContent=list.length;
+  document.getElementById('d-bruto').textContent=fmt(tB);
+  document.getElementById('d-pph').textContent=fmt(tP);
+  document.getElementById('d-neto').textContent=fmt(tN);
+  var periodeLbl=p.nama+' · '+fmtDate(p.start)+' – '+fmtDate(p.end);
+  var subKar=document.getElementById('d-kar-sub');
+  var subBr=document.getElementById('d-bruto-sub');
+  var subPph=document.getElementById('d-pph-sub');
+  var subNet=document.getElementById('d-neto-sub');
+  if(subKar)subKar.textContent='di periode gaji aktif';
+  if(subBr)subBr.textContent='periode penuh';
+  if(subPph)subPph.textContent='belum final';
+  if(subNet)subNet.textContent='belum final';
+  var hintEl=document.getElementById('d-kpi-hint');
+  if(hintEl){
+    var todayIso=new Date().toISOString().substring(0,10);
+    var periodeBelumSelesai=p.end&&todayIso<p.end;
+    hintEl.innerHTML='<strong>Estimasi payroll</strong> — angka di atas dihitung dari komponen gaji &amp; absensi '
+      +'periode <em>'+escapeHtml(p.nama)+'</em> ('+fmtDate(p.start)+' – '+fmtDate(p.end)+'), '
+      +(periodeBelumSelesai
+        ?'<strong>bukan</strong> akumulasi sampai hari ini. Bulan belum selesai; nilai bisa berubah setelah absensi/lembur/approval diperbarui.'
+        :'bukan slip final — proses &amp; approval di modul Penggajian menentukan angka resmi.')
+      +' Bayar: '+fmtDate(p.bayar)+'.';
+  }
   document.getElementById('d-table').innerHTML=Object.entries(depts).map(([d,v])=>`<tr><td><strong>${d}</strong></td><td>${v.n}</td><td>${fmt(v.b)}</td><td>${fmt(v.n2)}</td></tr>`).join('');
   const pRet=list.reduce((s,k)=>s+(k.pph_return?.nilai||0),0);
   const pAp=approvals.filter(a=>a.status==='pending'&&a.period===p.nama).length;
@@ -81,18 +104,30 @@ function renderDash(){
       });
       var maxK=list.length||1;
       var h=Math.max(4,Math.round((daySt.hadir/maxK)*120));
-      bars.push({d:d,h:h});
+      bars.push({d:d,h:h,hadir:daySt.hadir,izin:daySt.izin,sakit:daySt.sakit,alpha:daySt.alpha});
     }
+    var nKar=list.length;
+    var nDays=bars.length;
     var barHtml=bars.map(function(b){
-      return '<div class="dash-att-bar-wrap"><div class="dash-att-bar" style="height:'+b.h+'px" title="Tgl '+b.d+'"></div><div class="dash-att-bar-lbl">'+b.d+'</div></div>';
+      var tip='Tgl '+b.d+': '+b.hadir+' dari '+nKar+' karyawan hadir';
+      if(b.izin)tip+=' · izin '+b.izin;
+      if(b.sakit)tip+=' · sakit '+b.sakit;
+      if(b.alpha)tip+=' · alpha '+b.alpha;
+      return '<div class="dash-att-bar-wrap"><div class="dash-att-bar" style="height:'+b.h+'px" title="'+tip+'"></div>'
+        +'<div class="dash-att-bar-lbl">'+b.d+'</div>'
+        +(nKar?'<div class="dash-att-bar-sub">'+b.hadir+'/'+nKar+'</div>':'')+'</div>';
     }).join('');
-    chartEl.innerHTML='<div class="dash-att-chart">'+barHtml+'</div>'
+    var avgHadir=nDays&&nKar?Math.round((stats.hadir/(nDays*nKar))*100):0;
+    chartEl.innerHTML='<p class="dash-att-hint">Grafik harian: tinggi batang = proporsi karyawan hadir hari itu. Angka di bawah batang = <strong>hadir / total karyawan</strong>. '
+      +'Kosong di kalender absensi = dianggap <em>hadir</em> (bukan alpha).</p>'
+      +'<div class="dash-att-chart">'+barHtml+'</div>'
       +'<div class="dash-att-legend">'
-      +'<span class="lg-hadir">Hadir '+stats.hadir+'</span>'
-      +'<span class="lg-izin">Izin '+stats.izin+'</span>'
-      +'<span class="lg-sakit">Sakit '+stats.sakit+'</span>'
-      +'<span class="lg-alpha">Alpha '+stats.alpha+'</span>'
-      +'<span style="margin-left:auto;color:#9ca3af">'+list.length+' karyawan · '+ym+'</span></div>';
+      +'<span class="lg-hadir" title="Jumlah entri hadir: setiap karyawan per hari dihitung 1">Orang-hari hadir: '+stats.hadir+'</span>'
+      +'<span class="lg-izin">Orang-hari izin: '+stats.izin+'</span>'
+      +'<span class="lg-sakit">Orang-hari sakit: '+stats.sakit+'</span>'
+      +'<span class="lg-alpha">Orang-hari alpha: '+stats.alpha+'</span>'
+      +'<span style="margin-left:auto;color:#9ca3af;text-align:right;line-height:1.4">'
+      +nKar+' karyawan · '+ym+'<br><span style="font-size:10px">'+nDays+' hari terakhir · rata-rata kehadiran ~'+avgHadir+'%</span></span></div>';
   }
 }
 // ── MASTER KARYAWAN ─────────────────────────────
