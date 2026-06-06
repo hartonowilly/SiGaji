@@ -98,7 +98,7 @@ class _LeaveScreenState extends State<LeaveScreen> {
   }
 
   Future<void> _pickFile() async {
-    final r = await FilePicker.platform.pickFiles(
+    final r = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
     );
