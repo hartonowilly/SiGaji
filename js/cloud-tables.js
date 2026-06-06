@@ -26,6 +26,7 @@
     'karSnapshot',
     'auditLog',
     'bentoLayouts',
+    'cabang',
   ];
 
   function storageMode() {
@@ -132,7 +133,7 @@
   async function assemblePayloadFromTables(sb) {
     var meta = await sb
       .from('sigaji_tenant_meta')
-      .select('schema_version,max_employees,plan_label')
+      .select('schema_version,max_employees,plan_label,multi_branch_enabled,max_branches')
       .eq('tenant_key', TK)
       .maybeSingle();
     if (meta.error) throw meta.error;
@@ -180,6 +181,11 @@
           ? parseInt(meta.data.max_employees, 10) || 0
           : 0,
       planLabel: (meta.data && meta.data.plan_label) || '',
+      multiBranchEnabled: !!(meta.data && meta.data.multi_branch_enabled),
+      maxBranches:
+        meta.data && meta.data.max_branches != null
+          ? parseInt(meta.data.max_branches, 10) || 1
+          : 1,
     };
     /* Hanya baca dari sigaji_tenant_meta (penjual); abaikan salinan license di sigaji_store. */
 
@@ -211,6 +217,7 @@
       karSnapshot: store.karSnapshot || {},
       auditLog: store.auditLog || [],
       bentoLayouts: store.bentoLayouts || {},
+      cabang: Array.isArray(store.cabang) ? store.cabang : [],
     };
     return payload;
   }
@@ -368,6 +375,7 @@
       karSnapshot: p.karSnapshot || {},
       auditLog: p.auditLog || [],
       bentoLayouts: p.bentoLayouts || {},
+      cabang: Array.isArray(p.cabang) ? p.cabang : [],
     };
 
     for (var si = 0; si < STORE_KEYS.length; si++) {
@@ -405,7 +413,7 @@
       if (!ok) return null;
       var meta = await sb
         .from('sigaji_tenant_meta')
-        .select('max_employees,plan_label')
+        .select('max_employees,plan_label,multi_branch_enabled,max_branches')
         .eq('tenant_key', TK)
         .maybeSingle();
       if (meta.error) throw meta.error;
@@ -414,6 +422,9 @@
         maxEmployees:
           meta.data.max_employees != null ? parseInt(meta.data.max_employees, 10) || 0 : 0,
         planLabel: String(meta.data.plan_label || '').trim(),
+        multiBranchEnabled: !!meta.data.multi_branch_enabled,
+        maxBranches:
+          meta.data.max_branches != null ? parseInt(meta.data.max_branches, 10) || 1 : 1,
       };
     } catch (e) {
       console.warn('Sigaji fetchTenantLicenseMeta:', e);

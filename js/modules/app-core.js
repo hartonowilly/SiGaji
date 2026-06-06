@@ -428,7 +428,9 @@ function nextNikOtomatis(tipe){
   return 'K0001';
 }
 function karyawanListPeriode(p){
-  return sortKaryawanByNik(karyawan.filter(function(k){return karyawanInPeriode(k,p);}));
+  var list=sortKaryawanByNik(karyawan.filter(function(k){return karyawanInPeriode(k,p);}));
+  if(typeof sigajiFilterKaryawanByCabang==='function')list=sigajiFilterKaryawanByCabang(list);
+  return list;
 }
 /** Batas atas (inklusif) tgl berhenti masuk periode untuk PHK / rekonsiliasi PPh.
  *  Absensi & komponen gaji memakai start–end. Tgl bayar boleh **lebih awal** dari end (transfer bank hari kerja);

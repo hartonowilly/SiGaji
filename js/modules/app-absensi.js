@@ -80,6 +80,12 @@ function abShiftViewMonth(delta){
   abSetViewMonth(keys[i]);
 }
 function renderAbsensi(){
+  if(typeof sigajiWithSkeleton==='function'){
+    return sigajiWithSkeleton('ab-grid-wrap',12,renderAbsensiBody);
+  }
+  renderAbsensiBody();
+}
+function renderAbsensiBody(){
   var infoEl=document.getElementById('ab-kal-periode-info');
   function hideKalBanner(){if(infoEl){infoEl.style.display='none';infoEl.textContent='';}}
   populateAbsensiPeriodeSelect();

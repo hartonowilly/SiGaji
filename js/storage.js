@@ -201,6 +201,14 @@ function migrateStorage(db){
     if(db.bentoLayouts===undefined||typeof db.bentoLayouts!=='object')db.bentoLayouts={};
     v=17;
   }
+  if(v<18){
+    if(!Array.isArray(db.cabang))db.cabang=[];
+    if(db.license&&typeof db.license==='object'){
+      if(db.license.multiBranchEnabled===undefined)db.license.multiBranchEnabled=false;
+      if(db.license.maxBranches===undefined)db.license.maxBranches=1;
+    }
+    v=18;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
@@ -311,14 +319,18 @@ let karSnapshot=LS('karSnapshot',{});
 let auditLog=LS('auditLog',[]);
 let bentoLayouts=LS('bentoLayouts',{});
 if(!bentoLayouts||typeof bentoLayouts!=='object')bentoLayouts={};
-let tenantLicense=LS('license',{maxEmployees:0,planLabel:''});
-if(!tenantLicense||typeof tenantLicense!=='object')tenantLicense={maxEmployees:0,planLabel:''};
+let cabang=LS('cabang',[]);
+if(!Array.isArray(cabang))cabang=[];
+let tenantLicense=LS('license',{maxEmployees:0,planLabel:'',multiBranchEnabled:false,maxBranches:1});
+if(!tenantLicense||typeof tenantLicense!=='object')tenantLicense={maxEmployees:0,planLabel:'',multiBranchEnabled:false,maxBranches:1};
 tenantLicense.maxEmployees=parseInt(tenantLicense.maxEmployees,10)>0?parseInt(tenantLicense.maxEmployees,10):0;
 tenantLicense.planLabel=String(tenantLicense.planLabel||'').trim();
+tenantLicense.multiBranchEnabled=!!tenantLicense.multiBranchEnabled;
+tenantLicense.maxBranches=parseInt(tenantLicense.maxBranches,10)>0?parseInt(tenantLicense.maxBranches,10):1;
 let CU=null,cpNik=null;
 const bmState={};
 function currentPayloadLite(){
-  return {karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,license:tenantLicense};
+  return {karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense};
 }
 function markRecoveryBackup(tag){
   try{
@@ -329,14 +341,14 @@ function markRecoveryBackup(tag){
 function saveAll(){
   try{
     if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan||[]);
-    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,license:tenantLicense});
+    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense});
   }catch(e){console.error('saveAll error:',e);}
   try{
     try{
       var prevUni=localStorage.getItem('sigaji_universal');
       if(prevUni)localStorage.setItem('sigaji_universal_prev',prevUni);
     }catch(e0){}
-    localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,license:tenantLicense}));
+    localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense}));
   }catch(e){}
   try{
     if(window.sigajiApplyingCloud)return;
@@ -387,14 +399,18 @@ function applyDbFromCloudPayload(payload){
     if(o.karSnapshot&&typeof o.karSnapshot==='object')karSnapshot=o.karSnapshot;
     if(Array.isArray(o.auditLog))auditLog=o.auditLog;
     if(o.bentoLayouts&&typeof o.bentoLayouts==='object')bentoLayouts=o.bentoLayouts;
+    if(Array.isArray(o.cabang))cabang=o.cabang;
     if(o.license&&typeof o.license==='object'){
       tenantLicense.maxEmployees=parseInt(o.license.maxEmployees,10)>0?parseInt(o.license.maxEmployees,10):0;
       tenantLicense.planLabel=String(o.license.planLabel||'').trim();
+      tenantLicense.multiBranchEnabled=!!o.license.multiBranchEnabled;
+      tenantLicense.maxBranches=parseInt(o.license.maxBranches,10)>0?parseInt(o.license.maxBranches,10):1;
       try{if(typeof window.sigajiApplyLicenseFromObject==='function')window.sigajiApplyLicenseFromObject(tenantLicense);}catch(eL){}
+      try{if(typeof window.sigajiApplyBranchPolicyFromObject==='function')window.sigajiApplyBranchPolicyFromObject(o.license);}catch(eBr){}
     }
-    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,license:tenantLicense});
+    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense});
     try{
-      localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,license:tenantLicense}));
+      localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense}));
     }catch(e2){}
     showSI();
     try{if(typeof applyBranding==='function')applyBranding();}catch(eB){}
@@ -434,7 +450,8 @@ function getPayloadForCloud(){
     tunjVarColumns:tunjVarColumns,
     karSnapshot:karSnapshot,
     auditLog:auditLog,
-    bentoLayouts:bentoLayouts
+    bentoLayouts:bentoLayouts,
+    cabang:cabang
   }));
   delete p.license;
   return p;

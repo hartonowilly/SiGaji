@@ -1,6 +1,12 @@
 /* SiGaji — PPh 21, laporan, THR */
 // ── PPH & LAPORAN ────────────────────────────────
 function renderPPH(){
+  if(typeof sigajiWithSkeleton==='function'){
+    return sigajiWithSkeleton('tb-pph',10,renderPPHBody);
+  }
+  renderPPHBody();
+}
+function renderPPHBody(){
   var list=karyawanListPeriode(PA());
   document.getElementById('tb-pph').innerHTML=list.map(function(k,idx){
     const g=hitungGaji(k);
@@ -37,18 +43,12 @@ function sortPeriodesByStart(list,desc){
   });
 }
 function renderLaporan(){
-  var tbLap=document.getElementById('tb-lap');
-  if(tbLap&&tbLap.dataset.sigajiSkel!=='1'&&typeof sigajiTableSkeletonRows==='function'){
-    tbLap.dataset.sigajiSkel='1';
-    tbLap.innerHTML=sigajiTableSkeletonRows(7,5);
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        if(tbLap)delete tbLap.dataset.sigajiSkel;
-        renderLaporan();
-      });
-    });
-    return;
+  if(typeof sigajiWithSkeleton==='function'){
+    return sigajiWithSkeleton('tb-lap',7,renderLaporanBody);
   }
+  renderLaporanBody();
+}
+function renderLaporanBody(){
   var sorted=sortPeriodesByStart(periodes,false);
   var hint=document.getElementById('lap-rekap-hint');
   if(hint){
@@ -488,6 +488,12 @@ function simpanTHRManualEl(el){
   saveAll();renderTHR();
 }
 function renderTHR(){
+  if(typeof sigajiWithSkeleton==='function'){
+    return sigajiWithSkeleton('tb-thr',9,renderTHRBody);
+  }
+  renderTHRBody();
+}
+function renderTHRBody(){
   const hari=(document.getElementById('thr-hari')&&document.getElementById('thr-hari').value)||'Idul Fitri';
   const lbl=document.getElementById('thr-hari-lbl');if(lbl)lbl.textContent=hari;
   let total=0,eligible=0;const p=PA();const periodeAdaTHR=!!p.thr_aktif;

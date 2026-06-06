@@ -111,6 +111,41 @@
     );
   };
 
+  /** Flash skeleton lalu panggil renderFn — untuk tbody atau div host. */
+  window.sigajiWithSkeleton = function (elOrId, colspan, renderFn) {
+    var el =
+      typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (typeof renderFn !== 'function') return;
+    if (!el) {
+      renderFn();
+      return;
+    }
+    if (el.dataset.sigajiSkel === '1') {
+      renderFn();
+      return;
+    }
+    var hasSkel =
+      typeof sigajiTableSkeletonRows === 'function' ||
+      typeof sigajiSkeleton === 'function';
+    if (!hasSkel) {
+      renderFn();
+      return;
+    }
+    el.dataset.sigajiSkel = '1';
+    if (el.tagName === 'TBODY' && typeof sigajiTableSkeletonRows === 'function') {
+      el.innerHTML = sigajiTableSkeletonRows(colspan || 8, 6);
+    } else if (typeof sigajiSkeleton === 'function') {
+      el.innerHTML =
+        '<div class="sigaji-skel-host">' + sigajiSkeleton('table') + '</div>';
+    }
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (el) delete el.dataset.sigajiSkel;
+        renderFn();
+      });
+    });
+  };
+
   /* ── Dept sparkline ── */
   window.sigajiDeptNetoSeries = function (deptName, n) {
     n = n || 6;

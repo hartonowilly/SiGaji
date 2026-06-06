@@ -2,6 +2,12 @@
 // ── PERIODE & MASTER ─────────────────────────────
 function toggleThrFields(){var aktif=document.getElementById('p-thr-aktif')&&document.getElementById('p-thr-aktif').checked;var f=document.getElementById('thr-fields');if(f)f.style.display=aktif?'block':'none';}
 function renderPeriodes(){
+  if(typeof sigajiWithSkeleton==='function'){
+    return sigajiWithSkeleton('tb-periode',8,renderPeriodesBody);
+  }
+  renderPeriodesBody();
+}
+function renderPeriodesBody(){
   renderPBanner('pb-master');
   var p=PA();var pn=document.getElementById('p-nama');
   if(pn&&!pn.value){
@@ -326,6 +332,12 @@ function simpanAturanPotongan(){if(!perusahaan.aturan_potongan)perusahaan.aturan
 function resetAturanPotongan(){perusahaan.aturan_potongan={cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}};saveAll();loadAturanPotongan();toast('Reset ke default');}
 // ── NOTIFIKASI ───────────────────────────────────
 function renderNotif(){
+  if(typeof sigajiWithSkeleton==='function'){
+    return sigajiWithSkeleton('notif-list',1,renderNotifBody);
+  }
+  renderNotifBody();
+}
+function renderNotifBody(){
   var el=document.getElementById('notif-list');if(!el)return;
   el.innerHTML=notifikasi.length?notifikasi.map(function(n){
     return '<div class="notif-item'+(n.read?'':' notif-unread')+'">'+

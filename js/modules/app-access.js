@@ -43,9 +43,16 @@ function renderSidebar(){
   document.getElementById('nav-dynamic').innerHTML=h;
   document.getElementById('nav-bottom').innerHTML='';
   try{if(typeof sigajiUiPolishAfterRender==='function')sigajiUiPolishAfterRender();}catch(ePol){}
+  try{if(typeof sigajiUiCabangAfterRender==='function')sigajiUiCabangAfterRender();}catch(eCb){}
 }
 // ── USER MANAGEMENT ──────────────────────────────
 function renderUsers(){
+  if(typeof sigajiWithSkeleton==='function'){
+    return sigajiWithSkeleton('tb-users',7,renderUsersBody);
+  }
+  renderUsersBody();
+}
+function renderUsersBody(){
   const tb=document.getElementById('tb-users');if(!tb)return;
   tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${u.username}</strong></td><td style="font-size:11px;max-width:140px;word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${u.nama}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${u.role}</span></td><td>${u.nik?`<span class="bdg b-info">${u.nik}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
 }
@@ -1546,4 +1553,4 @@ function renderSysStatus(){
 }
 if(typeof window!=='undefined')window.renderSysStatus=renderSysStatus;
 
-function renderAll(){renderDash();renderKar();try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();try{sigajiUpdateCloudBackupUi();}catch(eCb){}try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){}if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(document.body);try{if(typeof sigajiMaybeShowSetupWizard==='function')sigajiMaybeShowSetupWizard();}catch(eWiz){}try{if(typeof sigajiMaybeProductTour==='function')sigajiMaybeProductTour();}catch(eTour){}try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){}try{if(typeof sigajiApplyUiPrefs==='function')sigajiApplyUiPrefs(sigajiGetUiPrefs());}catch(eUi){}}
+function renderAll(){renderDash();renderKar();try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){}renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();try{sigajiUpdateCloudBackupUi();}catch(eCb){}try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){}if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(document.body);try{if(typeof sigajiMaybeShowSetupWizard==='function')sigajiMaybeShowSetupWizard();}catch(eWiz){}try{if(typeof sigajiMaybeProductTour==='function')sigajiMaybeProductTour();}catch(eTour){}try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){}try{if(typeof sigajiApplyUiPrefs==='function')sigajiApplyUiPrefs(sigajiGetUiPrefs());}catch(eUi){}try{if(typeof sigajiUiCabangAfterRender==='function')sigajiUiCabangAfterRender();}catch(eCab){}}

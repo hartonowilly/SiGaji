@@ -414,9 +414,13 @@
     if (typeof tenantLicense !== 'undefined') {
       tenantLicense.maxEmployees = lic.maxEmployees;
       tenantLicense.planLabel = lic.planLabel;
+      if (lic.multiBranchEnabled != null) tenantLicense.multiBranchEnabled = !!lic.multiBranchEnabled;
+      if (lic.maxBranches != null) tenantLicense.maxBranches = parseInt(lic.maxBranches, 10) || 1;
     }
     if (typeof window.sigajiApplyLicenseFromObject === 'function') window.sigajiApplyLicenseFromObject(lic);
+    if (typeof window.sigajiApplyBranchPolicyFromObject === 'function') window.sigajiApplyBranchPolicyFromObject(lic);
     if (typeof window.sigajiRenderLicenseQuotaUi === 'function') window.sigajiRenderLicenseQuotaUi();
+    try{if(typeof window.sigajiUiCabangAfterRender==='function')window.sigajiUiCabangAfterRender();}catch(eCb){}
   }
 
   async function loadCloudPayloadIntoApp(uid) {

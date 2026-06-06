@@ -1540,3 +1540,25 @@ html.sidebar-collapsed .ni .nbadge { display: none; }
   display: block;
   margin: 0 auto 0.35rem;
 }
+
+.sigaji-skel-host { padding: 0.5rem 0; }
+
+.sigaji-cabang-topbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+.sigaji-cabang-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.sigaji-cabang-sel {
+  max-width: 140px;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+[data-theme="dark"] .sigaji-cabang-lbl { color: #94a3b8; }

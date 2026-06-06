@@ -1,9 +1,7 @@
--- Lindungi kuota lisensi: hanya penjual yang boleh mengubah max_employees & plan_label.
--- Admin perusahaan (login browser / authenticated) tidak bisa naikkan kuota sendiri.
--- Jalankan setelah supabase_tenant_license.sql
---
--- PENTING: Table Editor Supabase BUKAN service_role — tanpa pengecualian postgres/SQL Editor,
--- nilai max_employees selalu kembali NULL saat disimpan (trigger mempertahankan nilai lama).
+-- Lindungi kolom vendor di sigaji_tenant_meta:
+-- max_employees, plan_label, multi_branch_enabled, max_branches
+-- Admin perusahaan (authenticated) tidak bisa mengubah sendiri.
+-- Jalankan setelah supabase_tenant_license.sql dan supabase_tenant_multi_branch.sql
 
 create or replace function public.sigaji_protect_tenant_license()
 returns trigger
@@ -27,11 +25,15 @@ begin
   if tg_op = 'INSERT' then
     new.max_employees := null;
     new.plan_label := null;
+    new.multi_branch_enabled := false;
+    new.max_branches := 1;
     return new;
   end if;
   if tg_op = 'UPDATE' then
     new.max_employees := old.max_employees;
     new.plan_label := old.plan_label;
+    new.multi_branch_enabled := old.multi_branch_enabled;
+    new.max_branches := old.max_branches;
     return new;
   end if;
   return new;

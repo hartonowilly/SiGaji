@@ -130,6 +130,12 @@
     return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');
   }
   window.renderPesangon=function(){
+    if(typeof sigajiWithSkeleton==='function'){
+      return sigajiWithSkeleton('tb-pesangon',7,renderPesangonBody);
+    }
+    renderPesangonBody();
+  };
+  function renderPesangonBody(){
     try{
     var tb=document.getElementById('tb-pesangon');if(!tb)return;
     // Tampilkan hanya karyawan yang berhenti pada periode aktif (agar pegawai resign bulan lalu tidak "nyangkut")
@@ -163,7 +169,7 @@
     if(!selNik&&list.length)selNik=list[0].nik;
     renderDetail();
     }catch(e){console.error('renderPesangon',e);if(typeof toast==='function')toast('Error modul Pesangon — lihat konsol (F12).');}
-  };
+  }
   window.pesangonPilih=function(nik){selNik=nik;renderPesangon();};
   window.pesangonRefresh=function(){
     if(!selNik)return;

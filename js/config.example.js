@@ -11,6 +11,15 @@ window.SIGAJI_TENANT_KEY = '';
  * Admin perusahaan pelanggan tidak bisa ubah kuota di aplikasi.
  */
 window.SIGAJI_MAX_EMPLOYEES = 0;
+/**
+ * Multi-cabang — hanya creator/penjual (bukan Admin PT).
+ * Cloudflare env: SIGAJI_CREATOR_EMAILS=email-anda@domain.com
+ * Aktifkan per tenant lewat Backup → Sistem (panel creator) atau SQL sigaji_tenant_meta.
+ */
+window.SIGAJI_CREATOR_EMAILS = '';
+/** Opsional override deploy (biasanya dari sigaji_tenant_meta): */
+window.SIGAJI_MULTI_BRANCH_ENABLED = false;
+window.SIGAJI_MAX_BRANCHES = 0;
 /** Opsional: satu kali bantu login Admin pertama jika data belum punya email user sama sekali (isi email yang sama dengan Auth, lalu kosongkan lagi). */
 window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL = '';
 /** Penyimpanan cloud: 'dual' (tabel + cadangan blob, disarankan), 'tables', atau 'blob' (lama). Butuh sql/supabase_sigaji_tables_v11.sql */
