@@ -5,6 +5,7 @@ import 'package:image/image.dart' as img;
 
 import 'face_liveness.dart';
 import 'face_net_embedder.dart';
+import 'input_image_helper.dart';
 
 class FaceVerifyResult {
   const FaceVerifyResult({
@@ -137,8 +138,18 @@ class FaceVerifyService {
     File file, {
     bool forVerification = false,
   }) async {
-    final inputImage = InputImage.fromFilePath(file.path);
-    final faces = await _detector.processImage(inputImage);
+    final decoded = await InputImageHelper.loadOrientedImage(file);
+    if (decoded == null) {
+      return (
+        ok: false,
+        face: null,
+        image: null,
+        error: 'Gambar tidak bisa dibaca',
+      );
+    }
+    final faces = await _detector.processImage(
+      InputImageHelper.fromRgbImage(decoded),
+    );
     if (faces.isEmpty) {
       return (ok: false, face: null, image: null, error: 'Wajah tidak terdeteksi');
     }
@@ -195,17 +206,6 @@ class FaceVerifyService {
       );
     }
 
-    final bytes = await file.readAsBytes();
-    var decoded = img.decodeImage(bytes);
-    if (decoded == null) {
-      return (
-        ok: false,
-        face: null,
-        image: null,
-        error: 'Gambar tidak bisa dibaca',
-      );
-    }
-    decoded = img.bakeOrientation(decoded);
     return (ok: true, face: face, image: decoded, error: null);
   }
 }

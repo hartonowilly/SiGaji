@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
+import 'input_image_helper.dart';
+
 /// Anti-spoof: foto di layar HP/PC tidak bisa "kedip".
 class BlinkLivenessResult {
   const BlinkLivenessResult({required this.ok, this.error, this.face});
@@ -74,8 +76,12 @@ class FaceLiveness {
   }
 
   Future<({bool ok, Face? face, String? error})> _singleFace(File file) async {
+    final decoded = await InputImageHelper.loadOrientedImage(file);
+    if (decoded == null) {
+      return (ok: false, face: null, error: 'Gambar tidak bisa dibaca');
+    }
     final faces = await _detector.processImage(
-      InputImage.fromFilePath(file.path),
+      InputImageHelper.fromRgbImage(decoded),
     );
     if (faces.isEmpty) {
       return (ok: false, face: null, error: 'Wajah tidak terdeteksi');

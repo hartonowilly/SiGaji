@@ -389,7 +389,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-laporan">
   <div class="ph page-header">
     <div><div class="pt">Laporan &amp; PPh 21</div><div class="pst">Rekap periode dan PPh / bukti potong</div></div>
-    <div class="page-actions"><button class="btn btn-sm btn-out" onclick="exportCSV()">&#128196; CSV Rekap</button></div>
+    <div class="page-actions fl gap1">
+      <button class="btn btn-sm btn-p" onclick="exportXmlEbupotCoretax()">XML Coretax</button>
+      <button class="btn btn-sm btn-out" onclick="exportExcelEbupotBulanan()">Excel</button>
+      <button class="btn btn-sm btn-out" onclick="exportCSV()">CSV Rekap</button>
+    </div>
   </div>
   <div class="tabs">
     <div class="tab active" data-laptab="rekap" data-panel="lap-tab-rekap" onclick="switchLaporanTab(this,'lap-tab-rekap')">&#128196; Rekap</div>
@@ -401,6 +405,19 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <tbody id="tb-lap"></tbody></table></div></div>
   </div>
   <div id="lap-tab-pph" style="display:none">
+    <div class="card">
+      <div class="ct">Export e-Bupot bulanan (Coretax)</div>
+      <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.75rem">
+        SiGaji menghasilkan <strong>XML siap upload</strong> dari periode gaji aktif — tanpa copy-paste ke template DJP.
+        Pegawai <strong>tetap</strong> → file <strong>BPMP</strong>; <strong>tidak tetap</strong> → file <strong>BP21</strong> (jika ada).
+        Upload di Coretax → <strong>e-Bupot → Impor Data</strong>. Isi <strong>NPWP</strong> dan <strong>NITKU</strong> (6 digit cabang) di Master → Profil Perusahaan.
+      </div>
+      <div class="fl gap1" style="flex-wrap:wrap">
+        <button type="button" class="btn btn-sm btn-p" onclick="exportXmlEbupotCoretax()">Unduh XML Coretax</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="exportExcelEbupotBulanan()">Excel (acuan)</button>
+        <button type="button" class="btn btn-sm btn-out" onclick="exportCsvEbupotBulanan()">CSV (arsip)</button>
+      </div>
+    </div>
     <div class="card"><div class="ct">Rekap PPh 21</div>
       <div class="table-wrap">
       <table><thead><tr><th>No</th><th>Nama</th><th>PTKP</th><th>Gross/bln</th><th>THR</th><th>Biaya Jabatan</th><th>PKP/tahun</th><th>PPh/tahun</th><th>PPh/bulan</th><th>PPh Return</th></tr></thead>
@@ -460,6 +477,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fg2">
         <div class="fg"><label>Nama Perusahaan</label><input id="prs-nama" placeholder="PT Maju Bersama Indonesia"></div>
         <div class="fg"><label>NPWP Perusahaan</label><input id="prs-npwp" placeholder="01.234.567.8-601.000"></div>
+        <div class="fg"><label>NITKU cabang (6 digit)</label><input id="prs-nitku" placeholder="000000" maxlength="6" title="6 digit cabang TKU — digabung otomatis dengan NPWP menjadi ID TKU 22 digit saat export XML"></div>
         <div class="fg ff"><label>Alamat Lengkap</label><input id="prs-alamat" placeholder="Jl. ..."></div>
         <div class="fg"><label>Telepon</label><input id="prs-telp"></div>
         <div class="fg"><label>Email HR</label><input id="prs-email"></div>
@@ -1228,7 +1246,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/modules/app-access.js?v=11.5.1"></script>
 <script src="/js/modules/app-hr.js?v=11.5.1"></script>
 <script src="/js/modules/app-slip.js?v=11.5.1"></script>
-<script src="/js/modules/app-reports.js?v=11.5.1"></script>
+<script src="/js/modules/app-reports.js?v=11.5.5"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.6"></script>
 <script src="/js/modules/app-absensi.js?v=11.5.1"></script>
 <script src="/js/modules/app-mobile.js?v=11.5.1"></script>
 <script src="/js/modules/app-master.js?v=11.5.1"></script>
