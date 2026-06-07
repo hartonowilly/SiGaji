@@ -324,6 +324,8 @@ function migrateContent(content) {
   const out = content.replace(
     /(<[a-zA-Z][^>]*?)\s+style=(["'])([\s\S]*?)\2/gi,
     (full, tagStart, _q, styleVal) => {
+      // Hindari false positive JS: r<rows.length / i<bytes.length
+      if (/[<>=]\w+$/.test(tagStart) || /\.\w*$/.test(tagStart)) return full;
       const { classes, remainder } = styleToClasses(styleVal);
       if (!classes.length && remainder) {
         kept++;

@@ -540,7 +540,7 @@ function arrayBufferToBase64(buf){
     var bytes=new Uint8Array(buf);
     var chunk=0x8000;
     var bin='';
-    for(var i=0;i<bytes class="font-10 ct-danger mt-md".length;i+=chunk){
+    for(var i=0;i<bytes.length;i+=chunk){
       bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));
     }
     return btoa(bin);

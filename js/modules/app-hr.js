@@ -886,7 +886,7 @@ function importTunjVarExcel(inp){
         var nikSet={};
         karyawan.forEach(function(k){nikSet[String(k.nik)]=k;});
         var ok=0,skip=0;
-        for(var r=1;r<rows class="text-muted font-12".length;r++){
+        for(var r=1;r<rows.length;r++){
           var row=rows[r];
           if(!row||!row.length)continue;
           var nik=String(row[nikIdx]||'').trim();
