@@ -734,8 +734,12 @@ function switchKompgajiTab(el,tid){
   else if(daftar)daftar.style.display=tid==='kg-tab-daftar'?'block':'none';
   if(tv&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(tv,tid==='kg-tab-tunjvar');
   else if(tv)tv.style.display=tid==='kg-tab-tunjvar'?'block':'none';
-  if(tid==='kg-tab-tunjvar')renderTunjVariabelBulan();
-  else if(tid==='kg-tab-daftar')renderKompgaji();
+  if(tid==='kg-tab-tunjvar'){
+    var card=document.getElementById('tunjvar-card');
+    if(card&&typeof sigajiShowEl==='function')sigajiShowEl(card);
+    else if(card){card.classList.remove('u-hidden');card.removeAttribute('hidden');card.style.display='';}
+    renderTunjVariabelBulan();
+  }else if(tid==='kg-tab-daftar')renderKompgaji();
 }
 function applyKompgajiSubtabVisibility(){
   var tabs=document.querySelectorAll('#pg-kompgaji .tabs .tab');
@@ -933,13 +937,14 @@ function importTunjVarExcel(inp){
 function renderTunjVariabelBulan(){
   var card=document.getElementById('tunjvar-card'),wrap=document.getElementById('tunjvar-tabel-wrap'),foot=document.getElementById('tunjvar-foot');
   if(!card||!wrap)return;
+  if(typeof sigajiShowEl==='function')sigajiShowEl(card);
+  else{card.classList.remove('u-hidden');card.removeAttribute('hidden');card.style.removeProperty('display');}
   if(!periodes.length){
-    if(typeof sigajiHideEl==='function')sigajiHideEl(card);
-    else card.style.display='none';
+    wrap.innerHTML='<div class="info-box info-amber font-12">Belum ada periode gaji. Buat di <strong>Master → Periode Gaji &amp; THR</strong> terlebih dahulu.</div>';
+    if(foot)foot.textContent='';
+    var sub0=document.getElementById('tunjvar-per-lbl');if(sub0)sub0.textContent='-';
     return;
   }
-  if(typeof sigajiShowEl==='function')sigajiShowEl(card,'reset');
-  else{card.classList.remove('u-hidden');card.style.removeProperty('display');}
   var p=PA(),pn=p.nama;
   var cols=getTunjVarColumnsResolved();
   if(!tunjVarColumns||!tunjVarColumns.length){tunjVarColumns=cols.slice();syncTunjVarLabelsFromColumns();saveAll();}
