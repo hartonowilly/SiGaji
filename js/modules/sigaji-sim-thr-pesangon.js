@@ -71,7 +71,8 @@
     window.__sigajiSimTab = tab || 'gaji';
     ['gaji', 'thr', 'pesangon'].forEach(function (t) {
       var panel = document.getElementById('sim-panel-' + t);
-      if (panel) panel.style.display = t === tab ? '' : 'none';
+      if (panel && typeof sigajiSetPanelVisible === 'function') sigajiSetPanelVisible(panel, t === tab);
+      else if (panel) panel.style.display = t === tab ? '' : 'none';
       var btn = document.querySelector('.sim-sandbox-tabs [data-simtab="' + t + '"]');
       if (btn) btn.classList.toggle('active', t === tab);
     });

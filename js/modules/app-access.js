@@ -205,7 +205,8 @@ function switchUsrTab(el,tid){
   el.classList.add('active');
   ['um-daftar','um-reg','um-roles'].forEach(function(id){
     var d=document.getElementById(id);
-    if(d)d.style.display=id===tid?'block':'none';
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
+    else if(d)d.style.display=id===tid?'block':'none';
   });
   if(tid==='um-roles')renderPermMatrix();
   if(tid==='um-reg')loadRegRequests();
@@ -751,27 +752,32 @@ function renderSlipSendBatchChecklist(forceReload){
   if (hint) {
     var showHint =
       CU && (CU.role === 'Admin' || CU.role === 'HRD') && typeof sigajiIsCloudConfigured === 'function' && sigajiIsCloudConfigured();
-    hint.style.display = showHint ? 'block' : 'none';
+    if (typeof sigajiSetPanelVisible === 'function') sigajiSetPanelVisible(hint, showHint);
+    else hint.style.display = showHint ? 'block' : 'none';
   }
   if (!wrap || !card) return;
   if (!CU || (CU.role !== 'Admin' && CU.role !== 'HRD')) {
-    card.style.display = 'none';
+    if (typeof sigajiSetPanelVisible === 'function') sigajiSetPanelVisible(card, false);
+    else card.style.display = 'none';
     return;
   }
   var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
   var p = periodesFindById(pid) || PA();
   if (!p) {
-    card.style.display = 'none';
+    if (typeof sigajiSetPanelVisible === 'function') sigajiSetPanelVisible(card, false);
+    else card.style.display = 'none';
     return;
   }
   var slipType = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
   var list = karyawanListPeriode(p);
   if (!list.length) {
     wrap.innerHTML = '<div class="u-muted-12">Tidak ada karyawan aktif di periode ini.</div>';
-    card.style.display = 'block';
+    if (typeof sigajiSetPanelVisible === 'function') sigajiSetPanelVisible(card, true);
+    else card.style.display = 'block';
     return;
   }
-  card.style.display = 'block';
+  if (typeof sigajiSetPanelVisible === 'function') sigajiSetPanelVisible(card, true);
+  else card.style.display = 'block';
   if (typeof sigajiIsCloudConfigured !== 'function' || !sigajiIsCloudConfigured()) {
     wrap.innerHTML =
       '<div class="u-muted-12">Fitur ini membutuhkan <strong>mode online</strong> (Supabase + deploy Netlify).</div>';

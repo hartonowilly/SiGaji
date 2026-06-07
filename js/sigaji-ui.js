@@ -54,4 +54,24 @@
       sigajiConfirmClose(false);
     }
   });
+
+  /** Tampilkan/sembunyikan panel tab — hapus .u-hidden (!important) saat tampil. */
+  window.sigajiSetPanelVisible = function (node, visible, display) {
+    if (!node) return;
+    var disp = display || 'block';
+    if (visible) {
+      node.classList.remove('u-hidden');
+      node.style.display = disp;
+      node.removeAttribute('hidden');
+    } else {
+      node.style.display = 'none';
+      node.classList.add('u-hidden');
+    }
+  };
+
+  window.sigajiIsPanelVisible = function (node) {
+    if (!node) return false;
+    if (node.classList.contains('u-hidden')) return false;
+    return node.style.display !== 'none';
+  };
 })();

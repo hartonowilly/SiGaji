@@ -733,10 +733,16 @@ function setSpPayrollView(mode){
   syncPphRetRpInput(document.getElementById('sp-pphret-val'),(src.pph_return&&src.pph_return.nilai)||0);
   var rk=document.getElementById('sp-pphret-ket');if(rk)rk.value=(src.pph_return&&src.pph_return.ket)||'';
   syncPphReturnFieldState();
-  if(document.getElementById('sp-gaji').style.display!=='none'){renderTunjPanel(src);renderPotPanel(src);}
-  if(document.getElementById('sp-bpjs').style.display!=='none')loadBPJSPanel(src);
-  if(document.getElementById('sp-natura').style.display!=='none')renderNaturaPanel(src);
-  if(document.getElementById('sp-pphret').style.display!=='none')renderPPhRetPanel(src);
+  function spTabOpen(id){
+    var el=document.getElementById(id);
+    if(!el)return false;
+    if(typeof sigajiIsPanelVisible==='function')return sigajiIsPanelVisible(el);
+    return el.style.display!=='none';
+  }
+  if(spTabOpen('sp-gaji')){renderTunjPanel(src);renderPotPanel(src);}
+  if(spTabOpen('sp-bpjs'))loadBPJSPanel(src);
+  if(spTabOpen('sp-natura'))renderNaturaPanel(src);
+  if(spTabOpen('sp-pphret'))renderPPhRetPanel(src);
   bindPayrollRpInputs();
   updateGajiSummary();
 }

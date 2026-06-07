@@ -137,7 +137,8 @@ function switchBackupTab(el,tid){
   }
   ['bk-cadangan','bk-saldo','bk-ringkas'].forEach(function(id){
     var d=document.getElementById(id);
-    if(d)d.style.display=id===tid?'block':'none';
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
+    else if(d)d.style.display=id===tid?'block':'none';
   });
   try{sessionStorage.setItem('sigaji_backup_tab',tid);}catch(e){}
   refreshBackupTabContent(tid);
@@ -168,7 +169,8 @@ function initBackupPageTabs(){
   }
   ids.forEach(function(id){
     var d=document.getElementById(id);
-    if(d)d.style.display=id===tid?'block':'none';
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
+    else if(d)d.style.display=id===tid?'block':'none';
   });
   refreshBackupTabContent(tid);
 }
@@ -279,7 +281,7 @@ function applyLaporanSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first=t;
   });
-  ['lap-tab-rekap','lap-tab-variance','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  ['lap-tab-rekap','lap-tab-variance','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,false);else if(d)d.style.display='none';});
   if(first&&first.dataset.panel)switchLaporanTab(first,first.dataset.panel);
 }
 function switchSubTab(opts){
@@ -290,7 +292,11 @@ function switchSubTab(opts){
     el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
     el.classList.add('active');
   }
-  panelIds.forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===panelId?'block':'none';});
+  panelIds.forEach(function(id){
+    var d=document.getElementById(id);
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===panelId);
+    else if(d)d.style.display=id===panelId?'block':'none';
+  });
   if(typeof onShow==='function')onShow(panelId);
 }
 if(typeof window!=='undefined')window.switchSubTab=switchSubTab;
@@ -302,7 +308,11 @@ function switchLaporanTab(el,panelId){
     el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
     el.classList.add('active');
   }
-  ['lap-tab-rekap','lap-tab-variance','lap-tab-pph'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===panelId?'block':'none';});
+  ['lap-tab-rekap','lap-tab-variance','lap-tab-pph'].forEach(function(id){
+    var d=document.getElementById(id);
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===panelId);
+    else if(d)d.style.display=id===panelId?'block':'none';
+  });
   if(panelId==='lap-tab-pph')renderPPH();
   else if(panelId==='lap-tab-variance'){try{if(typeof renderLaporanVariance==='function')renderLaporanVariance();}catch(eV){}}
   else renderLaporan();
@@ -317,7 +327,7 @@ function applyApprovalSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first=t;
   });
-  ['ap-pend','ap-hist'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  ['ap-pend','ap-hist'].forEach(function(id){var d=document.getElementById(id);if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,false);else if(d)d.style.display='none';});
   if(first&&first.dataset.panel)switchTab(first,first.dataset.panel);
   else toast('Tidak ada sub-tab Approval yang diizinkan untuk role ini.');
 }
@@ -330,7 +340,7 @@ function applyAbsensiSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first=t;
   });
-  ['abt-kalender','abt-cuti','abt-lokasi','abt-pengajuan'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  ['abt-kalender','abt-cuti','abt-lokasi','abt-pengajuan'].forEach(function(id){var d=document.getElementById(id);if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,false);else if(d)d.style.display='none';});
   if(first&&first.dataset.abpanel)switchAbTab(first,first.dataset.abpanel);
   else toast('Tidak ada sub-tab Absensi yang diizinkan untuk role ini.');
 }
@@ -339,7 +349,8 @@ function hideAllMasterTabPanels(){
   MASTER_TAB_PANEL_IDS.forEach(function(id){
     var d=document.getElementById(id);
     if(!d)return;
-    d.style.display='none';
+    if(typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,false);
+    else{d.style.display='none';d.classList.add('u-hidden');}
     d.setAttribute('hidden','');
     d.classList.remove('master-tab-panel-active');
   });
@@ -347,7 +358,8 @@ function hideAllMasterTabPanels(){
 function showMasterTabPanel(tid){
   var d=document.getElementById(tid);
   if(!d)return;
-  d.style.display='block';
+  if(typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,true);
+  else{d.style.display='block';d.classList.remove('u-hidden');}
   d.removeAttribute('hidden');
   d.classList.add('master-tab-panel-active');
 }
@@ -389,8 +401,11 @@ function switchTab(el,tid){
     el.parentElement.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
     el.classList.add('active');
   }
-  ['ap-pend','ap-hist'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
-  var d=document.getElementById(tid);if(d)d.style.display='block';
+  ['ap-pend','ap-hist'].forEach(function(id){
+    var d=document.getElementById(id);
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
+    else if(d)d.style.display=id===tid?'block':'none';
+  });
 }
 function switchAbTab(el,tid){
   var abSubs={'abt-kalender':'kalender','abt-cuti':'cuti','abt-lokasi':'lokasi','abt-pengajuan':'pengajuan'};
@@ -416,7 +431,11 @@ function switchPayrollSpTab(el,tid){
   if(subId&&!canAccessPayrollSub(subId)){toast('Tidak punya akses ke tab ini');return;}
   document.querySelectorAll('#slide-panel-payroll .spt').forEach(function(t){t.classList.remove('active');});
   el.classList.add('active');
-  ['sp-gaji','sp-bpjs','sp-natura','sp-pphret','sp-ring'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display=id===tid?'block':'none';});
+  ['sp-gaji','sp-bpjs','sp-natura','sp-pphret','sp-ring'].forEach(function(id){
+    var d=document.getElementById(id);
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
+    else if(d)d.style.display=id===tid?'block':'none';
+  });
   if(tid==='sp-ring')updateGajiSummary();
   if(tid==='sp-bpjs'){var k=getPayrollTargetByNik(cpNik,true);if(k)loadBPJSPanel(k);}
   if(tid==='sp-gaji'){var k2=getPayrollTargetByNik(cpNik,true);if(k2){renderTunjPanel(k2);renderPotPanel(k2);}}

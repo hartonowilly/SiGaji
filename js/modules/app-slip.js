@@ -114,7 +114,9 @@ function makeSlipTHR(k,p){
 // ── SLIP CONTROLS ─────────────────────────────────
 function isSlipKirimTabActive(){
   var k=document.getElementById('slip-tab-kirim');
-  return !!(k&&k.style.display!=='none');
+  if(!k)return false;
+  if(typeof sigajiIsPanelVisible==='function')return sigajiIsPanelVisible(k);
+  return k.style.display!=='none';
 }
 function switchSlipTab(el,panelId){
   if(el&&el.parentElement){
@@ -123,8 +125,10 @@ function switchSlipTab(el,panelId){
   }
   var gaji=document.getElementById('slip-tab-gaji');
   var kirim=document.getElementById('slip-tab-kirim');
-  if(gaji)gaji.style.display=panelId==='slip-tab-gaji'?'block':'none';
-  if(kirim)kirim.style.display=panelId==='slip-tab-kirim'?'block':'none';
+  if(gaji&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(gaji,panelId==='slip-tab-gaji');
+  else if(gaji)gaji.style.display=panelId==='slip-tab-gaji'?'block':'none';
+  if(kirim&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(kirim,panelId==='slip-tab-kirim');
+  else if(kirim)kirim.style.display=panelId==='slip-tab-kirim'?'block':'none';
   if(panelId==='slip-tab-kirim')renderSlipSendBatchChecklist();
   previewSlip();
 }
@@ -152,7 +156,8 @@ function previewSlip(){
   const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
   var sbEarly=document.getElementById('slip-share-bar');
   if(!nik){
-    if(sbEarly)sbEarly.style.display='none';
+    if(sbEarly&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(sbEarly,false);
+    else if(sbEarly)sbEarly.style.display='none';
     return;
   }
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
@@ -163,7 +168,8 @@ function previewSlip(){
   document.getElementById('slip-preview').innerHTML=(type==='thr'&&p.thr_aktif)?makeSlipTHR(k,p):makeSlip(k,p.nama);
   var sb=document.getElementById('slip-share-bar');
   var nikSel=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
-  if(sb)sb.style.display=(isSlipKirimTabActive()&&nikSel)?'block':'none';
+  if(sb&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(sb,isSlipKirimTabActive()&&!!nikSel);
+  else if(sb)sb.style.display=(isSlipKirimTabActive()&&nikSel)?'block':'none';
 }
 
 // ── SHARE / KIRIM SLIP ────────────────────────────

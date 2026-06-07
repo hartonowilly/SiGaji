@@ -316,7 +316,9 @@ function applyPayrollSlideTabsVisibility(){
     var ok=canAccessPayrollSub(sub);
     var btn=document.querySelector('#slide-panel-payroll .spt[data-kgstab="'+sub+'"]');
     if(btn){btn.style.display=ok?'':'none';if(ok&&!first)first={btn:btn,tid:tid};}
-    var d=document.getElementById(tid);if(d)d.style.display='none';
+    var d=document.getElementById(tid);
+    if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,false);
+    else if(d)d.style.display='none';
   });
   applyPayrollSpTabSimpleUi();
   if(!first){toast('Role Anda tidak punya akses tab Komponen Gaji.');return false;}
@@ -714,8 +716,10 @@ function switchKompgajiTab(el,tid){
   if(kgSubs[tid]&&!canAccessSubTab('kompgaji',kgSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
   var daftar=document.getElementById('kg-tab-daftar');
   var tv=document.getElementById('kg-tab-tunjvar');
-  if(daftar)daftar.style.display=tid==='kg-tab-daftar'?'block':'none';
-  if(tv)tv.style.display=tid==='kg-tab-tunjvar'?'block':'none';
+  if(daftar&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(daftar,tid==='kg-tab-daftar');
+  else if(daftar)daftar.style.display=tid==='kg-tab-daftar'?'block':'none';
+  if(tv&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(tv,tid==='kg-tab-tunjvar');
+  else if(tv)tv.style.display=tid==='kg-tab-tunjvar'?'block':'none';
   if(tid==='kg-tab-tunjvar')renderTunjVariabelBulan();
   else if(tid==='kg-tab-daftar')renderKompgaji();
 }
@@ -730,7 +734,7 @@ function applyKompgajiSubtabVisibility(){
     t.style.display=ok?'':'none';
     if(ok&&!first)first={el:t,panel:panel};
   });
-  ['kg-tab-daftar','kg-tab-tunjvar'].forEach(function(id){var d=document.getElementById(id);if(d)d.style.display='none';});
+  ['kg-tab-daftar','kg-tab-tunjvar'].forEach(function(id){var d=document.getElementById(id);if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,false);else if(d)d.style.display='none';});
   if(first&&first.panel)switchKompgajiTab(first.el,first.panel);
 }
 function initLemburPage(){
