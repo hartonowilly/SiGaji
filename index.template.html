@@ -7,16 +7,16 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/css/styles.css?v=11.5.23">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.23">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.23">
+<link rel="stylesheet" href="/css/styles.css?v=11.5.25">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.25">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.25">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.23"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.25"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.23"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.25"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -51,6 +51,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="topbar">
   <div class="tl">
     <button type="button" class="nav-drawer-btn" id="nav-drawer-btn" aria-label="Buka menu modul" aria-expanded="false" aria-controls="sidebar-wrap" onclick="return sigajiToggleNavDrawer(event)">&#9776;</button>
+    <button type="button" class="sidebar-topbar-toggle" id="sidebar-topbar-toggle" onclick="return sigajiToggleSidebarCollapse()" title="Ciutkan sidebar (ikon saja)" aria-label="Ciutkan sidebar">&#9664;</button>
     <img class="topbar-logo-img" id="topbar-logo">
     <span class="alogo" id="topbar-nama">&#9670; SiGaji</span>
     <button class="periode-pill" onclick="showPg('master')" title="Buka Master Periode Gaji">&#128197; <span id="top-periode">-</span></button>
@@ -946,7 +947,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="spb">
     <div id="sp-info">
       <div class="stit">Identitas Karyawan</div>
-      <div class="fg2">
+      <div class="fg2 sp-kar-grid">
         <div class="fg"><label>Tipe pegawai</label>
           <select id="sp-tipe-kerja-f" onchange="onSpTipeKerjaChange()">
             <option value="tetap">Pegawai Tetap — NIK diawali K</option>
@@ -971,7 +972,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg ff"><label>Alamat</label><input id="sp-alamat-f"></div>
       </div>
       <div class="stit">Data Pekerjaan</div>
-      <div class="fg2">
+      <div class="fg2 sp-kar-grid">
         <div class="fg"><label>Departemen</label>
           <select id="sp-dept-f"><option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option></select>
         </div>
@@ -998,19 +999,19 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Nilai PTKP (Tahunan)</label><input id="sp-ptkp-val-f" readonly style="background:#f3f4f6;color:#6b7280;font-weight:700"></div>
         <div class="fg"><label>Atasan Langsung</label><input id="sp-atasan-f"></div>
         <div class="fg"><label>Lokasi Kerja</label><input id="sp-lokasi-f"></div>
-        <div class="stit">Rekening Bank</div>
-        <div class="fg3">
-          <div class="fg"><label>Bank</label>
-            <select id="sp-bank-f">
-              <option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option>
-              <option value="Mandiri">Bank Mandiri</option><option value="CIMB Niaga">CIMB Niaga</option>
-              <option value="Danamon">Bank Danamon</option><option value="BSI">BSI</option>
-              <option value="BTN">BTN</option><option value="OCBC">OCBC</option><option value="Lainnya">Lainnya</option>
-            </select>
-          </div>
-          <div class="fg"><label>No. Rekening</label><input id="sp-norek-f" inputmode="numeric"></div>
-          <div class="fg"><label>Nama di Rekening</label><input id="sp-reknam-f" oninput="onReknamEdit()"></div>
+      </div>
+      <div class="stit">Rekening Bank</div>
+      <div class="fg2 sp-kar-grid sp-bank-grid">
+        <div class="fg"><label>Bank</label>
+          <select id="sp-bank-f">
+            <option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option>
+            <option value="Mandiri">Bank Mandiri</option><option value="CIMB Niaga">CIMB Niaga</option>
+            <option value="Danamon">Bank Danamon</option><option value="BSI">BSI</option>
+            <option value="BTN">BTN</option><option value="OCBC">OCBC</option><option value="Lainnya">Lainnya</option>
+          </select>
         </div>
+        <div class="fg"><label>No. Rekening</label><input id="sp-norek-f" inputmode="numeric"></div>
+        <div class="fg ff"><label>Nama di Rekening</label><input id="sp-reknam-f" oninput="onReknamEdit()"></div>
       </div>
     </div>
   </div>
@@ -1356,38 +1357,38 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.5.23"></script>
-<script src="/js/sigaji-icons.js?v=11.5.23"></script>
-<script src="/js/sigaji-ui.js?v=11.5.23"></script>
-<script src="/js/karyawan-tipe.js?v=11.5.23"></script>
-<script src="/js/storage.js?v=11.5.23"></script>
-<script src="/js/ptkp.js?v=11.5.23"></script>
-<script src="/js/modules/app-globals.js?v=11.5.23"></script>
-<script src="/js/modules/app-core.js?v=11.5.23"></script>
-<script src="/js/modules/app-access.js?v=11.5.23"></script>
-<script src="/js/modules/app-hr.js?v=11.5.23"></script>
-<script src="/js/modules/app-slip.js?v=11.5.23"></script>
-<script src="/js/modules/app-reports.js?v=11.5.23"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.23"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.23"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.23"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.23"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.23"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.5.23"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.5.23"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.23"></script>
-<script src="/js/modules/app-master.js?v=11.5.23"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.23"></script>
-<script src="/js/modules/app-shell.js?v=11.5.23"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.5.23"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.5.23"></script>
-<script src="/js/pesangon.js?v=11.5.23"></script>
-<script src="/js/config.js?v=11.5.23"></script>
+<script src="/js/constants.js?v=11.5.25"></script>
+<script src="/js/sigaji-icons.js?v=11.5.25"></script>
+<script src="/js/sigaji-ui.js?v=11.5.25"></script>
+<script src="/js/karyawan-tipe.js?v=11.5.25"></script>
+<script src="/js/storage.js?v=11.5.25"></script>
+<script src="/js/ptkp.js?v=11.5.25"></script>
+<script src="/js/modules/app-globals.js?v=11.5.25"></script>
+<script src="/js/modules/app-core.js?v=11.5.25"></script>
+<script src="/js/modules/app-access.js?v=11.5.25"></script>
+<script src="/js/modules/app-hr.js?v=11.5.25"></script>
+<script src="/js/modules/app-slip.js?v=11.5.25"></script>
+<script src="/js/modules/app-reports.js?v=11.5.25"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.25"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.25"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.25"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.25"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.25"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.5.25"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.5.25"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.25"></script>
+<script src="/js/modules/app-master.js?v=11.5.25"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.25"></script>
+<script src="/js/modules/app-shell.js?v=11.5.25"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.5.25"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.5.25"></script>
+<script src="/js/pesangon.js?v=11.5.25"></script>
+<script src="/js/config.js?v=11.5.25"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.5.23"></script>
-<script src="/js/cloud-tables.js?v=11.5.23"></script>
+<script src="/js/cloud-branding.js?v=11.5.25"></script>
+<script src="/js/cloud-tables.js?v=11.5.25"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.5.23"></script>
-<script src="/js/modules/app-boot.js?v=11.5.23"></script>
+<script src="/js/cloud-sync.js?v=11.5.25"></script>
+<script src="/js/modules/app-boot.js?v=11.5.25"></script>
 </body>
 </html>

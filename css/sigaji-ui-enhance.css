@@ -968,15 +968,58 @@ tr.pg-row-pending td.pg-sticky-name { background: #fffbeb !important; }
   body.sigaji-panel-docked #panel-overlay {
     display: none !important;
   }
-  body.sigaji-panel-docked #slide-panel.show,
-  body.sigaji-panel-docked #slide-panel-payroll.show {
-    width: min(440px, 36vw);
+  body.sigaji-panel-docked #slide-panel.show {
+    width: min(640px, 46vw);
     box-shadow: -2px 0 20px rgba(0, 0, 0, 0.08);
   }
-  body.sigaji-panel-docked .content {
-    margin-right: min(440px, 36vw);
+  body.sigaji-panel-docked #slide-panel-payroll.show {
+    width: min(520px, 40vw);
+    box-shadow: -2px 0 20px rgba(0, 0, 0, 0.08);
+  }
+  body.sigaji-panel-docked.sigaji-kar-panel-open .content {
+    margin-right: min(640px, 46vw);
     transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  body.sigaji-panel-docked.sigaji-payroll-panel-open .content {
+    margin-right: min(520px, 40vw);
+    transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* ── Profil karyawan: input lebih lega ── */
+#slide-panel .sp-kar-grid {
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+}
+@media (min-width: 1100px) {
+  body:not(.sigaji-panel-docked) #slide-panel .sp-kar-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+#slide-panel .sp-kar-grid .fg.ff {
+  grid-column: 1 / -1;
+}
+#slide-panel .sp-bank-grid {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  #slide-panel .sp-bank-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+#slide-panel .fg label {
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+#slide-panel .fg input,
+#slide-panel .fg select,
+#slide-panel .fg textarea {
+  font-size: 14px;
+  padding: 10px 12px;
+  min-height: 42px;
+}
+#slide-panel .spb {
+  padding: 1.35rem 1.65rem;
 }
 
 /* ── Komponen row cards (slide panel) ── */
@@ -1502,6 +1545,56 @@ tr.pg-row-pending td.pg-sticky-name { background: #fffbeb !important; }
 .sigaji-toast-warn { background: #92400e; }
 .sigaji-toast-err { background: #991b1b; }
 
+/* Sidebar: menu scroll, tombol ciutkan menempel di bawah viewport */
+html:not(.sigaji-mobile-nav) #sidebar-wrap.sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: calc(100vh - 52px);
+  max-height: calc(100vh - 52px);
+}
+html:not(.sigaji-mobile-nav) #sidebar-wrap #nav-dynamic {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+html:not(.sigaji-mobile-nav) #sidebar-wrap #nav-bottom {
+  flex-shrink: 0;
+  padding: 0.45rem 0.35rem 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: inherit;
+}
+
+/* Tombol ciutkan di topbar — selalu dekat, tidak perlu scroll */
+.sidebar-topbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 2px;
+  border: 1px solid #c5d9f5;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1a56a0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.12s;
+}
+.sidebar-topbar-toggle:hover {
+  background: #dbeafe;
+  transform: scale(1.04);
+}
+.sidebar-topbar-toggle.is-collapsed {
+  background: #e8f0fb;
+}
+html.sigaji-mobile-nav .sidebar-topbar-toggle {
+  display: none;
+}
+
 html.sidebar-collapsed .sidebar {
   width: 58px;
   padding-left: 0.35rem;
@@ -1516,18 +1609,26 @@ html.sidebar-collapsed .ni {
 }
 html.sidebar-collapsed .ni .nic { font-size: 1.05rem; }
 html.sidebar-collapsed .ni .nbadge { display: none; }
+html.sidebar-collapsed .sidebar-collapse-btn-lbl { display: none; }
 .sidebar-collapse-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
-  margin-top: 0.5rem;
-  padding: 8px;
+  padding: 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   color: #cbd5e1;
   cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sidebar-collapse-btn-ico {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
+  line-height: 1;
 }
 .sidebar-collapse-btn:hover { background: rgba(255, 255, 255, 0.12); }
 

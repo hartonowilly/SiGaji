@@ -238,6 +238,7 @@ function openPanel(nik){
   updatePTKPVal();
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  document.body.classList.add('sigaji-kar-panel-open');document.body.classList.remove('sigaji-payroll-panel-open');
   try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(true);}catch(eDock){}
   try{
     var spTg=document.getElementById('sp-btn-telegram');
@@ -273,6 +274,7 @@ async function tgBuatKode(){
 function closePanel(){
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.remove('show');
+  document.body.classList.remove('sigaji-kar-panel-open');
   if(!document.getElementById('slide-panel-payroll').classList.contains('show')){
     document.getElementById('panel-overlay').classList.remove('show');
     try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);}catch(eDock){}
@@ -345,6 +347,7 @@ function openPayrollPanel(nik){
   if(canAccessPayrollSub('pphret'))renderPPhRetPanel(kp);else{const el=document.getElementById('pphret-preview');if(el)el.innerHTML='';}
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel-payroll').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  document.body.classList.add('sigaji-payroll-panel-open');document.body.classList.remove('sigaji-kar-panel-open');
   try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(true);}catch(eDock){}
   if(!applyPayrollSlideTabsVisibility()){closePayrollPanel();return;}
   setSpPayrollView('periode');
@@ -355,6 +358,7 @@ function openPayrollPanel(nik){
 function closePayrollPanel(){
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel-payroll').classList.remove('show');
+  document.body.classList.remove('sigaji-payroll-panel-open');
   if(!document.getElementById('slide-panel').classList.contains('show')){
     document.getElementById('panel-overlay').classList.remove('show');
     try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);}catch(eDock){}
