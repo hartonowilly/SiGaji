@@ -39,7 +39,7 @@ function renderSidebar(){
     if(!secs[m.sec])secs[m.sec]=[];
     secs[m.sec].push(m);
   });
-  let h='';Object.entries(secs).forEach(([sec,mods])=>{h+=`<div class="nsec">${sec}</div>`;mods.forEach(m=>{var ic=typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon;h+=`<div class="ni" data-pg="${m.id}" onclick="showPg('${m.id}')"><span class="nic">${ic}</span>${m.lbl}${m.id==='notifikasi'?'<span class="nbadge" id="nc-badge" style="display:none">0</span>':''}</div>`;});});
+  let h='';Object.entries(secs).forEach(([sec,mods])=>{h+=`<div class="nsec">${sec}</div>`;mods.forEach(m=>{var ic=typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon;h+=`<div class="ni" data-pg="${m.id}" onclick="showPg('${m.id}')"><span class="nic">${ic}</span>${m.lbl}${m.id==='notifikasi'?'<span class="nbadge u-hidden" id="nc-badge">0</span>':''}</div>`;});});
   document.getElementById('nav-dynamic').innerHTML=h;
   document.getElementById('nav-bottom').innerHTML='';
   try{if(typeof sigajiUiPolishAfterRender==='function')sigajiUiPolishAfterRender();}catch(ePol){}
@@ -54,7 +54,7 @@ function renderUsers(){
 }
 function renderUsersBody(){
   const tb=document.getElementById('tb-users');if(!tb)return;
-  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${u.username}</strong></td><td style="font-size:11px;max-width:140px;word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${u.nama}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${u.role}</span></td><td>${u.nik?`<span class="bdg b-info">${u.nik}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
+  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${u.username}</strong></td><td class="font-11" style="max-width:140px; word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${u.nama}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${u.role}</span></td><td>${u.nik?`<span class="bdg b-info">${u.nik}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
 }
 function escapeHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -145,13 +145,13 @@ async function hapusUser(i){
 function renderPermMatrix(){
   const el=document.getElementById('perm-matrix-wrap');if(!el)return;
   const roleKeys=Object.keys(roles);
-  let h=`<div class="perm-grid"><div class="perm-hdr"><div class="perm-hdr-cell" style="min-width:200px;text-align:left;flex:2">Modul / Sub-tab</div>`;
+  let h=`<div class="perm-grid"><div class="perm-hdr"><div class="perm-hdr-cell text-left" style="min-width:200px; flex:2">Modul / Sub-tab</div>`;
   roleKeys.forEach(r=>h+=`<div class="perm-hdr-cell">${r}</div>`);h+=`</div>`;
   MODULES.forEach(m=>{
     if(m.adminOnly)return;
     const subs=SUBTABS[m.id];
     if(subs&&subs.length){
-      h+=`<div class="perm-row perm-mod-head"><div class="perm-cell" style="min-width:200px;flex:2;font-weight:700;flex-direction:column;align-items:flex-start">${m.icon} ${m.lbl}<span style="font-size:10px;font-weight:600;color:#6b7280;margin-top:3px">Centang per sub-tab di bawah (atau semua sekaligus)</span></div>`;
+      h+=`<div class="perm-row perm-mod-head"><div class="perm-cell fw-700 flex-col items-start" style="min-width:200px; flex:2">${m.icon} ${m.lbl}<span class="font-10 fw-600 text-muted mt-xs">Centang per sub-tab di bawah (atau semua sekaligus)</span></div>`;
       roleKeys.forEach(r=>{
         const isAdmin=r==='Admin';
         const allOn=isAdmin||subs.every(s=>(roles[r]||[]).includes(m.id+'.'+s));
@@ -161,7 +161,7 @@ function renderPermMatrix(){
       subs.forEach(sub=>{
         const key=m.id+'.'+sub;
         const lbl=SUBTAB_LBL[key]||sub;
-        h+=`<div class="perm-row perm-sub"><div class="perm-cell" style="min-width:200px;flex:2;padding-left:1.1rem;font-size:12px;color:#4b5563;font-weight:500">${lbl}</div>`;
+        h+=`<div class="perm-row perm-sub"><div class="perm-cell font-12 text-body" style="min-width:200px; flex:2; padding-left:1.1rem; font-weight:500">${lbl}</div>`;
         roleKeys.forEach(r=>{
           const isAdmin=r==='Admin';
           const chk=isAdmin||(roles[r]||[]).includes(key);
@@ -170,7 +170,7 @@ function renderPermMatrix(){
         h+=`</div>`;
       });
     }else{
-      h+=`<div class="perm-row"><div class="perm-cell" style="min-width:200px;flex:2;font-weight:600">${m.icon} ${m.lbl}</div>`;
+      h+=`<div class="perm-row"><div class="perm-cell fw-600" style="min-width:200px; flex:2">${m.icon} ${m.lbl}</div>`;
       roleKeys.forEach(r=>{const isAdmin=r==='Admin';const chk=isAdmin||(roles[r]||[]).includes(m.id);h+=`<div class="perm-cell"><input type="checkbox" ${chk?'checked':''} ${isAdmin?'disabled':''} onchange="togglePerm('${r}','${m.id}',this.checked)"></div>`;});
       h+=`</div>`;
     }
@@ -252,7 +252,7 @@ async function loadRegRequests(){
     }
     var items=j.items||[];
     if(!host)return;
-    if(!items.length){host.innerHTML='<div style="font-size:12px;color:#6b7280;padding:.5rem">Tidak ada permintaan pending.</div>';return;}
+    if(!items.length){host.innerHTML='<div class="font-12 text-muted" style="padding:.5rem">Tidak ada permintaan pending.</div>';return;}
     host.innerHTML='<table style="min-width:720px"><thead><tr><th>Email</th><th>Nama</th><th>NIK</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody>'
       +items.map(function(it){
         var em=String(it.email||'');
@@ -260,10 +260,10 @@ async function loadRegRequests(){
         var nk=String(it.nik||'');
         var dt=String(it.created_at||'').slice(0,19).replace('T',' ');
         return '<tr>'
-          +'<td style="font-weight:800">'+em+'</td>'
+          +'<td class="fw-800">'+em+'</td>'
           +'<td>'+escapeHtml(nm)+'</td>'
           +'<td>'+escapeHtml(nk)+'</td>'
-          +'<td style="font-size:11px;color:#6b7280">'+escapeHtml(dt)+'</td>'
+          +'<td class="u-muted-11">'+escapeHtml(dt)+'</td>'
           +'<td><div class="fl gap1">'
             +'<button class="btn btn-sm btn-g" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'approve\')">Approve</button>'
             +'<button class="btn btn-sm btn-r" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'reject\')">Reject</button>'
@@ -540,7 +540,7 @@ function arrayBufferToBase64(buf){
     var bytes=new Uint8Array(buf);
     var chunk=0x8000;
     var bin='';
-    for(var i=0;i<bytes.length;i+=chunk){
+    for(var i=0;i<bytes class="font-10 ct-danger mt-md".length;i+=chunk){
       bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));
     }
     return btoa(bin);
@@ -690,11 +690,11 @@ function renderSlipSendBatchTableRows(list, p, slipType, bundle){
   var foot = '';
   if (tgB.sentTableMissing)
     foot +=
-      '<div style="font-size:10px;color:#9b2121;margin-top:.5rem">Riwayat Telegram: jalankan <code>sql/supabase_sigaji_slip_tg_sent.sql</code> di Supabase.</div>';
+      '<div>Riwayat Telegram: jalankan <code>sql/supabase_sigaji_slip_tg_sent.sql</code> di Supabase.</div>';
   if (emB.sentTableMissing)
     foot +=
-      '<div style="font-size:10px;color:#9b2121;margin-top:.35rem">Riwayat email: jalankan <code>sql/supabase_sigaji_slip_email_sent.sql</code> di Supabase.</div>';
-  if (tgB.linksError) foot += '<div style="font-size:10px;color:#9b2121;margin-top:.35rem">Gagal membaca tautan Telegram (cek login &amp; RLS).</div>';
+      '<div class="font-10 ct-danger mt-sm">Riwayat email: jalankan <code>sql/supabase_sigaji_slip_email_sent.sql</code> di Supabase.</div>';
+  if (tgB.linksError) foot += '<div class="font-10 ct-danger mt-sm">Gagal membaca tautan Telegram (cek login &amp; RLS).</div>';
   var rows = list
     .map(function (k) {
       var nikEsc = String(k.nik || '').replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
@@ -706,21 +706,21 @@ function renderSlipSendBatchTableRows(list, p, slipType, bundle){
       var emSentRec = isThr ? emSm.thr : emSm.gaji;
       var hasEm = slipEmailHasValidAddress(k);
       var tgCell = L
-        ? '<span class="bdg b-ok" style="font-size:10px">Terhubung</span>'
-        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
+        ? '<span class="bdg b-ok font-10">Terhubung</span>'
+        : '<span class="bdg b-gray font-10">Belum</span>';
       var emCell = hasEm
-        ? '<span class="bdg b-ok" style="font-size:10px" title="' + escapeHtml(String(k.email).trim()) + '">Ada</span>'
-        : '<span class="bdg b-err" style="font-size:10px">Kosong</span>';
+        ? '<span class="bdg b-ok font-10" title="' + escapeHtml(String(k.email).trim()) + '">Ada</span>'
+        : '<span class="bdg b-err font-10">Kosong</span>';
       var tgSl = tgSentIso
-        ? '<span class="bdg b-ok" style="font-size:10px">Ya</span><div style="font-size:9px;color:#6b7280">' + escapeHtml(fmtSlipTgSentAt(tgSentIso)) + '</div>'
-        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
+        ? '<span class="bdg b-ok font-10">Ya</span><div class="font-9 text-muted">' + escapeHtml(fmtSlipTgSentAt(tgSentIso)) + '</div>'
+        : '<span class="bdg b-gray font-10">Belum</span>';
       var emSl = emSentRec
-        ? '<span class="bdg b-ok" style="font-size:10px">Ya</span><div style="font-size:9px;color:#6b7280">' + escapeHtml(fmtSlipTgSentAt(emSentRec.at)) + '</div>'
-        : '<span class="bdg b-gray" style="font-size:10px">Belum</span>';
+        ? '<span class="bdg b-ok font-10">Ya</span><div class="font-9 text-muted">' + escapeHtml(fmtSlipTgSentAt(emSentRec.at)) + '</div>'
+        : '<span class="bdg b-gray font-10">Belum</span>';
       return (
-        '<tr><td style="text-align:center;width:40px"><input type="checkbox" class="slip-send-cb" data-nik="' +
+        '<tr><td class="text-center" style="width:40px"><input type="checkbox" class="slip-send-cb" data-nik="' +
         nikEsc +
-        '"></td><td style="font-size:11px;font-weight:600;white-space:nowrap">' +
+        '"></td><td class="font-11 fw-600" style="white-space:nowrap">' +
         escapeHtml(k.nik) +
         '</td><td>' +
         escapeHtml(k.nama) +
@@ -737,7 +737,7 @@ function renderSlipSendBatchTableRows(list, p, slipType, bundle){
     })
     .join('');
   wrap.innerHTML =
-    '<div style="overflow-x:auto;max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px"><table style="width:100%;font-size:12px"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-send-cb-all" title="Pilih semua" onchange="slipSendToggleAll(this.checked)"></th><th>Kode</th><th>Nama</th><th>Telegram</th><th>Email</th><th>Slip TG</th><th>Slip email</th></tr></thead><tbody>' +
+    '<div class="rounded-sm" style="overflow-x:auto; max-height:300px; overflow-y:auto; border:1px solid var(--bd)"><table class="w-full font-12"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-send-cb-all" title="Pilih semua" onchange="slipSendToggleAll(this.checked)"></th><th>Kode</th><th>Nama</th><th>Telegram</th><th>Email</th><th>Slip TG</th><th>Slip email</th></tr></thead><tbody>' +
     rows +
     '</tbody></table></div>' +
     foot;
@@ -767,14 +767,14 @@ function renderSlipSendBatchChecklist(forceReload){
   var slipType = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
   var list = karyawanListPeriode(p);
   if (!list.length) {
-    wrap.innerHTML = '<div style="font-size:12px;color:#6b7280">Tidak ada karyawan aktif di periode ini.</div>';
+    wrap.innerHTML = '<div class="u-muted-12">Tidak ada karyawan aktif di periode ini.</div>';
     card.style.display = 'block';
     return;
   }
   card.style.display = 'block';
   if (typeof sigajiIsCloudConfigured !== 'function' || !sigajiIsCloudConfigured()) {
     wrap.innerHTML =
-      '<div style="font-size:12px;color:#6b7280">Fitur ini membutuhkan <strong>mode online</strong> (Supabase + deploy Netlify).</div>';
+      '<div class="u-muted-12">Fitur ini membutuhkan <strong>mode online</strong> (Supabase + deploy Netlify).</div>';
     return;
   }
   var cacheKey =
@@ -784,7 +784,7 @@ function renderSlipSendBatchChecklist(forceReload){
     return;
   }
   wrap.innerHTML =
-    '<div style="font-size:12px;color:#6b7280;padding:.75rem">Memuat status Telegram &amp; email…</div>';
+    '<div class="font-12 text-muted" style="padding:.75rem">Memuat status Telegram &amp; email…</div>';
   loadSlipSendMetaBundle(p).then(function (bundle) {
     __slipSendMetaCacheKey = cacheKey;
     __slipSendMetaBundle = bundle;
@@ -1482,25 +1482,25 @@ function renderSysStatus(){
     var nKar=(karyawan||[]).filter(function(k){return k&&k.nik&&!String(k.tgl_berhenti||'').trim();}).length;
     function row(lbl,val,badge){
       var b=badge?'<span class="bdg '+badge.cls+'" style="margin-left:8px">'+badge.txt+'</span>':'';
-      return '<tr><td style="padding:8px 12px;font-weight:600;color:#374151;width:38%;border-bottom:1px solid #f3f4f6">'+lbl+'</td>'
-        +'<td style="padding:8px 12px;border-bottom:1px solid #f3f4f6;font-size:12px">'+val+b+'</td></tr>';
+      return '<tr><td class="p-inset-xs fw-600 text-body" style="width:38%; border-bottom:1px solid #f3f4f6">'+lbl+'</td>'
+        +'<td class="p-inset-xs font-12" style="border-bottom:1px solid #f3f4f6">'+val+b+'</td></tr>';
     }
     var cloudLbl=sigajiIsCloudOnlyMode()?'Online (Supabase wajib)':(cloudOn?(cloudOnly?'Cloud (wajib email)':'Cloud aktif'):'Lokal (legacy)');
     var schemaLbl=schemaStored==null?'belum ada data tersimpan':String(schemaStored);
     if(schemaStored!=null&&!schemaOk)schemaLbl+=' - buka app sekali untuk migrasi otomatis';
     var deployWarn=!modOk
-      ?'<div id="sysstatus-deploy-warn" class="info-box" style="margin-bottom:.75rem;border-color:#f6d088;background:#fff8e6;color:#713f12">'
+      ?'<div id="sysstatus-deploy-warn" class="info-box tabs-spaced-lg" style="border-color:#f6d088; background:#fff8e6; color:#713f12">'
         +(modVers.length>1
           ?'<strong>Versi cache tidak seragam di kode lokal.</strong> Browser memuat beberapa <code>?v=</code> ('+escapeHtml(modVerTxt)+') — target <strong>'+escapeHtml(targetVer)+'</strong> (<code>SIGAJI_BUILD</code>). Jalankan <code>npm run bump -- '+escapeHtml(targetVer)+'</code> (samakan css+js+SIGAJI_BUILD, lalu assemble otomatis).'
           :'<strong>Browser masih cache lama.</strong> Target deploy: <strong>'+escapeHtml(targetVer)+'</strong>, browser: <strong>'+escapeHtml(modVerTxt||'-')+'</strong>. Ctrl+F5; jika tetap beda, push <code>index.html</code> ke GitHub dan tunggu Cloudflare deploy.')
         +'</div>'
-      :'<div id="sysstatus-deploy-warn" style="display:none"></div>';
+      :'<div class="u-hidden" id="sysstatus-deploy-warn"></div>';
     el.innerHTML=
       deployWarn
-      +'<div class="card" style="border-left:4px solid #1a56a0">'
-      +'<div class="ct" style="color:#1a56a0">Ringkasan</div>'
-      +'<table style="width:100%;border-collapse:collapse"><tbody>'
-      +row('Versi aplikasi',escapeHtml(appLabel)+' <span style="color:#6b7280">(label rilis)</span>')
+      +'<div class="card border-accent-left">'
+      +'<div class="ct ct-brand">Ringkasan</div>'
+      +'<table class="w-full" style="border-collapse:collapse"><tbody>'
+      +row('Versi aplikasi',escapeHtml(appLabel)+' <span class="text-muted">(label rilis)</span>')
       +row('Target cache (kode)',escapeHtml(targetVer),{cls:'b-info',txt:'deploy'})
       +row('Modul JS (browser)',escapeHtml(modVerTxt),modBadge)
       +row('index.html di server','<span id="sysstatus-server-index">Memeriksa...</span>')
@@ -1514,7 +1514,7 @@ function renderSysStatus(){
       +row('Karyawan aktif',String(nKar))
       +row('User login',escapeHtml((CU.nama||'')+' ('+(CU.username||'')+')'))
       +'</tbody></table>'
-      +'<p style="font-size:11px;color:#6b7280;margin:.75rem 0 0;line-height:1.5">Baris <strong>index.html di server</strong> = isi file di Cloudflare (bukan cache browser). Harus sama dengan <code>SIGAJI_BUILD</code> di halaman ini ('+escapeHtml(targetVer)+').</p>'
+      +'<p class="font-11 text-muted" style="margin:.75rem 0 0; line-height:1.5">Baris <strong>index.html di server</strong> = isi file di Cloudflare (bukan cache browser). Harus sama dengan <code>SIGAJI_BUILD</code> di halaman ini ('+escapeHtml(targetVer)+').</p>'
       +'</div>';
     var srvEl=document.getElementById('sysstatus-server-index');
     if(srvEl){

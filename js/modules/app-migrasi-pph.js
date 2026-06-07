@@ -77,7 +77,7 @@ function renderMigrasiPphSaldo(){
   var sum=document.getElementById('migrasi-pph-ringkasan');
   if(sum)sum.textContent=withSaldo+' / '+list.length+' karyawan punya saldo '+thn;
   if(!list.length){
-    wrap.innerHTML='<div style="font-size:12px;color:#6b7280">Belum ada karyawan. Import Excel atau tambah di Master Karyawan.</div>';
+    wrap.innerHTML='<div class="u-muted-12">Belum ada karyawan. Import Excel atau tambah di Master Karyawan.</div>';
     return;
   }
   var rows=list.map(function(k){
@@ -85,16 +85,16 @@ function renderMigrasiPphSaldo(){
     var tb=String(k.tgl_berhenti||'').trim();
     var sd=s.sd_bulan?('s/d bln '+s.sd_bulan):'';
     return '<tr>'
-      +'<td style="font-weight:600">'+escapeHtml(k.nik)+'</td>'
+      +'<td class="fw-600">'+escapeHtml(k.nik)+'</td>'
       +'<td>'+escapeHtml(k.nama||'')+'</td>'
       +'<td>'+(tb?'<span class="bdg b-warn">'+escapeHtml(tb)+'</span>':'<span class="bdg b-ok">Aktif</span>')+'</td>'
-      +'<td style="text-align:right">'+(s.bruto>0?fmt(s.bruto):'—')+'</td>'
-      +'<td style="text-align:right">'+(s.pph>0?fmt(s.pph):'—')+'</td>'
-      +'<td style="font-size:11px;color:#6b7280">'+escapeHtml(sd)+'</td>'
+      +'<td class="text-right">'+(s.bruto>0?fmt(s.bruto):'—')+'</td>'
+      +'<td class="text-right">'+(s.pph>0?fmt(s.pph):'—')+'</td>'
+      +'<td class="u-muted-11">'+escapeHtml(sd)+'</td>'
       +'<td><button type="button" class="btn btn-xs btn-out" onclick="openPanel(\''+String(k.nik).replace(/'/g,"\\'")+'\')">Profil</button></td>'
       +'</tr>';
   }).join('');
-  wrap.innerHTML='<table class="tbl" style="font-size:12px"><thead><tr>'
+  wrap.innerHTML='<table class="tbl font-12"><thead><tr>'
     +'<th>NIK</th><th>Nama</th><th>Berhenti</th><th>Bruto PPh kum.</th><th>PPh terpotong kum.</th><th>Catatan</th><th></th>'
     +'</tr></thead><tbody>'+rows+'</tbody></table>';
 }

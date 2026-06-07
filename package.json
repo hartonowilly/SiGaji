@@ -7,7 +7,8 @@
   "scripts": {
     "build": "node scripts/assemble-index.js && node scripts/generate-config.js",
     "assemble": "node scripts/assemble-index.js",
-    "bump": "node scripts/bump-cache-version.js"
+    "bump": "node scripts/bump-cache-version.js",
+    "migrate-styles": "node scripts/migrate-inline-styles.js"
   },
   "dependencies": {
     "@ryyr/worker-mailer": "^0.2.0",

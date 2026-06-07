@@ -232,23 +232,23 @@
       var d = (t1.nilai || 0) - (t0.nilai || 0);
       var dCls = d > 0 ? 'sim-up' : d < 0 ? 'sim-down' : '';
       return (
-        '<tr><td style="text-align:center;font-weight:700;color:#6b7280">' +
+        '<tr><td class="text-center fw-700 text-muted">' +
         (idx + 1) +
         '</td><td><strong>' +
         escapeHtml(k.nama) +
-        '</strong><div style="font-size:10px;color:#9ca3af">' +
+        '</strong><div class="font-10 text-subtle">' +
         escapeHtml(k.dept) +
         ' · MK ' +
         (t0.mb != null ? t0.mb : '-') +
         ' bln</div></td><td>' +
-        (t0.eligible ? fmt(t0.nilai) + ' <span style="font-size:9px;color:#9ca3af">(' + escapeHtml(t0.pl) + ')</span>' : '<span style="color:#9ca3af">—</span>') +
+        (t0.eligible ? fmt(t0.nilai) + ' <span class="font-9 text-subtle">(' + escapeHtml(t0.pl) + ')</span>' : '<span class="text-subtle">—</span>') +
         '</td><td><strong>' +
         (t1.eligible ? fmt(t1.nilai) : '—') +
         '</strong></td><td class="' +
         dCls +
         '">' +
         (t0.eligible && t1.eligible ? (d >= 0 ? '+' : '') + fmt(d) : '—') +
-        '</td><td style="font-size:10px">' +
+        '</td><td class="font-10">' +
         (t1.eligible ? escapeHtml(t1.pl) : 'Tidak eligible') +
         '</td></tr>'
       );
@@ -261,12 +261,12 @@
         '<div class="sim-sum-grid">' +
         '<div><div class="sim-sum-lbl">THR sekarang</div><div class="sim-sum-val">' +
         fmt(totNow) +
-        '</div><div style="font-size:9px;color:#9ca3af">' +
+        '</div><div class="font-9 text-subtle">' +
         eligibleNow +
         ' eligible</div></div>' +
         '<div><div class="sim-sum-lbl">THR simulasi</div><div class="sim-sum-val sim-up">' +
         fmt(totSim) +
-        '</div><div style="font-size:9px;color:#9ca3af">' +
+        '</div><div class="font-9 text-subtle">' +
         eligibleSim +
         ' eligible</div></div>' +
         '<div><div class="sim-sum-lbl">Δ total THR</div><div class="sim-sum-val ' +
@@ -275,11 +275,11 @@
         (dT >= 0 ? '+' : '') +
         fmt(dT) +
         '</div></div>' +
-        '<div><div class="sim-sum-lbl">Dasar THR</div><div class="sim-sum-val" style="font-size:12px">Gapok + tunjangan tetap (ikut THR)</div></div>' +
-        '</div><p style="font-size:11px;color:#6b7280;margin:.65rem 0 0">Sandbox THR — tidak mengubah <code>thrManual</code> atau profil. Periode: <strong>' +
+        '<div><div class="sim-sum-lbl">Dasar THR</div><div class="sim-sum-val font-12">Gapok + tunjangan tetap (ikut THR)</div></div>' +
+        '</div><p class="font-11 text-muted" style="margin:.65rem 0 0">Sandbox THR — tidak mengubah <code>thrManual</code> atau profil. Periode: <strong>' +
         escapeHtml(p.nama) +
         '</strong>' +
-        (p.thr_aktif ? ' · <span style="color:#5b21b6">THR aktif di periode ini</span>' : '') +
+        (p.thr_aktif ? ' · <span class="ct-purple">THR aktif di periode ini</span>' : '') +
         '</p>';
     }
   };
@@ -330,7 +330,7 @@
     var kSim = simKarForPesangon(k, sim);
     if (!kSim || !kSim.tgl_berhenti) {
       wrap.innerHTML =
-        '<div class="info-box info-amber" style="font-size:12px">Isi <strong>tanggal berhenti</strong> untuk menghitung UP, UPMK, UPH, dan total pesangon.</div>';
+        '<div class="info-box info-amber font-12">Isi <strong>tanggal berhenti</strong> untuk menghitung UP, UPMK, UPH, dan total pesangon.</div>';
       if (detail) detail.innerHTML = '';
       return;
     }
@@ -338,7 +338,7 @@
     var r0 = typeof hitungPesangon === 'function' ? hitungPesangon(k) : { ok: false };
     var r1 = hitungPesangon(kSim);
     if (!r1.ok) {
-      wrap.innerHTML = '<div style="padding:1rem;color:#9b2121">' + escapeHtml(r1.pesan || 'Tidak dapat dihitung') + '</div>';
+      wrap.innerHTML = '<div class="ct-danger" style="padding:1rem">' + escapeHtml(r1.pesan || 'Tidak dapat dihitung') + '</div>';
       if (detail) detail.innerHTML = '';
       return;
     }
@@ -357,7 +357,7 @@
       '<div><div class="sim-sum-lbl">Uang pisah</div><div class="sim-sum-val">' +
       fmt(r1.pisah) +
       '</div></div>' +
-      '<div style="grid-column:1/-1;padding:.75rem;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;margin-top:.35rem">' +
+      '<div class="rounded-md mt-sm" style="grid-column:1/-1; padding:.75rem; background:#f0fdf4; border:1px solid #86efac">' +
       '<div class="sim-sum-lbl">Total estimasi pesangon (simulasi)</div>' +
       '<div class="sim-sum-val" style="font-size:1.35rem;color:#166534">' +
       fmt(r1.total) +
@@ -371,11 +371,11 @@
 
     if (detail) {
       detail.innerHTML =
-        '<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed">' +
-        '<div class="ct" style="color:#5b21b6">Rincian simulasi — ' +
+        '<div class="card card-surface-neutral border-accent-purple">' +
+        '<div class="ct ct-purple">Rincian simulasi — ' +
         escapeHtml(k.nama) +
         '</div>' +
-        '<div style="font-size:12px;line-height:1.65">' +
+        '<div class="u-hint-12">' +
         '<p><strong>Alasan:</strong> ' +
         escapeHtml(alasanLbl) +
         '<br><strong>Tgl berhenti:</strong> ' +
@@ -402,7 +402,7 @@
             fmt(delta) +
             '</strong></p>'
           : '') +
-        '<p style="font-size:11px;color:#6b7280;margin:0">Estimasi PP 35/2021 — bukan pengganti konsultasi hukum. Simpan resmi lewat modul <em>Pesangon &amp; PHK</em>.</p>' +
+        '<p class="font-11 text-muted m-0">Estimasi PP 35/2021 — bukan pengganti konsultasi hukum. Simpan resmi lewat modul <em>Pesangon &amp; PHK</em>.</p>' +
         '</div></div>';
     }
   };

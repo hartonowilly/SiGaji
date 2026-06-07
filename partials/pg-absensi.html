@@ -27,39 +27,39 @@
       <span class="ab-chip ab-a">A Alpha</span>
       <span class="ab-chip ab-ln">LN Libnas</span>
     </div>
-    <div id="ab-kal-periode-info" style="display:none;font-size:12px;font-weight:600;color:#374151;margin-bottom:.5rem;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--bd);line-height:1.45"></div>
+    <div class="u-hidden font-12 fw-600 text-body mb-md p-inset-xs card-surface-neutral rounded-sm" id="ab-kal-periode-info" style="border:1px solid var(--bd); line-height:1.45"></div>
     <div id="ab-scroll-host" class="ab-grid-host"><div id="ab-grid-wrap"></div></div>
-    <div id="ab-rekap-wrap" style="margin-top:.75rem"></div>
+    <div class="mt-lg" id="ab-rekap-wrap"></div>
   </div>
-  <div id="abt-cuti" style="display:none">
+  <div class="u-hidden" id="abt-cuti">
     <div class="card">
       <div class="ct">Tracking Cuti — <span id="cuti-yr-lbl">2026</span></div>
       <div class="table-wrap"><table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
       <tbody id="tb-cuti-rekap"></tbody></table></div>
     </div>
   </div>
-  <div id="abt-lokasi" style="display:none">
+  <div class="u-hidden" id="abt-lokasi">
     <div id="mob-dashboard-host"></div>
     <div id="mob-locations-wrap"></div>
     <div id="mob-assign-wrap" class="mt1"></div>
     <div id="mob-att-log-wrap" class="mt1"></div>
     <div id="mob-face-wrap" class="mt1"></div>
-    <div class="card mt1" style="border-left:4px solid #7d4800">
-      <div class="flb mb2" style="flex-wrap:wrap;gap:.5rem">
-        <div class="ct" style="margin:0;border:0;padding:0">Rekap keterlambatan</div>
+    <div class="card mt1 border-accent-warn">
+      <div class="flb mb2 flex-wrap gap-sm">
+        <div class="ct m-0 border-0 p-0">Rekap keterlambatan</div>
         <div class="fl gap1">
-          <input type="month" id="mob-late-month" class="toolbar-select" style="width:auto" onchange="renderMobileLateReport()">
+          <input type="month" id="mob-late-month" class="toolbar-select select-inline" onchange="renderMobileLateReport()">
           <button type="button" class="btn btn-sm btn-out" onclick="renderMobileLateReport()">Muat</button>
         </div>
       </div>
       <div id="mob-late-wrap"></div>
     </div>
-    <div class="fl gap1 mt1" style="flex-wrap:wrap">
+    <div class="fl gap1 mt1 flex-wrap">
       <button type="button" class="btn btn-sm btn-out" onclick="mobImportLibnas()">Impor libur nasional</button>
       <button type="button" class="btn btn-sm btn-warn" onclick="mobSyncAlpha()">Sinkron alpha dari absen mobile</button>
     </div>
   </div>
-  <div id="abt-pengajuan" style="display:none">
+  <div class="u-hidden" id="abt-pengajuan">
     <div id="mob-leave-wrap"></div>
   </div>
 </div>

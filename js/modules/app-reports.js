@@ -12,9 +12,9 @@ function renderPPHBody(){
     const g=hitungGaji(k);
     const tbl=getTERTable(k.ptkp);const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
     const bj=Math.min(g.grossPPh*12*.05,6e6);const pv=nilaiPTKP(k.ptkp);const pkp=Math.max(0,g.grossPPh*12-bj-pv);
-    return '<tr><td style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td><td><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></div></td>'
+    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></div></td>'
       +'<td><span class="bdg b-info">'+k.ptkp+'</span></td><td>'+fmt(g.grossPPh)+'</td>'
-      +'<td>'+(g.thrBruto>0?'<span style="color:#5b21b6;font-weight:700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
+      +'<td>'+(g.thrBruto>0?'<span class="ct-purple fw-700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
       +'<td>'+(rate*100).toFixed(2)+'%</td><td>'+fmt(pkp)+'</td><td>'+fmt(g.pph*12)+'</td>'
       +'<td><strong>'+fmt(g.pph)+'</strong></td>'
       +'<td>'+(g.pphRet>0?'<span class="bdg b-ok">+ '+fmt(g.pphRet)+'</span>':'&#8212;')+'</td></tr>';
@@ -61,7 +61,7 @@ function renderLaporanBody(){
     let tB=0,tP=0,tN=0,tT=0;
     var list=karyawanListPeriode(p);
     list.forEach(function(k){const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;});
-    var rentang=(p.start&&p.end)?('<div style="font-size:10px;color:#9ca3af;font-weight:400">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div>'):'';
+    var rentang=(p.start&&p.end)?('<div class="font-10 text-subtle" style="font-weight:400">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div>'):'';
     var stLbl=p.status==='aktif'?'Proses':'Selesai';
     var stTip=p.status==='aktif'
       ?'Periode aktif — estimasi, bisa berubah sebelum tutup periode'
@@ -527,7 +527,7 @@ function renderTHRBody(){
     if(isE){
       var nikE=k.nik.replace(/'/g,"\\'");
       var pNE=pNama.replace(/'/g,"\\'");
-      manCell='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+      manCell='<div class="fl items-center gap-xs flex-wrap">'
         +'<button onclick="setTHRManual(this)" data-nik="'+k.nik+'" data-pnama="'+pNama+'" data-aktif="'+(isManual?'0':'1')+'" '
         +'style="padding:3px 10px;border-radius:20px;border:1.5px solid '+(isManual?'#5b21b6':'#dde1e9')+';'
         +'background:'+(isManual?'#5b21b6':'#fff')+';color:'+(isManual?'#fff':'#6b7280')+';'
@@ -541,25 +541,25 @@ function renderTHRBody(){
           +'data-nik="'+k.nik+'" data-pnama="'+pNama+'" '
           +'onchange="simpanTHRManualEl(this)" '
           +'onkeydown="if(event.key===\'Enter\')simpanTHRManualEl(this)">';
-        if(t.nilaiOto)manCell+='<span style="font-size:9px;color:#9ca3af">Otomatis: '+fmt(t.nilaiOto)+'</span>';
+        if(t.nilaiOto)manCell+='<span class="font-9 text-subtle">Otomatis: '+fmt(t.nilaiOto)+'</span>';
       }
       manCell+='</div>';
     }else{
-      manCell='<span style="color:#d1d5db;font-size:11px">&#8212;</span>';
+      manCell='<span class="font-11" style="color:#d1d5db">&#8212;</span>';
     }
-    return '<tr><td style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td><td><div class="fl gap2" style="align-items:center"><div class="ka">'+ini(k.nama)+'</div><div><strong>'+k.nama+'</strong><br><small style="color:#6b7280">'+k.nik+'</small></div></div></td>'
+    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div><strong>'+k.nama+'</strong><br><small class="text-muted">'+k.nik+'</small></div></div></td>'
       +'<td>'+mb+'</td>'
       +'<td>'+fmt(t.dasar)+'</td>'
       +'<td>'+(isE?t.pl:'<span class="bdg b-err">Belum eligible</span>')+'</td>'
       +'<td>'+manCell+'</td>'
       +'<td><strong style="color:'+(isManual?'#5b21b6':'#1a56a0')+'">'+(isE?fmt(t.nilai+(isManual?0:0)):'&#8212;')+'</strong>'
-        +(isManual?'<div style="font-size:9px;color:#5b21b6">&#9998; Manual</div>':'')+'</td>'
-      +'<td>'+(isE&&periodeAdaTHR?'<span style="color:#7d4800">'+fmt(pphEst)+'</span>':'<span style="color:#9ca3af">'+(periodeAdaTHR?'&#8212;':'Set THR di Periode')+'</span>')+'</td>'
-      +'<td><strong style="color:#2d6a0a">'+(isE?fmt(t.nilai):'&#8212;')+'</strong>'+(isE?'<div style="font-size:9px;color:#2d6a0a">(full netto)</div>':'')+'</td></tr>';
+        +(isManual?'<div class="font-9 text-purple">&#9998; Manual</div>':'')+'</td>'
+      +'<td>'+(isE&&periodeAdaTHR?'<span class="ct-warn">'+fmt(pphEst)+'</span>':'<span class="text-subtle">'+(periodeAdaTHR?'&#8212;':'Set THR di Periode')+'</span>')+'</td>'
+      +'<td><strong class="ct-success">'+(isE?fmt(t.nilai):'&#8212;')+'</strong>'+(isE?'<div class="font-9 ct-success">(full netto)</div>':'')+'</td></tr>';
   }).join('');
-  document.getElementById('thr-summary').innerHTML='<div class="fl gap2" style="flex-wrap:wrap">'
-    +'<div><div style="font-size:22px;font-weight:800;color:#2d6a0a">'+eligible+'</div><div style="font-size:11px;color:#6b7280">Eligible</div></div>'
-    +'<div><div style="font-size:22px;font-weight:800;color:#5b21b6">'+fmt(total)+'</div><div style="font-size:11px;color:#6b7280">Total THR Bruto</div></div>'
-    +'<div><div style="font-size:22px;font-weight:800;color:#2d6a0a">'+fmt(total)+'</div><div style="font-size:11px;color:#6b7280">Dibayar Full Netto</div></div></div>'
-    +(periodeAdaTHR?'<div class="info-box info-pu" style="margin-top:.5rem;margin-bottom:0;font-size:11px">&#10003; Periode aktif ada THR. PPh THR digabung ke gaji akhir bulan.</div>':'<div class="info-box info-amber" style="margin-top:.5rem;margin-bottom:0;font-size:11px">Aktifkan THR di Master Periode untuk menggabungkan PPh THR ke gaji.</div>');
+  document.getElementById('thr-summary').innerHTML='<div class="fl gap2 flex-wrap">'
+    +'<div><div class="font-22 fw-800 ct-success">'+eligible+'</div><div class="u-muted-11">Eligible</div></div>'
+    +'<div><div class="font-22 fw-800 ct-purple">'+fmt(total)+'</div><div class="u-muted-11">Total THR Bruto</div></div>'
+    +'<div><div class="font-22 fw-800 ct-success">'+fmt(total)+'</div><div class="u-muted-11">Dibayar Full Netto</div></div></div>'
+    +(periodeAdaTHR?'<div class="info-box info-pu mt-md mb-0 font-11">&#10003; Periode aktif ada THR. PPh THR digabung ke gaji akhir bulan.</div>':'<div class="info-box info-amber mt-md mb-0 font-11">Aktifkan THR di Master Periode untuk menggabungkan PPh THR ke gaji.</div>');
 }

@@ -8,19 +8,19 @@ function makeSlip(k,pNama){
   const logo=perusahaan.logo||'';
   let h='<div class="slip">';
   h+='<div class="slip-head">';
-  h+='<div>'+(logo?'<img src="'+logo+'" class="slip-logo"><br>':'')+'<strong style="font-size:14px;color:#1a56a0">&#9670; '+(perusahaan.nama||'Perusahaan')+'</strong><div style="font-size:10px;color:#6b7280">'+(perusahaan.alamat||'')+'</div></div>';
-  h+='<div style="text-align:right"><strong style="font-size:13px">SLIP GAJI</strong><div style="font-size:10px;color:#6b7280">Periode: '+pNama+'</div><div style="font-size:10px;color:#6b7280">Bayar: '+fmtDate(p.bayar||'-')+'</div>'+(g.isPR?'<div style="font-size:10px;background:#fef3e2;color:#7d4800;padding:2px 7px;border-radius:5px;margin-top:3px">Pro-Rata '+g.pr.hh+'/'+g.pr.hk+'</div>':'')+'</div>';
+  h+='<div>'+(logo?'<img src="'+logo+'" class="slip-logo"><br>':'')+'<strong class="font-14 ct-brand">&#9670; '+(perusahaan.nama||'Perusahaan')+'</strong><div class="u-muted-10">'+(perusahaan.alamat||'')+'</div></div>';
+  h+='<div class="text-right"><strong class="font-13">SLIP GAJI</strong><div class="u-muted-10">Periode: '+pNama+'</div><div class="u-muted-10">Bayar: '+fmtDate(p.bayar||'-')+'</div>'+(g.isPR?'<div class="font-10 ct-warn mt-xs" style="background:#fef3e2; padding:2px 7px; border-radius:5px">Pro-Rata '+g.pr.hh+'/'+g.pr.hk+'</div>':'')+'</div>';
   h+='</div>';
-  h+='<div class="semp"><div><span style="color:#6b7280;font-size:9px">NIK</span><br><strong>'+k.nik+'</strong></div><div><span style="color:#6b7280;font-size:9px">Nama</span><br><strong>'+k.nama+'</strong></div><div><span style="color:#6b7280;font-size:9px">Jabatan</span><br>'+k.jabatan+'</div><div><span style="color:#6b7280;font-size:9px">Dept</span><br>'+k.dept+'</div><div><span style="color:#6b7280;font-size:9px">PTKP</span><br>'+k.ptkp+'</div><div><span style="color:#6b7280;font-size:9px">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
+  h+='<div class="semp"><div><span class="text-muted font-9">NIK</span><br><strong>'+k.nik+'</strong></div><div><span class="text-muted font-9">Nama</span><br><strong>'+k.nama+'</strong></div><div><span class="text-muted font-9">Jabatan</span><br>'+k.jabatan+'</div><div><span class="text-muted font-9">Dept</span><br>'+k.dept+'</div><div><span class="text-muted font-9">PTKP</span><br>'+k.ptkp+'</div><div><span class="text-muted font-9">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
   if(g.thrBruto>0){
-    h+='<div style="background:#f5f0ff;border:1.5px solid #c4b5fd;border-radius:8px;padding:10px 14px;margin-bottom:.75rem">';
-    h+='<div style="font-weight:700;color:#5b21b6;font-size:12px;margin-bottom:4px">&#127873; THR '+(p.thr_nama||'Hari Raya')+' - Dibayar Terpisah</div>';
-    h+='<div style="display:flex;justify-content:space-between;font-size:11px"><span>THR Bruto (full netto tgl '+fmtDate(p.thr_bayar||'-')+')</span><span><strong>'+fmt(g.thrBruto)+'</strong></span></div></div>';
+    h+='<div class="rounded-sm p-inset-sm tabs-spaced-lg" style="background:#f5f0ff; border:1.5px solid #c4b5fd">';
+    h+='<div class="fw-700 ct-purple font-12 mb-xs">&#127873; THR '+(p.thr_nama||'Hari Raya')+' - Dibayar Terpisah</div>';
+    h+='<div class="fl justify-between font-11"><span>THR Bruto (full netto tgl '+fmtDate(p.thr_bayar||'-')+')</span><span><strong>'+fmt(g.thrBruto)+'</strong></span></div></div>';
   }
   // Note hanya muncul jika PPh betul-betul dihitung sebagai Masa Pajak Terakhir (pegawai berhenti di periode ini / periode resign)
   if(g.reconciliation&&g.reconciliation.isPajakTerakhir&&(g.reconciliation.tipePeriode==='resign'||g.reconciliation.reason==='stop_in_period')){
     const tStop=g.reconciliation.tglBerhenti?fmtDate(g.reconciliation.tglBerhenti):'';
-    h+='<div style="background:#eef2ff;border:1.5px solid #c7d2fe;border-radius:8px;padding:8px 12px;margin-bottom:.75rem;font-size:10px;color:#3730a3">';
+    h+='<div class="card-surface-blue p-inset-xs rounded-sm mb-lg font-10 text-indigo">';
     h+='<strong>Catatan Masa Pajak Terakhir:</strong> PPh 21 bulan ini dihitung dengan rekonsiliasi tahunan (seperti Desember) karena pegawai berhenti'+(tStop?' per '+tStop:'')+'.';
     h+='</div>';
   }
@@ -29,15 +29,15 @@ function makeSlip(k,pNama){
   g.tItems.forEach(function(t){h+='<div class="cr"><span>'+t.nama+(t.isHarian?' [Lump Sum]':'')+'</span><span>'+fmt(t.eff)+'</span></div>';});
   if(g.natKP>0)h+='<div class="cr"><span>Natura Kena Pajak</span><span>'+fmt(g.natKP)+'</span></div>';
   if(g.lb>0)h+='<div class="cr"><span>Uang Lembur</span><span>'+fmt(g.lb)+'</span></div>';
-  if(g.bpjsPrsNatKP>0)h+='<div class="cr" style="color:#1a56a0"><span>BPJS Prs - JKK+JKM+Kes (Natura KP)</span><span>'+fmt(g.bpjsPrsNatKP)+'</span></div>';
-  if(g.thrBruto>0)h+='<div class="cr" style="color:#5b21b6;font-weight:700"><span>THR Bruto (digabung ke Gross PPh)</span><span>'+fmt(g.thrBruto)+'</span></div>';
+  if(g.bpjsPrsNatKP>0)h+='<div class="cr ct-brand"><span>BPJS Prs - JKK+JKM+Kes (Natura KP)</span><span>'+fmt(g.bpjsPrsNatKP)+'</span></div>';
+  if(g.thrBruto>0)h+='<div class="cr ct-purple fw-700"><span>THR Bruto (digabung ke Gross PPh)</span><span>'+fmt(g.thrBruto)+'</span></div>';
   h+='<div class="cr bold"><span>TOTAL GROSS INCOME</span><span>'+fmt(g.grossPPh)+'</span></div></div>';
   h+='<div class="pph-calc-sec"><div class="pph-calc-tit">PPh 21'+(g.reconciliation?' — Rekonsiliasi Masa Pajak Terakhir':' - PMK 168/2023 Metode TER')+'</div>';
   h+='<div class="cr"><span>Penghasilan Bruto bulan ini</span><span>'+fmt(g.grossPPh)+'</span></div>';
   if(g.reconciliation){
     const r=g.reconciliation;
     if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
-      h+='<div class="cr" style="color:#1a56a0"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+'</span><span>'+fmt(r.saldoAwalBruto)+' / PPh '+fmt(r.saldoAwalPph)+'</span></div>';
+      h+='<div class="cr ct-brand"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+'</span><span>'+fmt(r.saldoAwalBruto)+' / PPh '+fmt(r.saldoAwalPph)+'</span></div>';
     }
     h+='<div class="cr"><span>Bruto YTD (kumulatif sebelum bulan ini)</span><span>'+fmt(r.brutoYTD)+'</span></div>';
     h+='<div class="cr bold"><span>Total Bruto Setahun</span><span>'+fmt(r.brutoTahunan)+'</span></div>';
@@ -57,58 +57,58 @@ function makeSlip(k,pNama){
   if(g.potKehadiran&&g.potKehadiran.details){g.potKehadiran.details.forEach(function(d){h+='<div class="sr indent" style="color:#b45309"><span>'+d.label+'</span><span>- '+fmt(d.nilai)+'</span></div>';});}
   h+='<div class="sr bold"><span>Total Potongan</span><span>- '+fmt(g.totalPot)+'</span></div>';
   if(g.natNKP>0){h+='<div class="ssec">Natura Tidak KP</div>';(k.natura||[]).filter(function(n){return !n.kp;}).forEach(function(n){h+='<div class="sr"><span>'+n.nama+'</span><span>+ '+fmt(n.nilai)+'</span></div>';});}
-  if(g.pphRet>0)h+='<div class="ssec" style="color:#2d6a0a">Pengembalian PPh</div><div class="sr pph-return"><span>&#9312; '+((k.pph_return&&k.pph_return.ket)||'PPh Return')+'</span><span>+ '+fmt(g.pphRet)+'</span></div>';
+  if(g.pphRet>0)h+='<div class="ssec ct-success">Pengembalian PPh</div><div class="sr pph-return"><span>&#9312; '+((k.pph_return&&k.pph_return.ket)||'PPh Return')+'</span><span>+ '+fmt(g.pphRet)+'</span></div>';
   h+='<div class="ssec">Kontribusi Perusahaan</div>';
   h+='<div class="sr"><span>BPJS Kes Prs (4%)</span><span>'+fmt(g.bpjs.kes_prs)+'</span></div>';
   h+='<div class="sr"><span>BPJS JHT+JP Prs</span><span>'+fmt(g.bpjs.jht_prs+g.bpjs.jp_prs)+'</span></div>';
   h+='<div class="sr"><span>JKK+JKM Prs</span><span>'+fmt(g.bpjs.jkk_prs+g.bpjs.jkm_prs)+'</span></div>';
   if(g.phk&&g.phk.mode==='phk'){
-    h+='<div class="ssec" style="margin-top:10px">Pembayaran PHK (PPh 21 Final)</div>';
+    h+='<div class="ssec mt-sm">Pembayaran PHK (PPh 21 Final)</div>';
     (g.phk.items||[]).forEach(function(it){h+='<div class="sr"><span>'+it.nama+'</span><span>+ '+fmt(it.nilai)+'</span></div>';});
     h+='<div class="sr bold"><span>Total PHK</span><span>+ '+fmt(g.phk.bruto)+'</span></div>';
-    h+='<div class="sr" style="color:#9b2121"><span>PPh 21 Final Pesangon</span><span>- '+fmt(g.phk.pphFinal)+'</span></div>';
-    h+='<div class="sr bold" style="color:#1a56a0"><span>PHK Diterima (Netto)</span><span>+ '+fmt(g.phk.bruto-g.phk.pphFinal)+'</span></div>';
+    h+='<div class="sr ct-danger"><span>PPh 21 Final Pesangon</span><span>- '+fmt(g.phk.pphFinal)+'</span></div>';
+    h+='<div class="sr bold ct-brand"><span>PHK Diterima (Netto)</span><span>+ '+fmt(g.phk.bruto-g.phk.pphFinal)+'</span></div>';
   }
   h+='<div class="stotal"><span>TAKE HOME PAY</span><span>'+fmt(g.neto)+'</span></div>';
-  h+='<div style="margin-top:8px;font-size:10px;line-height:1.55;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:8px 10px"><strong>Terbilang</strong> <span style="color:#6b7280;font-style:italic">'+terbilangRupiah(g.neto)+'</span></div>';
-  if(g.thrBruto>0)h+='<div style="background:#f5f0ff;border:1px solid #c4b5fd;border-radius:7px;padding:8px 12px;margin-top:6px;font-size:10px;color:#5b21b6;text-align:center;font-weight:700">&#127873; THR '+fmt(g.thrBruto)+' sudah dibayar terpisah pada '+fmtDate(p.thr_bayar||'-')+' (full netto)</div>';
+  h+='<div class="mt-sm font-10 leading-tight text-body" style="border:1px solid #e5e7eb; border-radius:6px; padding:8px 10px"><strong>Terbilang</strong> <span class="text-muted" style="font-style:italic">'+terbilangRupiah(g.neto)+'</span></div>';
+  if(g.thrBruto>0)h+='<div class="rounded-sm p-inset-xs mt-xs font-10 ct-purple text-center fw-700" style="background:#f5f0ff; border:1px solid #c4b5fd">&#127873; THR '+fmt(g.thrBruto)+' sudah dibayar terpisah pada '+fmtDate(p.thr_bayar||'-')+' (full netto)</div>';
   if(g.reconciliation){
     const r=g.reconciliation;const isLebih=r.lebihBayar>0;
-    h+='<div style="background:'+(isLebih?'#e8f4de':'#fef3e2')+';border:1px solid '+(isLebih?'#b3d98f':'#f6c76b')+';border-radius:7px;padding:8px 12px;font-size:10px;margin-top:6px">';
+    h+='<div class="rounded-sm p-inset-xs font-10 mt-xs" style="background:'+(isLebih?'#e8f4de':'#fef3e2')+'; border:1px solid '+(isLebih?'#b3d98f':'#f6c76b')+'">';
     h+='<strong>Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Resign)':'(Desember)')+':</strong> ';
     h+='PPh Tahunan Progresif: '+fmt(r.pphTahunan)+' | Sudah dipotong: '+fmt(r.pphYTD)+' | ';
-    h+=isLebih?'<strong style="color:#2d6a0a">Lebih Bayar: +'+fmt(r.lebihBayar)+'</strong>':'<strong style="color:#9b2121">Kurang Bayar: '+fmt(r.kurangBayar)+'</strong>';
+    h+=isLebih?'<strong class="ct-success">Lebih Bayar: +'+fmt(r.lebihBayar)+'</strong>':'<strong class="ct-danger">Kurang Bayar: '+fmt(r.kurangBayar)+'</strong>';
     h+='</div>';
   }
-  h+='<div style="margin-top:.6rem;font-size:10px;color:#6b7280;text-align:center">Slip gaji elektronik - sah tanpa tanda tangan basah</div></div>';
+  h+='<div class="mt-lg font-10 text-muted text-center">Slip gaji elektronik - sah tanpa tanda tangan basah</div></div>';
   return h;
 }
 // ── SLIP THR ─────────────────────────────────────
 function makeSlipTHR(k,p){
   const thr=hitungTHRBruto(k);
-  if(!thr.eligible)return '<div style="text-align:center;color:#9b2121;padding:2rem;background:#fdeaea;border-radius:8px">'+k.nama+' belum eligible THR (masa kerja '+thr.mb+' bulan)</div>';
+  if(!thr.eligible)return '<div class="text-center ct-danger rounded-sm" style="padding:2rem; background:#fdeaea">'+k.nama+' belum eligible THR (masa kerja '+thr.mb+' bulan)</div>';
   const g=hitungGaji(k,p.nama);
   const logo=perusahaan.logo||'';
   const namaHR=p.thr_nama||'Hari Raya';
   const mb=Math.floor(thr.mb/12)+'thn '+thr.mb%12+'bln';
   let h='<div class="slip">';
-  h+='<div class="slip-head"><div>'+(logo?'<img src="'+logo+'" class="slip-logo"><br>':'')+'<strong style="font-size:14px;color:#5b21b6">&#9670; '+(perusahaan.nama||'Perusahaan')+'</strong></div>';
-  h+='<div style="text-align:right"><strong style="font-size:13px;color:#5b21b6">SLIP THR</strong><div style="font-size:10px;color:#6b7280">'+namaHR+'</div><div style="font-size:10px;color:#6b7280">Tgl Bayar: '+(p.thr_bayar||'-')+'</div></div></div>';
-  h+='<div class="semp"><div><span style="color:#6b7280;font-size:9px">NIK</span><br><strong>'+k.nik+'</strong></div><div><span style="color:#6b7280;font-size:9px">Nama</span><br><strong>'+k.nama+'</strong></div><div><span style="color:#6b7280;font-size:9px">Jabatan</span><br>'+k.jabatan+'</div><div><span style="color:#6b7280;font-size:9px">Dept</span><br>'+k.dept+'</div><div><span style="color:#6b7280;font-size:9px">Masa Kerja</span><br>'+mb+'</div><div><span style="color:#6b7280;font-size:9px">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
-  h+='<div style="background:#f5f0ff;border:1.5px solid #c4b5fd;border-radius:8px;padding:1rem;margin-bottom:.75rem">';
-  h+='<div style="font-size:10px;font-weight:800;color:#4c1d95;text-transform:uppercase;margin-bottom:.6rem">&#127873; Perhitungan THR - '+namaHR+'</div>';
+  h+='<div class="slip-head"><div>'+(logo?'<img src="'+logo+'" class="slip-logo"><br>':'')+'<strong class="font-14 ct-purple">&#9670; '+(perusahaan.nama||'Perusahaan')+'</strong></div>';
+  h+='<div class="text-right"><strong class="font-13 ct-purple">SLIP THR</strong><div class="u-muted-10">'+namaHR+'</div><div class="u-muted-10">Tgl Bayar: '+(p.thr_bayar||'-')+'</div></div></div>';
+  h+='<div class="semp"><div><span class="text-muted font-9">NIK</span><br><strong>'+k.nik+'</strong></div><div><span class="text-muted font-9">Nama</span><br><strong>'+k.nama+'</strong></div><div><span class="text-muted font-9">Jabatan</span><br>'+k.jabatan+'</div><div><span class="text-muted font-9">Dept</span><br>'+k.dept+'</div><div><span class="text-muted font-9">Masa Kerja</span><br>'+mb+'</div><div><span class="text-muted font-9">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
+  h+='<div class="rounded-sm tabs-spaced-lg" style="background:#f5f0ff; border:1.5px solid #c4b5fd; padding:1rem">';
+  h+='<div class="font-10 fw-800 mb-md" style="color:#4c1d95; text-transform:uppercase">&#127873; Perhitungan THR - '+namaHR+'</div>';
   h+='<div class="cr"><span>Gaji Pokok</span><span>'+fmt(k.gapok)+'</span></div>';
   (k.tunjangan||[]).filter(function(t){return t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';}).forEach(function(t){h+='<div class="cr"><span>'+t.nama+' (Tunjangan Tetap)</span><span>'+fmt(t.nilai)+'</span></div>';});
-  h+='<div class="cr bold" style="color:#4c1d95;border-top:1px solid #c4b5fd;margin-top:4px;padding-top:4px"><span>Dasar THR</span><span>'+fmt(thr.dasar)+'</span></div>';
+  h+='<div class="cr bold mt-xs" style="color:#4c1d95; border-top:1px solid #c4b5fd; padding-top:4px"><span>Dasar THR</span><span>'+fmt(thr.dasar)+'</span></div>';
   h+='<div class="cr"><span>Proporsi</span><span>'+thr.pl+'</span></div>';
-  h+='<div class="cr bold" style="color:#5b21b6;font-size:13px;border-top:1.5px solid #5b21b6;margin-top:6px;padding-top:6px"><span>THR Bruto</span><span>'+fmt(thr.nilai)+'</span></div></div>';
-  h+='<div style="background:#e8f4de;color:#1e4a07;border-left:3px solid #2d6a0a;border-radius:6px;padding:.65rem .9rem;font-size:11px;margin-bottom:.75rem">';
+  h+='<div class="cr bold ct-purple font-13 mt-xs" style="border-top:1.5px solid #5b21b6; padding-top:6px"><span>THR Bruto</span><span>'+fmt(thr.nilai)+'</span></div></div>';
+  h+='<div class="font-11 tabs-spaced-lg" style="background:#e8f4de; color:#1e4a07; border-left:3px solid #2d6a0a; border-radius:6px; padding:.65rem .9rem">';
   h+='<strong>Catatan PPh 21:</strong> THR dibayarkan <strong>FULL NETTO</strong>. PPh atas THR sebesar <strong>'+fmt(g.pphAtasThr)+'</strong> akan dipotong dari gaji akhir bulan '+p.nama+'.';
   h+='</div>';
   h+='<div class="sr"><span>THR Bruto</span><span>'+fmt(thr.nilai)+'</span></div>';
-  h+='<div class="sr" style="color:#2d6a0a"><span>Potongan PPh saat bayar THR</span><span>Rp 0</span></div>';
+  h+='<div class="sr ct-success"><span>Potongan PPh saat bayar THR</span><span>Rp 0</span></div>';
   h+='<div class="stotal" style="background:linear-gradient(90deg,#5b21b6,#7c3aed)"><span>TOTAL THR DITERIMA (FULL NETTO)</span><span>'+fmt(thr.nilai)+'</span></div>';
-  h+='<div style="margin-top:.6rem;font-size:10px;color:#6b7280;text-align:center">Slip THR elektronik - sah tanpa tanda tangan basah</div></div>';
+  h+='<div class="mt-lg font-10 text-muted text-center">Slip THR elektronik - sah tanpa tanda tangan basah</div></div>';
   return h;
 }
 // ── SLIP CONTROLS ─────────────────────────────────
@@ -137,7 +137,7 @@ function onSlipPeriodeChange(){
   if(p.thr_aktif){
     if(typeEl)typeEl.style.display='inline-block';
     if(btnAll)btnAll.style.display='inline-block';
-    if(banner)banner.innerHTML='<div style="background:#f5f0ff;border:1.5px solid #c4b5fd;border-radius:10px;padding:10px 14px;margin-bottom:.75rem;font-size:12px;color:#5b21b6"><strong>&#127873; Periode ini ada THR ('+(p.thr_nama||'')+') - Tgl Bayar THR: '+(p.thr_bayar||'-')+'</strong><br>Pilih jenis slip di atas.</div>';
+    if(banner)banner.innerHTML='<div class="card-surface-purple p-inset-sm rounded-md mb-lg font-12 text-purple"><strong>&#127873; Periode ini ada THR ('+(p.thr_nama||'')+') - Tgl Bayar THR: '+(p.thr_bayar||'-')+'</strong><br>Pilih jenis slip di atas.</div>';
   } else {
     if(typeEl){typeEl.value='gaji';typeEl.style.display='none';}
     if(btnAll)btnAll.style.display='none';
@@ -547,15 +547,15 @@ function mySlipAbsenSummaryHtml(nik,p){
     else if(st)rec.other++;
     cur=addDays(cur,1);
   }
-  return '<div class="card" style="margin-bottom:.75rem;border-left:4px solid #1a56a0;background:#f8fafc">'
-    +'<div class="ct" style="margin:0 0 .5rem;border:0;padding:0">Ringkasan kehadiran — '+escapeHtml(p.nama)+'</div>'
-    +'<div class="fl gap1" style="flex-wrap:wrap;font-size:12px">'
+  return '<div class="card tabs-spaced-lg border-accent-left card-surface-neutral">'
+    +'<div class="ct border-0 p-0 mb-md m-0">Ringkasan kehadiran — '+escapeHtml(p.nama)+'</div>'
+    +'<div class="fl gap1 flex-wrap font-12">'
     +'<span class="bdg b-teal">Hadir '+rec.hadir+'</span>'
     +'<span class="bdg b-warn">Cuti '+rec.cuti+'</span>'
     +'<span class="bdg b-info">Izin '+rec.izin+'</span>'
     +'<span class="bdg b-warn">Sakit '+rec.sakit+'</span>'
     +'<span class="bdg b-err">Alpha '+rec.alpha+'</span>'
-    +'</div><p style="font-size:10px;color:#6b7280;margin:.45rem 0 0">Dari kalender absensi periode gaji (termasuk hasil absen mobile).</p></div>';
+    +'</div><p class="font-10 text-muted u-note-sm">Dari kalender absensi periode gaji (termasuk hasil absen mobile).</p></div>';
 }
 function loadMySlip(){
   if(!CU||!CU.nik)return;

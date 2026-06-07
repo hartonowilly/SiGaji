@@ -80,13 +80,13 @@
   }
   function renderDetail(){
     var wrap=document.getElementById('psg-detail');if(!wrap)return;
-    if(!selNik){wrap.innerHTML='<div class="info-box info-blue" style="font-size:12px">Pilih karyawan di tabel.</div>';return;}
+    if(!selNik){wrap.innerHTML='<div class="info-box info-blue font-12">Pilih karyawan di tabel.</div>';return;}
     var k=karyawan.find(function(x){return x.nik===selNik;});
     if(!k){wrap.innerHTML='';return;}
     var phk=k.phk||{};
     var h='';
-    h+='<div class="stit">'+escapeHtml(k.nama)+' <span style="font-size:11px;color:#6b7280;font-weight:600">'+escapeHtml(k.nik)+'</span></div>';
-    h+='<div class="fg2" style="margin-top:.5rem">';
+    h+='<div class="stit">'+escapeHtml(k.nama)+' <span class="font-11 text-muted fw-600">'+escapeHtml(k.nik)+'</span></div>';
+    h+='<div class="fg2 mt-md">';
     h+='<div class="fg"><label>Tgl. berhenti</label><input type="date" id="psg-tgl" value="'+(k.tgl_berhenti||'')+'" onchange="pesangonTglChange()"></div>';
     h+='<div class="fg ff"><label>Alasan PHK</label><select id="psg-alasan" onchange="pesangonRefresh()">'+optHtml()+'</select></div>';
     h+='<div class="fg"><label>Sisa cuti (hari) — kosongkan = otomatis dari absensi</label><input type="number" min="0" step="1" id="psg-sisa-cuti" placeholder="Otomatis" value="'+(phk.sisa_cuti_hari!==undefined&&phk.sisa_cuti_hari!==null&&String(phk.sisa_cuti_hari)!==''?phk.sisa_cuti_hari:'')+'" onchange="pesangonRefresh()"></div>';
@@ -106,19 +106,19 @@
     var bd=document.getElementById('psg-breakdown');if(!bd)return;
     var hb='';
     if(r.ok){
-      hb+='<div class="info-box info-amber" style="font-size:11px;line-height:1.55;margin-bottom:.6rem">Dasar upah = gaji pokok + tunjangan tetap yang ikut THR (sama logika kolom THR). UPH cuti: <strong>(dasar ÷ 25) × sisa cuti</strong>. UP/UPMK mengikuti <strong>PP 35/2021</strong> × faktor alasan. Verifikasi dengan HR/legal.</div>';
-      hb+='<table style="width:100%;font-size:12px;border-collapse:collapse"><tbody>';
-      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Masa kerja</td><td style="padding:6px;border-bottom:1px solid var(--bd);text-align:right">'+r.mk+' bln</td></tr>';
-      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Dasar upah</td><td style="padding:6px;border-bottom:1px solid var(--bd);text-align:right">'+fmt(r.dasar)+'</td></tr>';
-      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Lama UP / UPMK (bulan upah)</td><td style="padding:6px;border-bottom:1px solid var(--bd);text-align:right">'+r.bUp+' / '+r.bUpmk+'</td></tr>';
-      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Faktor pengali</td><td style="padding:6px;border-bottom:1px solid var(--bd);text-align:right">'+(r.faktor==null?'—':String(r.faktor))+(r.opt&&r.opt.uphOnly?' <span style="color:#7d4800">(UP/UPMK = 0; fokus UPH)</span>':'')+'</td></tr>';
-      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Sisa cuti (hari)</td><td style="padding:6px;border-bottom:1px solid var(--bd);text-align:right">'+r.sisaCuti+(r.sisaCuti!==r.sisaCutiAuto?' <span style="font-size:10px;color:#6b7280">(auto '+r.sisaCutiAuto+')</span>':'')+'</td></tr>';
-      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">UPH dari cuti (jika tidak di-override)</td><td style="padding:6px;border-bottom:1px solid var(--bd);text-align:right">'+fmt(r.uphCuti)+'</td></tr>';
-      hb+='<tr style="font-weight:700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang Pesangon</td><td style="padding:8px;border-bottom:1px solid var(--bd);text-align:right">'+fmt(r.up)+'</td></tr>';
-      hb+='<tr style="font-weight:700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang Penghargaan Masa Kerja</td><td style="padding:8px;border-bottom:1px solid var(--bd);text-align:right">'+fmt(r.upmk)+'</td></tr>';
-      hb+='<tr style="font-weight:700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang Penggantian Hak (setelah tambahan)</td><td style="padding:8px;border-bottom:1px solid var(--bd);text-align:right">'+fmt(r.uph)+'</td></tr>';
-      hb+='<tr style="font-weight:700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang pisah</td><td style="padding:8px;border-bottom:1px solid var(--bd);text-align:right">'+fmt(r.pisah)+'</td></tr>';
-      hb+='<tr style="font-weight:800;background:#f0f9ff"><td style="padding:10px">Total estimasi</td><td style="padding:10px;text-align:right;color:#1a56a0">'+fmt(r.total)+'</td></tr>';
+      hb+='<div class="info-box info-amber font-11 leading-tight mb-md">Dasar upah = gaji pokok + tunjangan tetap yang ikut THR (sama logika kolom THR). UPH cuti: <strong>(dasar ÷ 25) × sisa cuti</strong>. UP/UPMK mengikuti <strong>PP 35/2021</strong> × faktor alasan. Verifikasi dengan HR/legal.</div>';
+      hb+='<table class="w-full font-12" style="border-collapse:collapse"><tbody>';
+      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Masa kerja</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+r.mk+' bln</td></tr>';
+      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Dasar upah</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+fmt(r.dasar)+'</td></tr>';
+      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Lama UP / UPMK (bulan upah)</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+r.bUp+' / '+r.bUpmk+'</td></tr>';
+      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Faktor pengali</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+(r.faktor==null?'—':String(r.faktor))+(r.opt&&r.opt.uphOnly?' <span class="ct-warn">(UP/UPMK = 0; fokus UPH)</span>':'')+'</td></tr>';
+      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Sisa cuti (hari)</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+r.sisaCuti+(r.sisaCuti!==r.sisaCutiAuto?' <span class="u-muted-10">(auto '+r.sisaCutiAuto+')</span>':'')+'</td></tr>';
+      hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">UPH dari cuti (jika tidak di-override)</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+fmt(r.uphCuti)+'</td></tr>';
+      hb+='<tr class="fw-700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang Pesangon</td><td class="text-right" style="padding:8px; border-bottom:1px solid var(--bd)">'+fmt(r.up)+'</td></tr>';
+      hb+='<tr class="fw-700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang Penghargaan Masa Kerja</td><td class="text-right" style="padding:8px; border-bottom:1px solid var(--bd)">'+fmt(r.upmk)+'</td></tr>';
+      hb+='<tr class="fw-700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang Penggantian Hak (setelah tambahan)</td><td class="text-right" style="padding:8px; border-bottom:1px solid var(--bd)">'+fmt(r.uph)+'</td></tr>';
+      hb+='<tr class="fw-700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang pisah</td><td class="text-right" style="padding:8px; border-bottom:1px solid var(--bd)">'+fmt(r.pisah)+'</td></tr>';
+      hb+='<tr class="fw-800" style="background:#f0f9ff"><td style="padding:10px">Total estimasi</td><td class="text-right ct-brand" style="padding:10px">'+fmt(r.total)+'</td></tr>';
       hb+='</tbody></table>';
     }else hb+='<div class="info-box info-red">'+(r.pesan||'')+'</div>';
     bd.innerHTML=hb;
@@ -154,7 +154,7 @@
       return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
     });
     if(!list.length){
-      tb.innerHTML='<tr><td colspan="7">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9878;',title:'Tidak ada PHK di periode ini',desc:'Isi tanggal berhenti & alasan PHK di profil karyawan yang resign bulan ini.',btnLabel:'Master karyawan',btnOnclick:"showPg('karyawan')"}):'<div style="padding:1rem;color:#6b7280;font-size:12px">Tidak ada karyawan berhenti pada periode aktif.</div>')+'</td></tr>';
+      tb.innerHTML='<tr><td colspan="7">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9878;',title:'Tidak ada PHK di periode ini',desc:'Isi tanggal berhenti & alasan PHK di profil karyawan yang resign bulan ini.',btnLabel:'Master karyawan',btnOnclick:"showPg('karyawan')"}):'<div class="text-muted font-12" style="padding:1rem">Tidak ada karyawan berhenti pada periode aktif.</div>')+'</td></tr>';
       selNik=null;renderDetail();return;
     }
     tb.innerHTML=list.map(function(k,i){
@@ -163,7 +163,7 @@
       var r=hitungPesangon(k);
       var al=opt.lbl||'—';
       var cls=selNik===k.nik?'style="background:#eff6ff"':'';
-      return '<tr '+cls+' class="psg-row" data-nik="'+escapeHtml(k.nik)+'" onclick="pesangonPilih(\''+escJsStr(k.nik)+'\')"><td style="text-align:center;font-weight:700;color:#6b7280">'+(i+1)+'</td><td><strong>'+escapeHtml(k.nama)+'</strong><div style="font-size:10px;color:#6b7280">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td style="font-size:11px;max-width:180px">'+escapeHtml(al)+'</td><td style="text-align:right">'+(r.ok?fmt(r.total):'—')+'</td><td style="text-align:center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out" onclick="event.stopPropagation();openPanel(\''+escJsStr(k.nik)+'\')">Profil</button></td></tr>';
+      return '<tr '+cls+' class="psg-row" data-nik="'+escapeHtml(k.nik)+'" onclick="pesangonPilih(\''+escJsStr(k.nik)+'\')"><td class="text-center fw-700 text-muted">'+(i+1)+'</td><td><strong>'+escapeHtml(k.nama)+'</strong><div class="u-muted-10">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td class="font-11" style="max-width:180px">'+escapeHtml(al)+'</td><td class="text-right">'+(r.ok?fmt(r.total):'—')+'</td><td class="text-center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out" onclick="event.stopPropagation();openPanel(\''+escJsStr(k.nik)+'\')">Profil</button></td></tr>';
     }).join('');
     if(selNik&&!list.find(function(k){return k.nik===selNik;}))selNik=list[0].nik;
     if(!selNik&&list.length)selNik=list[0].nik;

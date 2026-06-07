@@ -373,7 +373,7 @@
       '">' +
       '<div class="sigaji-cabang-card-head"><strong>' +
       escapeHtml(c.nama || 'Cabang') +
-      '</strong> <span style="font-size:10px;color:#6b7280">ID: ' +
+      '</strong> <span class="u-muted-10">ID: ' +
       escapeHtml(c.id) +
       '</span></div>' +
       '<div class="fg2">' +
@@ -461,19 +461,19 @@
     }
     if (!sigajiCanManageCabang()) {
       panel.innerHTML =
-        '<div class="info-box info-blue" style="font-size:12px">Multi-cabang aktif. HRD mengisi cabang di profil karyawan — kelola master cabang hanya Admin.</div>';
+        '<div class="info-box info-blue font-12">Multi-cabang aktif. HRD mengisi cabang di profil karyawan — kelola master cabang hanya Admin.</div>';
       return;
     }
     var list = sigajiEnsureCabangDefault();
     var max = sigajiMaxBranches();
     panel.innerHTML =
-      '<div class="card" style="border-left:4px solid #1a56a0">' +
-      '<div class="ct" style="color:#1a56a0">&#127970; Master Cabang &amp; Identitas Pemotong</div>' +
-      '<div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem;line-height:1.55">' +
+      '<div class="card border-accent-left">' +
+      '<div class="ct ct-brand">&#127970; Master Cabang &amp; Identitas Pemotong</div>' +
+      '<div class="info-box info-blue font-11 tabs-spaced-lg leading-tight">' +
       '<strong>Aturan pajak:</strong> Satu badan hukum = NPWP sama, <strong>NITKU (6 digit) beda per cabang</strong>. ' +
       'e-Bupot &amp; XML Coretax memakai TKU cabang karyawan. NPWP benar-benar beda (PT terpisah) → gunakan <code>tenant_key</code> terpisah, bukan cabang.' +
       '</div>' +
-      '<p style="font-size:12px;color:#374151;margin:0 0 .65rem">Maks <strong>' +
+      '<p class="font-12 text-body" style="margin:0 0 .65rem">Maks <strong>' +
       max +
       '</strong> cabang · aktif <strong>' +
       list.filter(function (c) {
@@ -483,7 +483,7 @@
       '<div class="sigaji-cabang-cards">' +
       list.map(cabangCardHtml).join('') +
       '</div>' +
-      '<div class="fl gap1" style="margin-top:.75rem;flex-wrap:wrap">' +
+      '<div class="fl gap1 mt-lg flex-wrap">' +
       '<button type="button" class="btn btn-sm btn-p" onclick="sigajiCabangTambah()">+ Cabang</button>' +
       '<button type="button" class="btn btn-sm btn-out" onclick="sigajiCabangSimpan()">Simpan</button>' +
       '</div></div>';

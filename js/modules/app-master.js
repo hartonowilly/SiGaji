@@ -29,14 +29,14 @@ function renderPeriodesBody(){
     var lockBtn='<button class="btn btn-sm '+(p.snapshot_locked?'btn-out':'btn-r')+'" onclick="toggleLockPeriode(\''+p.id+'\')">'+(p.snapshot_locked?'Buka Kunci':'Kunci')+'</button>';
     var rebuildBtn='<button class="btn btn-sm btn-out" onclick="rebuildSnapshotPeriode(\''+p.id+'\')">Rebuild Snapshot</button>';
     return '<tr><td><strong>'+p.nama+'</strong></td><td>'+p.start+'</td><td>'+p.end+'</td><td>'+p.bayar+'</td>'
-      +'<td>'+(p.thr_aktif?'<div style="font-size:11px;color:#5b21b6;font-weight:700">&#127873; '+(p.thr_nama||'THR')+'<br><span style="color:#9ca3af;font-weight:400">Bayar: '+fmtDate(p.thr_bayar||'-')+'</span></div>':'&#8212;')+'</td>'
+      +'<td>'+(p.thr_aktif?'<div class="font-11 ct-purple fw-700">&#127873; '+(p.thr_nama||'THR')+'<br><span class="text-subtle" style="font-weight:400">Bayar: '+fmtDate(p.thr_bayar||'-')+'</span></div>':'&#8212;')+'</td>'
       +'<td><span class="bdg '+(p.status==='aktif'?'b-ok':'b-gray')+'">'+(p.status==='aktif'?'Aktif':'Tutup')+'</span>'+lockBdg+'</td>'
       +'<td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="aktifkanPeriode(\''+p.id+'\')">Aktifkan</button>'+lockBtn+rebuildBtn+'<button class="btn btn-sm btn-r" onclick="hapusPeriode(\''+p.id+'\')">Hapus</button></div></td></tr>';
   }).join('');
   renderPeriodeSnapshotGuardUi(false);
   updatePeriodeSimpanButtonState();
 }
-function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));el.innerHTML='<div class="pb mb2"><div><div style="font-size:10px;opacity:.75">Periode Aktif</div><div style="font-size:17px;font-weight:800">'+p.nama+(p.thr_aktif?' <span style="font-size:12px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:20px">&#127873; THR</span>':'')+'</div><div style="font-size:11px;opacity:.8">'+fmtDate(p.start)+' - '+fmtDate(p.end)+'</div></div><div style="text-align:right"><div style="font-size:28px;font-weight:800">'+hP+'</div><div style="font-size:10px;opacity:.75">hari</div></div></div>';}
+function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));el.innerHTML='<div class="pb mb2"><div><div class="font-10" style="opacity:.75">Periode Aktif</div><div class="font-17 fw-800">'+p.nama+(p.thr_aktif?' <span class="font-12 rounded-pill" style="background:rgba(255,255,255,.2); padding:2px 8px">&#127873; THR</span>':'')+'</div><div class="font-11" style="opacity:.8">'+fmtDate(p.start)+' - '+fmtDate(p.end)+'</div></div><div class="text-right"><div class="fw-800 font-28">'+hP+'</div><div class="font-10" style="opacity:.75">hari</div></div></div>';}
 function toggleOpsiLebihBayar(){
   const tipe=document.getElementById('p-tipe-periode')&&document.getElementById('p-tipe-periode').value;
   const el=document.getElementById('fg-opsi-lebih-bayar');
@@ -69,7 +69,7 @@ function renderPeriodeSnapshotGuardUi(blocking){
   var open=getPeriodesSnapshotTerbuka();
   if(!open.length){el.style.display='none';el.innerHTML='';return;}
   var items=open.map(function(p){
-    var aktif=p.status==='aktif'?' <span class="bdg b-ok" style="font-size:9px;vertical-align:middle">aktif</span>':'';
+    var aktif=p.status==='aktif'?' <span class="bdg b-ok font-9" style="vertical-align:middle">aktif</span>':'';
     return '<li style="margin:.2rem 0"><strong>'+escapeHtml(p.nama)+'</strong>'+aktif+' — snapshot terbuka</li>';
   }).join('');
   var names=open.map(function(p){return p.nama;}).join(', ');
@@ -81,7 +81,7 @@ function renderPeriodeSnapshotGuardUi(blocking){
     ?'Kunci snapshot periode berikut (tombol <em>Kunci</em> di tabel Riwayat Periode) sebelum menambah periode baru:'
     :'Sebelum menambah periode baru, kunci snapshot periode berikut:';
   el.style.display='block';
-  el.innerHTML='<div style="background:'+bg+';border:1.5px solid '+bd+';border-radius:10px;padding:.75rem 1rem;margin-top:.75rem;font-size:12px;color:'+col+';line-height:1.55">'
+  el.innerHTML='<div class="rounded-md mt-lg font-12 leading-tight" style="background:'+bg+'; border:1.5px solid '+bd+'; padding:.75rem 1rem; color:'+col+'">'
     +title+sub+'<ul style="margin:.45rem 0 .55rem 1.15rem">'+items+'</ul>'
     +'<button type="button" class="btn btn-sm btn-p" onclick="goToDaftarPeriode()">Ke daftar periode</button></div>';
   if(blocking)toast('Kunci dulu: '+names+' (snapshot terbuka)');
@@ -224,7 +224,7 @@ function renderUmkPanel(){
   var wrap=document.getElementById('umk-history-wrap');
   if(wrap){
     var keys=Object.keys(perusahaan.umk).filter(function(k){return perusahaan.umk[k]!=null&&perusahaan.umk[k]!=='';}).sort(function(a,b){return Number(b)-Number(a);});
-    wrap.innerHTML=keys.length?'<div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:.35rem">Riwayat UMK tersimpan</div><table style="width:auto;min-width:280px;font-size:12px;border-collapse:collapse"><thead><tr style="background:#f8f9fc"><th style="padding:6px 10px;text-align:left;border:1px solid var(--bd)">Tahun</th><th style="padding:6px 10px;text-align:right;border:1px solid var(--bd)">UMK</th></tr></thead><tbody>'+keys.map(function(yr){return'<tr><td style="padding:6px 10px;border:1px solid var(--bd)">'+yr+'</td><td style="padding:6px 10px;border:1px solid var(--bd);text-align:right;font-weight:700">'+fmt(perusahaan.umk[yr]||0)+'</td></tr>';}).join('')+'</tbody></table>':'<div style="font-size:12px;color:#6b7280">Belum ada UMK tersimpan. Pilih tahun, Edit, isi nilai, lalu Simpan &amp; Kunci.</div>';
+    wrap.innerHTML=keys.length?'<div class="font-11 fw-700 text-muted mb-sm">Riwayat UMK tersimpan</div><table class="font-12 select-inline" style="min-width:280px; border-collapse:collapse"><thead><tr class="bg-surface-2"><th class="text-left" style="padding:6px 10px; border:1px solid var(--bd)">Tahun</th><th class="text-right" style="padding:6px 10px; border:1px solid var(--bd)">UMK</th></tr></thead><tbody>'+keys.map(function(yr){return'<tr><td style="padding:6px 10px;border:1px solid var(--bd)">'+yr+'</td><td class="text-right fw-700" style="padding:6px 10px; border:1px solid var(--bd)">'+fmt(perusahaan.umk[yr]||0)+'</td></tr>';}).join('')+'</tbody></table>':'<div class="u-muted-12">Belum ada UMK tersimpan. Pilih tahun, Edit, isi nilai, lalu Simpan &amp; Kunci.</div>';
   }
   var root=document.getElementById('m-umk');
   if(root&&typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(root);
@@ -289,8 +289,8 @@ function renderPTKPForm(){
   var t=getPTKPTable();
   var hint={TK0:'Tidak kawin, tanggungan 0',TK1:'Tidak kawin, tanggungan 1',TK2:'Tidak kawin, tanggungan 2',TK3:'Tidak kawin, tanggungan 3',K0:'Kawin, tanggungan 0',K1:'Kawin, tanggungan 1',K2:'Kawin, tanggungan 2',K3:'Kawin, tanggungan 3'};
   tb.innerHTML=PTKP_KEYS.map(function(k){
-    return'<tr><td style="font-weight:700;white-space:nowrap">'+PTKP_LBL[k]+'</td><td style="color:#6b7280;font-size:11px">'+hint[k]+'</td>'
-      +'<td><input type="number" min="0" step="1000" id="ptkp-val-'+k+'" value="'+Math.round(t[k])+'" style="width:100%;max-width:200px;padding:6px 10px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit"></td></tr>';
+    return'<tr><td class="fw-700" style="white-space:nowrap">'+PTKP_LBL[k]+'</td><td class="text-muted font-11">'+hint[k]+'</td>'
+      +'<td><input class="w-full font-12" type="number" min="0" step="1000" id="ptkp-val-'+k+'" value="'+Math.round(t[k])+'" style="max-width:200px; padding:6px 10px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit"></td></tr>';
   }).join('');
 }
 function simpanPTKP(){
@@ -320,10 +320,10 @@ function loadAturanPotongan(){
   var ap=perusahaan.aturan_potongan||{};
   document.getElementById('tb-aturan-pot').innerHTML=JENIS_POT.map(function(j){
     var rule=ap[j.key]||{mode:'prorata',nilai:0};var show=rule.mode==='nominal'||rule.mode==='persen';
-    return '<tr><td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;font-weight:700"><span style="background:#e8f0fb;color:#1a56a0;padding:2px 8px;border-radius:5px;font-size:11px">'+j.lbl+'</span></td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;font-size:11px;color:#6b7280">'+j.ket+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid #f3f4f6"><select id="ap-mode-'+j.key+'" style="width:100%;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" onchange="onApModeChange(\''+j.key+'\')">'+MODE_OPTS+'</select></td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid #f3f4f6"><div style="display:flex;align-items:center;gap:4px"><span id="ap-pfx-'+j.key+'" style="font-size:11px;color:#6b7280">'+(rule.mode==='persen'?'%':rule.mode==='nominal'?'Rp':'')+'</span><input type="number" id="ap-val-'+j.key+'" value="'+(rule.nilai||0)+'" style="width:100%;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none;display:'+(show?'block':'none')+'"></div></td></tr>';
+    return '<tr><td class="fw-700" style="padding:8px 10px; border-bottom:1px solid #f3f4f6"><span class="ct-brand font-11" style="background:#e8f0fb; padding:2px 8px; border-radius:5px">'+j.lbl+'</span></td>'
+      +'<td class="font-11 text-muted" style="padding:8px 10px; border-bottom:1px solid #f3f4f6">'+j.ket+'</td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid #f3f4f6"><select class="w-full font-11" id="ap-mode-'+j.key+'" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="onApModeChange(\''+j.key+'\')">'+MODE_OPTS+'</select></td>'
+      +'<td style="padding:8px 10px;border-bottom:1px solid #f3f4f6"><div class="fl items-center" style="gap:4px"><span class="u-muted-11" id="ap-pfx-'+j.key+'">'+(rule.mode==='persen'?'%':rule.mode==='nominal'?'Rp':'')+'</span><input class="w-full font-12" type="number" id="ap-val-'+j.key+'" value="'+(rule.nilai||0)+'" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none; display:'+(show?'block':'none')+'"></div></td></tr>';
   }).join('');
   JENIS_POT.forEach(function(j){var sel=document.getElementById('ap-mode-'+j.key);var rule=ap[j.key]||{mode:'prorata'};if(sel)sel.value=rule.mode;});
 }
@@ -359,7 +359,7 @@ function renderMyCuti(){
   var sisa=kuota-total;
   var sisaCol=sisa<=0?'#9b2121':sisa<=3?'#7d4800':'#2d6a0a';
   var cutiDays=Object.entries(absensi[k.nik]||{}).filter(function(e){return e[1]==='cuti'&&e[0].startsWith(String(yr));}).sort();
-  document.getElementById('my-cuti-content').innerHTML='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><div><strong style="font-size:14px;color:#5b21b6">Saldo Cuti '+yr+' - '+k.nama+'</strong></div><div class="fl gap2"><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+kuota+'</div><div style="font-size:10px;color:#6b7280">Kuota</div></div><div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#7d4800">'+manual+'</div><div style="font-size:10px;color:#6b7280">Cuti Manual</div></div>'+(cb>0?'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:#5b21b6">'+cb+'</div><div style="font-size:10px;color:#6b7280">Cuti Bersama</div></div>':'')+'<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:'+sisaCol+'">'+sisa+'</div><div style="font-size:10px;color:#6b7280">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+yr+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+e[0]+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div style="color:#6b7280;font-size:12px">Belum ada cuti.</div>')+'</div>';
+  document.getElementById('my-cuti-content').innerHTML='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div class="fl-between-wrap"><div><strong class="font-14 ct-purple">Saldo Cuti '+yr+' - '+k.nama+'</strong></div><div class="fl gap2"><div class="text-center"><div class="font-22 fw-800 ct-purple">'+kuota+'</div><div class="u-muted-10">Kuota</div></div><div class="text-center"><div class="font-22 fw-800 ct-warn">'+manual+'</div><div class="u-muted-10">Cuti Manual</div></div>'+(cb>0?'<div class="text-center"><div class="font-22 fw-800 ct-purple">'+cb+'</div><div class="u-muted-10">Cuti Bersama</div></div>':'')+'<div class="text-center"><div class="font-22 fw-800" style="color:'+sisaCol+'">'+sisa+'</div><div class="u-muted-10">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+yr+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+e[0]+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div class="text-muted font-12">Belum ada cuti.</div>')+'</div>';
 }
 // ── SELECTS & BACKUP ─────────────────────────────
 function populateSelects(){
@@ -504,7 +504,7 @@ async function exportCloudDatabaseBackup(){
       var errMsg=text;
       try{var ej=JSON.parse(text);if(ej&&ej.error)errMsg=ej.error;}catch(eJ){}
       if(r.status===404)errMsg='API backup belum deploy — push functions/api/backup-database-export.js + env Cloudflare';
-      else if(/<html/i.test(text))errMsg='API mengembalikan HTML (bukan JSON) — cek /api/backup-database-export di deploy';
+      else if(/<html class="fl justify-between items-center p-inset-xs rounded-sm mb-sm font-12"/i.test(text))errMsg='API mengembalikan HTML (bukan JSON) — cek /api/backup-database-export di deploy';
       toast('Gagal: '+errMsg);
       if(inf)inf.textContent='Error: '+errMsg;
       return;
@@ -536,7 +536,7 @@ async function exportCloudDatabaseBackup(){
 }
 if(typeof window!=='undefined')window.exportCloudDatabaseBackup=exportCloudDatabaseBackup;
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){}}
-function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:7px;border:1px solid var(--bd);margin-bottom:.35rem;font-size:12px;'+(i===0?'background:#e8f4de;border-color:#b3d98f':'')+'"><div><div style="font-weight:700">'+(x.tanggalDisplay||x.tanggal)+'</div><div style="font-size:10px;color:#6b7280">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div style="font-size:12px;color:#6b7280;padding:.5rem">Belum ada.</div>';}catch(e){}}
+function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="border:1px solid var(--bd); '+(i===0?'background:#e8f4de; border-color:#b3d98f':'')+'"><div><div class="fw-700">'+(x.tanggalDisplay||x.tanggal)+'</div><div class="u-muted-10">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada.</div>';}catch(e){}}
 function renderAuditLog(){
   var wrap=document.getElementById('audit-log');
   var sel=document.getElementById('audit-periode');
@@ -556,7 +556,7 @@ function renderAuditLog(){
     return s.indexOf(q)>=0;
   }).slice(0,200);
   if(!list.length){
-    wrap.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128221;',title:'Belum ada jejak audit',desc:'Perubahan komponen gaji, tunjangan, dan potongan akan tercatat otomatis.',btnLabel:'Buka Komponen Gaji',btnOnclick:"showPg('kompgaji')"}):'<div style="padding:12px;color:#6b7280;font-size:12px">Belum ada audit log.</div>';
+    wrap.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128221;',title:'Belum ada jejak audit',desc:'Perubahan komponen gaji, tunjangan, dan potongan akan tercatat otomatis.',btnLabel:'Buka Komponen Gaji',btnOnclick:"showPg('kompgaji')"}):'<div class="text-muted font-12" style="padding:12px">Belum ada audit log.</div>';
     return;
   }
   wrap.innerHTML='<div class="sigaji-audit-timeline-inner">'+list.map(function(e,idx){
@@ -569,7 +569,7 @@ function renderAuditLog(){
       +'<div class="sigaji-audit-meta">'
       +'<span class="bdg b-gray">'+escapeHtml(e.periode||'-')+'</span> '
       +'<span>'+escapeHtml(ts)+'</span>'
-      +(e.role?(' · <span style="color:#9ca3af">'+escapeHtml(e.role)+'</span>'):'')
+      +(e.role?(' · <span class="text-subtle">'+escapeHtml(e.role)+'</span>'):'')
       +'</div></div></div>';
   }).join('')+'</div>';
 }
@@ -595,16 +595,16 @@ function renderMigrationStatus(){
   });
   var pct=totalExpected>0?Math.min(100,Math.round((totalRows/totalExpected)*100)):100;
   el.innerHTML=
-    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">'
+    '<div class="fl flex-wrap gap-sm mb-sm">'
     +'<span class="bdg b-info">Periode: '+totalPer+'</span>'
     +'<span class="bdg '+(pct===100?'b-ok':'b-warn')+'">Progress: '+pct+'%</span>'
     +'<span class="bdg b-pu">Snapshot rows: '+totalRows+'</span>'
     +'<span class="bdg b-teal">Expected rows: '+totalExpected+'</span>'
     +'</div>'
-    +'<div style="font-size:11px;color:#6b7280">Periode lengkap: '+aktifPer+'/'+totalPer+'. Periode dianggap lengkap jika seluruh karyawan aktif di periode tersebut punya snapshot payroll.</div>';
+    +'<div class="u-muted-11">Periode lengkap: '+aktifPer+'/'+totalPer+'. Periode dianggap lengkap jika seluruh karyawan aktif di periode tersebut punya snapshot payroll.</div>';
 }
 var importData=null;
-function readImportFile(input){var f=input.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var data=JSON.parse(e.target.result);importData=data;var meta=data._meta||{};var el=document.getElementById('import-info');if(el)el.innerHTML='<strong>File:</strong> '+(meta.versi||'SiGaji')+' - '+((data.karyawan||[]).length)+' karyawan'+(meta.snapshotPeriodeCount!=null?' | snapshot '+meta.snapshotPeriodeCount+' periode / '+(meta.snapshotRowCount||0)+' baris':'');var cl=document.getElementById('import-checklist');if(cl)cl.innerHTML=DATA_KEYS.map(function(k){var ada=data[k]!==undefined;return '<label style="display:flex;align-items:center;gap:.4rem;font-size:12px;cursor:'+(ada?'pointer':'default')+';opacity:'+(ada?1:.4)+'"><input type="checkbox" id="imp-'+k+'" '+(ada?'checked':'')+' '+(ada?'':'disabled')+' style="accent-color:#1a56a0"> '+(DATA_LABELS[k]||k)+'</label>';}).join('');document.getElementById('import-preview').style.display='block';toast('File dibaca');}catch(err){toast('Gagal baca file: '+err.message);}};r.readAsText(f);}
+function readImportFile(input){var f=input.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var data=JSON.parse(e.target.result);importData=data;var meta=data._meta||{};var el=document.getElementById('import-info');if(el)el.innerHTML='<strong>File:</strong> '+(meta.versi||'SiGaji')+' - '+((data.karyawan||[]).length)+' karyawan'+(meta.snapshotPeriodeCount!=null?' | snapshot '+meta.snapshotPeriodeCount+' periode / '+(meta.snapshotRowCount||0)+' baris':'');var cl=document.getElementById('import-checklist');if(cl)cl.innerHTML=DATA_KEYS.map(function(k){var ada=data[k]!==undefined;return '<label class="fl items-center gap-xs font-12" style="cursor:'+(ada?'pointer':'default')+'; opacity:'+(ada?1:.4)+'"><input type="checkbox" id="imp-'+k+'" '+(ada?'checked':'')+' '+(ada?'':'disabled')+' style="accent-color:#1a56a0"> '+(DATA_LABELS[k]||k)+'</label>';}).join('');document.getElementById('import-preview').style.display='block';toast('File dibaca');}catch(err){toast('Gagal baca file: '+err.message);}};r.readAsText(f);}
 /** Import: salin utuh tanpa membuang field (thr_ikut, tgl_berhenti, natura.kp, dll.). */
 function normalisasiData(key,val){
   var v=sigajiDeepClone(val);

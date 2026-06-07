@@ -118,13 +118,13 @@
         npwpHint.innerHTML = '<span style="color:#059669">✓ NPWP terisi</span>';
       } else if (st === 'npwp_empty_ok_nik') {
         npwpHint.innerHTML =
-          '<span style="color:#2563eb">NPWP kosong — OK jika NIK 16 digit terisi. <a href="#" onclick="sigajiOpenDjpNikValidasi(document.getElementById(\'sp-ktp-f\').value);return false" style="color:#1d4ed8">Cek validasi di portal DJP</a></span>';
+          '<span style="color:#2563eb">NPWP kosong — OK jika NIK 16 digit terisi. <a class="ct-indigo" href="#" onclick="sigajiOpenDjpNikValidasi(document.getElementById(\'sp-ktp-f\').value);return false">Cek validasi di portal DJP</a></span>';
       } else if (st === 'nik_incomplete') {
         npwpHint.innerHTML =
           '<span style="color:#d97706">NPWP kosong &amp; NIK tidak lengkap — isi NPWP atau lengkapi KTP 16 digit</span>';
       } else {
         npwpHint.innerHTML =
-          '<span style="color:#9b2121">NPWP kosong — NIK juga kosong. Isi NPWP atau No. KTP 16 digit sebelum e-Bupot.</span>';
+          '<span class="ct-danger">NPWP kosong — NIK juga kosong. Isi NPWP atau No. KTP 16 digit sebelum e-Bupot.</span>';
       }
     }
   };
@@ -433,7 +433,7 @@
         ' · <strong>' +
         escapeHtml(namaKar) +
         '</strong>' +
-        (detail ? '<br><span style="color:#6b7280">' + escapeHtml(detail) + '</span>' : '');
+        (detail ? '<br><span class="text-muted">' + escapeHtml(detail) + '</span>' : '');
     }
     return line;
   };
@@ -444,7 +444,7 @@
     var items = sigajiComplianceDeadlines().slice(0, 8);
     if (!items.length) {
       el.innerHTML =
-        '<div style="color:#9ca3af;font-size:12px;padding:.5rem 0">Tidak ada deadline dalam 90 hari.</div>';
+        '<div class="text-subtle font-12" style="padding:.5rem 0">Tidak ada deadline dalam 90 hari.</div>';
       return;
     }
     var catCls = {
@@ -500,13 +500,13 @@
     var list = sigajiDetectPayrollAnomalies(p.nama);
     if (!list.length) {
       el.innerHTML =
-        '<div class="alert-item alert-green" style="margin:0">Tidak ada anomali terdeteksi untuk periode <strong>' +
+        '<div class="alert-item alert-green m-0">Tidak ada anomali terdeteksi untuk periode <strong>' +
         escapeHtml(p.nama) +
         '</strong>.</div>';
       return;
     }
     el.innerHTML =
-      '<p style="font-size:11px;color:#6b7280;margin:0 0 .5rem">Periode <strong>' +
+      '<p class="font-11 text-muted mb-md m-0">Periode <strong>' +
       escapeHtml(p.nama) +
       '</strong> — ' +
       list.length +
@@ -527,7 +527,7 @@
               : '';
           var djpBtn =
             a.code === 'npwp_ok_nik'
-              ? '<button type="button" class="btn btn-xs btn-out" style="margin-top:4px;margin-right:4px" onclick="sigajiOpenDjpNikValidasi(\'' +
+              ? '<button type="button" class="btn btn-xs btn-out mt-xs" style="margin-right:4px" onclick="sigajiOpenDjpNikValidasi(\'' +
                 ktpArg +
                 '\')">Cek validasi NIK (DJP)</button>'
               : '';
@@ -539,14 +539,14 @@
             escapeHtml(a.title) +
             '</strong> — ' +
             escapeHtml(a.nama) +
-            ' <span style="color:#9ca3af">(' +
+            ' <span class="text-subtle">(' +
             escapeHtml(a.nik) +
             ')</span><br>' +
-            '<span style="font-size:11px">' +
+            '<span class="font-11">' +
             escapeHtml(a.desc) +
             '</span><br>' +
             djpBtn +
-            '<button type="button" class="btn btn-xs btn-out" style="margin-top:4px" onclick="openPanel(\'' +
+            '<button type="button" class="btn btn-xs btn-out mt-xs" onclick="openPanel(\'' +
             nikEsc +
             '\')">Buka profil</button></div>'
           );
@@ -579,7 +579,7 @@
               btnLabel: 'Atur periode',
               btnOnclick: "showPg('master')",
             })
-          : '<div style="padding:1rem;color:#9ca3af">Perlu 2+ periode.</div>';
+          : '<div class="text-subtle" style="padding:1rem">Perlu 2+ periode.</div>';
       return;
     }
 
@@ -637,11 +637,11 @@
       var dN = d.n - d.n0;
       var deptEsc = escapeHtml(row.dept).replace(/'/g, '&#39;');
       html +=
-        '<tr class="lap-var-dept-row" data-idx="' +
+        '<tr class="lap-var-dept-row cursor-pointer" data-idx="' +
         idx +
         '" onclick="sigajiToggleVarianceDrill(' +
         idx +
-        ')" style="cursor:pointer">' +
+        ')">' +
         '<td><strong>' +
         escapeHtml(row.dept) +
         '</strong></td>' +
@@ -668,9 +668,9 @@
         '<td><strong>' +
         fmt(d.n) +
         '</strong></td>' +
-        '<td style="color:' +
+        '<td class="fw-700" style="color:' +
         (dN >= 0 ? '#2d6a0a' : '#9b2121') +
-        ';font-weight:700">' +
+        '">' +
         (dN >= 0 ? '+' : '') +
         fmt(dN) +
         ' (' +
@@ -678,13 +678,13 @@
         '%)</td>' +
         '<td><span class="bdg b-info">drill-down</span></td></tr>';
       html +=
-        '<tr id="lap-var-drill-' +
+        '<tr class="u-hidden" id="lap-var-drill-' +
         idx +
-        '" style="display:none"><td colspan="8" style="background:#f8fafc;padding:.65rem 1rem">' +
-        '<div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:.35rem">Top perubahan neto — ' +
+        '"><td class="card-surface-neutral" colspan="8" style="padding:.65rem 1rem">' +
+        '<div class="font-11 fw-700 text-muted mb-sm">Top perubahan neto — ' +
         escapeHtml(row.dept) +
         '</div>' +
-        '<table style="width:100%;font-size:11px"><thead><tr><th>Karyawan</th><th>' +
+        '<table class="w-full font-11"><thead><tr><th>Karyawan</th><th>' +
         escapeHtml(prev.nama) +
         '</th><th>' +
         escapeHtml(cur.nama) +
@@ -702,7 +702,7 @@
               fmt(kr.neto0) +
               '</td><td>' +
               fmt(kr.neto) +
-              '</td><td style="font-weight:700;color:' +
+              '</td><td class="fw-700" style="color:' +
               (kr.dN >= 0 ? '#2d6a0a' : '#9b2121') +
               '">' +
               (kr.dN >= 0 ? '+' : '') +

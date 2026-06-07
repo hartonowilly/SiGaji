@@ -164,7 +164,7 @@
   window.sigajiDeptSparklineCell = function (deptName) {
     var vals = sigajiDeptNetoSeries(deptName, 6);
     if (!vals.length || vals.every(function (v) { return !v; }))
-      return '<span style="color:#9ca3af;font-size:10px">—</span>';
+      return '<span class="text-subtle font-10">—</span>';
     var max = Math.max.apply(null, vals.concat([1]));
     var w = 72;
     var h = 22;

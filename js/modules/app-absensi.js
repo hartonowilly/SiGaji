@@ -93,13 +93,13 @@ function renderAbsensiBody(){
   var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
   if(!karyawan.length){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Import Excel atau tambah manual di Master Karyawan untuk mulai mengisi absensi.',btnLabel:'Tambah karyawan',btnOnclick:"showPg('karyawan')"}):'<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada karyawan.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Import Excel atau tambah manual di Master Karyawan untuk mulai mengisi absensi.',btnLabel:'Tambah karyawan',btnOnclick:"showPg('karyawan')"}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada karyawan.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
   if(!pAbs||!pAbs.start||!pAbs.end){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Periode gaji belum lengkap',desc:'Atur tanggal mulai dan akhir di Master → Periode Gaji.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div style="padding:2rem;text-align:center;color:#9ca3af">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Periode gaji belum lengkap',desc:'Atur tanggal mulai dan akhir di Master → Periode Gaji.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
@@ -110,7 +110,7 @@ function renderAbsensiBody(){
   const daysAll=absensiDaysFromPeriode(pAbs);
   if(!daysAll.length){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML='<div style="padding:2rem;text-align:center;color:#9ca3af">Rentang periode tidak valid.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML='<div class="text-center text-subtle" style="padding:2rem">Rentang periode tidak valid.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
@@ -132,15 +132,15 @@ function renderAbsensiBody(){
   var hdrSub='Kalender absensi — '+pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+daysAll.length+' hari (tampil: '+days.length+' hari)';
   if(infoEl){infoEl.style.display='block';infoEl.textContent=hdrSub;}
   var adaSelTerkunci=CU&&CU.role!=='Admin'&&days.some(function(x){return !canEditDataPadaTanggalIso(x.date);});
-  var roBanner=adaSelTerkunci?'<div class="info-box info-amber" style="font-size:11px;margin-bottom:.65rem">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
+  var roBanner=adaSelTerkunci?'<div class="info-box info-amber font-11 mb-lg">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
   var listKar=typeof karyawanListPeriode==='function'?karyawanListPeriode(pAbs):sortKaryawanByNik(karyawan||[]);
   listKar.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
   var AB_NO=44,AB_NAME=272,AB_JAB_L=AB_NO+AB_NAME;
   var prevMY='';
-  var html='<table style="border-collapse:collapse;font-size:11px;min-width:max-content;width:100%"><thead><tr style="background:#1e2330;color:#fff">'
-    +'<th style="position:sticky;left:0;top:0;z-index:8;background:#1e2330;padding:6px 6px;text-align:center;width:'+AB_NO+'px;min-width:'+AB_NO+'px;border-right:1px solid #374151;box-shadow:1px 0 0 #374151">No</th>'
-    +'<th style="position:sticky;left:'+AB_NO+'px;top:0;z-index:8;background:#1e2330;padding:6px 10px;text-align:left;border-right:2px solid #374151;min-width:'+AB_NAME+'px;width:'+AB_NAME+'px;max-width:320px;box-shadow:1px 0 0 #374151;vertical-align:bottom">Nama</th>'
-    +'<th style="position:sticky;left:'+AB_JAB_L+'px;top:0;z-index:8;background:#1e2330;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap;border-right:2px solid #374151;min-width:112px;box-shadow:1px 0 0 #374151;vertical-align:bottom">Jabatan</th>';
+  var html='<table class="font-11 w-full" style="border-collapse:collapse; min-width:max-content"><thead><tr style="background:#1e2330;color:#fff">'
+    +'<th class="text-center" style="position:sticky; left:0; top:0; z-index:8; background:#1e2330; padding:6px 6px; width:'+AB_NO+'px; min-width:'+AB_NO+'px; border-right:1px solid #374151; box-shadow:1px 0 0 #374151">No</th>'
+    +'<th class="text-left" style="position:sticky; left:'+AB_NO+'px; top:0; z-index:8; background:#1e2330; padding:6px 10px; border-right:2px solid #374151; min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; box-shadow:1px 0 0 #374151; vertical-align:bottom">Nama</th>'
+    +'<th class="text-left font-11" style="position:sticky; left:'+AB_JAB_L+'px; top:0; z-index:8; background:#1e2330; padding:6px 8px; white-space:nowrap; border-right:2px solid #374151; min-width:112px; box-shadow:1px 0 0 #374151; vertical-align:bottom">Jabatan</th>';
   days.forEach(function(x){
     var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
     var myKey=x.date.substring(0,7);
@@ -150,14 +150,14 @@ function renderAbsensiBody(){
     var bg=isHL(x.date)?'#fef9c3':isHariLiburKerja(x.dow)?'#374151':'#1e2330';
     var co=isHL(x.date)?'#713f12':isHariLiburKerja(x.dow)?'#9ca3af':'#d1d5db';
     var dd=parseInt(tglParts[2],10);
-    html+='<th style="position:sticky;top:0;z-index:6;background:'+bg+';color:'+co+';padding:4px 3px;text-align:center;min-width:36px;border-right:1px solid #374151"><div style="font-size:9px">'+dowN+'</div><div style="font-size:12px;font-weight:700">'+dd+'</div>'
+    html+='<th class="text-center" style="position:sticky; top:0; z-index:6; background:'+bg+'; color:'+co+'; padding:4px 3px; min-width:36px; border-right:1px solid #374151"><div class="font-9">'+dowN+'</div><div class="font-12 fw-700">'+dd+'</div>'
       +(showMon?'<div style="font-size:8px;opacity:.85">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
   });
-  html+='<th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px;border-left:2px solid #374151">H</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">C</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">S</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">I</th><th style="position:sticky;top:0;z-index:6;background:#0d3d7a;color:#fff;padding:6px 4px;text-align:center;min-width:32px">A</th></tr></thead><tbody>';
+  html+='<th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px; border-left:2px solid #374151">H</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">C</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">S</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">I</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">A</th></tr></thead><tbody>';
   var mobileCards='';
   listKar.forEach(function(k,ki){
     var rb=ki%2===0?'#fff':'#f8f9fc';
-    html+='<tr style="background:'+rb+'"><td style="position:sticky;left:0;z-index:3;background:'+rb+';padding:5px 6px;text-align:center;font-weight:800;color:#9ca3af;border-right:1px solid #e5e7eb;border-bottom:1px solid #f3f4f6;box-shadow:1px 0 0 #e5e7eb">'+(ki+1)+'</td><td style="position:sticky;left:'+AB_NO+'px;z-index:3;background:'+rb+';padding:5px 10px;font-weight:700;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:'+AB_NAME+'px;width:'+AB_NAME+'px;max-width:320px;box-shadow:1px 0 0 #e5e7eb;vertical-align:middle"><div style="display:flex;align-items:flex-start;gap:6px"><div style="width:24px;height:24px;border-radius:50%;background:#e8f0fb;color:#1a56a0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;margin-top:2px">'+ini(k.nama)+'</div><div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:700;line-height:1.25;word-break:break-word;white-space:normal">'+escapeHtml(k.nama)+'</div><div style="font-size:10px;color:#9ca3af;word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td style="position:sticky;left:'+AB_JAB_L+'px;z-index:3;background:'+rb+';padding:5px 8px;font-size:11px;color:#6b7280;white-space:nowrap;border-right:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;min-width:112px;box-shadow:1px 0 0 #e5e7eb">'+(k.jabatan||'')+'</td>';
+    html+='<tr style="background:'+rb+'"><td class="text-center fw-800 text-subtle" style="position:sticky; left:0; z-index:3; background:'+rb+'; padding:5px 6px; border-right:1px solid #e5e7eb; border-bottom:1px solid #f3f4f6; box-shadow:1px 0 0 #e5e7eb">'+(ki+1)+'</td><td class="fw-700" style="position:sticky; left:'+AB_NO+'px; z-index:3; background:'+rb+'; padding:5px 10px; border-right:2px solid #e5e7eb; border-bottom:1px solid #f3f4f6; min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; box-shadow:1px 0 0 #e5e7eb; vertical-align:middle"><div class="fl items-start gap-xs"><div class="ct-brand fl items-center font-9 fw-800 mt-2px" style="width:24px; height:24px; border-radius:50%; background:#e8f0fb; justify-content:center; flex-shrink:0">'+ini(k.nama)+'</div><div class="flex-1" style="min-width:0"><div class="font-12 fw-700" style="line-height:1.25; word-break:break-word; white-space:normal">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle" style="word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td class="font-11 text-muted" style="position:sticky; left:'+AB_JAB_L+'px; z-index:3; background:'+rb+'; padding:5px 8px; white-space:nowrap; border-right:2px solid #e5e7eb; border-bottom:1px solid #f3f4f6; min-width:112px; box-shadow:1px 0 0 #e5e7eb">'+(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
       var isLN=isHL(x.date);
@@ -167,16 +167,16 @@ function renderAbsensiBody(){
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
       var canCell=cc&&canEditDataPadaTanggalIso(x.date);
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
-      html+='<td style="background:'+bg+';color:'+tx+';padding:0;text-align:center;border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid #f3f4f6;opacity:'+(canCell?'1':cc?'0.88':'1')+';'+(canCell?'cursor:pointer;':cc?'cursor:not-allowed;':'')+'font-weight:700;font-size:10px" '+(canCell?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
+      html+='<td class="p-0 text-center font-10" style="background:'+bg+'; color:'+tx+'; border-right:1px solid rgba(0,0,0,.06); border-bottom:1px solid #f3f4f6; opacity:'+(canCell?'1':cc?'0.88':'1')+'; '+(canCell?'cursor:pointer; ':cc?'cursor:not-allowed; ':'')+'font-weight:700" '+(canCell?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
     });
-    html+='<td style="text-align:center;font-weight:800;color:#2d6a0a;border-left:2px solid #e5e7eb;border-bottom:1px solid #f3f4f6;background:#e8f4de">'+(cH||'')+'</td><td style="text-align:center;font-weight:800;color:#5b21b6;border-bottom:1px solid #f3f4f6;background:#ede9fe">'+(cC||'')+'</td><td style="text-align:center;font-weight:800;color:#7d4800;border-bottom:1px solid #f3f4f6;background:#fef3e2">'+(cS||'')+'</td><td style="text-align:center;font-weight:800;color:#1a56a0;border-bottom:1px solid #f3f4f6;background:#e8f0fb">'+(cI||'')+'</td><td style="text-align:center;font-weight:800;color:#9b2121;border-bottom:1px solid #f3f4f6;background:#fdeaea">'+(cA||'')+'</td></tr>';
-    mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div style="font-size:10px;color:#9ca3af">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
+    html+='<td class="text-center fw-800 ct-success" style="border-left:2px solid #e5e7eb; border-bottom:1px solid #f3f4f6; background:#e8f4de">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple" style="border-bottom:1px solid #f3f4f6; background:#ede9fe">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn" style="border-bottom:1px solid #f3f4f6; background:#fef3e2">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand" style="border-bottom:1px solid #f3f4f6; background:#e8f0fb">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger" style="border-bottom:1px solid #f3f4f6; background:#fdeaea">'+(cA||'')+'</td></tr>';
+    mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
       +'<div class="ab-mobile-stats">'
-      +'<span class="ab-mobile-stat" style="background:#e8f4de;color:#2d6a0a">H '+cH+'</span>'
-      +'<span class="ab-mobile-stat" style="background:#ede9fe;color:#5b21b6">C '+cC+'</span>'
-      +'<span class="ab-mobile-stat" style="background:#fef3e2;color:#7d4800">S '+cS+'</span>'
-      +'<span class="ab-mobile-stat" style="background:#e8f0fb;color:#1a56a0">I '+cI+'</span>'
-      +'<span class="ab-mobile-stat" style="background:#fdeaea;color:#9b2121">A '+cA+'</span>'
+      +'<span class="ab-mobile-stat ct-success" style="background:#e8f4de">H '+cH+'</span>'
+      +'<span class="ab-mobile-stat ct-purple" style="background:#ede9fe">C '+cC+'</span>'
+      +'<span class="ab-mobile-stat ct-warn" style="background:#fef3e2">S '+cS+'</span>'
+      +'<span class="ab-mobile-stat ct-brand" style="background:#e8f0fb">I '+cI+'</span>'
+      +'<span class="ab-mobile-stat ct-danger" style="background:#fdeaea">A '+cA+'</span>'
       +'</div></div>';
   });
   html+='</tbody></table>';
@@ -190,7 +190,7 @@ function renderAbsensiBody(){
       if(l.tipe==='cuti-bersama'&&l.tgl>=pAbs.start&&l.tgl<=pAbs.end&&!isHariLiburKerja(new Date(l.tgl+'T12:00:00').getDay()))cbB++;
     });
   }
-  document.getElementById('ab-rekap-wrap').innerHTML='<div class="card" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center"><span style="font-size:11px;font-weight:700;color:#6b7280">'+escapeHtml(pAbs.nama)+':</span><span style="background:#e8f4de;color:#2d6a0a;padding:3px 12px;border-radius:20px;font-weight:700">Hari Kerja (dalam rentang): '+hkP+'</span>'+(cbB>0?'<span style="background:#ede9fe;color:#5b21b6;padding:3px 12px;border-radius:20px;font-weight:700">Cuti Bersama (dalam rentang): '+cbB+' hari</span>':'')+'<span style="font-size:10px;color:#9ca3af;margin-left:auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+' · hover H = jam check-in mobile</span></div>';
+  document.getElementById('ab-rekap-wrap').innerHTML='<div class="card fl gap2 flex-wrap items-center"><span class="font-11 fw-700 text-muted">'+escapeHtml(pAbs.nama)+':</span><span class="ct-success rounded-pill fw-700" style="background:#e8f4de; padding:3px 12px">Hari Kerja (dalam rentang): '+hkP+'</span>'+(cbB>0?'<span class="ct-purple rounded-pill fw-700" style="background:#ede9fe; padding:3px 12px">Cuti Bersama (dalam rentang): '+cbB+' hari</span>':'')+'<span class="font-10 text-subtle ml-auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+' · hover H = jam check-in mobile</span></div>';
   absensiPrefetchMobileLogs(pAbs.start,pAbs.end);
 }
 function toggleAb(nik,date,el){
@@ -219,7 +219,7 @@ function renderCutiRekap(){
     return !t||t>=yearStart;
   }));
   if(!list.length){
-    tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:1.25rem">Tidak ada karyawan aktif untuk tahun ini.</td></tr>';
+    tb.innerHTML='<tr><td class="text-center text-subtle" colspan="10" style="padding:1.25rem">Tidak ada karyawan aktif untuk tahun ini.</td></tr>';
     return;
   }
   tb.innerHTML=list.map(function(k,idx){
@@ -228,13 +228,13 @@ function renderCutiRekap(){
     const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
     const sisaCls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
-    return '<tr><td style="text-align:center;font-weight:700;color:#6b7280">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></td>'
+    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></td>'
       +'<td>'+Math.floor(mb/12)+'thn '+mb%12+'bln</td>'
       +'<td>'+kuota+'</td><td><span class="bdg '+(manual>0?'b-warn':'b-gray')+'">'+manual+'</span></td>'
-      +'<td>'+(cb>0?'<span class="bdg b-pu">'+cb+'</span>':'<span style="color:#9ca3af">0</span>')+'</td>'
+      +'<td>'+(cb>0?'<span class="bdg b-pu">'+cb+'</span>':'<span class="text-subtle">0</span>')+'</td>'
       +'<td><span class="bdg '+(total>kuota?'b-err':total>0?'b-warn':'b-gray')+'">'+total+'</span></td>'
       +'<td><span class="bdg '+sisaCls+'">'+sisa+'</span></td>'
-      +'<td><div class="cuti-bar" style="width:120px;display:inline-block"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
+      +'<td><div class="cuti-bar u-inline-block" style="width:120px"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
   }).join('');
 }
 function simpanMasterCuti(){
@@ -252,19 +252,19 @@ function renderLemburList(){
   el.innerHTML=listLem.map(function(k){
     const ld=lembur[k.nik]||[];const upj=k.gapok/173;if(!ld.length)return'';
     num++;
-    return '<div style="margin-bottom:.75rem"><div style="font-weight:700;font-size:12px;margin-bottom:.4rem;color:#1a56a0">'+num+'. '+k.nama+'</div>'
+    return '<div class="tabs-spaced-lg"><div class="fw-700 font-12 ct-brand" style="margin-bottom:.4rem">'+num+'. '+k.nama+'</div>'
       +ld.map(function(r,i){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);
         var lr=r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal);
         var lemRo=CU&&CU.role!=='Admin'&&lr;
-        return '<div class="fl gap1 mb1" style="align-items:center;flex-wrap:wrap">'
+        return '<div class="fl gap1 mb1 items-center flex-wrap">'
           +'<input type="date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'style="width:135px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updLembur(\''+k.nik+'\','+i+',\'tanggal\',this.value)">'
           +'<input type="number" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'style="width:65px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" min="1" max="12" onchange="updLembur(\''+k.nik+'\','+i+',\'jam\',this.value)">'
-          +'<span style="font-size:11px;color:#6b7280;min-width:90px">'+(j>0?fmt(Math.round(h)):'')+'</span>'
+          +'<span class="font-11 text-muted" style="min-width:90px">'+(j>0?fmt(Math.round(h)):'')+'</span>'
           +(lemRo?'':'<button class="btn btn-sm btn-r" onclick="delLembur(\''+k.nik+'\','+i+')">&#10007;</button>')+'</div>';
       }).join('')+'</div>';
-  }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnOnclick:'addLemburForKar()'}):'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>');
+  }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnOnclick:'addLemburForKar()'}):'<div class="text-subtle font-12">Belum ada.</div>');
   let tot=0;karyawan.forEach(function(k){const upj=k.gapok/173;(lembur[k.nik]||[]).forEach(function(r){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);tot+=Math.round(h);});});
-  const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128200;',title:'Rekap kosong',desc:'Total lembur muncul setelah ada input jam.'}):'<div style="color:#9ca3af;font-size:12px">Belum ada.</div>');
+  const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128200;',title:'Rekap kosong',desc:'Total lembur muncul setelah ada input jam.'}):'<div class="text-subtle font-12">Belum ada.</div>');
 }
 function updLembur(nik,i,f,v){
   if(!lembur[nik])lembur[nik]=[];
@@ -296,12 +296,12 @@ function renderHariLibur(){
   var el=document.getElementById('libur-list');if(!el)return;
   var s=[].concat(hariLibur).sort(function(a,b){return a.tgl.localeCompare(b.tgl);});
   var tc={nasional:'b-err','cuti-bersama':'b-pu',perusahaan:'b-info'};var tn={nasional:'Nasional','cuti-bersama':'Cuti Bersama',perusahaan:'Perusahaan'};
-  if(!s.length){el.innerHTML='<div style="color:#6b7280;font-size:12px;padding:.5rem">Belum ada.</div>';return;}
+  if(!s.length){el.innerHTML='<div class="text-muted font-12" style="padding:.5rem">Belum ada.</div>';return;}
   var grouped={};s.forEach(function(l){var yr=l.tgl.substring(0,4);if(!grouped[yr])grouped[yr]=[];grouped[yr].push(l);});
   el.innerHTML=Object.entries(grouped).sort(function(a,b){return b[0]-a[0];}).map(function(kv){
-    return '<div style="margin-bottom:.75rem"><div style="font-size:11px;font-weight:700;color:#6b7280;padding:4px 0;border-bottom:1px solid #e5e7eb;margin-bottom:.4rem">'+kv[0]+' — '+kv[1].length+' hari</div>'
+    return '<div class="tabs-spaced-lg"><div class="font-11 fw-700 text-muted" style="padding:4px 0; border-bottom:1px solid #e5e7eb; margin-bottom:.4rem">'+kv[0]+' — '+kv[1].length+' hari</div>'
       +kv[1].map(function(l){
-        return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span style="font-size:9px;color:#5b21b6;margin-left:4px">-1 kuota</span>':'')+'<br><span style="font-size:10px;color:#6b7280">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r" onclick="hapusLibur(\''+l.tgl+'\')">&#10007;</button></div></div>';
+        return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span class="font-9 ct-purple" style="margin-left:4px">-1 kuota</span>':'')+'<br><span class="u-muted-10">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r" onclick="hapusLibur(\''+l.tgl+'\')">&#10007;</button></div></div>';
       }).join('')+'</div>';
   }).join('');
 }

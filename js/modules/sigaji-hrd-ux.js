@@ -247,12 +247,12 @@
       '</strong> <span class="bdg b-info">' +
       escapeHtml(tipe) +
       '</span></div>' +
-      '<div style="font-size:12px;color:#6b7280;margin-top:.35rem">Radius geofence: <strong>' +
+      '<div class="font-12 text-muted mt-sm">Radius geofence: <strong>' +
       escapeHtml(String(rad)) +
       ' m</strong>' +
       (typeof mobLocRadiusHint === 'function' ? mobLocRadiusHint(rad) : '') +
       '</div>' +
-      '<div style="font-size:11px;color:#9ca3af;margin-top:.25rem">Karyawan harus berada dalam radius ini saat check-in di APK.</div></div>';
+      '<div class="font-11 text-subtle" style="margin-top:.25rem">Karyawan harus berada dalam radius ini saat check-in di APK.</div></div>';
   };
 
   window.mobLocWizardReset = function () {

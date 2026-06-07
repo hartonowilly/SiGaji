@@ -522,11 +522,11 @@ function renderTERTable(){
     const lmp=e[0];const tbl=e[1];const elId=ids[lmp];
     const el=document.getElementById(elId);if(!el)return;
     const rows=getTERDisplayData(lmp,tbl);
-    el.innerHTML='<table style="font-size:11px;width:100%"><thead><tr><th>Bruto dari</th><th>s.d.</th><th>TER (%)</th></tr></thead><tbody>'+
+    el.innerHTML='<table class="font-11 w-full"><thead><tr><th>Bruto dari</th><th>s.d.</th><th>TER (%)</th></tr></thead><tbody>'+
       rows.map(function(r){
         const customRate=(custom[lmp]||{})[r.idx];
         const displayRate=customRate!==undefined?(customRate*100).toFixed(2):r.rate;
-        return'<tr><td style="color:#6b7280">'+r.from+'</td><td style="color:#6b7280">'+r.to+'</td>'+
+        return'<tr><td class="text-muted">'+r.from+'</td><td class="text-muted">'+r.to+'</td>'+
           '<td><input type="number" step="0.01" min="0" max="100" value="'+displayRate+'" '+
           'data-lmp="'+lmp+'" data-idx="'+r.idx+'" '+
           'style="width:70px;padding:2px 5px;border:1px solid #dde1e9;border-radius:4px;font-size:11px;font-family:inherit;text-align:right" '+

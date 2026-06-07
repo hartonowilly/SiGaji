@@ -66,7 +66,7 @@
               btnLabel: 'Atur periode',
               btnOnclick: "showPg('master')",
             })
-          : '<div style="color:#9ca3af;font-size:12px">Belum ada periode.</div>';
+          : '<div class="text-subtle font-12">Belum ada periode.</div>';
       return;
     }
     var maxB = Math.max.apply(
@@ -314,7 +314,7 @@
               btnLabel: 'Master karyawan',
               btnOnclick: "showPg('karyawan')",
             })
-          : '<div style="padding:1rem;color:#9ca3af">Tidak ada data.</div>';
+          : '<div class="text-subtle" style="padding:1rem">Tidak ada data.</div>';
       if (sumEl) sumEl.innerHTML = '';
       return;
     }
@@ -334,11 +334,11 @@
       var dNeto = (g1.neto || 0) - (g0.neto || 0);
       var dCls = dNeto > 0 ? 'sim-up' : dNeto < 0 ? 'sim-down' : '';
       return (
-        '<tr><td style="text-align:center;font-weight:700;color:#6b7280">' +
+        '<tr><td class="text-center fw-700 text-muted">' +
         (idx + 1) +
         '</td><td><strong>' +
         escapeHtml(k.nama) +
-        '</strong><div style="font-size:10px;color:#9ca3af">' +
+        '</strong><div class="font-10 text-subtle">' +
         escapeHtml(k.dept) +
         '</div></td><td>' +
         fmt(g0.neto) +
@@ -377,7 +377,7 @@
         (dB >= 0 ? '+' : '') +
         fmt(dB) +
         '</div></div>' +
-        '</div><p style="font-size:11px;color:#6b7280;margin:.65rem 0 0">Sandbox — tidak mengubah snapshot/komponen gaji. Periode: <strong>' +
+        '</div><p class="font-11 text-muted" style="margin:.65rem 0 0">Sandbox — tidak mengubah snapshot/komponen gaji. Periode: <strong>' +
         escapeHtml(p.nama) +
         '</strong></p>';
     }
@@ -469,26 +469,26 @@
     var nLib = (hariLibur || []).length;
     var yr = new Date().getFullYear();
     var steps = [
-      '<div class="wiz-step"><p style="font-size:12px;color:#374151;margin:0 0 .75rem">Nama PT akan tampil di slip, laporan, dan branding login.</p>' +
+      '<div class="wiz-step"><p class="font-12 text-body" style="margin:0 0 .75rem">Nama PT akan tampil di slip, laporan, dan branding login.</p>' +
         '<div class="fg"><label>Nama perusahaan</label><input id="wiz-prs-nama" value="' +
         escapeHtml(prsNama) +
         '" placeholder="PT Contoh Indonesia"></div>' +
         '<button type="button" class="btn btn-sm btn-out" onclick="showPg(\'master\');var t=document.querySelector(\'#pg-master .tab[data-mstab=prs]\');if(t)switchTab(t,\'m-prs\')">Buka profil lengkap</button></div>',
-      '<div class="wiz-step"><p style="font-size:12px;color:#374151">Buat periode gaji bulan pertama (mis. Januari ' +
+      '<div class="wiz-step"><p class="font-12 text-body">Buat periode gaji bulan pertama (mis. Januari ' +
         yr +
         ').</p>' +
         '<div class="wiz-stat-row"><span>Periode terdaftar</span><strong>' +
         nPer +
         '</strong></div>' +
         '<button type="button" class="btn btn-sm btn-p" onclick="showPg(\'master\');var t=document.querySelector(\'#pg-master .tab[data-mstab=periode]\');if(t)switchTab(t,\'m-periode\')">+ Atur periode gaji</button></div>',
-      '<div class="wiz-step"><p style="font-size:12px;color:#374151">Import Excel atau tambah manual pegawai tetap / tidak tetap.</p>' +
+      '<div class="wiz-step"><p class="font-12 text-body">Import Excel atau tambah manual pegawai tetap / tidak tetap.</p>' +
         '<div class="wiz-stat-row"><span>Karyawan</span><strong>' +
         nKar +
         '</strong></div>' +
         '<button type="button" class="btn btn-sm btn-p" onclick="showPg(\'karyawan\')">Buka Master Karyawan</button></div>',
-      '<div class="wiz-step"><p style="font-size:12px;color:#374151">Pastikan UMK provinsi/kota sesuai untuk validasi upah minimum (opsional tapi disarankan).</p>' +
+      '<div class="wiz-step"><p class="font-12 text-body">Pastikan UMK provinsi/kota sesuai untuk validasi upah minimum (opsional tapi disarankan).</p>' +
         '<button type="button" class="btn btn-sm btn-out" onclick="showPg(\'master\');var t=document.querySelector(\'#pg-master .tab[data-mstab=umk]\');if(t)switchTab(t,\'m-umk\')">Atur UMK</button></div>',
-      '<div class="wiz-step"><p style="font-size:12px;color:#374151">Muat kalender libur nasional agar absensi &amp; cuti akurat.</p>' +
+      '<div class="wiz-step"><p class="font-12 text-body">Muat kalender libur nasional agar absensi &amp; cuti akurat.</p>' +
         '<div class="wiz-stat-row"><span>Hari libur</span><strong>' +
         nLib +
         '</strong></div>' +

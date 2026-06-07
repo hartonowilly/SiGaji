@@ -7,16 +7,17 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/css/styles.css?v=11.5.26">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.26">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.26">
+<link rel="stylesheet" href="/css/styles.css?v=11.5.27">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.27">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.27">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.27">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.26"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.27"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.26"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.27"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -24,7 +25,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="llogo">
     <img class="llogo-img" id="login-logo" alt="">
     <h1 id="login-title">SiGaji</h1>
-    <p id="login-pt-nama" class="login-pt-nama" style="display:none"></p>
+    <p id="login-pt-nama" class="login-pt-nama u-hidden"></p>
     <p class="login-tagline">Sistem Informasi Penggajian</p>
   </div>
   <div class="fg"><label id="lu-lbl">Username</label><input id="lu" value="" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -33,14 +34,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <input type="checkbox" id="remember-username">
     <span id="remember-username-lbl">Ingat email</span>
   </label>
-  <div id="cloud-login-hint" class="login-config-hint" style="display:none"></div>
+  <div id="cloud-login-hint" class="login-config-hint u-hidden"></div>
   <button type="button" class="btn btn-p btn-full" id="btn-login" onclick="doLogin()"><span class="btn-login-label">Masuk ke Sistem</span></button>
-  <div id="forgot-pw-wrap" class="login-footer" style="display:none">
+  <div id="forgot-pw-wrap" class="login-footer u-hidden">
     <button type="button" class="login-link" onclick="doForgotPassword()">Lupa password?</button>
     <span class="login-footer-sep" aria-hidden="true">|</span>
     <button type="button" class="login-link login-link-accent" onclick="openRegisterModal()">Daftar Email</button>
   </div>
-  <div id="file-protocol-hint" class="login-file-hint" style="display:none">
+  <div id="file-protocol-hint" class="login-file-hint u-hidden">
     <strong>Jangan buka lewat file:///</strong> — gunakan alamat situs (mis. <code>https://www.cemerlang.online</code>) atau server lokal (<code>start-sigaji.cmd</code> → <code>http://localhost:3333</code>). SiGaji hanya mode <strong>online</strong> (login email Supabase).
   </div>
 </div>
@@ -54,12 +55,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <img class="topbar-logo-img" id="topbar-logo">
     <span class="alogo" id="topbar-nama">&#9670; SiGaji</span>
     <button class="periode-pill" onclick="showPg('master')" title="Buka Master Periode Gaji">&#128197; <span id="top-periode">-</span></button>
-    <span id="sigaji-cabang-topbar" class="sigaji-cabang-topbar" style="display:none"></span>
+    <span id="sigaji-cabang-topbar" class="sigaji-cabang-topbar u-hidden"></span>
     <span class="sigaji-build-chip" id="sigaji-build-chip" title="Versi deploy (SIGAJI_BUILD)"></span>
     <span class="sync-status" id="sync-status" aria-live="polite"></span>
     <span class="save-ind" id="save-ind"></span>
   </div>
-  <div class="tl topbar-theme-wrap fl gap1" style="align-items:center">
+  <div class="tl topbar-theme-wrap fl gap1 items-center">
     <select id="ui-pref-density" class="toolbar-select ui-pref-sel" title="Kepadatan tampilan" onchange="sigajiSetUiPref('density',this.value)">
       <option value="comfortable">Comfortable</option>
       <option value="compact">Compact</option>
@@ -101,9 +102,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 <!-- DASHBOARD -->
 <div class="pg active" id="pg-dashboard">
-  <div id="sigaji-branch-workspace-banner" class="sigaji-branch-workspace-banner" style="display:none" aria-live="polite"></div>
-  <div class="dash-bento-toolbar flb" style="margin-bottom:.65rem;flex-wrap:wrap;gap:.5rem">
-    <div style="font-size:12px;color:#6b7280">Dashboard — seret widget · layout tersimpan per role (cloud sync)</div>
+  <div id="sigaji-branch-workspace-banner" class="sigaji-branch-workspace-banner u-hidden" aria-live="polite"></div>
+  <div class="dash-bento-toolbar flb toolbar-row">
+    <div class="u-muted-12">Dashboard — seret widget · layout tersimpan per role (cloud sync)</div>
     <button type="button" class="btn btn-xs btn-out" onclick="sigajiResetBentoLayout()">&#8635; Reset layout</button>
   </div>
   <div id="dash-bento-grid" class="dash-bento-grid" aria-label="Dashboard bento"></div>
@@ -137,7 +138,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <option value="tetap">Pegawai tetap (K…)</option>
         <option value="tidak_tetap">Tidak tetap (NT…)</option>
       </select>
-      <span class="bdg b-info" id="kar-quota-badge" style="font-size:11px"></span>
+      <span class="bdg b-info font-11" id="kar-quota-badge"></span>
       <span class="meta-muted" id="kar-count"></span>
     </div>
     <div class="table-wrap">
@@ -152,7 +153,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Komponen Gaji</div><div class="pst">Gaji pokok, BPJS, tunjangan, dan natura per karyawan</div></div>
     <div class="page-actions"><button class="btn btn-sm btn-out" onclick="renderKompgaji()">&#8635; Refresh</button></div>
   </div>
-  <div class="tabs" style="margin:.5rem 0">
+  <div class="tabs tabs-spaced">
     <div class="tab active" data-kgtab="daftar" onclick="switchKompgajiTab(this,'kg-tab-daftar')">&#128203; Daftar Komponen</div>
     <div class="tab" data-kgtab="tunjvar" onclick="switchKompgajiTab(this,'kg-tab-tunjvar')">&#128176; Tunjangan Variabel</div>
   </div>
@@ -167,22 +168,22 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <tbody id="tb-kompgaji"></tbody></table></div>
   </div>
   </div>
-  <div id="kg-tab-tunjvar" style="display:none">
-  <div class="card" id="tunjvar-card" style="border-left:4px solid #2d6a0a;display:none">
-    <div class="ct" style="color:#2d6a0a">&#128176; Tunjangan variabel (per periode aktif)</div>
-    <div class="info-box info-blue" style="font-size:11px;line-height:1.65">
+  <div class="u-hidden" id="kg-tab-tunjvar">
+  <div class="card border-accent-success u-hidden" id="tunjvar-card">
+    <div class="ct ct-success">&#128176; Tunjangan variabel (per periode aktif)</div>
+    <div class="info-box info-blue u-hint">
       Bonus, uang makan, insentif bulanan. Ikut Gross PPh, tidak masuk BPJS/THR/prorata. Periode: <strong id="tunjvar-per-lbl">-</strong>. Klik <strong>Edit</strong> pada sel untuk ubah nilai.
     </div>
-    <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
+    <div class="fl gap1 mb1 flex-wrap items-center">
       <button type="button" class="btn btn-sm btn-p" onclick="addTunjVarColumn()">+ Tambah kolom</button>
       <button type="button" class="btn btn-sm btn-out" onclick="salinTunjVarDariPeriodeLalu()">&#8635; Salin dari periode sebelumnya</button>
       <button type="button" class="btn btn-sm btn-out" onclick="exportTunjVarExcelTemplate()">&#128196; Template Excel</button>
       <button type="button" class="btn btn-sm btn-s" onclick="document.getElementById('inp-tunjvar-xlsx').click()">&#128229; Import Excel</button>
-      <input type="file" id="inp-tunjvar-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importTunjVarExcel(this)">
+      <input class="u-hidden" type="file" id="inp-tunjvar-xlsx" accept=".xlsx,.xls" onchange="importTunjVarExcel(this)">
     </div>
-    <div id="tunjvar-col-editor" class="mb1" style="font-size:12px;color:#6b7280"></div>
+    <div id="tunjvar-col-editor" class="mb1 u-muted-12"></div>
     <div class="table-wrap" id="tunjvar-tabel-wrap"></div>
-    <div class="mt1" style="font-size:11px;color:#6b7280" id="tunjvar-foot"></div>
+    <div class="mt1 u-muted-11" id="tunjvar-foot"></div>
   </div>
   </div>
 </div>
@@ -216,39 +217,39 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <span class="ab-chip ab-a">A Alpha</span>
       <span class="ab-chip ab-ln">LN Libnas</span>
     </div>
-    <div id="ab-kal-periode-info" style="display:none;font-size:12px;font-weight:600;color:#374151;margin-bottom:.5rem;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--bd);line-height:1.45"></div>
+    <div class="u-hidden font-12 fw-600 text-body mb-md p-inset-xs card-surface-neutral rounded-sm" id="ab-kal-periode-info" style="border:1px solid var(--bd); line-height:1.45"></div>
     <div id="ab-scroll-host" class="ab-grid-host"><div id="ab-grid-wrap"></div></div>
-    <div id="ab-rekap-wrap" style="margin-top:.75rem"></div>
+    <div class="mt-lg" id="ab-rekap-wrap"></div>
   </div>
-  <div id="abt-cuti" style="display:none">
+  <div class="u-hidden" id="abt-cuti">
     <div class="card">
       <div class="ct">Tracking Cuti — <span id="cuti-yr-lbl">2026</span></div>
       <div class="table-wrap"><table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
       <tbody id="tb-cuti-rekap"></tbody></table></div>
     </div>
   </div>
-  <div id="abt-lokasi" style="display:none">
+  <div class="u-hidden" id="abt-lokasi">
     <div id="mob-dashboard-host"></div>
     <div id="mob-locations-wrap"></div>
     <div id="mob-assign-wrap" class="mt1"></div>
     <div id="mob-att-log-wrap" class="mt1"></div>
     <div id="mob-face-wrap" class="mt1"></div>
-    <div class="card mt1" style="border-left:4px solid #7d4800">
-      <div class="flb mb2" style="flex-wrap:wrap;gap:.5rem">
-        <div class="ct" style="margin:0;border:0;padding:0">Rekap keterlambatan</div>
+    <div class="card mt1 border-accent-warn">
+      <div class="flb mb2 flex-wrap gap-sm">
+        <div class="ct m-0 border-0 p-0">Rekap keterlambatan</div>
         <div class="fl gap1">
-          <input type="month" id="mob-late-month" class="toolbar-select" style="width:auto" onchange="renderMobileLateReport()">
+          <input type="month" id="mob-late-month" class="toolbar-select select-inline" onchange="renderMobileLateReport()">
           <button type="button" class="btn btn-sm btn-out" onclick="renderMobileLateReport()">Muat</button>
         </div>
       </div>
       <div id="mob-late-wrap"></div>
     </div>
-    <div class="fl gap1 mt1" style="flex-wrap:wrap">
+    <div class="fl gap1 mt1 flex-wrap">
       <button type="button" class="btn btn-sm btn-out" onclick="mobImportLibnas()">Impor libur nasional</button>
       <button type="button" class="btn btn-sm btn-warn" onclick="mobSyncAlpha()">Sinkron alpha dari absen mobile</button>
     </div>
   </div>
-  <div id="abt-pengajuan" style="display:none">
+  <div class="u-hidden" id="abt-pengajuan">
     <div id="mob-leave-wrap"></div>
   </div>
 </div>
@@ -263,7 +264,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="card">
     <div class="ct">Input Lembur
       <div class="fl gap1">
-        <select id="lembur-kar-sel" style="width:auto;padding:5px 10px;border:1.5px solid #dde1e9;border-radius:7px;font-size:12px;font-family:inherit;outline:none"></select>
+        <select class="rounded-sm font-12 select-inline" id="lembur-kar-sel"></select>
         <button class="btn btn-sm btn-p" onclick="addLemburForKar()">+ Tambah Lembur</button>
         <button class="btn btn-sm btn-r" onclick="hapusLemburBulan()">Hapus Semua</button>
       </div>
@@ -279,8 +280,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">THR — Tunjangan Hari Raya</div><div class="pst">THR diatur per Periode Gaji di Master → Periode Gaji &amp; THR</div></div>
     <div class="page-actions"><button class="btn btn-sm btn-p" onclick="renderTHR()">&#9654; Hitung Preview</button></div>
   </div>
-  <div class="card" style="background:#f5f0ff;border-color:#c4b5fd">
-    <div class="ct" style="color:#5b21b6">&#127873; Preview Perhitungan THR</div>
+  <div class="card card-surface-purple">
+    <div class="ct ct-purple">&#127873; Preview Perhitungan THR</div>
     <div class="fg2">
       <div class="fg"><label>Hari Raya</label><select id="thr-hari"><option>Idul Fitri 1447 H</option><option>Natal 2026</option></select></div>
       <div class="fg"><label>Tgl Hari Raya (referensi)</label><input type="date" id="thr-batas" value="2026-03-20"></div>
@@ -292,7 +293,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <table><thead><tr><th>No</th><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
     <tbody id="tb-thr"></tbody></table></div>
   </div>
-  <div class="card" style="background:#e8f4de;border-color:#b3d98f"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
+  <div class="card card-surface-success"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
 </div>
 
 <!-- PESANGON / PHK -->
@@ -323,11 +324,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div></div>
   <div id="pg-gaji-proses">
   <div id="thr-period-info"></div>
-  <div class="card" style="background:#fffbf5;border-color:#f5a623">
-    <div class="ct" style="color:#7d4800">&#9203; Pro-Rata Gaji</div>
-    <div class="fl gap2" style="font-size:12px;flex-wrap:wrap">
-      <div style="padding:7px 12px;background:#fff;border-radius:7px;border:1px solid #f5a623">Hari Kerja Periode: <strong id="hk-periode" style="color:#7d4800">-</strong></div>
-      <div style="padding:7px 12px;background:#fff;border-radius:7px;border:1px solid var(--bd)">Pro-Rata Aktif: <strong id="pr-aktif" style="color:#1a56a0">0</strong></div>
+  <div class="card card-surface-warn">
+    <div class="ct ct-warn">&#9203; Pro-Rata Gaji</div>
+    <div class="fl gap2 font-12 flex-wrap">
+      <div class="pill-warn">Hari Kerja Periode: <strong class="ct-warn" id="hk-periode">-</strong></div>
+      <div class="pill-neutral">Pro-Rata Aktif: <strong class="ct-brand" id="pr-aktif">0</strong></div>
     </div>
   </div>
   <div class="pg-cols-toggle" role="group" aria-label="Tampilan kolom penggajian">
@@ -341,14 +342,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </div>
 
 <!-- APPROVAL (disembunyikan) -->
-<div class="pg" id="pg-approval" style="display:none !important">
+<div class="pg u-hidden" id="pg-approval">
   <div class="ph page-header">
     <div><div class="pt">Approval Penggajian</div><div class="pst">Persetujuan payroll sebelum final</div></div>
     <div class="page-actions"><button class="btn btn-sm btn-r" onclick="hapusApproval()">Hapus Riwayat</button></div>
   </div>
   <div class="tabs"><div class="tab active" data-aptab="pend" data-panel="ap-pend" onclick="switchTab(this,'ap-pend')">Menunggu</div><div class="tab" data-aptab="hist" data-panel="ap-hist" onclick="switchTab(this,'ap-hist')">Riwayat</div></div>
   <div id="ap-pend"><div id="ap-pend-list"></div></div>
-  <div id="ap-hist" style="display:none"><div id="ap-hist-list"></div></div>
+  <div class="u-hidden" id="ap-hist"><div id="ap-hist-list"></div></div>
 </div>
 
 <!-- SIMULASI SANDBOX -->
@@ -356,19 +357,19 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Simulasi What-if</div><div class="pst">Sandbox gaji, THR, dan pesangon — tidak mengubah snapshot atau profil</div></div>
   </div>
-  <div class="tabs sim-sandbox-tabs" role="tablist" style="margin-bottom:.75rem">
+  <div class="tabs sim-sandbox-tabs tabs-spaced-lg" role="tablist">
     <button type="button" class="tab active" data-simtab="gaji" onclick="sigajiSimSwitchTab('gaji')">&#128176; Gaji</button>
     <button type="button" class="tab" data-simtab="thr" onclick="sigajiSimSwitchTab('thr')">&#127873; THR</button>
     <button type="button" class="tab" data-simtab="pesangon" onclick="sigajiSimSwitchTab('pesangon')">&#9878; Pesangon</button>
   </div>
 
   <div id="sim-panel-gaji">
-    <div class="page-actions fl gap1" style="margin-bottom:.65rem;justify-content:flex-end">
+    <div class="page-actions fl gap1 toolbar-end">
       <button class="btn btn-sm btn-out" onclick="sigajiSimReset()">&#8635; Reset</button>
       <button class="btn btn-sm btn-p" onclick="renderSimulasiGaji()">Hitung ulang</button>
     </div>
-    <div class="card" style="border-left:4px solid #2563eb">
-      <div class="ct" style="color:#1d4ed8">Parameter simulasi gaji</div>
+    <div class="card border-accent-indigo">
+      <div class="ct ct-indigo">Parameter simulasi gaji</div>
       <div class="fg2">
         <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-gapok-pct" step="0.5" value="0" onchange="sigajiSimSet('gapokPct',parseFloat(this.value)||0)"></div>
         <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-tunj-pct" step="0.5" value="0" onchange="sigajiSimSet('tunjPct',parseFloat(this.value)||0)"></div>
@@ -378,21 +379,21 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </select></div>
         <div class="fg"><label>Filter NIK</label><select id="sim-nik" onchange="sigajiSimSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
       </div>
-      <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Contoh: +5% gapok dept Operasional — lihat dampak PPh &amp; neto sebelum keputusan naik gaji.</p>
+      <p class="u-muted-11 mt-md">Contoh: +5% gapok dept Operasional — lihat dampak PPh &amp; neto sebelum keputusan naik gaji.</p>
     </div>
-    <div id="sim-summary" class="card" style="background:#f8fafc"></div>
+    <div id="sim-summary" class="card card-surface-neutral"></div>
     <div class="card"><div class="ct">Perbandingan per karyawan</div>
       <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>Neto sekarang</th><th>Neto simulasi</th><th>Δ Neto</th><th>PPh simulasi</th></tr></thead>
       <tbody id="sim-results"></tbody></table></div></div>
   </div>
 
-  <div id="sim-panel-thr" style="display:none">
-    <div class="page-actions fl gap1" style="margin-bottom:.65rem;justify-content:flex-end">
+  <div class="u-hidden" id="sim-panel-thr">
+    <div class="page-actions fl gap1 toolbar-end">
       <button class="btn btn-sm btn-out" onclick="sigajiSimThrReset()">&#8635; Reset</button>
       <button class="btn btn-sm btn-p" onclick="renderSimulasiThr()">Hitung ulang</button>
     </div>
-    <div class="card" style="border-left:4px solid #7c3aed">
-      <div class="ct" style="color:#5b21b6">Parameter simulasi THR</div>
+    <div class="card border-accent-purple">
+      <div class="ct ct-purple">Parameter simulasi THR</div>
       <div class="fg2">
         <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-thr-gapok-pct" step="0.5" value="0" onchange="sigajiSimThrSet('gapokPct',parseFloat(this.value)||0)"></div>
         <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-thr-tunj-pct" step="0.5" value="0" onchange="sigajiSimThrSet('tunjPct',parseFloat(this.value)||0)"></div>
@@ -403,21 +404,21 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </select></div>
         <div class="fg"><label>Filter NIK</label><select id="sim-thr-nik" onchange="sigajiSimThrSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
       </div>
-      <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Contoh: hire baru 8 bulan — eligible THR proporsional? Naik gapok 10% — berapa tambahan THR?</p>
+      <p class="u-muted-11 mt-md">Contoh: hire baru 8 bulan — eligible THR proporsional? Naik gapok 10% — berapa tambahan THR?</p>
     </div>
-    <div id="sim-thr-summary" class="card" style="background:#faf5ff"></div>
+    <div id="sim-thr-summary" class="card surface-sim-purple"></div>
     <div class="card"><div class="ct">Perbandingan THR per karyawan</div>
       <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>THR sekarang</th><th>THR simulasi</th><th>Δ THR</th><th>Proporsi</th></tr></thead>
       <tbody id="sim-thr-results"></tbody></table></div></div>
   </div>
 
-  <div id="sim-panel-pesangon" style="display:none">
-    <div class="page-actions fl gap1" style="margin-bottom:.65rem;justify-content:flex-end">
+  <div class="u-hidden" id="sim-panel-pesangon">
+    <div class="page-actions fl gap1 toolbar-end">
       <button class="btn btn-sm btn-out" onclick="sigajiSimPsgReset()">&#8635; Reset</button>
       <button class="btn btn-sm btn-p" onclick="renderSimulasiPesangon()">Hitung ulang</button>
     </div>
-    <div class="card" style="border-left:4px solid #b45309">
-      <div class="ct" style="color:#92400e">Parameter simulasi pesangon / PHK</div>
+    <div class="card border-accent-amber">
+      <div class="ct text-amber-800">Parameter simulasi pesangon / PHK</div>
       <div class="fg2">
         <div class="fg ff"><label>Karyawan</label><select id="sim-psg-nik" onchange="sigajiSimPsgSet('nik',this.value)"><option value="">— Pilih —</option></select></div>
         <div class="fg"><label>Tgl. berhenti (simulasi)</label><input type="date" id="sim-psg-tgl" onchange="sigajiSimPsgSet('tglBerhenti',this.value)"></div>
@@ -426,9 +427,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>UPH tambahan (Rp)</label><input type="number" min="0" id="sim-psg-uph-tambahan" placeholder="0" onchange="sigajiSimPsgSet('uphTambahan',this.value)"></div>
         <div class="fg"><label>Uang pisah (Rp)</label><input type="number" min="0" id="sim-psg-pisah" placeholder="0" onchange="sigajiSimPsgSet('pisah',this.value)"></div>
       </div>
-      <p style="font-size:11px;color:#6b7280;margin:.5rem 0 0">Untuk direksi: bandingkan skenario PHK sebelum putusan — tidak menulis ke profil karyawan.</p>
+      <p class="u-muted-11 mt-md">Untuk direksi: bandingkan skenario PHK sebelum putusan — tidak menulis ke profil karyawan.</p>
     </div>
-    <div id="sim-psg-results" class="card" style="background:#fffbeb"></div>
+    <div id="sim-psg-results" class="card surface-sim-amber"></div>
     <div id="sim-psg-detail"></div>
   </div>
 </div>
@@ -445,7 +446,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </select>
     <select class="toolbar-select toolbar-select-wide" id="slip-kar" onchange="previewSlip()"><option value="">-- Pilih Karyawan --</option></select>
     <button class="btn btn-sm btn-out" onclick="exportPDF()">&#128438; PDF</button>
-    <button class="btn btn-sm btn-thr-pdf" id="btn-pdf-all-thr" style="display:none" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
+    <button class="btn btn-sm btn-thr-pdf u-hidden" id="btn-pdf-all-thr" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
   </div></div>
   <div class="tabs">
     <div class="tab active" data-sliptab="gaji" onclick="switchSlipTab(this,'slip-tab-gaji')">&#128203; Slip Gaji</div>
@@ -455,37 +456,37 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div id="slip-thr-banner"></div>
     <div id="slip-preview"><div class="empty-state">Pilih karyawan untuk melihat pratinjau slip</div></div>
   </div>
-  <div id="slip-tab-kirim" style="display:none">
-    <div id="slip-share-bar" style="display:none;margin-bottom:.75rem">
-      <div style="background:#eef6ff;border:1px solid #c5d9f5;border-radius:10px;padding:.65rem 1rem">
-        <div style="font-size:11px;font-weight:700;color:#1a56a0;margin-bottom:.45rem">Kirim satu orang (pilih karyawan di atas)</div>
-        <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
-          <button class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToEmail()">&#9993; Kirim email</button>
-          <button class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" type="button" onclick="sendCurrentSlipToTelegram()">Telegram</button>
+  <div class="u-hidden" id="slip-tab-kirim">
+    <div class="u-hidden tabs-spaced-lg" id="slip-share-bar">
+      <div class="rounded-md surface-info-light">
+        <div class="font-11 fw-700 ct-brand mb-sm">Kirim satu orang (pilih karyawan di atas)</div>
+        <div class="fl gap1 flex-wrap items-center">
+          <button class="btn btn-sm fw-800 btn-email" type="button" onclick="sendCurrentSlipToEmail()">&#9993; Kirim email</button>
+          <button class="btn btn-sm fw-800 btn-telegram" type="button" onclick="sendCurrentSlipToTelegram()">Telegram</button>
           <button class="btn btn-sm btn-out" type="button" onclick="exportPDF()">&#128438; PDF</button>
         </div>
-        <details style="margin-top:.5rem;font-size:11px">
-          <summary style="cursor:pointer;color:#6b7280;font-weight:600">Cara lain (WA, bagikan, email manual)</summary>
-          <div class="fl gap1" style="flex-wrap:wrap;margin-top:.4rem">
+        <details class="mt-md font-11">
+          <summary class="cursor-pointer text-muted fw-600">Cara lain (WA, bagikan, email manual)</summary>
+          <div class="fl gap1 flex-wrap mt-4px">
             <button class="btn btn-sm btn-g" type="button" onclick="shareSlipNativePDF()">Bagikan PDF</button>
-            <button class="btn btn-sm" style="background:#25D366;color:#fff;font-weight:700" onclick="shareSlipWhatsAppWithPDF()">WA + PDF</button>
+            <button class="btn btn-sm fw-700 btn-wa" onclick="shareSlipWhatsAppWithPDF()">WA + PDF</button>
             <button class="btn btn-sm btn-out" onclick="shareSlipEmailWithPDF()">Email manual</button>
           </div>
         </details>
       </div>
     </div>
-    <div id="slip-tg-hint" style="display:none;font-size:11px;color:#1565a8;margin:.5rem 0 .75rem;padding:.5rem .75rem;background:#e8f4fc;border-radius:8px;border:1px solid #b8d9f0;line-height:1.55">
+    <div class="u-hidden font-11 rounded-sm leading-tight slip-tg-hint" id="slip-tg-hint">
       <strong>Kirim massal:</strong> centang karyawan lalu tombol Telegram atau Email.
     </div>
-    <div id="slip-send-batch" style="display:none">
-      <div class="card" style="border-left:4px solid #1a56a0;box-shadow:0 1px 8px rgba(26,86,160,.1)">
-        <div class="ct" style="font-size:14px">&#128232; Kirim slip ke banyak karyawan</div>
-        <div class="fl gap1 mb1" style="flex-wrap:wrap;align-items:center">
+    <div class="u-hidden" id="slip-send-batch">
+      <div class="card border-accent-left card-shadow-brand">
+        <div class="ct font-14">&#128232; Kirim slip ke banyak karyawan</div>
+        <div class="fl gap1 mb1 flex-wrap items-center">
           <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(true)">Pilih semua</button>
           <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(false)">Kosongkan</button>
           <button type="button" class="btn btn-sm btn-out" onclick="renderSlipSendBatchChecklist(true)">&#8635; Segarkan status</button>
-          <button type="button" class="btn btn-sm" style="background:#1a56a0;color:#fff;font-weight:800" onclick="sendSlipEmailBatch()">Kirim email terpilih</button>
-          <button type="button" class="btn btn-sm" style="background:#229ED9;color:#fff;font-weight:800" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
+          <button type="button" class="btn btn-sm fw-800 btn-email" onclick="sendSlipEmailBatch()">Kirim email terpilih</button>
+          <button type="button" class="btn btn-sm fw-800 btn-telegram" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
         </div>
         <div id="slip-send-batch-wrap"></div>
       </div>
@@ -509,23 +510,23 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="tab" data-laptab="pph" data-panel="lap-tab-pph" onclick="switchLaporanTab(this,'lap-tab-pph')">&#128203; PPh 21</div>
   </div>
   <div id="lap-tab-rekap">
-    <div id="lap-rekap-hint" class="dash-kpi-hint" style="margin-bottom:.75rem"></div>
+    <div id="lap-rekap-hint" class="dash-kpi-hint tabs-spaced-lg"></div>
     <div class="card"><div class="table-wrap"><table><thead><tr><th>Periode</th><th>Karyawan</th><th>Total Gross</th><th>Total THR</th><th>Total PPh</th><th>Total Neto</th><th>Status</th></tr></thead>
     <tbody id="tb-lap"></tbody></table></div></div>
   </div>
-  <div id="lap-tab-variance" style="display:none">
-    <div id="lap-variance-hint" class="dash-kpi-hint" style="margin-bottom:.75rem"></div>
+  <div class="u-hidden" id="lap-tab-variance">
+    <div id="lap-variance-hint" class="dash-kpi-hint tabs-spaced-lg"></div>
     <div class="card"><div id="lap-variance-wrap"></div></div>
   </div>
-  <div id="lap-tab-pph" style="display:none">
+  <div class="u-hidden" id="lap-tab-pph">
     <div class="card">
       <div class="ct">Export e-Bupot bulanan (Coretax)</div>
-      <div class="info-box info-blue" style="font-size:11px;line-height:1.55;margin-bottom:.75rem">
+      <div class="info-box info-blue font-11 leading-tight tabs-spaced-lg">
         SiGaji menghasilkan <strong>XML siap upload</strong> dari periode gaji aktif — tanpa copy-paste ke template DJP.
         Pegawai <strong>tetap</strong> → file <strong>BPMP</strong>; <strong>tidak tetap</strong> → file <strong>BP21</strong> (jika ada).
         Upload di Coretax → <strong>e-Bupot → Impor Data</strong>. Isi <strong>NPWP</strong> di Profil Perusahaan; <strong>NITKU unik per cabang</strong> di Master → Daftar Cabang.
       </div>
-      <div class="fl gap1" style="flex-wrap:wrap">
+      <div class="fl gap1 flex-wrap">
         <button type="button" class="btn btn-sm btn-p" onclick="exportXmlEbupotCoretax()">Unduh XML Coretax</button>
         <button type="button" class="btn btn-sm btn-out" onclick="exportExcelEbupotBulanan()">Excel (acuan)</button>
         <button type="button" class="btn btn-sm btn-out" onclick="exportCsvEbupotBulanan()">CSV (arsip)</button>
@@ -538,12 +539,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div class="card">
       <div class="ct">Bukti potong PPh 21 — Form 1721-A1 (rekap tahunan)</div>
-      <div class="info-box info-blue" style="font-size:11px;line-height:1.55">
+      <div class="info-box info-blue u-hint">
         PDF mengikuti judul formulir <strong>1721-A1</strong> (bentuk acuan). Merangkum <strong>bruto</strong> dan <strong>PPh 21</strong> dari periode gaji di SiGaji untuk tahun pajak dipilih (TER <strong>PMK 168/2023</strong>).
         <strong>Pegawai resign tengah tahun:</strong> isi <strong>Tgl. berhenti</strong> di profil karyawan — A1 hanya memuat gaji hingga periode dengan tanggal bayar ≤ tanggal itu.
         Untuk pelaporan DJP gunakan <strong>e-Bupot Unifikasi</strong> / Coretax sesuai ketentuan pemotong.
       </div>
-      <div class="fg3" style="align-items:flex-end;margin-bottom:.75rem">
+      <div class="fg3 items-end tabs-spaced-lg">
         <div class="fg"><label>Tahun pajak</label><select id="a1-tahun"></select></div>
         <div class="fg ff"><label>Karyawan</label><select id="a1-kar"><option value="">-- Pilih karyawan --</option></select></div>
         <div class="fg"><label>&nbsp;</label><button type="button" class="btn btn-sm btn-g" onclick="exportPDF1721A1()">&#128438; Unduh PDF 1721-A1</button></div>
@@ -564,25 +565,25 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="tab" data-mstab="libur" data-panel="m-libur" onclick="switchTab(this,'m-libur')">&#127976; Hari Libur &amp; Cuti</div>
     <div class="tab" data-mstab="potongan" data-panel="m-potongan" data-master-adv="1" onclick="switchTab(this,'m-potongan')">&#9998; Aturan Potongan</div>
     <div class="tab" data-mstab="ter" data-panel="m-ter" data-master-adv="1" onclick="switchTab(this,'m-ter')">&#9878; PTKP &amp; TER</div>
-    <div class="tab" data-mstab="cabang" data-panel="m-cabang" id="mstab-cabang" onclick="switchTab(this,'m-cabang')" style="display:none">&#128209; Daftar Cabang</div>
+    <div class="tab u-hidden" data-mstab="cabang" data-panel="m-cabang" id="mstab-cabang" onclick="switchTab(this,'m-cabang')">&#128209; Daftar Cabang</div>
     <div class="tab" data-mstab="lanjut" data-panel="m-lanjut" onclick="switchTab(this,'m-lanjut')">&#9881; Pengaturan lanjutan</div>
   </div>
-  <div id="m-prs" class="master-tab-panel" style="display:none">
+  <div id="m-prs" class="master-tab-panel u-hidden">
     <div class="card">
       <div class="ct">Logo Perusahaan</div>
-      <div class="fl gap2" style="align-items:flex-start;flex-wrap:wrap">
+      <div class="fl gap2 items-start flex-wrap">
         <div>
           <img class="logo-prev" id="logo-preview">
           <div class="logo-drop" onclick="document.getElementById('logo-input').click()">
             <input type="file" id="logo-input" accept="image/*" onchange="uploadLogo(this)">
-            <div style="font-size:28px;margin-bottom:4px">&#128247;</div>
-            <div style="font-size:12px;font-weight:700;color:#1a56a0">Klik untuk upload logo</div>
-            <div style="font-size:10px;color:#9ca3af;margin-top:2px">PNG, JPG, SVG — maks 2MB</div>
+            <div class="mb-xs font-28">&#128247;</div>
+            <div class="font-12 fw-700 text-brand">Klik untuk upload logo</div>
+            <div class="font-10 text-subtle mt-2px">PNG, JPG, SVG — maks 2MB</div>
           </div>
           <button class="btn btn-sm btn-r mt1" onclick="hapusLogo()">&#10007; Hapus Logo</button>
         </div>
-        <div style="flex:1;min-width:220px">
-          <div class="info-box info-blue" style="font-size:11px">Logo tampil di: halaman login, topbar, dan header slip gaji.</div>
+        <div class="flex-1 min-w-220">
+          <div class="info-box info-blue font-11">Logo tampil di: halaman login, topbar, dan header slip gaji.</div>
         </div>
       </div>
     </div>
@@ -592,56 +593,56 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Nama Perusahaan</label><input id="prs-nama" placeholder="PT Maju Bersama Indonesia"></div>
         <div class="fg"><label>NPWP Perusahaan</label><input id="prs-npwp" placeholder="01.234.567.8-601.000"></div>
         <div class="fg" id="prs-nitku-row"><label>NITKU (6 digit TKU)</label><input id="prs-nitku" placeholder="000000" maxlength="6" title="6 digit TKU — digabung dengan NPWP menjadi ID TKU 22 digit saat export e-Bupot"></div>
-        <div class="fg ff" id="prs-nitku-cabang-hint" style="display:none"><div class="info-box info-blue" style="font-size:11px;margin:0">Multi-cabang aktif: <strong>NITKU diisi per cabang</strong> di tab <em>Daftar Cabang</em>, bukan di profil pusat. Setiap cabang wajib punya kode TKU unik.</div></div>
+        <div class="fg ff u-hidden" id="prs-nitku-cabang-hint"><div class="info-box info-blue font-11 m-0">Multi-cabang aktif: <strong>NITKU diisi per cabang</strong> di tab <em>Daftar Cabang</em>, bukan di profil pusat. Setiap cabang wajib punya kode TKU unik.</div></div>
         <div class="fg ff"><label>Alamat Lengkap</label><input id="prs-alamat" placeholder="Jl. ..."></div>
         <div class="fg"><label>Telepon</label><input id="prs-telp"></div>
         <div class="fg"><label>Email HR</label><input id="prs-email"></div>
         <div class="fg"><label>Website</label><input id="prs-web"></div>
-        <div class="fg ff" style="margin-top:.65rem;padding-top:.85rem;border-top:1px solid #eee">
-          <div style="font-size:11px;font-weight:700;color:#1a56a0;margin-bottom:.5rem">&#128196; Bukti potong 1721-A1 (PDF)</div>
+        <div class="fg ff section-divider-top">
+          <div class="font-11 fw-700 ct-brand mb-md">&#128196; Bukti potong 1721-A1 (PDF)</div>
           <div class="fg3">
             <div class="fg"><label>Kota (tempat &amp; tanda tangan)</label><input id="prs-a1-kota" placeholder="Jakarta"></div>
             <div class="fg"><label>Prefix nomor bukti</label><input id="prs-a1-prefix" placeholder="A1" title="Contoh nomor: A1/2026/00001"></div>
             <div class="fg"><label>Nama penandatangan</label><input id="prs-a1-ttd" placeholder="Pejabat pemotong"></div>
           </div>
           <div class="fg"><label>Jabatan penandatangan</label><input id="prs-a1-jab" placeholder="Kepala HRD / Direktur"></div>
-          <div class="info-box info-blue" style="font-size:10px;margin-bottom:0">Nomor bukti bertambah otomatis (per tahun pajak) setiap kali Anda mengunduh PDF 1721-A1 dari menu PPh 21.</div>
+          <div class="info-box info-blue font-10 mb-0">Nomor bukti bertambah otomatis (per tahun pajak) setiap kali Anda mengunduh PDF 1721-A1 dari menu PPh 21.</div>
         </div>
-        <div class="fg"><label>Jam masuk kerja (untuk rekap keterlambatan)</label><input id="prs-jam-masuk" type="time" value="08:00" style="width:auto;max-width:160px"></div>
-        <div class="fg ff" style="background:#e8f0fb;border-radius:8px;padding:.85rem;border:1px solid #c5d9f5">
-          <label style="font-size:11px;font-weight:700;color:#1a56a0;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px">&#128197; Pola Hari Kerja</label>
+        <div class="fg"><label>Jam masuk kerja (untuk rekap keterlambatan)</label><input class="input-time-inline" id="prs-jam-masuk" type="time" value="08:00"></div>
+        <div class="fg ff rounded-sm" style="background:#e8f0fb; padding:.85rem; border:1px solid #c5d9f5">
+          <label class="font-11 fw-700 ct-brand u-block mb-sm label-upper-brand">&#128197; Pola Hari Kerja</label>
           <div class="fl gap2">
-            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:8px 14px;border-radius:8px;border:2px solid #dde1e9;background:#fff;flex:1" id="hk-5-lbl">
-              <input type="radio" name="hk-radio" id="hk-5" value="5" style="accent-color:#1a56a0;width:16px;height:16px">
-              <div><div style="font-weight:700;font-size:13px">Senin – Jumat</div><div style="font-size:11px;color:#6b7280">5 hari kerja/minggu</div></div>
+            <label class="fl items-center gap-sm cursor-pointer rounded-sm bg-white flex-1 hk-radio-label" id="hk-5-lbl">
+              <input class="radio-accent" type="radio" name="hk-radio" id="hk-5" value="5">
+              <div><div class="font-13 fw-700">Senin – Jumat</div><div class="u-muted-11">5 hari kerja/minggu</div></div>
             </label>
-            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:8px 14px;border-radius:8px;border:2px solid #dde1e9;background:#fff;flex:1" id="hk-6-lbl">
-              <input type="radio" name="hk-radio" id="hk-6" value="6" style="accent-color:#1a56a0;width:16px;height:16px">
-              <div><div style="font-weight:700;font-size:13px">Senin – Sabtu</div><div style="font-size:11px;color:#6b7280">6 hari kerja/minggu</div></div>
+            <label class="fl items-center gap-sm cursor-pointer rounded-sm bg-white flex-1 hk-radio-label" id="hk-6-lbl">
+              <input class="radio-accent" type="radio" name="hk-radio" id="hk-6" value="6">
+              <div><div class="font-13 fw-700">Senin – Sabtu</div><div class="u-muted-11">6 hari kerja/minggu</div></div>
             </label>
           </div>
         </div>
       </div>
       <button class="btn btn-sm btn-p" onclick="simpanPerusahaan()">Simpan Data Perusahaan</button>
     </div>
-    <div class="card" id="lic-card" style="display:none">
+    <div class="card u-hidden" id="lic-card">
       <div class="ct">Informasi paket (kuota)</div>
-      <p id="lic-stat" style="font-size:12px;color:#374151;margin:0 0 .5rem;font-weight:600"></p>
-      <div id="lic-vendor-note" class="info-box info-blue" style="font-size:11px;margin:0"></div>
+      <p class="font-12 text-body fw-600 mb-md m-0" id="lic-stat"></p>
+      <div id="lic-vendor-note" class="info-box info-blue font-11 m-0"></div>
     </div>
   </div>
-  <div id="m-umk" class="master-tab-panel" style="display:none">
-    <div class="card" style="border-left:4px solid #2d6a0a">
-      <div class="ct" style="color:#2d6a0a">&#128176; UMK (Upah Minimum Kabupaten/Kota)</div>
-      <div class="info-box info-blue" style="font-size:11px;line-height:1.6;margin-bottom:.75rem">
+  <div id="m-umk" class="master-tab-panel u-hidden">
+    <div class="card border-accent-success">
+      <div class="ct ct-success">&#128176; UMK (Upah Minimum Kabupaten/Kota)</div>
+      <div class="info-box info-blue font-11 tabs-spaced-lg leading-tight">
         Simpan nilai UMK per tahun (dikunci setelah disimpan). Tombol di bawah menerapkan UMK tahun terpilih ke <strong>gaji pokok master</strong> seluruh karyawan. Periode snapshot yang terkunci tidak diubah otomatis.
       </div>
-      <div class="fl gap2" style="flex-wrap:wrap;align-items:flex-end;margin-bottom:.75rem">
-        <div class="fg"><label>Tahun</label><select id="umk-year-sel" style="width:auto;min-width:100px" onchange="renderUmkPanel()"></select></div>
-        <div class="fg" style="min-width:240px">
+      <div class="fl gap2 flex-wrap items-end tabs-spaced-lg">
+        <div class="fg"><label>Tahun</label><select class="select-inline" id="umk-year-sel" onchange="renderUmkPanel()"></select></div>
+        <div class="fg input-min-w-240">
           <label>Nilai UMK (Rp)</label>
-          <div class="fl gap1" style="align-items:center;flex-wrap:wrap">
-            <input type="text" class="inp-rp" id="umk-nilai" data-rp="1" readonly style="flex:1;min-width:160px">
+          <div class="fl gap1 items-center flex-wrap">
+            <input type="text" class="inp-rp flex-1" id="umk-nilai" data-rp="1" readonly style="min-width:160px">
             <button type="button" class="btn btn-sm btn-out" id="umk-btn-edit" onclick="toggleUmkEdit()">Edit</button>
           </div>
         </div>
@@ -650,7 +651,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div id="umk-history-wrap"></div>
     </div>
   </div>
-  <div id="m-periode" class="master-tab-panel" style="display:none">
+  <div id="m-periode" class="master-tab-panel u-hidden">
     <div id="pb-master"></div>
     <div class="card">
       <div class="ct">Buat / Edit Periode</div>
@@ -665,7 +666,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Mulai</label><input type="date" id="p-start" value="2026-02-25"></div>
         <div class="fg"><label>Selesai</label><input type="date" id="p-end" value="2026-03-24"></div>
         <div class="fg ff"><label>Tgl Bayar Gaji</label><input type="date" id="p-bayar" value="2026-03-25">
-          <div style="font-size:10px;color:#6b7280;margin-top:4px;line-height:1.45">Boleh <strong>lebih awal</strong> dari tanggal selesai (mis. transfer bank di hari kerja terakhir; periode kerja &amp; absensi tetap sampai tanggal selesai).</div>
+          <div class="font-10 text-muted mt-xs" style="line-height:1.45">Boleh <strong>lebih awal</strong> dari tanggal selesai (mis. transfer bank di hari kerja terakhir; periode kerja &amp; absensi tetap sampai tanggal selesai).</div>
         </div>
         <div class="fg"><label>Status</label><select id="p-status"><option value="aktif">Aktif</option><option value="tutup">Tutup</option></select></div>
         <div class="fg"><label>Tipe Masa Pajak</label>
@@ -675,22 +676,22 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
             <option value="resign">Resign / PHK &#8212; Rekonsiliasi Progresif</option>
           </select>
         </div>
-        <div class="fg" id="fg-opsi-lebih-bayar" style="display:none"><label>Jika Ada Lebih Bayar PPh 21</label>
+        <div class="fg u-hidden" id="fg-opsi-lebih-bayar"><label>Jika Ada Lebih Bayar PPh 21</label>
           <select id="p-opsi-lebih-bayar">
             <option value="refund">Kembalikan langsung di bulan ini (PPh = 0)</option>
             <option value="carryover">Carry over ke Januari tahun depan</option>
           </select>
-          <div style="font-size:10px;color:#5b21b6;margin-top:4px">Lebih bayar = PPh TER Jan-Nov &gt; PPh tahunan progresif.</div>
+          <div class="font-10 ct-purple mt-xs">Lebih bayar = PPh TER Jan-Nov &gt; PPh tahunan progresif.</div>
         </div>
       </div>
       <!-- THR BLOCK v9 -->
-      <div style="background:#f5f0ff;border:1.5px solid #c4b5fd;border-radius:10px;padding:1rem;margin-top:.5rem">
-        <div style="font-weight:700;color:#5b21b6;font-size:13px;margin-bottom:.5rem">&#127873; Pengaturan THR untuk Periode Ini</div>
-        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-weight:600;font-size:12px;margin-bottom:.65rem">
+      <div class="rounded-md mt-md" style="background:#f5f0ff; border:1.5px solid #c4b5fd; padding:1rem">
+        <div class="fw-700 ct-purple font-13 mb-md">&#127873; Pengaturan THR untuk Periode Ini</div>
+        <label class="fl items-center gap-sm cursor-pointer fw-600 font-12 mb-lg">
           <input type="checkbox" id="p-thr-aktif" style="width:16px;height:16px;accent-color:#5b21b6" onchange="toggleThrFields()">
           Aktifkan THR di periode ini (PPh THR akan digabung ke gaji bulan ini)
         </label>
-        <div id="thr-fields" style="display:none">
+        <div class="u-hidden" id="thr-fields">
           <div class="fg3">
             <div class="fg"><label>Nama Hari Raya</label>
               <select id="p-thr-nama"><option>Idul Fitri 1447 H</option><option>Natal 2026</option><option>Nyepi 2026</option><option>Waisak 2026</option></select>
@@ -698,24 +699,24 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
             <div class="fg"><label>Tgl Bayar THR (H-7)</label><input type="date" id="p-thr-bayar" value="2026-03-13"></div>
             <div class="fg"><label>Tgl Hari Raya</label><input type="date" id="p-thr-hariraya" value="2026-03-20"></div>
           </div>
-          <div class="info-box info-pu" style="font-size:10px;margin-bottom:0">
+          <div class="info-box info-pu font-10 mb-0">
             &#9679; THR dibayar <strong>full netto</strong> pada tgl bayar THR (tidak ada potongan PPh saat itu)<br>
             &#9679; PPh atas THR dihitung &amp; dipotong dari <strong>gaji akhir bulan</strong><br>
             &#9679; Take Home akhir bulan = gaji bulan ini saja (THR sudah dibayar terpisah)
           </div>
         </div>
       </div>
-      <div id="periode-guard-msg" style="display:none"></div>
-      <button type="button" class="btn btn-sm btn-p" id="btn-simpan-periode" style="margin-top:.75rem" onclick="simpanPeriode()">Simpan Periode</button>
+      <div class="u-hidden" id="periode-guard-msg"></div>
+      <button type="button" class="btn btn-sm btn-p mt-lg" id="btn-simpan-periode" onclick="simpanPeriode()">Simpan Periode</button>
     </div>
     <div class="card"><div class="ct">Riwayat Periode</div>
       <table><thead><tr><th>Nama</th><th>Mulai</th><th>Selesai</th><th>Bayar Gaji</th><th>THR</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody id="tb-periode"></tbody></table>
     </div>
   </div>
-  <div id="m-libur" class="master-tab-panel" style="display:none">
+  <div id="m-libur" class="master-tab-panel u-hidden">
     <div class="card" style="background:#f0f0fd;border-color:#c4b5fd">
-      <div class="ct" style="color:#5b21b6">&#127774; Pengaturan Kuota Cuti Tahunan</div>
+      <div class="ct ct-purple">&#127774; Pengaturan Kuota Cuti Tahunan</div>
       <div class="fg2">
         <div class="fg"><label>Kuota Cuti (hari/tahun)</label><input type="number" id="cuti-kuota" value="12" min="1" max="30" onchange="simpanMasterCuti()"></div>
         <div class="fg"><label>Carry Over</label>
@@ -724,16 +725,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </select>
         </div>
       </div>
-      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:8px;background:#fff;border-radius:7px;border:1px solid #c4b5fd;font-size:12px;font-weight:600">
+      <label class="fl items-center gap-sm cursor-pointer bg-white rounded-sm font-12 fw-600" style="padding:8px; border:1px solid #c4b5fd">
         <input type="checkbox" id="cuti-cb-potong" style="width:16px;height:16px;accent-color:#5b21b6" onchange="simpanMasterCuti()">
         Cuti Bersama (dari hari libur nasional) mengurangi kuota cuti tahunan karyawan
       </label>
     </div>
-    <div class="card" style="border-left:4px solid #9b2121">
-      <div class="ct" style="color:#9b2121">&#128229; Muat Hari Libur Nasional</div>
-      <div class="info-box info-blue" style="font-size:11px">Database mencakup <strong>2017–2030</strong>. Cuti bersama memotong kuota jika opsi di atas diaktifkan.</div>
-      <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
-        <select id="libnas-yr" style="padding:8px 12px;border:1.5px solid #dde1e9;border-radius:8px;font-size:13px;font-family:inherit;outline:none;font-weight:700"></select>
+    <div class="card border-accent-danger">
+      <div class="ct ct-danger">&#128229; Muat Hari Libur Nasional</div>
+      <div class="info-box info-blue font-11">Database mencakup <strong>2017–2030</strong>. Cuti bersama memotong kuota jika opsi di atas diaktifkan.</div>
+      <div class="fl gap1 flex-wrap items-center">
+        <select class="p-inset-xs rounded-sm font-13 fw-700" id="libnas-yr" style="border:1.5px solid #dde1e9; font-family:inherit; outline:none"></select>
         <button class="btn btn-p" onclick="loadLiburNasionalDinamis()">&#128229; Muat Hari Libur Nasional</button>
         <button class="btn btn-out btn-sm" onclick="hapusSemuaLibur()">&#9888; Hapus Semua</button>
       </div>
@@ -749,14 +750,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div class="card"><div class="ct">Daftar Hari Libur</div><div id="libur-list"></div></div>
   </div>
-  <div id="m-potongan" class="master-tab-panel" style="display:none">
-    <div class="info-box info-blue" style="font-size:11px;line-height:1.7">
+  <div id="m-potongan" class="master-tab-panel u-hidden">
+    <div class="info-box info-blue font-11" style="line-height:1.7">
       <strong>Aturan Potongan Ketidakhadiran</strong><br>
       &#9679; <strong>Tidak Dipotong</strong> | &#9679; <strong>Ikut Pro-Rata (1 hari)</strong> | &#9679; <strong>Ikut Pro-Rata (½ hari)</strong> | &#9679; <strong>Nominal Tetap</strong> | &#9679; <strong>Persentase Gaji Harian</strong>
     </div>
     <div class="card">
       <div class="ct">Aturan Potongan per Jenis Ketidakhadiran</div>
-      <table style="font-size:12px">
+      <table class="font-12">
         <thead><tr><th style="width:200px">Jenis</th><th>Keterangan</th><th style="width:230px">Mode Potongan</th><th style="width:150px">Nilai (Rp / %)</th></tr></thead>
         <tbody id="tb-aturan-pot"></tbody>
       </table>
@@ -766,22 +767,22 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       </div>
     </div>
   </div>
-  <div id="m-ter" class="master-tab-panel" style="display:none">
+  <div id="m-ter" class="master-tab-panel u-hidden">
     <div class="card">
       <div class="ct">Tabel PTKP</div>
-      <div class="info-box info-amber" style="font-size:11px;line-height:1.65;margin-bottom:.75rem">
+      <div class="info-box info-amber font-11 tabs-spaced-lg" style="line-height:1.65">
         Nilai default mengikuti ketentuan umum (acuan PMK terkait PPh 21). Jika tarif/nilai PTKP berubah, sesuaikan manual di sini.
         Nilai dipakai untuk perhitungan PPh progresif (rekonsiliasi) dan referensi di profil karyawan.
       </div>
       <div class="table-wrap">
-      <table style="font-size:12px;min-width:520px"><thead><tr><th>Kode</th><th>Penjelasan singkat</th><th>Nilai (Rp/tahun)</th></tr></thead>
+      <table class="font-12" style="min-width:520px"><thead><tr><th>Kode</th><th>Penjelasan singkat</th><th>Nilai (Rp/tahun)</th></tr></thead>
       <tbody id="tb-ptkp-master"></tbody></table></div>
       <div class="mt1 fl gap1">
         <button type="button" class="btn btn-sm btn-p" onclick="simpanPTKP()">&#10003; Simpan PTKP</button>
         <button type="button" class="btn btn-sm btn-out" onclick="resetPTKP()">&#8635; Reset ke default</button>
       </div>
     </div>
-    <div class="info-box info-blue" style="font-size:11px;line-height:1.7">
+    <div class="info-box info-blue font-11" style="line-height:1.7">
       <strong>Tabel TER PMK 168/2023 (Tarif Efektif Rata-Rata)</strong><br>
       &#9679; <strong>Lampiran A</strong>: TK/0, TK/1, K/0 (PTKP Rp54jt &amp; Rp58,5jt)<br>
       &#9679; <strong>Lampiran B</strong>: TK/2, TK/3, K/1, K/2 (PTKP Rp63jt &amp; Rp67,5jt)<br>
@@ -793,13 +794,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div class="card table-wrap">
       <div class="ter-grid">
-        <div><div class="ct" style="color:#1a56a0">Lampiran A (TK/0, TK/1, K/0)</div><div id="ter-a-table"></div></div>
-        <div><div class="ct" style="color:#7d4800">Lampiran B (TK/2, TK/3, K/1, K/2)</div><div id="ter-b-table"></div></div>
-        <div><div class="ct" style="color:#5b21b6">Lampiran C (K/3)</div><div id="ter-c-table"></div></div>
+        <div><div class="ct ct-brand">Lampiran A (TK/0, TK/1, K/0)</div><div id="ter-a-table"></div></div>
+        <div><div class="ct ct-warn">Lampiran B (TK/2, TK/3, K/1, K/2)</div><div id="ter-b-table"></div></div>
+        <div><div class="ct ct-purple">Lampiran C (K/3)</div><div id="ter-c-table"></div></div>
       </div>
     </div>
   </div>
-  <div id="m-cabang" class="master-tab-panel" style="display:none" hidden></div>
+  <div id="m-cabang" class="master-tab-panel u-hidden" hidden></div>
 </div>
 
 <!-- USER MANAGEMENT v9 -->
@@ -821,16 +822,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       </div>
     </div>
   </div>
-  <div id="um-reg" style="display:none">
+  <div class="u-hidden" id="um-reg">
     <div class="card">
       <div class="ct">Permintaan Registrasi (Email)</div>
-      <div class="fl gap1" style="flex-wrap:wrap;align-items:center;margin-bottom:.6rem">
+      <div class="fl gap1 flex-wrap items-center mb-md">
         <button class="btn btn-sm btn-out" onclick="loadRegRequests()">&#8635; Refresh</button>
       </div>
       <div id="reg-req-list" class="table-wrap"></div>
     </div>
   </div>
-  <div id="um-roles" style="display:none">
+  <div class="u-hidden" id="um-roles">
     <div class="card">
       <div class="ct">Matriks Hak Akses Modul per Role
         <button class="btn btn-sm btn-p" onclick="openRoleModal()">+ Tambah Role</button>
@@ -874,35 +875,35 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
   <div class="backup-tab-panels">
   <div id="bk-cadangan">
-    <div class="card" style="border-left:4px solid #5b21b6">
-      <div class="ct" style="color:#5b21b6">Snapshot periode</div>
-      <div id="migration-status" style="font-size:12px;color:#374151"></div>
+    <div class="card border-accent-purple">
+      <div class="ct ct-purple">Snapshot periode</div>
+      <div class="font-12 text-body" id="migration-status"></div>
     </div>
-    <div class="card" style="border-left:4px solid #2d6a0a">
-      <div class="ct" style="color:#2d6a0a">Export backup</div>
+    <div class="card border-accent-success">
+      <div class="ct ct-success">Export backup</div>
       <div class="fg2">
         <div class="fg"><label>Nama file</label><input id="backup-filename" value="SiGaji_Backup"></div>
         <div class="fg"><label>Catatan</label><input id="backup-catatan" placeholder="Opsional"></div>
       </div>
-      <div class="fl gap1" style="flex-wrap:wrap;align-items:center">
+      <div class="fl gap1 flex-wrap items-center">
         <button class="btn btn-g" onclick="exportBackup()">&#128190; Download .json</button>
         <button type="button" class="btn btn-p" id="btn-cloud-db-export" onclick="exportCloudDatabaseBackup()">&#9729; Backup cloud</button>
         <button class="btn btn-sm btn-out" onclick="exportCSVAll()">&#128196; CSV</button>
       </div>
-      <label id="backup-exclude-logo-wrap" class="backup-exclude-logo-wrap" style="display:flex;align-items:center;gap:.4rem;margin-top:.5rem;font-size:12px;cursor:pointer">
+      <label id="backup-exclude-logo-wrap" class="backup-exclude-logo-wrap fl items-center gap-xs mt-md font-12 cursor-pointer">
         <input type="checkbox" id="backup-exclude-logo" checked style="width:16px;height:16px;accent-color:#1a56a0">
         Backup cloud tanpa logo (file lebih kecil)
       </label>
-      <div id="backup-info" class="mt1" style="font-size:11px;color:#6b7280"></div>
+      <div id="backup-info" class="mt1 u-muted-11"></div>
     </div>
-    <div class="card" style="border-left:4px solid #1a56a0">
-      <div class="ct" style="color:#1a56a0">Import backup</div>
+    <div class="card border-accent-left">
+      <div class="ct ct-brand">Import backup</div>
       <div class="logo-drop" onclick="document.getElementById('import-file-input').click()" style="padding:1rem">
         <input type="file" id="import-file-input" accept=".json" onchange="readImportFile(this)">
-        <div style="font-size:20px;margin-bottom:4px">&#128229;</div>
-        <div style="font-size:12px;font-weight:700;color:#1a56a0">Pilih file .json</div>
+        <div class="mb-xs" style="font-size:20px">&#128229;</div>
+        <div class="font-12 fw-700 text-brand">Pilih file .json</div>
       </div>
-      <div id="import-preview" style="display:none">
+      <div class="u-hidden" id="import-preview">
         <div id="import-info" class="info-box info-blue mt1"></div>
         <div class="fg">
           <label>Mode</label>
@@ -911,8 +912,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
             <option value="overwrite">Timpa (Overwrite)</option>
           </select>
         </div>
-        <div style="margin-bottom:.75rem"><label style="font-size:10px;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">Komponen:</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem" id="import-checklist"></div>
+        <div class="tabs-spaced-lg"><label class="font-10 fw-700 text-muted u-block mb-xs">Komponen:</label>
+          <div class="u-grid gap-xs" style="grid-template-columns:1fr 1fr 1fr" id="import-checklist"></div>
         </div>
         <button class="btn btn-p" onclick="eksekusiImport()">&#128229; Import</button>
       </div>
@@ -921,47 +922,47 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="ct">Riwayat backup <button class="btn btn-sm btn-out" onclick="renderBackupRiwayat()">&#8635;</button></div>
       <div id="backup-riwayat"></div>
     </div>
-    <div class="card" style="border-left:4px solid #111827">
-      <div class="ct" style="color:#111827">Audit payroll</div>
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem">
-        <select id="audit-periode" style="width:auto;padding:6px 10px;border:1.5px solid #dde1e9;border-radius:8px;font-size:12px;font-family:inherit;outline:none" onchange="renderAuditLog()"></select>
+    <div class="card border-accent-dark">
+      <div class="ct ct-dark">Audit payroll</div>
+      <div class="fl gap-sm flex-wrap items-center mb-md">
+        <select class="rounded-sm font-12 select-inline" id="audit-periode" style="padding:6px 10px; border:1.5px solid #dde1e9; font-family:inherit; outline:none" onchange="renderAuditLog()"></select>
         <input id="audit-q" placeholder="Cari NIK / nama / aksi…" style="width:220px" oninput="renderAuditLog()">
         <button class="btn btn-sm btn-out" onclick="renderAuditLog()">&#8635;</button>
       </div>
       <div id="audit-log" class="sigaji-audit-timeline"></div>
     </div>
   </div>
-  <div id="bk-saldo" style="display:none">
-    <div class="card" style="border-left:4px solid #7c3aed">
-      <div class="ct" style="color:#5b21b6">Saldo PPh YTD (migrasi onboarding)</div>
-      <p style="font-size:12px;color:#374151;margin:0 0 .75rem 0">Impor total <strong>bruto PPh</strong> dan <strong>PPh terpotong</strong> dari payroll manual per NIK (mis. Jan–Apr). Untuk rekonsiliasi Desember / resign. Jangan buat periode gaji bulan yang sama di app.</p>
-      <div class="fg2" style="align-items:flex-end">
+  <div class="u-hidden" id="bk-saldo">
+    <div class="card border-accent-purple">
+      <div class="ct ct-purple">Saldo PPh YTD (migrasi onboarding)</div>
+      <p class="font-12 text-body mb-lg">Impor total <strong>bruto PPh</strong> dan <strong>PPh terpotong</strong> dari payroll manual per NIK (mis. Jan–Apr). Untuk rekonsiliasi Desember / resign. Jangan buat periode gaji bulan yang sama di app.</p>
+      <div class="fg2 items-end">
         <div class="fg"><label>Tahun pajak</label><input type="number" id="migrasi-pph-tahun" min="2020" max="2099" style="max-width:120px" onchange="renderMigrasiPphSaldo()"></div>
-        <div class="fl gap1" style="flex-wrap:wrap">
+        <div class="fl gap1 flex-wrap">
           <button type="button" class="btn btn-sm btn-s" onclick="exportMigrasiPphTemplate()">&#128196; Template</button>
           <button type="button" class="btn btn-sm btn-p" onclick="document.getElementById('inp-migrasi-pph-xlsx').click()">&#128229; Import Excel</button>
-          <input type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importMigrasiPphExcel(this)">
+          <input class="u-hidden" type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" onchange="importMigrasiPphExcel(this)">
           <button type="button" class="btn btn-sm btn-out" onclick="renderMigrasiPphSaldo()">&#8635;</button>
           <button type="button" class="btn btn-sm btn-r" onclick="clearMigrasiPphSaldoTahun()">Hapus saldo tahun</button>
         </div>
       </div>
-      <label style="display:flex;align-items:center;gap:.4rem;font-size:12px;margin:.5rem 0;cursor:pointer">
+      <label class="fl items-center gap-xs font-12 tabs-spaced cursor-pointer">
         <input type="checkbox" id="migrasi-pph-buat-baru" checked style="accent-color:#1a56a0">
         Buat profil baru jika NIK belum ada (pakai NIK asli, mis. K0003)
       </label>
-      <div id="migrasi-pph-ringkasan" style="font-size:11px;color:#6b7280;margin-bottom:.5rem"></div>
-      <div id="migrasi-pph-tabel" style="max-height:min(420px,55vh);overflow:auto"></div>
+      <div class="font-11 text-muted mb-md" id="migrasi-pph-ringkasan"></div>
+      <div class="overflow-auto" id="migrasi-pph-tabel" style="max-height:min(420px,55vh)"></div>
     </div>
   </div>
-  <div id="bk-ringkas" style="display:none">
+  <div class="u-hidden" id="bk-ringkas">
     <div class="card card-danger-zone">
-      <div class="ct" style="color:#9b2121">&#9888; Reset semua data</div>
+      <div class="ct ct-danger">&#9888; Reset semua data</div>
       <p class="danger-zone-desc">Menghapus seluruh karyawan, periode, gaji, dan pengaturan di browser ini. <strong>Export backup JSON</strong> di tab Backup terlebih dahulu. Tidak dapat dibatalkan.</p>
       <button type="button" class="btn btn-r btn-sm" onclick="openResetModal()">Reset semua data…</button>
     </div>
     <div class="card">
       <div class="flb mb2">
-        <div class="ct" style="margin:0;border:0;padding:0">Status deploy &amp; versi</div>
+        <div class="ct m-0 border-0 p-0">Status deploy &amp; versi</div>
         <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Perbarui</button>
       </div>
       <div id="sysstatus-panel"></div>
@@ -984,10 +985,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </aside>
 <div id="sigaji-tour-overlay" class="sigaji-tour-overlay" aria-hidden="true">
   <div id="sigaji-tour-popover" class="sigaji-tour-popover">
-    <div id="sigaji-tour-step-lbl" style="font-size:10px;color:#6b7280"></div>
-    <div id="sigaji-tour-title" style="font-weight:800;font-size:14px;margin:.35rem 0"></div>
-    <p id="sigaji-tour-body" style="font-size:12px;color:#374151;margin:0 0 .75rem;line-height:1.55"></p>
-    <div class="fl gap1" style="justify-content:space-between">
+    <div class="u-muted-10" id="sigaji-tour-step-lbl"></div>
+    <div class="fw-800 font-14" id="sigaji-tour-title" style="margin:.35rem 0"></div>
+    <p class="font-12 text-body leading-tight" id="sigaji-tour-body" style="margin:0 0 .75rem"></p>
+    <div class="fl gap1 justify-between">
       <button type="button" class="btn btn-xs btn-out" onclick="sigajiProductTourEnd(false)">Lewati</button>
       <div class="fl gap1">
         <button type="button" class="btn btn-xs btn-out" id="sigaji-tour-prev" onclick="sigajiProductTourPrev()">&#9664;</button>
@@ -999,13 +1000,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="sp" id="slide-panel">
   <div class="sph">
     <div>
-      <div style="font-size:10px;opacity:.75" id="sp-nik">NIK</div>
-      <div style="font-size:20px;font-weight:800;margin-top:2px" id="sp-name">Nama</div>
-      <div style="font-size:12px;opacity:.8;margin-top:3px" id="sp-sub">Jabatan</div>
+      <div class="font-10" style="opacity:.75" id="sp-nik">NIK</div>
+      <div class="fw-800 mt-2px" style="font-size:20px" id="sp-name">Nama</div>
+      <div class="font-12 mt-xs" style="opacity:.8" id="sp-sub">Jabatan</div>
     </div>
     <div class="fl gap1">
-      <button type="button" id="sp-btn-telegram" onclick="openTelegramFromKarPanel()" style="display:none;background:#229ED9;color:#fff;border:1.5px solid rgba(255,255,255,.35);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer" title="Buat kode /start untuk hubungkan bot slip gaji">Telegram slip</button>
-      <button onclick="hapusKarFromPanel()" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Hapus</button>
+      <button class="u-hidden rounded-sm font-11 fw-700 cursor-pointer" type="button" id="sp-btn-telegram" onclick="openTelegramFromKarPanel()" style="background:#229ED9; color:#fff; border:1.5px solid rgba(255,255,255,.35); padding:5px 10px" title="Buat kode /start untuk hubungkan bot slip gaji">Telegram slip</button>
+      <button class="rounded-sm font-11 fw-700 cursor-pointer" onclick="hapusKarFromPanel()" style="background:rgba(255,255,255,.2); color:#fff; border:1.5px solid rgba(255,255,255,.4); padding:5px 10px">Hapus</button>
       <button class="spc" onclick="closePanel()">&times;</button>
     </div>
   </div>
@@ -1020,17 +1021,17 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </select>
         </div>
         <div class="fg"><label>NIK (ID sistem)</label><input id="sp-nik-f" title="Tetap: K0001 | Tidak tetap: NT0001">
-          <div id="sp-nik-hint" style="font-size:10px;color:#6b7280;margin-top:.25rem"></div>
+          <div class="font-10 text-muted" id="sp-nik-hint" style="margin-top:.25rem"></div>
         </div>
         <div class="fg ff"><label>Nama Lengkap</label><input id="sp-nama-f" oninput="onNamaChange()"></div>
         <div class="fg"><label>Jenis Kelamin</label><select id="sp-jk-f"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
         <div class="fg"><label>Agama</label><select id="sp-agama-f"><option>Islam</option><option>Kristen</option><option>Katolik</option><option>Hindu</option><option>Buddha</option></select></div>
-        <div class="fg"><label>No. KTP <span style="font-weight:500;color:#6b7280">(NIK 16 digit)</span></label><input id="sp-ktp-f" inputmode="numeric" maxlength="16" oninput="sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()">
-          <div id="sp-ktp-hint" style="font-size:10px;color:#6b7280;margin-top:.25rem"></div>
+        <div class="fg"><label>No. KTP <span class="text-muted" style="font-weight:500">(NIK 16 digit)</span></label><input id="sp-ktp-f" inputmode="numeric" maxlength="16" oninput="sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()">
+          <div class="font-10 text-muted" id="sp-ktp-hint" style="margin-top:.25rem"></div>
         </div>
-        <div class="fg"><label>No. NPWP <span style="font-weight:500;color:#6b7280">(opsional jika KTP 16 digit)</span></label><input id="sp-npwp-f" maxlength="20" oninput="formatNPWP(this);sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()" inputmode="numeric">
-          <div id="sp-npwp-hint" style="font-size:10px;color:#6b7280;margin-top:.25rem"></div>
-          <button type="button" class="btn btn-xs btn-out" style="margin-top:4px" onclick="sigajiOpenDjpNikValidasi(document.getElementById('sp-ktp-f')&&document.getElementById('sp-ktp-f').value)">Cek validasi NIK (portal DJP)</button>
+        <div class="fg"><label>No. NPWP <span class="text-muted" style="font-weight:500">(opsional jika KTP 16 digit)</span></label><input id="sp-npwp-f" maxlength="20" oninput="formatNPWP(this);sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()" inputmode="numeric">
+          <div class="font-10 text-muted" id="sp-npwp-hint" style="margin-top:.25rem"></div>
+          <button type="button" class="btn btn-xs btn-out mt-xs" onclick="sigajiOpenDjpNikValidasi(document.getElementById('sp-ktp-f')&&document.getElementById('sp-ktp-f').value)">Cek validasi NIK (portal DJP)</button>
         </div>
         <div class="fg"><label>No. HP</label><input id="sp-hp-f"></div>
         <div class="fg"><label>Email</label><input id="sp-email-f"></div>
@@ -1041,7 +1042,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Departemen</label>
           <select id="sp-dept-f"><option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option></select>
         </div>
-        <div class="fg" id="sp-cabang-row" style="display:none">
+        <div class="fg u-hidden" id="sp-cabang-row">
           <label>Lokasi / cabang</label>
           <select id="sp-cabang-f"></select>
         </div>
@@ -1049,8 +1050,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Status Karyawan</label><select id="sp-status-f"><option>Tetap</option><option>Kontrak</option><option>Probasi</option><option>PKWT</option></select></div>
         <div class="fg"><label>Tanggal Masuk</label><input type="date" id="sp-masuk-f"></div>
         <div class="fg"><label>Tgl. berhenti (opsional, untuk 1721-A1)</label><input type="date" id="sp-berhenti-f" title="Jika diisi: bukti potong A1 hanya memuat periode gaji sampai tanggal ini (mis. resign Februari)" onchange="toggleSpPhkWrap()" oninput="toggleSpPhkWrap()"></div>
-        <div class="fg ff" id="sp-phk-wrap" style="display:none">
-          <label>Alasan PHK / berhenti <span style="color:#9b2121;font-weight:700">*</span> <span style="font-size:10px;color:#6b7280;font-weight:600">(wajib jika ada tanggal berhenti — UU Cipta Kerja)</span></label>
+        <div class="fg ff u-hidden" id="sp-phk-wrap">
+          <label>Alasan PHK / berhenti <span class="ct-danger fw-700">*</span> <span class="font-10 text-muted fw-600">(wajib jika ada tanggal berhenti — UU Cipta Kerja)</span></label>
           <select id="sp-phk-alasan"></select>
         </div>
         <div class="fg"><label>Status PTKP</label>
@@ -1061,7 +1062,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
             <option value="K2">K/2 — Rp 67.500.000</option><option value="K3">K/3 — Rp 72.000.000</option>
           </select>
         </div>
-        <div class="fg"><label>Nilai PTKP (Tahunan)</label><input id="sp-ptkp-val-f" readonly style="background:#f3f4f6;color:#6b7280;font-weight:700"></div>
+        <div class="fg"><label>Nilai PTKP (Tahunan)</label><input class="text-muted fw-700" id="sp-ptkp-val-f" readonly style="background:#f3f4f6"></div>
         <div class="fg"><label>Atasan Langsung</label><input id="sp-atasan-f"></div>
         <div class="fg"><label>Lokasi Kerja</label><input id="sp-lokasi-f"></div>
       </div>
@@ -1081,7 +1082,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
   </div>
   <div class="spf">
-    <div style="font-size:11px;color:#6b7280" id="sp-saved-lbl">-</div>
+    <div class="u-muted-11" id="sp-saved-lbl">-</div>
     <div class="fl gap1">
       <button class="btn btn-sm btn-out" onclick="closePanel()">Tutup</button>
       <button class="btn btn-sm btn-p" onclick="simpanKarPanel()">&#10003; Simpan Profil</button>
@@ -1093,16 +1094,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="sp" id="slide-panel-payroll">
   <div class="sph">
     <div>
-      <div style="font-size:10px;opacity:.75" id="kg-sp-nik">NIK</div>
-      <div style="font-size:20px;font-weight:800;margin-top:2px" id="kg-sp-name">Nama</div>
-      <div style="font-size:12px;opacity:.8;margin-top:3px" id="kg-sp-sub">Jabatan</div>
-    <div id="sp-payroll-mode-wrap" style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:10px;opacity:.85">Mode Payroll:</span>
-      <button class="btn btn-sm btn-out" id="sp-mode-periode" onclick="setSpPayrollView('periode')" style="padding:2px 8px;font-size:10px">Snapshot Periode</button>
-      <button class="btn btn-sm btn-out" id="sp-mode-master" onclick="setSpPayrollView('master')" style="padding:2px 8px;font-size:10px">Master Global</button>
-      <span id="sp-mode-lbl" style="font-size:10px;opacity:.85"></span>
+      <div class="font-10" style="opacity:.75" id="kg-sp-nik">NIK</div>
+      <div class="fw-800 mt-2px" style="font-size:20px" id="kg-sp-name">Nama</div>
+      <div class="font-12 mt-xs" style="opacity:.8" id="kg-sp-sub">Jabatan</div>
+    <div class="mt-sm fl gap-xs items-center flex-wrap" id="sp-payroll-mode-wrap">
+      <span class="font-10" style="opacity:.85">Mode Payroll:</span>
+      <button class="btn btn-sm btn-out font-10" id="sp-mode-periode" onclick="setSpPayrollView('periode')" style="padding:2px 8px">Snapshot Periode</button>
+      <button class="btn btn-sm btn-out font-10" id="sp-mode-master" onclick="setSpPayrollView('master')" style="padding:2px 8px">Master Global</button>
+      <span class="font-10" id="sp-mode-lbl" style="opacity:.85"></span>
     </div>
-    <div id="sp-mode-badge" style="margin-top:6px;font-size:10px;font-weight:800;display:inline-block;padding:4px 8px;border-radius:999px"></div>
+    <div class="mt-xs font-10 fw-800 u-inline-block" id="sp-mode-badge" style="padding:4px 8px; border-radius:999px"></div>
     </div>
     <div class="fl gap1">
       <button class="spc" onclick="closePayrollPanel()">&times;</button>
@@ -1114,60 +1115,60 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="spt" data-kgstab="natura" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-natura')">&#127873; Natura</div>
     <div class="spt" data-kgstab="pphret" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-pphret')">&#9312; PPh Return</div>
     <div class="spt" data-kgstab="ring" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-ring')">&#128200; Ringkasan</div>
-    <button type="button" id="payroll-sp-more-btn" class="btn btn-xs btn-out" style="margin-left:auto;align-self:center;font-size:10px" onclick="sigajiTogglePayrollAdvTabs()">+ Lanjutan</button>
+    <button type="button" id="payroll-sp-more-btn" class="btn btn-xs btn-out ml-auto font-10" style="align-self:center" onclick="sigajiTogglePayrollAdvTabs()">+ Lanjutan</button>
   </div>
   <div class="spb">
-    <div id="sp-gaji" style="display:none">
+    <div class="u-hidden" id="sp-gaji">
       <div class="stit">Gaji Pokok</div>
       <div class="fg"><label>Gaji Pokok per Bulan (Rp)</label><input type="text" class="inp-rp" id="sp-gapok-f" data-rp="1" oninput="updateGajiSummary()"></div>
-      <div class="stit" style="display:flex;justify-content:space-between;align-items:center">
+      <div class="stit flb">
         <span>Komponen Tunjangan</span><button class="btn btn-xs btn-p" onclick="addTunj()">+ Tambah</button>
       </div>
-      <div style="display:grid;grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto;gap:.3rem;padding:.25rem .5rem;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase">
+      <div class="u-grid font-10 fw-700 text-muted" style="grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto; gap:.3rem; padding:.25rem .5rem; text-transform:uppercase">
         <div>Nama</div><div>Nilai (Rp)</div><div>Tipe</div><div>THR</div><div title="Pro-Rata gaji">PR</div><div></div>
       </div>
       <div id="tunj-list"></div>
-      <div class="info-box info-blue mt1" style="font-size:10px;line-height:1.6">
+      <div class="info-box info-blue mt1 font-10 leading-tight">
         <strong>Tipe:</strong> Tetap (BPJS+THR+PPh+TH) | Tetap-Excl.BPJS (THR+PPh+TH) | Tidak Tetap (PPh+TH) | Harian-Excl.TH (PPh saja)<br>
         <strong>Kolom PR:</strong> <em>Prorata</em> = nilai dikali (hari hadir ÷ hari kerja) saat Pro-Rata aktif di Proses Gaji; <em>Penuh</em> = nilai tetap utuh walau prorata.
       </div>
-      <div class="stit" style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem">
+      <div class="stit fl justify-between items-center" style="margin-top:1.25rem">
         <span>Potongan Tetap</span><button class="btn btn-xs btn-p" onclick="addPot()">+ Tambah</button>
       </div>
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.3rem;padding:.25rem .5rem;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase"><div>Nama</div><div>Nilai (Rp)</div><div>Ket.</div><div></div></div>
+      <div class="u-grid font-10 fw-700 text-muted" style="grid-template-columns:2fr 1fr 1fr auto; gap:.3rem; padding:.25rem .5rem; text-transform:uppercase"><div>Nama</div><div>Nilai (Rp)</div><div>Ket.</div><div></div></div>
       <div id="pot-list"></div>
     </div>
-    <div id="sp-bpjs" style="display:none">
+    <div class="u-hidden" id="sp-bpjs">
       <div class="stit">Kepesertaan BPJS per Komponen</div>
-      <div class="info-box info-blue" style="font-size:11px;margin-bottom:.6rem">Centang komponen yang aktif untuk karyawan ini. Komponen tidak dicentang = 0, tidak masuk gross PPh.</div>
+      <div class="info-box info-blue font-11 mb-md">Centang komponen yang aktif untuk karyawan ini. Komponen tidak dicentang = 0, tidak masuk gross PPh.</div>
       <div id="bpjs-kes-sec">
         <div class="stit">&#9829; BPJS Kesehatan</div>
-        <div style="display:grid;grid-template-columns:auto 2fr 1fr 1fr auto;gap:.4rem;padding:.25rem .5rem;font-size:10px;font-weight:700;color:#6b7280"><div></div><div>Komponen</div><div>Tarif</div><div>Nominal</div><div>Mode</div></div>
+        <div class="u-grid gap-xs font-10 fw-700 text-muted" style="grid-template-columns:auto 2fr 1fr 1fr auto; padding:.25rem .5rem"><div></div><div>Komponen</div><div>Tarif</div><div>Nominal</div><div>Mode</div></div>
         <div id="bpjs-kes-rows"></div>
       </div>
       <div id="bpjs-tk-sec">
         <div class="stit mt2">&#128101; BPJS Ketenagakerjaan</div>
-        <div style="display:grid;grid-template-columns:auto 2fr 1fr 1fr auto;gap:.4rem;padding:.25rem .5rem;font-size:10px;font-weight:700;color:#6b7280"><div></div><div>Komponen</div><div>Tarif</div><div>Nominal</div><div>Mode</div></div>
+        <div class="u-grid gap-xs font-10 fw-700 text-muted" style="grid-template-columns:auto 2fr 1fr 1fr auto; padding:.25rem .5rem"><div></div><div>Komponen</div><div>Tarif</div><div>Nominal</div><div>Mode</div></div>
         <div id="bpjs-tk-rows"></div>
       </div>
-      <div style="margin-top:.6rem;display:flex;gap:.4rem;flex-wrap:wrap">
+      <div class="mt-lg fl gap-xs flex-wrap">
         <button class="btn btn-xs btn-out" onclick="bpjsSetAll(true)">&#10003; Aktifkan Semua</button>
         <button class="btn btn-xs btn-out" onclick="bpjsSetAll(false)">&#9711; Nonaktifkan Semua</button>
         <button class="btn btn-xs btn-out" onclick="bpjsSetPreset('jkk-jkm')">JKK+JKM Saja</button>
       </div>
     </div>
-    <div id="sp-natura" style="display:none">
-      <div id="natura-periode-hint" style="display:none;font-size:11px;margin-bottom:.65rem;padding:.55rem .7rem;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;line-height:1.55;color:#374151"></div>
-      <div class="ct"><span id="natura-kar-lbl" style="color:#1a56a0;font-weight:700">-</span><button class="btn btn-xs btn-p" onclick="addNatura()">+ Tambah</button></div>
-      <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr auto;gap:.3rem;padding:.25rem .5rem;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase"><div>Nama</div><div>Nilai/Bulan</div><div>Status Pajak</div><div></div></div>
+    <div class="u-hidden" id="sp-natura">
+      <div class="u-hidden font-11 mb-lg card-surface-neutral rounded-sm leading-tight text-body" id="natura-periode-hint" style="padding:.55rem .7rem; border:1px solid #e5e7eb"></div>
+      <div class="ct"><span class="ct-brand fw-700" id="natura-kar-lbl">-</span><button class="btn btn-xs btn-p" onclick="addNatura()">+ Tambah</button></div>
+      <div class="u-grid font-10 fw-700 text-muted" style="grid-template-columns:1.5fr 1fr 1fr auto; gap:.3rem; padding:.25rem .5rem; text-transform:uppercase"><div>Nama</div><div>Nilai/Bulan</div><div>Status Pajak</div><div></div></div>
       <div id="natura-list"></div>
       <div id="natura-total" class="mt1"></div>
     </div>
-    <div id="sp-pphret" style="display:none">
-      <div class="info-box info-green" style="font-size:11px">Pengembalian kelebihan PPh 21 per <strong>periode gaji</strong> — menambah Take Home bulan itu, tidak mempengaruhi PPh bulan ini. Periode baru selalu mulai dari Rp 0.</div>
-      <div id="sp-pphret-mode-hint" style="display:none;font-size:11px;margin-bottom:.5rem;padding:.5rem .65rem;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#374151"></div>
-      <div style="background:#e8f4de;border:1px solid #b3d98f;border-radius:8px;padding:.85rem">
-        <div class="ct" style="color:#2d6a0a;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem">
+    <div class="u-hidden" id="sp-pphret">
+      <div class="info-box info-green font-11">Pengembalian kelebihan PPh 21 per <strong>periode gaji</strong> — menambah Take Home bulan itu, tidak mempengaruhi PPh bulan ini. Periode baru selalu mulai dari Rp 0.</div>
+      <div class="u-hidden font-11 mb-md card-surface-neutral rounded-sm text-body" id="sp-pphret-mode-hint" style="padding:.5rem .65rem; border:1px solid #e5e7eb"></div>
+      <div class="rounded-sm" style="background:#e8f4de; border:1px solid #b3d98f; padding:.85rem">
+        <div class="ct ct-success fl justify-between items-center flex-wrap gap-xs">
           <span>&#9312; Pengembalian Lebih Bayar PPh</span>
           <button type="button" class="btn btn-xs btn-out" onclick="clearPphReturnPanel()">Kosongkan</button>
         </div>
@@ -1178,13 +1179,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div id="pphret-preview"></div>
       </div>
     </div>
-    <div id="sp-ring" style="display:none">
+    <div class="u-hidden" id="sp-ring">
       <div class="stit">Ringkasan Kompensasi Bulanan</div>
       <div id="gaji-summary-panel"></div>
     </div>
   </div>
   <div class="spf">
-    <div style="font-size:11px;color:#6b7280" id="kg-sp-saved-lbl">-</div>
+    <div class="u-muted-11" id="kg-sp-saved-lbl">-</div>
     <div class="fl gap1">
       <button class="btn btn-sm btn-out" onclick="closePayrollPanel()">Tutup</button>
       <button class="btn btn-sm btn-p" onclick="simpanPayrollPanel()">&#10003; Simpan Komponen Gaji</button>
@@ -1200,12 +1201,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <input type="hidden" id="u-idx" value="-1">
     <div class="fg"><label>Username</label><input id="u-username" placeholder="untuk login lokal (tanpa @)"></div>
     <div class="fg"><label>Email Supabase (login awan)</label><input id="u-email" type="email" placeholder="sama persis dengan email di Authentication"></div>
-    <div class="info-box info-blue" style="font-size:10px;margin:-4px 0 6px">Login cloud: <strong>email harus sama</strong> dengan Authentication; <strong>role &amp; hak</strong> mengikuti baris ini (Admin / HRD / Karyawan).</div>
+    <div class="info-box info-blue font-10" style="margin:-4px 0 6px">Login cloud: <strong>email harus sama</strong> dengan Authentication; <strong>role &amp; hak</strong> mengikuti baris ini (Admin / HRD / Karyawan).</div>
     <div class="fg" id="u-password-wrap"><label>Password (login lokal)</label><input id="u-password" placeholder="hanya jika tidak pakai Supabase"></div>
     <div class="fg"><label>Nama Lengkap</label><input id="u-nama"></div>
     <div class="fg"><label>Role</label><select id="u-role"></select></div>
     <div class="fg"><label>Tautkan ke NIK Karyawan (opsional)</label><select id="u-nik"><option value="">-- Tidak tertaut --</option></select></div>
-    <div class="fg"><label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+    <div class="fg"><label class="fl items-center gap-sm cursor-pointer">
       <input type="checkbox" id="u-aktif" checked style="width:16px;height:16px;accent-color:#2d6a0a"> User aktif (bisa login)
     </label></div>
     <div class="mfoot">
@@ -1221,7 +1222,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="mclose" onclick="closeModal('m-role')">&times;</button>
     <div class="mtit">Tambah Role Baru</div>
     <div class="fg"><label>Nama Role</label><input id="r-nama" placeholder="cth: Manager, Supervisor"></div>
-    <div class="info-box info-amber" style="font-size:11px">Setelah dibuat, atur hak akses di tabel matriks.</div>
+    <div class="info-box info-amber font-11">Setelah dibuat, atur hak akses di tabel matriks.</div>
     <div class="mfoot">
       <button class="btn btn-sm btn-out" onclick="closeModal('m-role')">Batal</button>
       <button class="btn btn-sm btn-p" onclick="simpanRole()">Simpan Role</button>
@@ -1232,8 +1233,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL RESET PASSWORD (dari link email Supabase) -->
 <div class="mbd" id="m-pw-reset">
   <div class="modal modal-sm" style="border-top:4px solid #1a56a0">
-    <div class="mtit" style="color:#1a56a0">&#128273; Buat Password Baru</div>
-    <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem">Anda membuka link dari email reset password. Masukkan password baru untuk akun Supabase Anda.</div>
+    <div class="mtit ct-brand">&#128273; Buat Password Baru</div>
+    <div class="info-box info-blue font-11 tabs-spaced-lg">Anda membuka link dari email reset password. Masukkan password baru untuk akun Supabase Anda.</div>
     <div class="fg"><label>Password Baru</label><input type="password" id="pw-reset-new" placeholder="min. 6 karakter"></div>
     <div class="fg"><label>Konfirmasi Password</label><input type="password" id="pw-reset-confirm" placeholder="ulangi password baru" onkeydown="if(event.key==='Enter')doUpdatePassword()"></div>
     <div class="mfoot">
@@ -1247,8 +1248,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="mbd" id="m-forgot">
   <div class="modal modal-sm" style="border-top:4px solid #1a56a0">
     <button class="mclose" onclick="closeModal('m-forgot')">&times;</button>
-    <div class="mtit" style="color:#1a56a0">&#128231; Lupa Password</div>
-    <div class="info-box info-blue" style="font-size:11px;margin-bottom:.75rem;line-height:1.55">
+    <div class="mtit ct-brand">&#128231; Lupa Password</div>
+    <div class="info-box info-blue font-11 tabs-spaced-lg leading-tight">
       Masukkan <strong>email Supabase</strong> Anda. Kami akan kirim link untuk membuat password baru.
     </div>
     <div class="fg">
@@ -1264,10 +1265,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 <!-- MODAL REGISTER EMAIL (request approval) -->
 <div class="mbd" id="m-register">
-  <div class="modal modal-sm" style="border-top:4px solid #2d6a0a">
+  <div class="modal modal-sm border-accent-success">
     <button class="mclose" onclick="closeModal('m-register')">&times;</button>
-    <div class="mtit" style="color:#2d6a0a">&#128100; Daftar Email</div>
-    <div class="info-box info-green" style="font-size:11px;margin-bottom:.75rem;line-height:1.55">
+    <div class="mtit ct-success">&#128100; Daftar Email</div>
+    <div class="info-box info-green font-11 tabs-spaced-lg leading-tight">
       Isi data Anda untuk meminta akses. <strong>Admin/HRD</strong> akan menyetujui terlebih dahulu sebelum Anda bisa login.
     </div>
     <div class="fg"><label>Email</label><input id="reg-email" type="email" placeholder="nama@perusahaan.com"></div>
@@ -1284,11 +1285,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="mbd" id="m-setup-wizard">
   <div class="modal" style="max-width:520px;border-top:4px solid #1a56a0">
     <button class="mclose" onclick="sigajiSetupWizardSkip()">&times;</button>
-    <div class="mtit" style="color:#1a56a0">&#128640; Setup SiGaji — pertama kali</div>
-    <div id="wiz-step-lbl" style="font-size:11px;color:#6b7280;margin-bottom:.75rem">Langkah 1 / 5</div>
+    <div class="mtit ct-brand">&#128640; Setup SiGaji — pertama kali</div>
+    <div class="font-11 text-muted tabs-spaced-lg" id="wiz-step-lbl">Langkah 1 / 5</div>
     <div class="wiz-progress"><span class="wiz-dot active"></span><span class="wiz-dot"></span><span class="wiz-dot"></span><span class="wiz-dot"></span><span class="wiz-dot"></span></div>
     <div id="wiz-body"></div>
-    <div class="mfoot" style="justify-content:space-between">
+    <div class="mfoot justify-between">
       <button type="button" class="btn btn-sm btn-out" onclick="sigajiSetupWizardSkip()">Lewati</button>
       <div class="fl gap1">
         <button type="button" class="btn btn-sm btn-out" id="wiz-btn-prev" onclick="sigajiSetupWizardPrev()">&#9664; Kembali</button>
@@ -1315,14 +1316,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="mbd" id="m-reset">
   <div class="modal modal-sm" style="border-top:4px solid #9b2121">
     <button class="mclose" onclick="closeModal('m-reset')">&times;</button>
-    <div class="mtit" style="color:#9b2121">&#9888; Reset Semua Data</div>
+    <div class="mtit ct-danger">&#9888; Reset Semua Data</div>
     <div class="info-box info-red">Menghapus <strong>semua</strong> karyawan, periode, gaji, dan pengaturan. Jika pakai cloud, data di Supabase ikut dikosongkan setelah simpan. Sudah unduh backup?</div>
-    <p id="reset-admin-hint" class="reset-admin-hint" style="font-size:11px;color:#6b7280;margin:0 0 .5rem"></p>
-    <div class="fg"><label style="color:#9b2121;font-weight:700">Password akun Admin (username: admin)</label>
-      <input type="password" id="reset-pw" autocomplete="off" placeholder="Password akun admin — bukan password Anda" style="border:2px solid #f5a3a3;border-radius:8px;padding:9px 12px;width:100%;font-family:inherit;font-size:13px;outline:none" oninput="updateResetButtonState()">
+    <p id="reset-admin-hint" class="reset-admin-hint font-11 text-muted mb-md m-0"></p>
+    <div class="fg"><label class="ct-danger fw-700">Password akun Admin (username: admin)</label>
+      <input class="rounded-sm w-full font-13" type="password" id="reset-pw" autocomplete="off" placeholder="Password akun admin — bukan password Anda" style="border:2px solid #f5a3a3; padding:9px 12px; font-family:inherit; outline:none" oninput="updateResetButtonState()">
     </div>
-    <div class="fg"><label style="color:#9b2121;font-weight:700">Ketik RESET SEMUA DATA:</label>
-      <input id="reset-inp" placeholder="RESET SEMUA DATA" autocomplete="off" style="border:2px solid #f5a3a3;border-radius:8px;padding:9px 12px;width:100%;font-family:inherit;font-size:13px;outline:none" oninput="updateResetButtonState()">
+    <div class="fg"><label class="ct-danger fw-700">Ketik RESET SEMUA DATA:</label>
+      <input class="rounded-sm w-full font-13" id="reset-inp" placeholder="RESET SEMUA DATA" autocomplete="off" style="border:2px solid #f5a3a3; padding:9px 12px; font-family:inherit; outline:none" oninput="updateResetButtonState()">
     </div>
     <div class="mfoot">
       <button class="btn btn-sm btn-out" onclick="closeModal('m-reset')">Batal</button>
@@ -1358,28 +1359,28 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <select id="mob-loc-tipe"><option value="kantor">kantor</option><option value="site">site</option><option value="mess">mess</option><option value="dinas">dinas</option><option value="lainnya">lainnya</option></select>
       </div>
       <div class="fg"><label>Radius geofence</label>
-        <input type="range" id="mob-loc-radius" min="50" max="5000" step="10" value="250" style="width:100%" oninput="mobLocUpdateRadiusUi()">
-        <div id="mob-loc-radius-lbl" style="font-size:12px;color:#374151;margin-top:4px">250 m</div>
+        <input class="w-full" type="range" id="mob-loc-radius" min="50" max="5000" step="10" value="250" oninput="mobLocUpdateRadiusUi()">
+        <div class="font-12 text-body mt-xs" id="mob-loc-radius-lbl">250 m</div>
       </div>
     </div>
-    <div id="mob-loc-step-2" style="display:none">
+    <div class="u-hidden" id="mob-loc-step-2">
       <div class="mob-loc-step-hint">Langkah 2: Klik peta untuk menempatkan pin, atau gunakan tombol &quot;Lokasi saya&quot; di bawah.</div>
       <input id="mob-loc-lat" type="hidden">
       <input id="mob-loc-lon" type="hidden">
-      <div id="mob-loc-map" style="height:280px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:.65rem"></div>
-      <div class="fl gap1" style="flex-wrap:wrap;margin-bottom:.5rem">
+      <div class="rounded-md mb-lg" id="mob-loc-map" style="height:280px; border:1px solid #e2e8f0"></div>
+      <div class="fl gap1 flex-wrap mb-md">
         <button type="button" class="btn btn-sm btn-out" onclick="mobLocUseMyPosition()">&#128205; Gunakan lokasi saya sekarang</button>
       </div>
     </div>
-    <div id="mob-loc-step-3" style="display:none">
+    <div class="u-hidden" id="mob-loc-step-3">
       <div class="mob-loc-step-hint">Langkah 3: Periksa ringkasan sebelum menyimpan. Karyawan harus berada dalam radius saat check-in di APK.</div>
       <div id="mob-loc-wiz-preview"></div>
     </div>
     <div class="mfoot">
-      <button type="button" class="btn btn-sm btn-out" id="mob-loc-wiz-prev" style="display:none" onclick="mobLocWizardPrev()">&#8592; Sebelumnya</button>
+      <button type="button" class="btn btn-sm btn-out u-hidden" id="mob-loc-wiz-prev" onclick="mobLocWizardPrev()">&#8592; Sebelumnya</button>
       <button type="button" class="btn btn-sm btn-out" onclick="closeModal('m-mob-location')">Batal</button>
       <button type="button" class="btn btn-sm btn-p" id="mob-loc-wiz-next" onclick="mobLocWizardNext()">Lanjut &#8594;</button>
-      <button type="button" class="btn btn-sm btn-p" id="mob-loc-wiz-save" style="display:none" onclick="saveMobileLocationModal(this)">Simpan lokasi</button>
+      <button type="button" class="btn btn-sm btn-p u-hidden" id="mob-loc-wiz-save" onclick="saveMobileLocationModal(this)">Simpan lokasi</button>
     </div>
   </div>
 </div>
@@ -1389,7 +1390,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="modal modal-sm">
     <button class="mclose" onclick="closeModal('m-tg')">&times;</button>
     <div class="mtit">Telegram Slip Gaji</div>
-    <div class="info-box info-blue" style="font-size:11px;line-height:1.6">
+    <div class="info-box info-blue font-11 leading-tight">
       1) HRD/Admin buat <strong>kode link</strong> untuk karyawan.<br>
       2) Karyawan chat bot lalu kirim: <code>/start KODE</code>.<br>
       3) Setelah tertaut, slip bisa dikirim sebagai PDF.
@@ -1401,7 +1402,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <input id="tg-code" readonly placeholder="Klik 'Buat kode'">
         <button class="btn btn-sm btn-p" onclick="tgBuatKode()">Buat kode</button>
       </div>
-      <div style="font-size:10px;color:#6b7280;margin-top:6px">Bagikan kode ini ke karyawan (jangan umumkan di grup).</div>
+      <div class="font-10 text-muted mt-xs">Bagikan kode ini ke karyawan (jangan umumkan di grup).</div>
     </div>
     <div class="mfoot">
       <button class="btn btn-sm btn-out" onclick="closeModal('m-tg')">Tutup</button>
@@ -1422,38 +1423,38 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.5.26"></script>
-<script src="/js/sigaji-icons.js?v=11.5.26"></script>
-<script src="/js/sigaji-ui.js?v=11.5.26"></script>
-<script src="/js/karyawan-tipe.js?v=11.5.26"></script>
-<script src="/js/storage.js?v=11.5.26"></script>
-<script src="/js/ptkp.js?v=11.5.26"></script>
-<script src="/js/modules/app-globals.js?v=11.5.26"></script>
-<script src="/js/modules/app-core.js?v=11.5.26"></script>
-<script src="/js/modules/app-access.js?v=11.5.26"></script>
-<script src="/js/modules/app-hr.js?v=11.5.26"></script>
-<script src="/js/modules/app-slip.js?v=11.5.26"></script>
-<script src="/js/modules/app-reports.js?v=11.5.26"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.26"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.26"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.26"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.26"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.26"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.5.26"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.5.26"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.26"></script>
-<script src="/js/modules/app-master.js?v=11.5.26"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.26"></script>
-<script src="/js/modules/app-shell.js?v=11.5.26"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.5.26"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.5.26"></script>
-<script src="/js/pesangon.js?v=11.5.26"></script>
-<script src="/js/config.js?v=11.5.26"></script>
+<script src="/js/constants.js?v=11.5.27"></script>
+<script src="/js/sigaji-icons.js?v=11.5.27"></script>
+<script src="/js/sigaji-ui.js?v=11.5.27"></script>
+<script src="/js/karyawan-tipe.js?v=11.5.27"></script>
+<script src="/js/storage.js?v=11.5.27"></script>
+<script src="/js/ptkp.js?v=11.5.27"></script>
+<script src="/js/modules/app-globals.js?v=11.5.27"></script>
+<script src="/js/modules/app-core.js?v=11.5.27"></script>
+<script src="/js/modules/app-access.js?v=11.5.27"></script>
+<script src="/js/modules/app-hr.js?v=11.5.27"></script>
+<script src="/js/modules/app-slip.js?v=11.5.27"></script>
+<script src="/js/modules/app-reports.js?v=11.5.27"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.27"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.27"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.27"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.27"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.27"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.5.27"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.5.27"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.27"></script>
+<script src="/js/modules/app-master.js?v=11.5.27"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.27"></script>
+<script src="/js/modules/app-shell.js?v=11.5.27"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.5.27"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.5.27"></script>
+<script src="/js/pesangon.js?v=11.5.27"></script>
+<script src="/js/config.js?v=11.5.27"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.5.26"></script>
-<script src="/js/cloud-tables.js?v=11.5.26"></script>
+<script src="/js/cloud-branding.js?v=11.5.27"></script>
+<script src="/js/cloud-tables.js?v=11.5.27"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.5.26"></script>
-<script src="/js/modules/app-boot.js?v=11.5.26"></script>
+<script src="/js/cloud-sync.js?v=11.5.27"></script>
+<script src="/js/modules/app-boot.js?v=11.5.27"></script>
 </body>
 </html>

@@ -257,7 +257,7 @@ async function loadRegRequests() {
     if (!host) return;
     if (!items.length) {
       host.innerHTML =
-        '<div style="font-size:12px;color:#6b7280;padding:.5rem">Tidak ada permintaan pending.</div>';
+        '<div class="font-12 text-muted" style="padding:.5rem">Tidak ada permintaan pending.</div>';
       return;
     }
     host.innerHTML =
@@ -270,10 +270,10 @@ async function loadRegRequests() {
           var dt = String(it.created_at || '').slice(0, 19).replace('T', ' ');
           return (
             '<tr>'
-            + '<td style="font-weight:800">' + em + '</td>'
+            + '<td class="fw-800">' + em + '</td>'
             + '<td>' + (typeof escapeHtml === 'function' ? escapeHtml(nm) : nm) + '</td>'
             + '<td>' + (typeof escapeHtml === 'function' ? escapeHtml(nk) : nk) + '</td>'
-            + '<td style="font-size:11px;color:#6b7280">' + (typeof escapeHtml === 'function' ? escapeHtml(dt) : dt) + '</td>'
+            + '<td class="u-muted-11">' + (typeof escapeHtml === 'function' ? escapeHtml(dt) : dt) + '</td>'
             + '<td><div class="fl gap1">'
             + '<button class="btn btn-sm btn-g" onclick="decideRegReq(\'' + String(it.id).replace(/'/g, '') + '\',\'approve\')">Approve</button>'
             + '<button class="btn btn-sm btn-r" onclick="decideRegReq(\'' + String(it.id).replace(/'/g, '') + '\',\'reject\')">Reject</button>'

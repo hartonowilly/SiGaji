@@ -233,7 +233,7 @@
         '<div class="bento-spark-wrap">' +
         (netoSeries.length
           ? sparklineSvg(netoSeries, 200, 56)
-          : '<div style="color:#9ca3af;font-size:11px">Belum cukup periode</div>') +
+          : '<div class="text-subtle font-11">Belum cukup periode</div>') +
         '<div class="bento-spark-lbl">Neto 6 bulan terakhir</div>' +
         (netoSeries.length
           ? '<div class="bento-spark-val">' + fmt(netoSeries[netoSeries.length - 1]) + '</div>'
@@ -254,7 +254,7 @@
         '<div class="bento-kpi bento-kpi-click" onclick="sigajiOpenExplainSummary(\'neto\')"><span class="bento-kpi-lbl">Neto</span><span class="bento-kpi-val sigaji-money-ok">' +
         fmt(ctx.tN || 0) +
         '</span></div></div>' +
-        (ctx.hintHtml ? '<div class="dash-kpi-hint" style="margin-top:.5rem">' + ctx.hintHtml + '</div>' : ''),
+        (ctx.hintHtml ? '<div class="dash-kpi-hint mt-md">' + ctx.hintHtml + '</div>' : ''),
 
       dept_chips:
         '<div class="bento-dept-chips">' +
@@ -276,11 +276,11 @@
                 );
               })
               .join('')
-          : '<span style="color:#9ca3af;font-size:11px">Belum ada data dept</span>') +
+          : '<span class="text-subtle font-11">Belum ada data dept</span>') +
         '</div>',
 
       compliance:
-        '<p style="font-size:10px;color:#6b7280;margin:0 0 .4rem">THR, BPJS, e-Bupot, bayar gaji</p><div id="d-compliance-cal"></div>',
+        '<p class="font-10 text-muted" style="margin:0 0 .4rem">THR, BPJS, e-Bupot, bayar gaji</p><div id="d-compliance-cal"></div>',
 
       anomalies:
         '<div id="d-payroll-anomalies"></div>',
@@ -495,7 +495,7 @@
     body.innerHTML =
       '<div class="wf-header"><strong>Ringkasan periode</strong><span>' +
       escapeHtml(p.nama) +
-      '</span></div><p style="font-size:11px;color:#6b7280">Agregat ' +
+      '</span></div><p class="u-muted-11">Agregat ' +
       list.length +
       ' karyawan. Fokus: <strong>' +
       escapeHtml(focus || 'neto') +
@@ -665,7 +665,7 @@
       '<div class="narrative-text">' +
       text +
       '</div>' +
-      '<div class="fl gap1" style="margin-top:.65rem;flex-wrap:wrap">' +
+      '<div class="fl gap1 flex-wrap" style="margin-top:.65rem">' +
       '<button type="button" class="btn btn-sm btn-p" onclick="sigajiExportNarrativePdf()">&#128196; Export PDF</button>' +
       '<button type="button" class="btn btn-sm btn-out" onclick="sigajiCopyNarrative()">Salin teks</button>' +
       '</div></div>';
@@ -749,7 +749,7 @@
     if (anom.length) {
       paras.push('<p><span class="narrative-warn">⚠ ' + anom.length + ' anomali payroll perlu dicek (NPWP/NIK, neto, PPh).</span></p>');
     }
-    paras.push('<p style="font-size:11px;color:#6b7280">Dokumen estimasi — angka final mengikuti proses penggajian &amp; snapshot periode.</p>');
+    paras.push('<p class="u-muted-11">Dokumen estimasi — angka final mengikuti proses penggajian &amp; snapshot periode.</p>');
     return paras.join('');
   };
 
