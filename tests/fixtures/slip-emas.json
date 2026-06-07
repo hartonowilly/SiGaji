@@ -1,0 +1,75 @@
+{
+  "_keterangan": "Fixture slip emas — data fiktif. Ganti angka expected setelah verifikasi slip nyata PT Anda. Tidak disimpan ke Supabase.",
+  "cases": [
+    {
+      "id": "contoh-gaji-bulanan-tk0",
+      "sumber": "Template: gaji pokok 8jt TK/0, bulan penuh, tanpa tunjangan — diverifikasi manual Jun 2026",
+      "periode": "Maret 2026",
+      "karyawan": {
+        "nik": "FIX-GAJI-01",
+        "nama": "Karyawan Contoh 1 (fiktif)",
+        "gapok": 8000000,
+        "ptkp": "TK0",
+        "masuk": "2020-01-01",
+        "tunjangan": [],
+        "potongan": [],
+        "natura": [],
+        "bpjs_aktif": {
+          "kes-prs": true,
+          "kes-kar": true,
+          "jht-prs": true,
+          "jht-kar": true,
+          "jp-prs": true,
+          "jp-kar": true,
+          "jkk-prs": true,
+          "jkm-prs": true
+        }
+      },
+      "expected": {
+        "grossPPh": 8363200,
+        "pph": 125448,
+        "neto": 7554552,
+        "thrBruto": 0
+      }
+    },
+    {
+      "id": "contoh-k1-tunj-tetap",
+      "sumber": "Template: gapok 7,5jt + tunj tetap 500rb, PTKP K/1 — diverifikasi manual Jun 2026",
+      "periode": "Maret 2026",
+      "karyawan": {
+        "nik": "FIX-GAJI-02",
+        "nama": "Karyawan Contoh 2 (fiktif)",
+        "gapok": 7500000,
+        "ptkp": "K1",
+        "masuk": "2021-01-01",
+        "tunjangan": [
+          {
+            "nama": "Tunj Transport",
+            "nilai": 500000,
+            "tipe": "tetap",
+            "thr_ikut": true,
+            "prorata_ikut": true
+          }
+        ],
+        "potongan": [],
+        "natura": [],
+        "bpjs_aktif": {
+          "kes-prs": true,
+          "kes-kar": true,
+          "jht-prs": true,
+          "jht-kar": true,
+          "jp-prs": true,
+          "jp-kar": true,
+          "jkk-prs": true,
+          "jkm-prs": true
+        }
+      },
+      "expected": {
+        "grossPPh": 8363200,
+        "pph": 83632,
+        "neto": 7596368,
+        "thrBruto": 0
+      }
+    }
+  ]
+}

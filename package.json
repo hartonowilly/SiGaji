@@ -8,7 +8,21 @@
     "build": "node scripts/assemble-index.js && node scripts/generate-config.js",
     "assemble": "node scripts/assemble-index.js",
     "bump": "node scripts/bump-cache-version.js",
-    "migrate-styles": "node scripts/migrate-inline-styles.js"
+    "migrate-styles": "node scripts/migrate-inline-styles.js",
+    "test": "node tests/run-payroll-tests.mjs",
+    "test:payroll": "node tests/run-payroll-tests.mjs",
+    "test:cuti": "node tests/cuti-tracking.test.mjs",
+    "test:all": "node tests/run-payroll-tests.mjs && node tests/cuti-tracking.test.mjs",
+    "lint": "eslint js/modules/app-core.js js/constants.js js/ptkp.js tests/",
+    "lint:payroll": "eslint js/modules/app-core.js",
+    "typecheck:payroll": "tsc -p js/types/tsconfig.payroll.json",
+    "check:payroll": "npm test && npm run lint:payroll && npm run typecheck:payroll"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "globals": "^16.2.0",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@ryyr/worker-mailer": "^0.2.0",

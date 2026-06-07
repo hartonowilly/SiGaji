@@ -1,4 +1,10 @@
 /* SiGaji — inti: helper, snapshot, hitung gaji, BPJS, THR calc */
+/// <reference path="../types/payroll-globals.d.ts" />
+/* exported periodesFindById, periodesSortedByStart, sortPeriodesByPayrollYm, namaHL, ini,
+   cutiManualTrackingYear, countCutiBersamaTrackingYear, cutiTerpakai,
+   setPREnabled, setPRField, hitungPPhProgresif, setPphYtdAwal, syncTunjVarLabelsFromColumns,
+   karyawanSortedAll, nextNikOtomatis, clearPphReturnPanel, canEditDataPadaTanggalIso,
+   refreshKarSnapshotFromMaster, setSpPayrollView, getKarSnapshotProgress */
 // ── HELPERS ─────────────────────────────────────
 const PA=()=>{
   const aktif=periodes.find(p=>p.status==='aktif');
@@ -254,6 +260,12 @@ function bpjsKompAktif(k,key){
   const isKes=key==='kes-prs'||key==='kes-kar';
   return isKes?(ak.kes!==false):(ak.tk!==false);
 }
+/**
+ * @param {KaryawanPayroll} k
+ * @param {number} gapokEff
+ * @param {number} tunjBPJS
+ * @returns {Record<string, number>}
+ */
 function calcBPJS(k,gapokEff,tunjBPJS){
   const basis=gapokEff+tunjBPJS;const bm=k.bpjs_manual||{};
   const get=key=>{if(!bpjsKompAktif(k,key))return 0;if(bm[key]!==undefined)return bm[key];const def=BPJS_DEF[key];const b=def.basis?Math.min(basis,def.basis):basis;return Math.round(b*def.pct/100);};
@@ -284,6 +296,12 @@ function getTERTable(ptkpKey){
 }
 // PMK 168/2023: metode TER untuk pemotongan bulanan (masa pajak 1-11)
 // Desember: idealnya rekonsiliasi tahunan — untuk saat ini TER dipakai sepanjang tahun
+/**
+ * PPh 21 bulanan metode TER (PMK 168/2023).
+ * @param {number} bruto — gross PPh bulan ini
+ * @param {string} ptkpKey — mis. TK0, K1
+ * @returns {number}
+ */
 function hitungPPhBln(bruto,ptkpKey){
   if(bruto<=0)return 0;
   const tbl=getTERTable(ptkpKey);
@@ -298,6 +316,11 @@ function hitungPPhBln(bruto,ptkpKey){
 // Fungsi progresif tahunan (untuk referensi / rekonsiliasi Desember)
 // Hitung PPh tahunan progresif dari bruto akumulasi setahun
 // Dipakai untuk: masa pajak terakhir (Des) dan masa pajak terakhir resign
+/**
+ * @param {number} brutoTahunan
+ * @param {string} ptkpKey
+ * @returns {number}
+ */
 function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey){
   const bj=Math.min(brutoTahunan*.05,6e6);
   const pv=nilaiPTKP(ptkpKey);
@@ -356,6 +379,11 @@ function setPphYtdAwal(k,thn,bruto,pph,sdBulan){
   k.pph_ytd_awal[key]={bruto:b,pph:p,sd_bulan:sdBulan?Math.min(12,Math.max(1,parseInt(sdBulan,10)||0)):undefined};
 }
 // Hitung total bruto karyawan dari saldo migrasi + periodes sebelumnya dalam tahun yg sama
+/**
+ * @param {KaryawanPayroll} k
+ * @param {string} pNama
+ * @returns {{ totalBruto: number, totalPPh: number, thn: number, saldoAwal: { bruto: number, pph: number, sd_bulan: number } }}
+ */
 function getBrutoYTD(k,pNama){
   const p=periodes.find(x=>x.nama===pNama)||PA();
   const thn=new Date(p.bayar||p.end||p.start).getFullYear();
@@ -735,6 +763,13 @@ function getKarSnapshotProgress(pNama,list){
   return{done:done,total:total,ok:total>0&&done===total};
 }
 // ── HITUNG GAJI (dengan integrasi THR v9) ────────
+/**
+ * Hitung gaji satu karyawan untuk satu periode (slip, penggajian, laporan).
+ * @param {KaryawanPayroll} k
+ * @param {string} [pNama]
+ * @param {{ skipResolve?: boolean }} [opts]
+ * @returns {HitungGajiResult}
+ */
 function hitungGaji(k,pNama,opts){
   opts=opts||{};
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
@@ -746,7 +781,6 @@ function hitungGaji(k,pNama,opts){
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
   const prF=isPR?pr.hh/pr.hk:1;const gapokEff=Math.round(k.gapok*prF);
   let tBPJS=0,tGross=0,tTH=0;const tItems=[];
-  let tBPJSFull=0; // basis tunjangan BPJS 1 bulan penuh (untuk bulan resign/berhenti)
   var tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
   for(const t of tunjGabungan){
     const prMul=isPR&&t.prorata_ikut===false?1:prF;
@@ -754,8 +788,6 @@ function hitungGaji(k,pNama,opts){
     switch(t.tipe){
       case'tetap':
         tBPJS+=eff;
-        // BPJS basis full-month hanya dari tunjangan tetap (bukan variabel)
-        tBPJSFull+=Math.round(t.nilai||0);
         tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
