@@ -515,7 +515,8 @@ function syncPphReturnFieldState(){
     }else{
       hint.innerHTML='Mode <strong>Master global</strong>: kosongkan jika masih ada sisa nilai lama. Periode baru <em>tidak</em> menyalin PPh Return dari master.';
     }
-    hint.style.display='block';
+    if(typeof sigajiShowEl==='function')sigajiShowEl(hint);
+    else hint.style.display='block';
   }
 }
 function onPPhRetChange(){

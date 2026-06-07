@@ -291,16 +291,25 @@ function applyPayrollSpTabSimpleUi(){
   var adv=wrap.querySelectorAll('[data-payroll-adv="1"]');
   var btn=document.getElementById('payroll-sp-more-btn');
   if(!simple){
-    adv.forEach(function(el){el.style.display='';});
-    if(btn)btn.style.display='none';
+    adv.forEach(function(el){
+      if(typeof sigajiShowEl==='function')sigajiShowEl(el,'reset');
+      else{el.classList.remove('u-hidden');el.style.removeProperty('display');}
+    });
+    if(btn&&typeof sigajiHideEl==='function')sigajiHideEl(btn);
+    else if(btn)btn.style.display='none';
     return;
   }
   var show=wrap.dataset.payrollAdvShow==='1';
   adv.forEach(function(el){
     if(el.id==='payroll-sp-more-btn')return;
-    el.style.display=show?'':'none';
+    if(typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(el,show,'reset');
+    else el.style.display=show?'':'none';
   });
-  if(btn){btn.style.display='';btn.textContent=show?'\u2212 Ringkas':'+ Lanjutan';}
+  if(btn){
+    if(typeof sigajiShowEl==='function')sigajiShowEl(btn,'reset');
+    else btn.style.display='';
+    btn.textContent=show?'\u2212 Ringkas':'+ Lanjutan';
+  }
 }
 function sigajiTogglePayrollAdvTabs(){
   var wrap=document.getElementById('payroll-spt-wrap');
@@ -628,7 +637,11 @@ function renderNaturaPeriodeHint(nik){
   var el=document.getElementById('natura-periode-hint');
   if(!el||!nik)return;
   var km=karyawan.find(function(x){return x.nik===nik;});
-  if(!km){el.style.display='none';return;}
+  if(!km){
+    if(typeof sigajiHideEl==='function')sigajiHideEl(el);
+    else el.style.display='none';
+    return;
+  }
   var masterN=(km.natura||[]).length;
   var pAct=PA();
   var rows=[];
@@ -644,7 +657,8 @@ function renderNaturaPeriodeHint(nik){
     +'<div class="mt-xs"><strong>Master global:</strong> '+masterN+' baris. Saat periode baru dibuka, snapshot pertama kali <em>menyalin</em> master (termasuk natura).</div>'
     +(rows.length?'<div class="mt-xs"><strong>Per periode:</strong> '+rows.join(' · ')+'</div>':'')
     +'<div class="mt-xs text-muted">Item seperti "Makan Siang Kantor" Rp 550.000 berasal dari tombol <em>Template Cepat</em> (bukan diisi otomatis sistem).</div>';
-  el.style.display='block';
+  if(typeof sigajiShowEl==='function')sigajiShowEl(el);
+  else el.style.display='block';
 }
 function renderNaturaPanel(k){
   renderNaturaPeriodeHint(k&&k.nik);
@@ -919,8 +933,13 @@ function importTunjVarExcel(inp){
 function renderTunjVariabelBulan(){
   var card=document.getElementById('tunjvar-card'),wrap=document.getElementById('tunjvar-tabel-wrap'),foot=document.getElementById('tunjvar-foot');
   if(!card||!wrap)return;
-  if(!periodes.length){card.style.display='none';return;}
-  card.style.display='';
+  if(!periodes.length){
+    if(typeof sigajiHideEl==='function')sigajiHideEl(card);
+    else card.style.display='none';
+    return;
+  }
+  if(typeof sigajiShowEl==='function')sigajiShowEl(card,'reset');
+  else{card.classList.remove('u-hidden');card.style.removeProperty('display');}
   var p=PA(),pn=p.nama;
   var cols=getTunjVarColumnsResolved();
   if(!tunjVarColumns||!tunjVarColumns.length){tunjVarColumns=cols.slice();syncTunjVarLabelsFromColumns();saveAll();}

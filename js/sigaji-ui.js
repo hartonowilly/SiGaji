@@ -55,23 +55,32 @@
     }
   });
 
-  /** Tampilkan/sembunyikan panel tab — hapus .u-hidden (!important) saat tampil. */
+  /** Tampilkan/sembunyikan panel — selalu sinkronkan class .u-hidden + inline display. */
   window.sigajiSetPanelVisible = function (node, visible, display) {
     if (!node) return;
-    var disp = display || 'block';
     if (visible) {
       node.classList.remove('u-hidden');
-      node.style.display = disp;
       node.removeAttribute('hidden');
+      if (display === '' || display === 'reset') node.style.removeProperty('display');
+      else node.style.display = display || 'block';
     } else {
-      node.style.display = 'none';
       node.classList.add('u-hidden');
+      node.style.display = 'none';
     }
+  };
+
+  window.sigajiShowEl = function (node, display) {
+    sigajiSetPanelVisible(node, true, display);
+  };
+
+  window.sigajiHideEl = function (node) {
+    sigajiSetPanelVisible(node, false);
   };
 
   window.sigajiIsPanelVisible = function (node) {
     if (!node) return false;
     if (node.classList.contains('u-hidden')) return false;
+    if (node.hasAttribute('hidden')) return false;
     return node.style.display !== 'none';
   };
 })();

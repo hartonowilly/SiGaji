@@ -96,7 +96,7 @@ const SUBTABS={
   kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
   absensi:['kalender','cuti','lokasi','pengajuan'],
   master:['prs','periode','umk','libur','potongan','ter'],
-  laporan:['rekap','pph'],
+  laporan:['rekap','variance','pph'],
   approval:['pend','hist'],
 };
 const SUBTAB_LBL={
@@ -124,7 +124,7 @@ const MODULES=[
   {id:'penggajian',lbl:'Proses Gaji',icon:'&#128176;',sec:'Penggajian'},
   {id:'simulasi',lbl:'Simulasi What-if',icon:'&#128202;',sec:'Penggajian'},
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
-  {id:'laporan',lbl:'Laporan & PPh',icon:'&#128196;',sec:'Laporan',subtabs:['rekap','pph']},
+  {id:'laporan',lbl:'Laporan & PPh',icon:'&#128196;',sec:'Laporan',subtabs:['rekap','variance','pph']},
   {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter']},
   {id:'backup',lbl:'Backup & Sistem',icon:'&#128190;',sec:'Pengaturan',adminOnly:true},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
@@ -174,4 +174,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.5.29';
+const SIGAJI_MODULES_CACHE='11.5.31';

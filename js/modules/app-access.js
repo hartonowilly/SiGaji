@@ -28,9 +28,20 @@ function canAccess(id){return canAccessModule(id);}
 function canAccessSubTab(moduleId,subTabId){
   if(!CU)return false;
   if(CU.role==='Admin')return true;
-  return(roles[CU.role]||[]).includes(moduleId+'.'+subTabId);
+  var p=roles[CU.role]||[];
+  if(p.includes(moduleId+'.'+subTabId))return true;
+  /* Akses modul penuh (mis. 'laporan') → semua sub-tab modul itu */
+  if(p.includes(moduleId))return true;
+  return false;
+}
+function canAccessLaporanTab(laptab){
+  if(!laptab)return false;
+  if(canAccessSubTab('laporan',laptab))return true;
+  if(laptab==='variance')return canAccessSubTab('laporan','rekap');
+  return false;
 }
 function canAccessPayrollSub(subTabId){return canAccessSubTab('kompgaji',subTabId);}
+if(typeof window!=='undefined')window.canAccessLaporanTab=canAccessLaporanTab;
 function renderSidebar(){
   const secs={};
   MODULES.forEach(m=>{

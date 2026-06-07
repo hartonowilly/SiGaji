@@ -130,7 +130,11 @@ function renderAbsensiBody(){
     +monthKeys.map(function(k){return'<option value="'+k+'" '+(k===window.__sigajiAbMonth?'selected':'')+'>'+abMonthLabel(k)+'</option>';}).join('')
     +'</select></div>';
   var hdrSub='Kalender absensi — '+pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+daysAll.length+' hari (tampil: '+days.length+' hari)';
-  if(infoEl){infoEl.style.display='block';infoEl.textContent=hdrSub;}
+  if(infoEl){
+    if(typeof sigajiShowEl==='function')sigajiShowEl(infoEl);
+    else infoEl.style.display='block';
+    infoEl.textContent=hdrSub;
+  }
   var adaSelTerkunci=CU&&CU.role!=='Admin'&&days.some(function(x){return !canEditDataPadaTanggalIso(x.date);});
   var roBanner=adaSelTerkunci?'<div class="info-box info-amber font-11 mb-lg">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
   var listKar=typeof karyawanListPeriode==='function'?karyawanListPeriode(pAbs):sortKaryawanByNik(karyawan||[]);
