@@ -229,20 +229,16 @@
 
   /* ── Sidebar collapse ── */
   function syncSidebarCollapseUi(collapsed) {
-    var title = collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar (ikon saja)';
-    var glyph = collapsed ? '\u00BB' : '\u00AB';
-    var top = document.getElementById('sidebar-topbar-toggle');
-    if (top) {
-      top.innerHTML = collapsed ? '&#9654;' : '&#9664;';
-      top.title = title;
-      top.setAttribute('aria-label', collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar');
-      top.classList.toggle('is-collapsed', collapsed);
-    }
-    var bottom = document.getElementById('sidebar-collapse-btn');
-    if (bottom) {
-      bottom.textContent = glyph;
-      bottom.title = title;
-    }
+    var title = collapsed ? 'Tampilkan menu' : 'Sembunyikan menu';
+    var btn = document.getElementById('sidebar-collapse-btn');
+    if (!btn) return;
+    var ico = btn.querySelector('.sidebar-collapse-btn-ico');
+    var lbl = btn.querySelector('.sidebar-collapse-btn-lbl');
+    if (ico) ico.innerHTML = collapsed ? '&#9654;' : '&#9664;';
+    if (lbl) lbl.textContent = collapsed ? 'Menu' : 'Sembunyikan menu';
+    btn.title = title;
+    btn.setAttribute('aria-label', title);
+    btn.classList.toggle('is-collapsed', collapsed);
   }
 
   window.sigajiToggleSidebarCollapse = function () {
@@ -264,10 +260,13 @@
   }
 
   function injectSidebarCollapseBtn() {
-    var bottom = document.getElementById('nav-bottom');
-    if (!bottom || document.getElementById('sidebar-collapse-btn')) return;
-    bottom.innerHTML =
-      '<button type="button" id="sidebar-collapse-btn" class="sidebar-collapse-btn" onclick="sigajiToggleSidebarCollapse()" title="Ciutkan sidebar (ikon saja)"><span class="sidebar-collapse-btn-ico">&#9664;</span><span class="sidebar-collapse-btn-lbl">Ciutkan menu</span></button>';
+    var head = document.getElementById('nav-top');
+    if (!head || document.getElementById('sidebar-collapse-btn')) return;
+    head.innerHTML =
+      '<button type="button" id="sidebar-collapse-btn" class="sidebar-collapse-btn sidebar-collapse-btn-top" onclick="sigajiToggleSidebarCollapse()" title="Sembunyikan menu" aria-label="Sembunyikan menu">' +
+      '<span class="sidebar-collapse-btn-ico">&#9664;</span>' +
+      '<span class="sidebar-collapse-btn-lbl">Sembunyikan menu</span>' +
+      '</button>';
   }
 
   /* ── Command palette ── */
