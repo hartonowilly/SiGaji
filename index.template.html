@@ -7,17 +7,17 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/css/styles.css?v=11.5.32">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.32">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.32">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.32">
+<link rel="stylesheet" href="/css/styles.css?v=11.5.33">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.33">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.33">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.33">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.32"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.33"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.32"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.33"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -154,8 +154,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="page-actions"><button class="btn btn-sm btn-out" onclick="renderKompgaji()">&#8635; Refresh</button></div>
   </div>
   <div class="tabs tabs-spaced">
-    <div class="tab active" data-kgtab="daftar" onclick="switchKompgajiTab(this,'kg-tab-daftar')">&#128203; Daftar Komponen</div>
-    <div class="tab" data-kgtab="tunjvar" onclick="switchKompgajiTab(this,'kg-tab-tunjvar')">&#128176; Tunjangan Variabel</div>
+    <div class="tab active" data-kgtab="daftar" data-kgpanel="kg-tab-daftar">&#128203; Daftar Komponen</div>
+    <div class="tab" data-kgtab="tunjvar" data-kgpanel="kg-tab-tunjvar">&#128176; Tunjangan Variabel</div>
   </div>
   <div id="kg-tab-daftar">
   <div class="card">
@@ -282,7 +282,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Approval Penggajian</div><div class="pst">Persetujuan payroll sebelum final</div></div>
     <div class="page-actions"><button class="btn btn-sm btn-r" onclick="hapusApproval()">Hapus Riwayat</button></div>
   </div>
-  <div class="tabs"><div class="tab active" data-aptab="pend" data-panel="ap-pend" onclick="switchTab(this,'ap-pend')">Menunggu</div><div class="tab" data-aptab="hist" data-panel="ap-hist" onclick="switchTab(this,'ap-hist')">Riwayat</div></div>
+  <div class="tabs"><div class="tab active" data-aptab="pend" data-panel="ap-pend">Menunggu</div><div class="tab" data-aptab="hist" data-panel="ap-hist">Riwayat</div></div>
   <div id="ap-pend"><div id="ap-pend-list"></div></div>
   <div class="u-hidden" id="ap-hist"><div id="ap-hist-list"></div></div>
 </div>
@@ -384,8 +384,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm btn-thr-pdf u-hidden" id="btn-pdf-all-thr" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
   </div></div>
   <div class="tabs">
-    <div class="tab active" data-sliptab="gaji" onclick="switchSlipTab(this,'slip-tab-gaji')">&#128203; Slip Gaji</div>
-    <div class="tab" data-sliptab="kirim" onclick="switchSlipTab(this,'slip-tab-kirim')">&#128232; Kirim Slip</div>
+    <div class="tab active" data-sliptab="gaji" data-slipanel="slip-tab-gaji">&#128203; Slip Gaji</div>
+    <div class="tab" data-sliptab="kirim" data-slipanel="slip-tab-kirim">&#128232; Kirim Slip</div>
   </div>
   <div id="slip-tab-gaji">
     <div id="slip-thr-banner"></div>
@@ -440,9 +440,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
   </div>
   <div class="tabs">
-    <div class="tab active" data-laptab="rekap" data-panel="lap-tab-rekap" onclick="switchLaporanTab(this,'lap-tab-rekap')">&#128196; Rekap</div>
-    <div class="tab" data-laptab="variance" data-panel="lap-tab-variance" onclick="switchLaporanTab(this,'lap-tab-variance')">&#128200; Variance</div>
-    <div class="tab" data-laptab="pph" data-panel="lap-tab-pph" onclick="switchLaporanTab(this,'lap-tab-pph')">&#128203; PPh 21</div>
+    <div class="tab active" data-laptab="rekap" data-panel="lap-tab-rekap">&#128196; Rekap</div>
+    <div class="tab" data-laptab="variance" data-panel="lap-tab-variance">&#128200; Variance</div>
+    <div class="tab" data-laptab="pph" data-panel="lap-tab-pph">&#128203; PPh 21</div>
   </div>
   <div id="lap-tab-rekap">
     <div id="lap-rekap-hint" class="dash-kpi-hint tabs-spaced-lg"></div>
@@ -494,14 +494,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Master Perusahaan</div><div class="pst">Profil PT, periode gaji, UMK, libur, PTKP &amp; TER</div></div>
   </div>
   <div class="tabs">
-    <div class="tab active" data-mstab="prs" data-panel="m-prs" onclick="switchTab(this,'m-prs')">&#127970; Profil Perusahaan</div>
-    <div class="tab" data-mstab="periode" data-panel="m-periode" onclick="switchTab(this,'m-periode')">&#128197; Periode Gaji & THR</div>
-    <div class="tab" data-mstab="umk" data-panel="m-umk" onclick="switchTab(this,'m-umk')">&#128176; UMK</div>
-    <div class="tab" data-mstab="libur" data-panel="m-libur" onclick="switchTab(this,'m-libur')">&#127976; Hari Libur &amp; Cuti</div>
-    <div class="tab" data-mstab="potongan" data-panel="m-potongan" data-master-adv="1" onclick="switchTab(this,'m-potongan')">&#9998; Aturan Potongan</div>
-    <div class="tab" data-mstab="ter" data-panel="m-ter" data-master-adv="1" onclick="switchTab(this,'m-ter')">&#9878; PTKP &amp; TER</div>
-    <div class="tab u-hidden" data-mstab="cabang" data-panel="m-cabang" id="mstab-cabang" onclick="switchTab(this,'m-cabang')">&#128209; Daftar Cabang</div>
-    <div class="tab" data-mstab="lanjut" data-panel="m-lanjut" onclick="switchTab(this,'m-lanjut')">&#9881; Pengaturan lanjutan</div>
+    <div class="tab active" data-mstab="prs" data-panel="m-prs">&#127970; Profil Perusahaan</div>
+    <div class="tab" data-mstab="periode" data-panel="m-periode">&#128197; Periode Gaji & THR</div>
+    <div class="tab" data-mstab="umk" data-panel="m-umk">&#128176; UMK</div>
+    <div class="tab" data-mstab="libur" data-panel="m-libur">&#127976; Hari Libur &amp; Cuti</div>
+    <div class="tab" data-mstab="potongan" data-panel="m-potongan" data-master-adv="1">&#9998; Aturan Potongan</div>
+    <div class="tab" data-mstab="ter" data-panel="m-ter" data-master-adv="1">&#9878; PTKP &amp; TER</div>
+    <div class="tab u-hidden" data-mstab="cabang" data-panel="m-cabang" id="mstab-cabang">&#128209; Daftar Cabang</div>
+    <div class="tab" data-mstab="lanjut" data-panel="m-lanjut">&#9881; Pengaturan lanjutan</div>
   </div>
   <div id="m-prs" class="master-tab-panel u-hidden">
     <div class="card">
@@ -744,9 +744,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">&#128101; Manajemen User &amp; Akses Modul</div><div class="pst">Akun login, registrasi email, dan matriks hak akses</div></div>
   </div>
   <div class="tabs">
-    <div class="tab active" onclick="switchUsrTab(this,'um-daftar')">&#128100; Daftar User</div>
-    <div class="tab" onclick="switchUsrTab(this,'um-reg')">&#9989; Permintaan Registrasi</div>
-    <div class="tab" onclick="switchUsrTab(this,'um-roles')">&#128272; Role & Hak Akses</div>
+    <div class="tab active" data-usrpanel="um-daftar">&#128100; Daftar User</div>
+    <div class="tab" data-usrpanel="um-reg">&#9989; Permintaan Registrasi</div>
+    <div class="tab" data-usrpanel="um-roles">&#128272; Role & Hak Akses</div>
   </div>
   <div id="um-daftar">
     <div class="card">
@@ -1045,11 +1045,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
   </div>
   <div class="spt-wrap" id="payroll-spt-wrap">
-    <div class="spt active" data-kgstab="gaji" onclick="switchPayrollSpTab(this,'sp-gaji')">&#128176; Gaji & Tunjangan</div>
-    <div class="spt" data-kgstab="bpjs" onclick="switchPayrollSpTab(this,'sp-bpjs')">&#9829; BPJS</div>
-    <div class="spt" data-kgstab="natura" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-natura')">&#127873; Natura</div>
-    <div class="spt" data-kgstab="pphret" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-pphret')">&#9312; PPh Return</div>
-    <div class="spt" data-kgstab="ring" data-payroll-adv="1" onclick="switchPayrollSpTab(this,'sp-ring')">&#128200; Ringkasan</div>
+    <div class="spt active" data-kgstab="gaji">&#128176; Gaji & Tunjangan</div>
+    <div class="spt" data-kgstab="bpjs">&#9829; BPJS</div>
+    <div class="spt" data-kgstab="natura" data-payroll-adv="1">&#127873; Natura</div>
+    <div class="spt" data-kgstab="pphret" data-payroll-adv="1">&#9312; PPh Return</div>
+    <div class="spt" data-kgstab="ring" data-payroll-adv="1">&#128200; Ringkasan</div>
     <button type="button" id="payroll-sp-more-btn" class="btn btn-xs btn-out ml-auto font-10" style="align-self:center" onclick="sigajiTogglePayrollAdvTabs()">+ Lanjutan</button>
   </div>
   <div class="spb">
@@ -1358,38 +1358,42 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.5.32"></script>
-<script src="/js/sigaji-icons.js?v=11.5.32"></script>
-<script src="/js/sigaji-ui.js?v=11.5.32"></script>
-<script src="/js/karyawan-tipe.js?v=11.5.32"></script>
-<script src="/js/storage.js?v=11.5.32"></script>
-<script src="/js/ptkp.js?v=11.5.32"></script>
-<script src="/js/modules/app-globals.js?v=11.5.32"></script>
-<script src="/js/modules/app-core.js?v=11.5.32"></script>
-<script src="/js/modules/app-access.js?v=11.5.32"></script>
-<script src="/js/modules/app-hr.js?v=11.5.32"></script>
-<script src="/js/modules/app-slip.js?v=11.5.32"></script>
-<script src="/js/modules/app-reports.js?v=11.5.32"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.32"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.32"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.32"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.32"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.32"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.5.32"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.5.32"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.32"></script>
-<script src="/js/modules/app-master.js?v=11.5.32"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.32"></script>
-<script src="/js/modules/app-shell.js?v=11.5.32"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.5.32"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.5.32"></script>
-<script src="/js/pesangon.js?v=11.5.32"></script>
-<script src="/js/config.js?v=11.5.32"></script>
+<script src="/js/constants.js?v=11.5.33"></script>
+<script src="/js/sigaji-icons.js?v=11.5.33"></script>
+<script src="/js/sigaji-ui.js?v=11.5.33"></script>
+<script src="/js/sigaji-dom.js?v=11.5.33"></script>
+<script src="/js/sigaji-api.js?v=11.5.33"></script>
+<script src="/js/karyawan-tipe.js?v=11.5.33"></script>
+<script src="/js/storage.js?v=11.5.33"></script>
+<script src="/js/ptkp.js?v=11.5.33"></script>
+<script src="/js/modules/app-globals.js?v=11.5.33"></script>
+<script src="/js/modules/app-core.js?v=11.5.33"></script>
+<script src="/js/modules/app-access.js?v=11.5.33"></script>
+<script src="/js/modules/app-hr.js?v=11.5.33"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.5.33"></script>
+<script src="/js/modules/app-slip.js?v=11.5.33"></script>
+<script src="/js/modules/app-reports.js?v=11.5.33"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.33"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.33"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.33"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.33"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.33"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.5.33"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.5.33"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.33"></script>
+<script src="/js/modules/app-master.js?v=11.5.33"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.33"></script>
+<script src="/js/modules/app-shell.js?v=11.5.33"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.5.33"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.5.33"></script>
+<script src="/js/pesangon.js?v=11.5.33"></script>
+<script src="/js/config.js?v=11.5.33"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.5.32"></script>
-<script src="/js/cloud-tables.js?v=11.5.32"></script>
+<script src="/js/cloud-branding.js?v=11.5.33"></script>
+<script src="/js/cloud-tables.js?v=11.5.33"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.5.32"></script>
-<script src="/js/modules/app-boot.js?v=11.5.32"></script>
+<script src="/js/cloud-sync.js?v=11.5.33"></script>
+<script src="/js/modules/app-boot.js?v=11.5.33"></script>
+<script src="/js/sigaji-events.js?v=11.5.33"></script>
 </body>
 </html>

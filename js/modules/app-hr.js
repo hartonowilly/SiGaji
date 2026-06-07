@@ -132,9 +132,10 @@ function karRowHtml(k,no){
   const tipeLbl=typeof sigajiKarTipeLabel==='function'?sigajiKarTipeLabel(tipe):(tipe==='tidak_tetap'?'Tidak Tetap':'Tetap');
   const tipeCls=tipe==='tidak_tetap'?'b-warn':'b-teal';
   const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span>`;
-  const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out" onclick="openTelegramModalForNik('${k.nik}')">Telegram</button>`:'';
+  const nikA=typeof escNik==='function'?escNik(k.nik):String(k.nik).replace(/'/g,"\\'");
+  const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out" onclick="openTelegramModalForNik('${nikA}')">Telegram</button>`:'';
   var cabCol=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
-  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${k.nik}')">${k.nama} &#8599;</div><div class="font-10 text-muted" style="font-family:monospace">${k.nik}</div></div></div></td><td><span class="bdg ${tipeCls}">${tipeLbl}</span></td>${cabCol}<td>${k.dept}</td><td>${k.jabatan}</td><td><span class="bdg ${stCls}">${k.status}</span></td><td><span class="bdg b-info">${k.ptkp}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${k.nik}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${k.nik}')">Hapus</button></div></td></tr>`;
+  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${nikA}')">${escapeHtml(k.nama)} &#8599;</div><div class="font-10 text-muted" style="font-family:monospace">${escapeHtml(k.nik)}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${nikA}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${nikA}')">Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -154,7 +155,9 @@ function renderKarBody(){
     tb.innerHTML='<tr><td colspan="'+karColspan+'">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnOnclick:"openNewKar('tetap')"})+'</td></tr>';
     return;
   }
-  tb.innerHTML=list.map((k,i)=>karRowHtml(k,i+1)).join('');
+  var rows=list.map((k,i)=>karRowHtml(k,i+1));
+  if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
+  else tb.innerHTML=rows.join('');
 }
 function filterKar(q){
   const p=PA();
@@ -162,7 +165,10 @@ function filterKar(q){
     return (k.nama+k.nik+k.jabatan+k.dept).toLowerCase().includes(q.toLowerCase());
   }));
   document.getElementById('kar-count').textContent=r.length+' ditampilkan';
-  document.getElementById('tb-kar').innerHTML=r.map((k,i)=>karRowHtml(k,i+1)).join('');
+  var tb=document.getElementById('tb-kar');
+  var rows=r.map((k,i)=>karRowHtml(k,i+1));
+  if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
+  else if(tb)tb.innerHTML=rows.join('');
 }
 // ── KOMPONEN GAJI (modul terpisah) ──────────────
 function kompgajiRowHtml(k,no){
@@ -174,7 +180,8 @@ function kompgajiRowHtml(k,no){
   const nTunj=(kPer.tunjangan||[]).length;
   const nNat=(kPer.natura||[]).length;
   const showGapok=CU&&(CU.role==='Admin'||canAccessPayrollSub('gaji'));
-  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPayrollPanel('${k.nik}')">${k.nama} &#8599;</div><div class="u-muted-10">${k.nik}</div></div></div></td><td>${k.dept}</td>${showGapok?`<td>${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${bpjsLbl}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p" onclick="openPayrollPanel('${k.nik}')">Edit Komponen</button></td></tr>`;
+  var nikA=typeof escNik==='function'?escNik(k.nik):String(k.nik).replace(/'/g,"\\'");
+  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPayrollPanel('${nikA}')">${escapeHtml(k.nama)} &#8599;</div><div class="u-muted-10">${escapeHtml(k.nik)}</div></div></div></td><td>${escapeHtml(k.dept)}</td>${showGapok?`<td>${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${escapeHtml(bpjsLbl)}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p" onclick="openPayrollPanel('${nikA}')">Edit Komponen</button></td></tr>`;
 }
 function renderKompgaji(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -187,7 +194,9 @@ function renderKompgajiBody(){
   const list=karyawanListPeriode(p);
   const el=document.getElementById('kg-count');if(el)el.textContent=list.length+' karyawan • Periode aktif: '+(p&&p.nama?p.nama:'-');
   const tb=document.getElementById('tb-kompgaji');if(!tb)return;
-  tb.innerHTML=list.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
+  var rows=list.map((k,i)=>kompgajiRowHtml(k,i+1));
+  if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
+  else tb.innerHTML=rows.join('');
 }
 function filterKompgaji(q){
   const p=PA();
@@ -195,7 +204,10 @@ function filterKompgaji(q){
     return (k.nama+k.nik+k.dept).toLowerCase().includes(q.toLowerCase());
   }));
   const el=document.getElementById('kg-count');if(el)el.textContent=r.length+' ditampilkan';
-  document.getElementById('tb-kompgaji').innerHTML=r.map((k,i)=>kompgajiRowHtml(k,i+1)).join('');
+  var tb=document.getElementById('tb-kompgaji');
+  var rows=r.map((k,i)=>kompgajiRowHtml(k,i+1));
+  if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
+  else if(tb)tb.innerHTML=rows.join('');
 }
 function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k)return;sigajiConfirm({title:'Hapus karyawan',message:'Apakah Anda yakin ingin menghapus karyawan "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi, lembur, dan data terkait ikut terhapus. Tindakan ini tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');});}
 function openNewKar(tipe){
@@ -745,8 +757,7 @@ function applyKompgajiSubtabVisibility(){
   var tabs=document.querySelectorAll('#pg-kompgaji .tabs .tab');
   var first=null;
   tabs.forEach(function(t){
-    var onclick=t.getAttribute('onclick')||'';
-    var panel=onclick.indexOf('kg-tab-tunjvar')>=0?'kg-tab-tunjvar':'kg-tab-daftar';
+    var panel=t.getAttribute('data-kgpanel')||(t.getAttribute('data-kgtab')==='tunjvar'?'kg-tab-tunjvar':'kg-tab-daftar');
     var sub=panel==='kg-tab-tunjvar'?'tunjvar':'gaji';
     var ok=canAccessSubTab('kompgaji',sub);
     t.style.display=ok?'':'none';
@@ -757,230 +768,8 @@ function applyKompgajiSubtabVisibility(){
 }
 function initLemburPage(){
   var ls=document.getElementById('lembur-kar-sel');
-  if(ls)ls.innerHTML=karyawanListPeriode(PA()).map(function(k){return'<option value="'+k.nik+'">'+k.nik+' — '+k.nama+'</option>';}).join('');
+  if(ls)ls.innerHTML=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(karyawanListPeriode(PA()),''):karyawanListPeriode(PA()).map(function(k){return'<option value="'+escapeAttr(k.nik)+'">'+escapeHtml(k.nik)+' — '+escapeHtml(k.nama)+'</option>';}).join('');
   renderLemburList();
-}
-var __tunjVarEditCells={};
-function tunjVarCellKey(nik,colId){return String(nik)+'|'+String(colId);}
-function tunjVarUnlockCell(nik,colId){
-  __tunjVarEditCells[tunjVarCellKey(nik,colId)]=true;
-  renderTunjVariabelBulan();
-}
-function tunjVarCommitCell(nik,colId,rawVal){
-  setTunjVarNilai(nik,colId,rawVal);
-}
-function renderTunjVarColEditor(){
-  var wrap=document.getElementById('tunjvar-col-editor');
-  if(!wrap)return;
-  var cols=getTunjVarColumnsResolved();
-  wrap.innerHTML='<div class="fl flex-wrap gap-md items-end">'+cols.map(function(c){
-    var idEsc=String(c.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return '<div class="fg m-0" style="min-width:160px"><label class="font-10">Nama kolom</label><div class="fl items-center" style="gap:4px">'
-      +'<input class="flex-1 font-12" value="'+escapeHtml(c.nama)+'" placeholder="Nama" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="setTunjVarColNama(\''+idEsc+'\',this.value)">'
-      +(cols.length>1?'<button type="button" class="btn btn-xs btn-r" title="Hapus kolom" onclick="hapusTunjVarColumn(\''+idEsc+'\')">&#10007;</button>':'')
-      +'</div></div>';
-  }).join('')+'</div>';
-}
-function setTunjVarColNama(id,nama){
-  var cols=tunjVarColumns||[];
-  var c=cols.find(function(x){return x.id===id;});
-  if(c)c.nama=String(nama||'').trim()||c.nama;
-  syncTunjVarLabelsFromColumns();
-  saveAll();renderTunjVariabelBulan();renderPenggajian(true);
-}
-function addTunjVarColumn(){
-  if(!tunjVarColumns)tunjVarColumns=[];
-  var n=tunjVarColumns.length+1;
-  tunjVarColumns.push({id:'tv_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),nama:'Tunjangan '+n});
-  syncTunjVarLabelsFromColumns();
-  saveAll();renderTunjVariabelBulan();toast('Kolom ditambahkan');
-}
-function hapusTunjVarColumn(id){
-  if(!tunjVarColumns||tunjVarColumns.length<=1){toast('Minimal satu kolom');return;}
-  if(!confirm('Hapus kolom ini beserta nilai terkait di semua periode?'))return;
-  tunjVarColumns=tunjVarColumns.filter(function(x){return x.id!==id;});
-  var pn,s;
-  for(pn in tunjVarBulan){
-    if(!tunjVarBulan[pn])continue;
-    for(s in tunjVarBulan[pn]){
-      if(tunjVarBulan[pn][s]&&tunjVarBulan[pn][s][id]!==undefined)delete tunjVarBulan[pn][s][id];
-    }
-  }
-  syncTunjVarLabelsFromColumns();
-  saveAll();renderTunjVariabelBulan();renderPenggajian(true);toast('Kolom dihapus');
-}
-function refreshTunjVarTotals(){
-  var pn=PA().nama;
-  var cols=getTunjVarColumnsResolved();
-  var Lsum={};
-  cols.forEach(function(c){Lsum[c.id]=0;});
-  if(!tunjVarBulan[pn])return;
-  karyawan.forEach(function(k){
-    var r=tunjVarBulan[pn][k.nik]||{};
-    var sum=0;
-    cols.forEach(function(c){
-      var v=parseFloat(r[c.id]);if(isNaN(v))v=0;
-      Lsum[c.id]+=v;sum+=v;
-    });
-    var el=document.querySelector('[data-tunjvar-sum="'+k.nik+'"]');
-    if(el)el.textContent=fmt(sum);
-  });
-  var foot=document.getElementById('tunjvar-foot');
-  if(foot){
-    var parts=cols.map(function(c){return '<strong>'+escapeHtml(c.nama)+'</strong> '+fmt(Lsum[c.id]||0);});
-    var grand=cols.reduce(function(s,c){return s+(Lsum[c.id]||0);},0);
-    foot.innerHTML='Ringkasan periode ini: '+parts.join(' · ')+' · Total keseluruhan <strong>'+fmt(grand)+'</strong>';
-  }
-}
-function setTunjVarNilai(nik,vKey,val){
-  var pn=PA().nama;if(!tunjVarBulan[pn])tunjVarBulan[pn]={};
-  if(!tunjVarBulan[pn][nik])tunjVarBulan[pn][nik]={};
-  tunjVarBulan[pn][nik][vKey]=Math.max(0,parseRpInput(val));
-  delete __tunjVarEditCells[tunjVarCellKey(nik,vKey)];
-  saveAll();refreshTunjVarTotals();renderPenggajian(true);
-  renderTunjVariabelBulan();
-}
-function salinTunjVarDariPeriodeLalu(){
-  var pn=PA().nama;var prev=prevPeriodeChrono(pn);
-  if(!prev){toast('Tidak ada periode sebelumnya di data');return;}
-  if(!confirm('Salin nilai tunjangan variabel dari "'+prev+'" ke periode aktif "'+pn+'"?'))return;
-  if(!tunjVarBulan[pn])tunjVarBulan[pn]={};
-  var src=tunjVarBulan[prev]||{};
-  karyawan.forEach(function(k){
-    if(src[k.nik])tunjVarBulan[pn][k.nik]=JSON.parse(JSON.stringify(src[k.nik]));
-  });
-  saveAll();renderPenggajian();toast('Disalin dari '+prev);
-}
-function ensureXlsxForTunjVar(cb){
-  if(typeof ensureXLSX==='function'){ensureXLSX(cb);return;}
-  if(typeof XLSX!=='undefined'){cb();return;}
-  toast('Pustaka Excel belum dimuat');
-}
-function exportTunjVarExcelTemplate(){
-  ensureXlsxForTunjVar(function(){
-    var p=PA(),pn=p.nama;
-    var cols=getTunjVarColumnsResolved();
-    var listK=karyawanListPeriode(p);
-    var hdr=['NIK','Nama'].concat(cols.map(function(c){return c.nama;}));
-    var aoa=[hdr];
-    listK.forEach(function(k){
-      var r=(tunjVarBulan[pn]||{})[k.nik]||{};
-      var row=[k.nik,k.nama];
-      cols.forEach(function(c){
-        var v=parseFloat(r[c.id]);row.push(isNaN(v)?0:v);
-      });
-      aoa.push(row);
-    });
-    var ws=XLSX.utils.aoa_to_sheet(aoa);
-    var wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'TunjVar');
-    var fn='TunjVar_'+pn.replace(/[^\w\d]+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
-    XLSX.writeFile(wb,fn);
-    toast('Template diunduh — isi kolom nilai lalu Import Excel');
-  });
-}
-function importTunjVarExcel(inp){
-  var f=inp&&inp.files&&inp.files[0];
-  if(!f)return;
-  ensureXlsxForTunjVar(function(){
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      try{
-        var wb=XLSX.read(ev.target.result,{type:'array'});
-        var sh=wb.Sheets[wb.SheetNames[0]];
-        if(!sh){toast('Sheet kosong');inp.value='';return;}
-        var rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:''});
-        if(!rows.length||rows.length<2){toast('Minimal baris header + 1 data');inp.value='';return;}
-        var hdr=rows[0].map(function(x){return String(x||'').trim();});
-        var nikIdx=hdr.findIndex(function(h){return /^nik$/i.test(h);});
-        if(nikIdx<0){toast('Kolom NIK wajib di baris pertama');inp.value='';return;}
-        var cols=getTunjVarColumnsResolved();
-        var colMap=[];
-        hdr.forEach(function(h,i){
-          if(i===nikIdx||/^nama$/i.test(h))return;
-          var hLow=h.toLowerCase();
-          var c=cols.find(function(x){return String(x.id).toLowerCase()===hLow||String(x.nama).toLowerCase()===hLow;});
-          if(c)colMap.push({idx:i,id:c.id});
-        });
-        if(!colMap.length){toast('Header kolom tidak cocok dengan definisi tunjangan (nama/id kolom)');inp.value='';return;}
-        var pn=PA().nama;
-        if(!tunjVarBulan[pn])tunjVarBulan[pn]={};
-        var nikSet={};
-        karyawan.forEach(function(k){nikSet[String(k.nik)]=k;});
-        var ok=0,skip=0;
-        for(var r=1;r<rows.length;r++){
-          var row=rows[r];
-          if(!row||!row.length)continue;
-          var nik=String(row[nikIdx]||'').trim();
-          if(!nik||!nikSet[nik]){skip++;continue;}
-          if(!tunjVarBulan[pn][nik])tunjVarBulan[pn][nik]={};
-          colMap.forEach(function(cm){
-            var v=parseFloat(row[cm.idx]);
-            if(!isNaN(v)&&v!==0)tunjVarBulan[pn][nik][cm.id]=Math.max(0,Math.round(v));
-          });
-          ok++;
-        }
-        __tunjVarEditCells={};
-        saveAll();
-        renderTunjVariabelBulan();
-        renderPenggajian(true);
-        toast('Import selesai: '+ok+' karyawan'+(skip?' ('+skip+' baris dilewati)':''));
-      }catch(e){
-        console.error(e);
-        toast('Gagal baca Excel: '+(e.message||e));
-      }
-      inp.value='';
-    };
-    reader.readAsArrayBuffer(f);
-  });
-}
-function renderTunjVariabelBulan(){
-  var card=document.getElementById('tunjvar-card'),wrap=document.getElementById('tunjvar-tabel-wrap'),foot=document.getElementById('tunjvar-foot');
-  if(!card||!wrap)return;
-  if(typeof sigajiShowEl==='function')sigajiShowEl(card);
-  else{card.classList.remove('u-hidden');card.removeAttribute('hidden');card.style.removeProperty('display');}
-  if(!periodes.length){
-    wrap.innerHTML='<div class="info-box info-amber font-12">Belum ada periode gaji. Buat di <strong>Master → Periode Gaji &amp; THR</strong> terlebih dahulu.</div>';
-    if(foot)foot.textContent='';
-    var sub0=document.getElementById('tunjvar-per-lbl');if(sub0)sub0.textContent='-';
-    return;
-  }
-  var p=PA(),pn=p.nama;
-  var cols=getTunjVarColumnsResolved();
-  if(!tunjVarColumns||!tunjVarColumns.length){tunjVarColumns=cols.slice();syncTunjVarLabelsFromColumns();saveAll();}
-  renderTunjVarColEditor();
-  var sub=document.getElementById('tunjvar-per-lbl');if(sub)sub.textContent=pn;
-  var listK=karyawanListPeriode(p);
-  if(!listK.length){wrap.innerHTML='<div>Belum ada karyawan aktif untuk periode ini.</div>';if(foot)foot.textContent='';return;}
-  if(!tunjVarBulan[pn])tunjVarBulan[pn]={};
-  var thead='<th class="text-center" style="min-width:42px">No</th><th>Karyawan</th>'
-    +cols.map(function(c){return '<th style="min-width:110px">'+escapeHtml(c.nama)+'</th>';}).join('')
-    +'<th>Jumlah</th>';
-  var rows=listK.map(function(k,idx){
-    var r=tunjVarBulan[pn][k.nik]||{};
-    var sum=0;
-    var nikes=k.nik.replace(/'/g,"\\'");
-    var tds=cols.map(function(c){
-      var v=parseFloat(r[c.id]);if(isNaN(v))v=0;
-      sum+=v;
-      var idEsc=String(c.id).replace(/\\/g,'\\\\').replace(/"/g,'&quot;');
-      var cellKey=tunjVarCellKey(k.nik,c.id);
-      if(__tunjVarEditCells[cellKey]){
-        return '<td><div class="fl gap1 items-center" style="flex-wrap:nowrap">'
-          +'<input type="text" class="tunjvar-inp inp-rp" style="max-width:100px" value="'+formatRpInputNum(v)+'" data-rp="1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();tunjVarCommitCell(\''+nikes+'\',\''+idEsc+'\',this.value);}">'
-          +'<button type="button" class="btn btn-xs btn-g" onclick="tunjVarCommitCell(\''+nikes+'\',\''+idEsc+'\',this.previousElementSibling.value)">Simpan</button></div></td>';
-      }
-      return '<td><div class="fl gap1 items-center" style="flex-wrap:nowrap">'
-        +'<span class="font-12 fw-600" style="min-width:76px">'+formatRpInputNum(v)+'</span>'
-        +'<button type="button" class="btn btn-xs btn-out" onclick="tunjVarUnlockCell(\''+nikes+'\',\''+idEsc+'\')">Edit</button></div></td>';
-    }).join('');
-    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div><div class="fw-600 font-12">'+escapeHtml(k.nama)+'</div><div class="u-muted-10">'+escapeHtml(k.nik)+'</div></div></div></td>'
-      +tds
-      +'<td class="font-11 fw-700 ct-brand" data-tunjvar-sum="'+k.nik+'">'+fmt(sum)+'</td></tr>';
-  }).join('');
-  wrap.innerHTML='<table><thead><tr>'+thead+'</tr></thead><tbody>'+rows+'</tbody></table>';
-  sigajiBindRpInputs(wrap);
-  refreshTunjVarTotals();
 }
 /** Tombol "Hitung Ulang" — render ulang tabel; opsional sinkron gapok/tunjangan dari Master. */
 function hitungUlangPenggajian(){

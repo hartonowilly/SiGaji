@@ -50,7 +50,7 @@ function renderSidebar(){
     if(!secs[m.sec])secs[m.sec]=[];
     secs[m.sec].push(m);
   });
-  let h='';Object.entries(secs).forEach(([sec,mods])=>{h+=`<div class="nsec">${sec}</div>`;mods.forEach(m=>{var ic=typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon;h+=`<div class="ni" data-pg="${m.id}" onclick="showPg('${m.id}')"><span class="nic">${ic}</span>${m.lbl}${m.id==='notifikasi'?'<span class="nbadge u-hidden" id="nc-badge">0</span>':''}</div>`;});});
+  let h='';Object.entries(secs).forEach(([sec,mods])=>{h+='<div class="nsec">'+escapeHtml(sec)+'</div>';mods.forEach(m=>{var ic=typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon;h+=`<div class="ni" data-pg="${m.id}" role="button" tabindex="0"><span class="nic">${ic}</span>${escapeHtml(m.lbl)}${m.id==='notifikasi'?'<span class="nbadge u-hidden" id="nc-badge">0</span>':''}</div>`;});});
   document.getElementById('nav-dynamic').innerHTML=h;
   document.getElementById('nav-bottom').innerHTML='';
   try{if(typeof sigajiUiPolishAfterRender==='function')sigajiUiPolishAfterRender();}catch(ePol){}
@@ -65,10 +65,7 @@ function renderUsers(){
 }
 function renderUsersBody(){
   const tb=document.getElementById('tb-users');if(!tb)return;
-  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${u.username}</strong></td><td class="font-11" style="max-width:140px; word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${u.nama}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${u.role}</span></td><td>${u.nik?`<span class="bdg b-info">${u.nik}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
-}
-function escapeHtml(s){
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${escapeHtml(u.username)}</strong></td><td class="font-11" style="max-width:140px; word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${escapeHtml(u.nama)}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${escapeHtml(u.role)}</span></td><td>${u.nik?`<span class="bdg b-info">${escapeHtml(u.nik)}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
 }
 function openUserModal(idx=-1){
   var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
@@ -83,7 +80,7 @@ function openUserModal(idx=-1){
   document.getElementById('u-nama').value=u.nama||'';
   document.getElementById('u-aktif').checked=u.aktif!==false;
   const rs=document.getElementById('u-role');rs.innerHTML=Object.keys(roles).map(r=>`<option value="${r}">${r}</option>`).join('');rs.value=u.role||'HRD';
-  const ns=document.getElementById('u-nik');ns.innerHTML='<option value="">-- Tidak tertaut --</option>'+sortKaryawanByNik(karyawan||[]).map(k=>`<option value="${k.nik}">${k.nik} &#8212; ${k.nama}</option>`).join('');ns.value=u.nik||'';
+  const ns=document.getElementById('u-nik');ns.innerHTML=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(sortKaryawanByNik(karyawan||[]),'-- Tidak tertaut --'):'<option value="">-- Tidak tertaut --</option>'+sortKaryawanByNik(karyawan||[]).map(k=>`<option value="${escapeAttr(k.nik)}">${escapeHtml(k.nik)} &#8212; ${escapeHtml(k.nama)}</option>`).join('');ns.value=u.nik||'';
   openModal('m-user');
 }
 function simpanUser(){
@@ -531,19 +528,17 @@ async function getCloudAccessToken(){
 async function telegramCreateLinkCode(nik){
   const t=await getCloudAccessToken();
   if(!t){toast('Belum login awan / sesi tidak ada');return null;}
-  const r=await fetch(sigajiFunctionUrl('telegram-create-link'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,ttlMin:30})});
-  const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
-  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal buat kode Telegram (deploy /api/telegram-create-link)');return null;}
-  return j;
+  var res=typeof sigajiFetchJson==='function'?await sigajiFetchJson(sigajiFunctionUrl('telegram-create-link'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,ttlMin:30})}):null;
+  if(!res||!res.ok){if(typeof sigajiApiToast==='function')sigajiApiToast(res);else toast((res&&res.error)||'Gagal buat kode Telegram');return null;}
+  return res.data;
 }
 
 /** Kirim slip PDF (base64) ke Telegram untuk NIK (HRD/Admin). */
 async function telegramSendSlipPdf(nik,filename,caption,pdfBase64){
   const t=await getCloudAccessToken();
   if(!t){toast('Belum login awan / sesi tidak ada');return false;}
-  const r=await fetch(sigajiFunctionUrl('telegram-send-slip'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,filename,caption,pdfBase64})});
-  const j=typeof sigajiParseFunctionJson==='function'?await sigajiParseFunctionJson(r):await r.json().catch(()=>null);
-  if(!r.ok||!j||!j.ok){toast((j&&j.error)||'Gagal kirim slip Telegram (deploy /api/telegram-send-slip)');return false;}
+  var res=typeof sigajiFetchJson==='function'?await sigajiFetchJson(sigajiFunctionUrl('telegram-send-slip'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik,filename,caption,pdfBase64})}):null;
+  if(!res||!res.ok){if(typeof sigajiApiToast==='function')sigajiApiToast(res);else toast((res&&res.error)||'Gagal kirim slip Telegram');return false;}
   return true;
 }
 

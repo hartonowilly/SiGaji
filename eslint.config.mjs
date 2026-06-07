@@ -32,6 +32,12 @@ const sigajiGlobals = {
   document: 'readonly',
   window: 'readonly',
   console: 'readonly',
+  escapeHtml: 'readonly',
+  escapeAttr: 'readonly',
+  escNik: 'readonly',
+  sigajiFetchJson: 'readonly',
+  sigajiApiToast: 'readonly',
+  sigajiSetTbodyRows: 'readonly',
 };
 
 export default [
@@ -53,12 +59,13 @@ export default [
     },
   },
   {
-    files: ['js/modules/app-core.js'],
+    files: ['js/modules/app-core.js', 'js/modules/app-hr-tunjvar.js', 'js/sigaji-dom.js', 'js/sigaji-api.js'],
     rules: {
       'no-undef': 'off',
       'no-global-assign': 'off',
       'no-redeclare': 'off',
       'no-empty': 'off',
+      'no-unused-vars': 'off',
     },
   },
   {

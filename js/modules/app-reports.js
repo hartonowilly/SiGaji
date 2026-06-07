@@ -30,7 +30,7 @@ function renderPPHBody(){
   var selK=document.getElementById('a1-kar');
   if(selK){
     var prev=selK.value;
-    selK.innerHTML='<option value="">-- Pilih karyawan --</option>'+sortKaryawanByNik(karyawan||[]).map(function(k){return '<option value="'+k.nik+'">'+k.nik+' — '+k.nama+'</option>';}).join('');
+    selK.innerHTML=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(sortKaryawanByNik(karyawan||[]),'-- Pilih karyawan --'):'<option value="">-- Pilih karyawan --</option>'+sortKaryawanByNik(karyawan||[]).map(function(k){return '<option value="'+escapeAttr(k.nik)+'">'+escapeHtml(k.nik)+' — '+escapeHtml(k.nama)+'</option>';}).join('');
     if(prev&&karyawan.some(function(k){return k.nik===prev;}))selK.value=prev;
   }
 }

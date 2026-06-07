@@ -13,10 +13,11 @@
     "test:payroll": "node tests/run-payroll-tests.mjs",
     "test:cuti": "node tests/cuti-tracking.test.mjs",
     "test:all": "node tests/run-payroll-tests.mjs && node tests/cuti-tracking.test.mjs",
-    "lint": "eslint js/modules/app-core.js js/constants.js js/ptkp.js tests/",
-    "lint:payroll": "eslint js/modules/app-core.js",
+    "lint": "eslint js/sigaji-dom.js js/sigaji-api.js js/modules/app-core.js js/modules/app-hr-tunjvar.js js/constants.js js/ptkp.js tests/",
+    "lint:payroll": "eslint js/modules/app-core.js js/modules/app-hr-tunjvar.js",
     "typecheck:payroll": "tsc -p js/types/tsconfig.payroll.json",
-    "check:payroll": "npm test && npm run lint:payroll && npm run typecheck:payroll"
+    "check:payroll": "npm test && npm run lint:payroll && npm run typecheck:payroll",
+    "check:quality": "npm run check:payroll && npm run lint"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
