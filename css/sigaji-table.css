@@ -1,0 +1,150 @@
+/**
+ * SiGaji — sistem tabel (payroll, master, laporan).
+ * Pakai class .sigaji-table pada <table>; kolom uang: .num / .cell-money.
+ */
+
+/* ── Base enhanced table ── */
+.sigaji-table,
+.content .table-wrap table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.sigaji-table thead,
+.content .table-wrap table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.sigaji-table th,
+.content .table-wrap table th {
+  background: var(--table-head-bg);
+  color: var(--table-head-color);
+  border-bottom: 1px solid var(--table-head-border);
+}
+
+.sigaji-table td,
+.content .table-wrap table td {
+  border-bottom: 1px solid var(--table-cell-border);
+}
+
+.sigaji-table tbody tr,
+.content .table-wrap table tbody tr {
+  transition: background 0.12s var(--ease, ease);
+}
+
+/* Zebra + hover */
+.sigaji-table tbody tr:nth-child(even) td,
+.content .table-wrap table.sigaji-table tbody tr:nth-child(even) td {
+  background: var(--table-zebra);
+}
+
+.sigaji-table tbody tr:hover td,
+.content .table-wrap table tbody tr:hover td {
+  background: var(--table-row-hover);
+}
+
+/* Kolom angka / uang */
+.sigaji-table th.num,
+.sigaji-table td.num,
+th.num,
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.sigaji-table td.cell-money,
+td.cell-money {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--cell-money-color);
+}
+
+.sigaji-table td.cell-deduction,
+td.cell-deduction,
+.sigaji-table .cell-negative {
+  color: var(--cell-deduction-color);
+}
+
+.sigaji-table td.cell-neto,
+td.cell-neto,
+.sigaji-table .cell-neto-strong {
+  color: var(--cell-neto-color);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sticky kolom (generik + alias payroll) */
+.sigaji-table-sticky .table-wrap,
+.pg-table-sticky .table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.sigaji-table .sticky-no,
+.sigaji-table .pg-sticky-no,
+.pg-table-sticky th.pg-sticky-no,
+.pg-table-sticky td.pg-sticky-no {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--table-sticky-bg);
+  box-shadow: 1px 0 0 var(--color-border);
+  min-width: 36px;
+}
+
+.sigaji-table .sticky-name,
+.sigaji-table .pg-sticky-name,
+.pg-table-sticky th.pg-sticky-name,
+.pg-table-sticky td.pg-sticky-name {
+  position: sticky;
+  left: 36px;
+  z-index: 2;
+  background: var(--table-sticky-bg);
+  box-shadow: 2px 0 4px var(--table-sticky-shadow);
+  min-width: 180px;
+}
+
+.sigaji-table thead th.sticky-no,
+.sigaji-table thead th.sticky-name,
+.sigaji-table thead th.pg-sticky-no,
+.sigaji-table thead th.pg-sticky-name,
+.pg-table-sticky thead th.pg-sticky-no,
+.pg-table-sticky thead th.pg-sticky-name {
+  background: var(--table-sticky-head-bg);
+  z-index: 3;
+}
+
+/* Row status (payroll) — pakai token tema */
+tr.pg-row-prorate td {
+  background: var(--row-prorate-bg) !important;
+}
+tr.pg-row-prorate td.pg-sticky-no,
+tr.pg-row-prorate td.pg-sticky-name,
+tr.pg-row-prorate td.sticky-no,
+tr.pg-row-prorate td.sticky-name {
+  background: var(--row-prorate-bg) !important;
+}
+
+tr.pg-row-neto-neg td {
+  background: var(--row-neto-neg-bg) !important;
+}
+tr.pg-row-neto-neg td.pg-sticky-no,
+tr.pg-row-neto-neg td.pg-sticky-name,
+tr.pg-row-neto-neg td.sticky-no,
+tr.pg-row-neto-neg td.sticky-name {
+  background: var(--row-neto-neg-bg) !important;
+}
+
+tr.pg-row-pending td {
+  background: var(--row-pending-bg) !important;
+}
+tr.pg-row-pending td.pg-sticky-no,
+tr.pg-row-pending td.pg-sticky-name,
+tr.pg-row-pending td.sticky-no,
+tr.pg-row-pending td.sticky-name {
+  background: var(--row-pending-bg) !important;
+}

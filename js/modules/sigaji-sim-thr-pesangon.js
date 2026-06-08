@@ -258,17 +258,17 @@
     wrap.innerHTML = rows.join('');
     var dT = totSim - totNow;
     if (sumEl) {
-      sumEl.innerHTML =
+      var h =
         '<div class="sim-sum-grid">' +
         '<div><div class="sim-sum-lbl">THR sekarang</div><div class="sim-sum-val">' +
         fmt(totNow) +
         '</div><div class="font-9 text-subtle">' +
-        eligibleNow +
+        String(eligibleNow) +
         ' eligible</div></div>' +
         '<div><div class="sim-sum-lbl">THR simulasi</div><div class="sim-sum-val sim-up">' +
         fmt(totSim) +
         '</div><div class="font-9 text-subtle">' +
-        eligibleSim +
+        String(eligibleSim) +
         ' eligible</div></div>' +
         '<div><div class="sim-sum-lbl">Δ total THR</div><div class="sim-sum-val ' +
         (dT >= 0 ? 'sim-up' : 'sim-down') +
@@ -282,6 +282,7 @@
         '</strong>' +
         (p.thr_aktif ? ' · <span class="ct-purple">THR aktif di periode ini</span>' : '') +
         '</p>';
+      sumEl.innerHTML = h;
     }
   };
 
@@ -371,7 +372,7 @@
     var delta = r0.ok ? r1.total - r0.total : null;
 
     if (detail) {
-      detail.innerHTML =
+      var h =
         '<div class="card card-surface-neutral border-accent-purple">' +
         '<div class="ct ct-purple">Rincian simulasi — ' +
         escapeHtml(k.nama) +
@@ -382,18 +383,18 @@
         '<br><strong>Tgl berhenti:</strong> ' +
         fmtDate(kSim.tgl_berhenti) +
         '<br><strong>Masa kerja:</strong> ' +
-        r1.mk +
+        String(r1.mk) +
         ' bulan · <strong>Dasar upah:</strong> ' +
         fmt(r1.dasar) +
         '/bulan</p>' +
         '<p>UP: ' +
-        r1.bUp +
+        String(r1.bUp) +
         ' × dasar × faktor · UPMK: ' +
-        r1.bUpmk +
+        String(r1.bUpmk) +
         ' × dasar · UPH cuti: ' +
-        r1.sisaCuti +
+        String(r1.sisaCuti) +
         ' hari (otomatis: ' +
-        r1.sisaCutiAuto +
+        String(r1.sisaCutiAuto) +
         ')</p>' +
         (delta != null && delta !== 0
           ? '<p class="' +
@@ -405,6 +406,7 @@
           : '') +
         '<p class="font-11 text-muted m-0">Estimasi PP 35/2021 — bukan pengganti konsultasi hukum. Simpan resmi lewat modul <em>Pesangon &amp; PHK</em>.</p>' +
         '</div></div>';
+      detail.innerHTML = h;
     }
   };
 

@@ -498,7 +498,7 @@ function logPayrollAudit(nik,action,detail){
       action:action||'',
       detail:detail||''
     });
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/modules/app-core.js",e);}
 }
 
 function syncPphReturnFieldState(){

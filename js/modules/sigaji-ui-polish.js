@@ -132,11 +132,13 @@
       return;
     }
     el.dataset.sigajiSkel = '1';
+    var h;
     if (el.tagName === 'TBODY' && typeof sigajiTableSkeletonRows === 'function') {
-      el.innerHTML = sigajiTableSkeletonRows(colspan || 8, 6);
+      h = sigajiTableSkeletonRows(colspan || 8, 6);
+      el.innerHTML = h;
     } else if (typeof sigajiSkeleton === 'function') {
-      el.innerHTML =
-        '<div class="sigaji-skel-host">' + sigajiSkeleton('table') + '</div>';
+      h = '<div class="sigaji-skel-host">' + sigajiSkeleton('table') + '</div>';
+      el.innerHTML = h;
     }
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
@@ -246,7 +248,7 @@
     document.documentElement.classList.toggle('sidebar-collapsed', on);
     try {
       localStorage.setItem(SIDEBAR_KEY, on ? '1' : '0');
-    } catch (e) {}
+    } catch(e){sigajiCatchWarn("js/modules/sigaji-ui-polish.js",e);}
     syncSidebarCollapseUi(on);
     return false;
   };
@@ -256,7 +258,7 @@
       var collapsed = localStorage.getItem(SIDEBAR_KEY) === '1';
       if (collapsed) document.documentElement.classList.add('sidebar-collapsed');
       syncSidebarCollapseUi(collapsed);
-    } catch (e2) {}
+    } catch(e2){sigajiCatchWarn("js/modules/sigaji-ui-polish.js",e2);}
   }
 
   function injectSidebarCollapseBtn() {

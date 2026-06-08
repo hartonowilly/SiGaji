@@ -505,11 +505,11 @@
         '</strong>.</div>';
       return;
     }
-    el.innerHTML =
+    var h =
       '<p class="font-11 text-muted mb-md m-0">Periode <strong>' +
       escapeHtml(p.nama) +
       '</strong> — ' +
-      list.length +
+      String(list.length) +
       ' item perlu dicek sebelum final:</p>' +
       list
         .slice(0, 12)
@@ -553,6 +553,7 @@
           );
         })
         .join('');
+    el.innerHTML = h;
   };
 
   window.renderLaporanVariance = function () {

@@ -14,10 +14,12 @@
     "test:cuti": "node tests/cuti-tracking.test.mjs",
     "test:all": "node tests/run-payroll-tests.mjs && node tests/cuti-tracking.test.mjs",
     "lint": "eslint js/**/*.js tests/**/*.mjs",
+    "lint:ratchet": "node scripts/lint-ratchet.js",
+    "lint:ratchet:update": "node scripts/lint-ratchet.js --update",
     "lint:payroll": "eslint js/modules/app-core.js js/modules/app-hr-tunjvar.js",
     "typecheck:payroll": "tsc -p js/types/tsconfig.payroll.json",
     "check:payroll": "npm test && npm run lint:payroll && npm run typecheck:payroll",
-    "check:quality": "npm run check:payroll && npm run test:cuti && npm run lint",
+    "check:quality": "npm run check:payroll && npm run test:cuti && npm run lint && npm run lint:ratchet",
     "install:hooks": "node scripts/install-git-hooks.js",
     "prepare": "node scripts/install-git-hooks.js"
   },

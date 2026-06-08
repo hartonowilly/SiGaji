@@ -94,7 +94,7 @@ async function renderMobileAttendanceLog(btn){
       +'<div class="ct m-0 border-0 p-0">Siapa sudah check-in / check-out</div>'
       +'<div class="fl gap1 items-center flex-wrap">'
       +'<label class="font-11 fw-700 text-muted">Tanggal:</label>'
-      +'<input class="rounded-sm select-inline" type="date" id="mob-log-date" value="'+today+'" style="padding:6px 10px; border:1.5px solid #dde1e9">'
+      +'<input class="rounded-sm select-inline" type="date" id="mob-log-date" value="'+escapeAttr(today)+'" style="padding:6px 10px; border:1.5px solid #dde1e9">'
       +'<select class="rounded-sm select-inline" id="mob-log-filter" style="padding:6px 10px; border:1.5px solid #dde1e9" onchange="mobRenderLogFromCache()">'
       +'<option value="">Semua status</option><option value="ok">OK</option><option value="pending_review">Review</option>'
       +'<option value="outside_geofence">Luar radius</option><option value="rejected">Ditolak / mock</option></select>'
@@ -107,7 +107,7 @@ async function renderMobileAttendanceLog(btn){
   var j=await sigajiMobileFetch('mobile-attendance?work_date='+encodeURIComponent(workDate),{method:'GET',loadingHost:host,loadingBtn:btn});
   if(!host)return;
   if(!j||!j.ok){
-    host.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat log — deploy API mobile-attendance GET')+'</div>';
+    host.innerHTML='<div class="info-box info-red">'+escapeHtml(j&&j.error||'Gagal memuat log — deploy API mobile-attendance GET')+'</div>';
     return;
   }
   window._mobLogItems=j.items||[];
@@ -186,7 +186,7 @@ function mobRenderLogFromCache(){
     return '<div class="mob-log-card"><h4>'+escapeHtml(nama)+' <span class="text-subtle" style="font-weight:400">'+escapeHtml(nik)+'</span></h4>'
       +'<div class="mob-log-ev">'+cell(g.cin,'Masuk')+'</div><div class="mob-log-ev">'+cell(g.cout,'Pulang')+'</div></div>';
   }).join('');
-  host.innerHTML='<div class="mob-log-table-desktop"><table><thead><tr><th>Karyawan</th><th>Check-in</th><th>Check-out</th><th>Status hari</th></tr></thead><tbody>'
+  var h='<div class="mob-log-table-desktop"><table><thead><tr><th>Karyawan</th><th>Check-in</th><th>Check-out</th><th>Status hari</th></tr></thead><tbody>'
     +(rows||'<tr><td class="text-center text-subtle" colspan="4">Tidak ada data untuk filter ini</td></tr>')
     +'</tbody></table></div><div class="mob-log-cards">'+cards+'</div>'
     +'<div class="info-box font-11 leading-tight" style="margin-top:.65rem">'
@@ -196,6 +196,7 @@ function mobRenderLogFromCache(){
     +'<li><span class="bdg b-err">Luar radius</span> — gagal geofence; tampil jarak ke lokasi terdekat</li>'
     +'<li><span class="bdg b-err">GPS mock / Ditolak</span> — percobaan gagal; karyawan bisa coba lagi di HP</li>'
     +'</ul></div>';
+  host.innerHTML=h;
 }
 var _mobDecideBusy=false;
 async function mobAttendanceDecide(id,decide){
@@ -222,9 +223,10 @@ async function mobAttendanceDecide(id,decide){
 // ── HRD: Lokasi kerja ───────────────────────────
 async function renderMobileLocations(){
   var el=document.getElementById('mob-locations-wrap');if(!el)return;
-  if(typeof sigajiSkeleton==='function')el.innerHTML=sigajiSkeleton('table');else el.innerHTML='<div class="text-muted p-md">Memuat…</div>';
+  var html=typeof sigajiSkeleton==='function'?sigajiSkeleton('table'):'<div class="text-muted p-md">Memuat…</div>';
+  el.innerHTML=html;
   var j=await sigajiMobileFetch('mobile-locations',{method:'GET'});
-  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat lokasi — jalankan SQL mobile + deploy API')+'</div>';return;}
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+escapeHtml(j&&j.error||'Gagal memuat lokasi — jalankan SQL mobile + deploy API')+'</div>';return;}
   var items=j.items||[];
   var rows=items.map(function(loc){
     var idEsc=String(loc.id).replace(/'/g,"\\'");
@@ -279,8 +281,8 @@ function mobInitLocationMiniMaps(items){
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
       L.circleMarker([loc.lat,loc.lon],{radius:5,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:1}).addTo(map);
       L.circle([loc.lat,loc.lon],{radius:loc.radius_m||250,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:0.12,weight:1}).addTo(map);
-      setTimeout(function(){try{map.invalidateSize();}catch(e){}},120);
-    }catch(e){}
+      setTimeout(function(){try{map.invalidateSize();}catch(e){sigajiCatchWarn("js/modules/app-mobile.js",e);}},120);
+    }catch(e){sigajiCatchWarn("js/modules/app-mobile.js",e);}
   });
 }
 function mobAssignWeekCalendarHtml(items,locations){
@@ -330,7 +332,8 @@ function mobLocUpdateRadiusUi(){
   var sl=document.getElementById('mob-loc-radius');
   var lb=document.getElementById('mob-loc-radius-lbl');
   if(!sl||!lb)return;
-  lb.innerHTML=mobLocRadiusLabel(sl.value);
+  var h=mobLocRadiusLabel(sl.value);
+  lb.innerHTML=h;
   if(_mobMapPicker&&_mobMapPicker.circle)_mobMapPicker.circle.setRadius(parseInt(sl.value,10)||250);
 }
 async function mobLocUseMyPosition(){
@@ -373,7 +376,7 @@ function mobLocInitMapPicker(){
     if(lonEl)lonEl.value=e.latlng.lng.toFixed(6);
   });
   _mobMapPicker={map:map,marker:marker,circle:circle};
-  setTimeout(function(){try{map.invalidateSize();}catch(e){}},200);
+  setTimeout(function(){try{map.invalidateSize();}catch(e){sigajiCatchWarn("js/modules/app-mobile.js",e);}},200);
 }
 async function editMobileLocation(id){
   _mobLocEditId=id||null;
@@ -422,30 +425,32 @@ async function renderMobileDashboard(){
   var locEl=document.getElementById('mob-dash-loc');
   var workDate=dateEl?dateEl.value:today;
   var locId=locEl?locEl.value:'';
-  el.innerHTML=typeof sigajiSkeleton==='function'?sigajiSkeleton('kpi'):'<div class="text-muted" style="padding:.5rem 0">Memuat ringkasan…</div>';
+  var html=typeof sigajiSkeleton==='function'?sigajiSkeleton('kpi'):'<div class="text-muted" style="padding:.5rem 0">Memuat ringkasan…</div>';
+  el.innerHTML=html;
   var q='mobile-attendance?dashboard=1&work_date='+encodeURIComponent(workDate);
   if(locId)q+='&location_id='+encodeURIComponent(locId);
   var j=await sigajiMobileFetch(q,{method:'GET',loadingHost:el});
-  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat dashboard')+'</div>';return;}
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+escapeHtml(j&&j.error||'Gagal memuat dashboard')+'</div>';return;}
   var s=j.summary||{};
   var pending=s.pending_review||0;
   if(pending>0&&typeof window._mobLastPending!=='number')window._mobLastPending=0;
   if(pending>(window._mobLastPending||0)&&typeof Notification!=='undefined'&&Notification.permission==='granted'){
-    try{new Notification('SiGaji — absensi perlu review',{body:pending+' log menunggu persetujuan HRD'});}catch(eN){}
+    try{new Notification('SiGaji — absensi perlu review',{body:pending+' log menunggu persetujuan HRD'});}catch(eN){sigajiCatchWarn("js/modules/app-mobile.js",eN);}
   }
   window._mobLastPending=pending;
-  el.innerHTML='<div class="fl gap1 flex-wrap mb-lg">'
-    +'<span class="bdg b-teal">Hadir lengkap: '+(s.hadir_lengkap||0)+'</span>'
-    +'<span class="bdg b-warn">Belum check-out: '+(s.belum_checkout||0)+'</span>'
-    +'<span class="bdg b-warn">Review: '+(s.pending_review||0)+'</span>'
-    +'<span class="bdg b-err">Tidak hadir: '+(s.tidak_hadir||0)+'</span>'
-    +'<span class="bdg b-gray">Total: '+(s.total_karyawan||0)+'</span></div>';
+  var h='<div class="fl gap1 flex-wrap mb-lg">'
+    +'<span class="bdg b-teal">Hadir lengkap: '+String(s.hadir_lengkap||0)+'</span>'
+    +'<span class="bdg b-warn">Belum check-out: '+String(s.belum_checkout||0)+'</span>'
+    +'<span class="bdg b-warn">Review: '+String(s.pending_review||0)+'</span>'
+    +'<span class="bdg b-err">Tidak hadir: '+String(s.tidak_hadir||0)+'</span>'
+    +'<span class="bdg b-gray">Total: '+String(s.total_karyawan||0)+'</span></div>';
+  el.innerHTML=h;
 }
 async function renderMobileFaceEnrollments(){
   var el=document.getElementById('mob-face-wrap');if(!el)return;
   el.innerHTML='<div class="text-muted" style="padding:.5rem 0">Memuat enrollment wajah…</div>';
   var j=await sigajiMobileFetch('mobile-face',{method:'GET'});
-  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat enrollment')+'</div>';return;}
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+escapeHtml(j&&j.error||'Gagal memuat enrollment')+'</div>';return;}
   var items=j.items||[];
   var map={};
   items.forEach(function(x){if(x&&x.nik)map[x.nik]=x;});
@@ -475,7 +480,7 @@ async function renderMobileLateReport(){
   var month=monthEl?monthEl.value:new Date().toISOString().substring(0,7);
   el.innerHTML='<div class="text-muted" style="padding:.5rem 0">Memuat rekap keterlambatan…</div>';
   var j=await sigajiMobileFetch('mobile-attendance?late_report=1&month='+encodeURIComponent(month),{method:'GET'});
-  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat rekap')+'</div>';return;}
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+escapeHtml(j&&j.error||'Gagal memuat rekap')+'</div>';return;}
   var rekap=j.rekap||[];
   if(!rekap.length){el.innerHTML='<p class="u-muted-12">Tidak ada keterlambatan (jam masuk: '+escapeHtml(j.jam_masuk||'08:00')+').</p>';return;}
   var rows=rekap.map(function(r){
@@ -514,19 +519,20 @@ async function mobInitLokasiTab(){
     if(jLoc&&jLoc.ok)(jLoc.items||[]).forEach(function(l){
       if(l&&l.id&&l.aktif!==false)locOpts+='<option value="'+escapeHtml(l.id)+'">'+escapeHtml(l.nama)+'</option>';
     });
-    dashHost.innerHTML='<div class="card tabs-spaced-lg border-accent-left">'
+    var h='<div class="card tabs-spaced-lg border-accent-left">'
       +'<div class="flb mb2 flex-wrap gap-sm"><div class="ct m-0 border-0 p-0">Dashboard absensi hari ini</div>'
-      +'<div class="fl gap1"><input class="rounded-sm select-inline" type="date" id="mob-dash-date" value="'+today+'" style="padding:6px 10px; border:1.5px solid #dde1e9">'
+      +'<div class="fl gap1"><input class="rounded-sm select-inline" type="date" id="mob-dash-date" value="'+escapeAttr(today)+'" style="padding:6px 10px; border:1.5px solid #dde1e9">'
       +'<select class="rounded-sm select-inline" id="mob-dash-loc" style="padding:6px 10px; border:1.5px solid #dde1e9">'+locOpts+'</select>'
       +'<button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'renderMobileDashboard'})+'>Muat</button></div></div>'
       +'<div id="mob-dashboard-wrap"></div></div>';
+    dashHost.innerHTML=h;
     dashHost.dataset.inited='1';
     var dEl=document.getElementById('mob-dash-date');
     var lEl=document.getElementById('mob-dash-loc');
     if(dEl)dEl.onchange=renderMobileDashboard;
     if(lEl)lEl.onchange=renderMobileDashboard;
     if(typeof Notification!=='undefined'&&Notification.permission==='default'){
-      try{Notification.requestPermission();}catch(eNp){}
+      try{Notification.requestPermission();}catch(eNp){sigajiCatchWarn("js/modules/app-mobile.js",eNp);}
     }
   }
   renderMobileDashboard();
@@ -578,7 +584,7 @@ async function renderMobileAssignments(){
   el.innerHTML='<div class="text-muted p-md">Memuat…</div>';
   var jAssign=await sigajiMobileFetch('mobile-locations?kind=assignments',{method:'GET'});
   var jLoc=await sigajiMobileFetch('mobile-locations',{method:'GET'});
-  if(!jAssign||!jAssign.ok){el.innerHTML='<div class="info-box info-red">'+(jAssign&&jAssign.error||'Gagal memuat penugasan')+'</div>';return;}
+  if(!jAssign||!jAssign.ok){el.innerHTML='<div class="info-box info-red">'+escapeHtml(jAssign&&jAssign.error||'Gagal memuat penugasan')+'</div>';return;}
   var locations=(jLoc&&jLoc.ok)?(jLoc.items||[]):[];
   window._mobLocList=locations;
   var items=jAssign.items||[];
@@ -592,13 +598,14 @@ async function renderMobileAssignments(){
     var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
     return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
   }).join('');
-  el.innerHTML=mobAssignFormHtml(locations,null)
+  var h=mobAssignFormHtml(locations,null)
     +mobAssignWeekCalendarHtml(items,locations)
     +'<div class="card"><div class="ct border-0 p-0 mb-md m-0">Daftar penugasan</div>'
     +'<p class="font-11 text-muted mb-lg m-0">Tim menginap luar kota: pilih karyawan, lokasi mess/site, dan rentang tanggal.</p>'
     +'<table><thead><tr><th>Karyawan</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
     +(rows||'<tr><td class="text-center text-subtle" colspan="5">Belum ada penugasan</td></tr>')
     +'</tbody></table></div>';
+  el.innerHTML=h;
 }
 async function saveMobileAssignment(){
   var nikEl=document.getElementById('mob-assign-nik');
@@ -650,13 +657,14 @@ async function editMobileAssignment(id){
     var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
     return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
   }).join('');
-  el.innerHTML=mobAssignFormHtml(locations,row)
+  var h=mobAssignFormHtml(locations,row)
     +mobAssignWeekCalendarHtml(items,locations)
     +'<div class="card"><div class="ct border-0 p-0 mb-md m-0">Daftar penugasan</div>'
     +'<table><thead><tr><th>Karyawan</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
     +(rows||'<tr><td class="text-center text-subtle" colspan="5">Belum ada</td></tr>')
     +'</tbody></table></div>';
-  try{document.getElementById('mob-assign-form')&&document.getElementById('mob-assign-form').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}
+  el.innerHTML=h;
+  try{document.getElementById('mob-assign-form')&&document.getElementById('mob-assign-form').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){sigajiCatchWarn("js/modules/app-mobile.js",e);}
 }
 async function deleteMobileAssignment(id){
   if(!confirm('Hapus penugasan ini?'))return;
@@ -668,7 +676,7 @@ async function renderMobileLeavePending(){
   var el=document.getElementById('mob-leave-wrap');if(!el)return;
   el.innerHTML='<div class="text-muted p-md">Memuat…</div>';
   var j=await sigajiMobileFetch('mobile-leave?status=pending',{method:'GET'});
-  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat pengajuan')+'</div>';return;}
+  if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+escapeHtml(j&&j.error||'Gagal memuat pengajuan')+'</div>';return;}
   var items=j.items||[];
   if(!items.length){el.innerHTML='<div class="card"><div class="ct">Pengajuan cuti / izin / sakit</div><p class="text-muted font-12">Tidak ada antrian pending.</p></div>';return;}
   el.innerHTML='<div class="card"><div class="ct">Pengajuan menunggu persetujuan</div>'
@@ -765,8 +773,8 @@ async function loadMyCutiNotifCloud(){
   if(!items.length){el.style.display='none';return;}
   var unread=items.filter(function(n){return !n.read_at;});
   el.style.display='block';
-  el.innerHTML='<div class="font-11 fw-700 text-muted mb-sm">Notifikasi pengajuan'
-    +(unread.length?' <span class="bdg b-warn">'+unread.length+' baru</span>':'')+'</div>'
+  var h='<div class="font-11 fw-700 text-muted mb-sm">Notifikasi pengajuan'
+    +(unread.length?' <span class="bdg b-warn">'+String(unread.length)+' baru</span>':'')+'</div>'
     +items.slice(0,8).map(function(n){
       var st=!n.read_at?'background:#f0f6ff;':'';
       return '<div class="font-11" style="padding:.45rem 0; border-bottom:1px solid #f3f4f6; '+st+'">'
@@ -774,6 +782,7 @@ async function loadMyCutiNotifCloud(){
         +'<div class="text-muted">'+escapeHtml(n.body||'')+'</div></div>';
     }).join('')
     +(unread.length?'<button type="button" class="btn btn-sm btn-out mt05"'+sigajiDataAction('invoke',{fn:'markMyCutiNotifRead'})+'>Tandai dibaca</button>':'');
+  el.innerHTML=h;
 }
 async function markMyCutiNotifRead(){
   await sigajiMobileFetch('mobile-notifications',{method:'POST',body:{action:'mark_read',all:true}});
@@ -782,8 +791,8 @@ async function markMyCutiNotifRead(){
 function formatMyCutiBalanceCloud(b){
   if(!b)return '';
   var sisa=b.sisa!=null?b.sisa:0;
-  return '<strong>Sisa cuti '+b.year+': '+Math.max(0,sisa)+' hari</strong> (kuota '+(b.kuota||12)
-    +', terpakai '+(b.terpakai||0)+(b.pending_pengajuan?', termasuk '+b.pending_pengajuan+' hari pending':'')+')';
+  return '<strong>Sisa cuti '+String(b.year)+': '+String(Math.max(0,sisa))+' hari</strong> (kuota '+String(b.kuota||12)
+    +', terpakai '+String(b.terpakai||0)+(b.pending_pengajuan?', termasuk '+String(b.pending_pengajuan)+' hari pending':'')+')';
 }
 async function loadMyCutiBalanceCloud(){
   var box=document.getElementById('mycuti-balance-cloud');
@@ -806,7 +815,8 @@ async function loadMyCutiBalanceCloud(){
   if(mf&&mf.value)yr=parseInt(String(mf.value).substring(0,4),10)||yr;
   var j=await sigajiMobileFetch('mobile-leave',{method:'POST',body:{action:'cuti_balance',year:yr}});
   if(!j||!j.ok){box.textContent=(j&&j.error)||'Gagal memuat sisa cuti';return;}
-  box.innerHTML=formatMyCutiBalanceCloud(j.balance);
+  var h=formatMyCutiBalanceCloud(j.balance);
+  box.innerHTML=h;
   await refreshMyCutiPreviewCloud();
 }
 async function refreshMyCutiPreviewCloud(){
@@ -828,17 +838,17 @@ async function refreshMyCutiPreviewCloud(){
   var req=j.requested_work_days||0;
   var sisa=j.balance&&j.balance.sisa!=null?j.balance.sisa:0;
   if(j.allowed){
-    prev.innerHTML='Mengajukan <b>'+req+'</b> hari kerja. Sisa setelah ini: <b>'+Math.max(0,sisa-req)+'</b> hari.';
+    prev.innerHTML='Mengajukan <b>'+String(req)+'</b> hari kerja. Sisa setelah ini: <b>'+String(Math.max(0,sisa-req))+'</b> hari.';
     prev.style.color='#166534';
   }else{
-    prev.innerHTML='<span style="color:#b91c1c">'+(j.error||'Melebihi sisa cuti')+'</span> (mengajukan '+req+' hari, sisa '+Math.max(0,sisa)+' hari)';
+    prev.innerHTML='<span style="color:#b91c1c">'+escapeHtml(j.error||'Melebihi sisa cuti')+'</span> (mengajukan '+String(req)+' hari, sisa '+String(Math.max(0,sisa))+' hari)';
     prev.style.color='#b91c1c';
   }
 }
 async function loadMyCutiRequests(){
   var el=document.getElementById('mycuti-requests-list');if(!el)return;
   var j=await sigajiMobileFetch('mobile-leave',{method:'POST',body:{action:'my_list'}});
-  if(!j||!j.ok){el.innerHTML='<div class="font-11 text-subtle">Riwayat pengajuan (cloud): '+(j&&j.error||'-')+'</div>';return;}
+  if(!j||!j.ok){el.innerHTML='<div class="font-11 text-subtle">Riwayat pengajuan (cloud): '+escapeHtml(j&&j.error||'-')+'</div>';return;}
   var items=j.items||[];
   el.innerHTML='<div class="font-11 fw-700 text-muted mb-sm">Riwayat pengajuan</div>'
     +(items.length?items.map(function(r){

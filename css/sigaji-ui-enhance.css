@@ -977,43 +977,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 .dac-red { border-left: 4px solid #dc2626; background: #fef2f2; }
 .dac-muted { border-left: 4px solid #9ca3af; cursor: default; }
 
-/* ── Penggajian sticky + row status ── */
-.pg-table-sticky .table-wrap {
-  overflow-x: auto;
-  max-width: 100%;
-}
-.pg-table-sticky th.pg-sticky-no,
-.pg-table-sticky td.pg-sticky-no {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  background: #fff;
-  box-shadow: 1px 0 0 #e5e7eb;
-  min-width: 36px;
-}
-.pg-table-sticky th.pg-sticky-name,
-.pg-table-sticky td.pg-sticky-name {
-  position: sticky;
-  left: 36px;
-  z-index: 2;
-  background: #fff;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
-  min-width: 180px;
-}
-.pg-table-sticky thead th.pg-sticky-no,
-.pg-table-sticky thead th.pg-sticky-name {
-  background: #f8fafc;
-  z-index: 3;
-}
-tr.pg-row-prorate td { background: #fffbf5 !important; }
-tr.pg-row-prorate td.pg-sticky-no,
-tr.pg-row-prorate td.pg-sticky-name { background: #fffbf5 !important; }
-tr.pg-row-neto-neg td { background: #fef2f2 !important; }
-tr.pg-row-neto-neg td.pg-sticky-no,
-tr.pg-row-neto-neg td.pg-sticky-name { background: #fef2f2 !important; }
-tr.pg-row-pending td { background: #fffbeb !important; }
-tr.pg-row-pending td.pg-sticky-no,
-tr.pg-row-pending td.pg-sticky-name { background: #fffbeb !important; }
+/* Penggajian sticky + row status → sigaji-table.css */
 
 /* ── Absensi month navigator ── */
 .ab-month-nav {
@@ -1396,13 +1360,9 @@ tr.pg-row-pending td.pg-sticky-name { background: #fffbeb !important; }
   --bento-muted: #94a3b8;
   --content-bg: #0f172a;
 }
-[data-theme="dark"] body,
-[data-theme="dark"] .content { background: #0f172a !important; color: #e2e8f0; }
-[data-theme="dark"] .card,
 [data-theme="dark"] .bento-widget,
-[data-theme="dark"] .period-timeline-bar { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+[data-theme="dark"] .period-timeline-bar { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
 [data-theme="dark"] .sidebar { filter: brightness(0.95); }
-[data-theme="dark"] .topbar { background: #1e293b; border-color: #334155; }
 [data-theme="dark"] .wf-explain-panel { background: #1e293b; }
 [data-theme="dark"] .sigaji-tour-popover { background: #1e293b; color: #e2e8f0; }
 

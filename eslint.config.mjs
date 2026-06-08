@@ -26,7 +26,7 @@ const sigajiGlobals = {
   PTKP_KEYS: 'readonly',
   MODULES: 'readonly',
   fmt: 'readonly',
-  toast: 'readonly',
+  toast: 'writable',
   saveAll: 'readonly',
   nilaiPTKP: 'readonly',
   getPTKPTable: 'readonly',
@@ -40,6 +40,8 @@ const sigajiGlobals = {
   sigajiApiToast: 'readonly',
   sigajiSetTbodyRows: 'readonly',
   sigajiDataAction: 'readonly',
+  sigajiSameId: 'readonly',
+  sigajiCatchWarn: 'readonly',
 };
 
 const sigajiPlugin = {
@@ -77,12 +79,32 @@ export default [
     },
     rules: legacyJsRules,
   },
-  /** Mendefinisikan global browser — dipakai modul lain lewat script tag, bukan import. */
+  /** Registry global — dipakai modul lain lewat script tag. */
   {
-    files: ['js/constants.js', 'js/ptkp.js'],
+    files: ['js/constants.js', 'js/ptkp.js', 'js/storage.js'],
     rules: {
       'no-unused-vars': 'off',
       'no-redeclare': 'off',
+    },
+  },
+  /** Fungsi dipanggil dari HTML / event delegation — bukan dead code. */
+  {
+    files: [
+      'js/modules/**/*.js',
+      'js/pesangon.js',
+      'js/cloud-sync.js',
+      'js/cloud-tables.js',
+      'js/sigaji-icons.js',
+    ],
+    rules: {
+      'no-unused-vars': 'off',
+    },
+  },
+  /** Inti payroll: innerHTML tidak aman = error. */
+  {
+    files: ['js/modules/app-core.js', 'js/modules/app-hr-tunjvar.js', 'js/pesangon.js'],
+    rules: {
+      'sigaji/no-unsafe-innerhtml': 'error',
     },
   },
   {

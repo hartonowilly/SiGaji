@@ -30,7 +30,8 @@ function renderPPHBody(){
   var selK=document.getElementById('a1-kar');
   if(selK){
     var prev=selK.value;
-    selK.innerHTML=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(sortKaryawanByNik(karyawan||[]),'-- Pilih karyawan --'):'<option value="">-- Pilih karyawan --</option>'+sortKaryawanByNik(karyawan||[]).map(function(k){return '<option value="'+escapeAttr(k.nik)+'">'+escapeHtml(k.nik)+' — '+escapeHtml(k.nama)+'</option>';}).join('');
+    var h=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(sortKaryawanByNik(karyawan||[]),'-- Pilih karyawan --'):'<option value="">-- Pilih karyawan --</option>'+sortKaryawanByNik(karyawan||[]).map(function(k){return '<option value="'+escapeAttr(k.nik)+'">'+escapeHtml(k.nik)+' — '+escapeHtml(k.nama)+'</option>';}).join('');
+    selK.innerHTML=h;
     if(prev&&karyawan.some(function(k){return k.nik===prev;}))selK.value=prev;
   }
 }
@@ -557,9 +558,10 @@ function renderTHRBody(){
       +'<td>'+(isE&&periodeAdaTHR?'<span class="ct-warn">'+fmt(pphEst)+'</span>':'<span class="text-subtle">'+(periodeAdaTHR?'&#8212;':'Set THR di Periode')+'</span>')+'</td>'
       +'<td><strong class="ct-success">'+(isE?fmt(t.nilai):'&#8212;')+'</strong>'+(isE?'<div class="font-9 ct-success">(full netto)</div>':'')+'</td></tr>';
   }).join('');
-  document.getElementById('thr-summary').innerHTML='<div class="fl gap2 flex-wrap">'
-    +'<div><div class="font-22 fw-800 ct-success">'+eligible+'</div><div class="u-muted-11">Eligible</div></div>'
+  var h='<div class="fl gap2 flex-wrap">'
+    +'<div><div class="font-22 fw-800 ct-success">'+String(eligible)+'</div><div class="u-muted-11">Eligible</div></div>'
     +'<div><div class="font-22 fw-800 ct-purple">'+fmt(total)+'</div><div class="u-muted-11">Total THR Bruto</div></div>'
     +'<div><div class="font-22 fw-800 ct-success">'+fmt(total)+'</div><div class="u-muted-11">Dibayar Full Netto</div></div></div>'
     +(periodeAdaTHR?'<div class="info-box info-pu mt-md mb-0 font-11">&#10003; Periode aktif ada THR. PPh THR digabung ke gaji akhir bulan.</div>':'<div class="info-box info-amber mt-md mb-0 font-11">Aktifkan THR di Master Periode untuk menggabungkan PPh THR ke gaji.</div>');
+  document.getElementById('thr-summary').innerHTML=h;
 }

@@ -4,12 +4,12 @@ function sigajiIsMobileNav(){
   try{
     if(window.matchMedia('(max-width:900px)').matches)return true;
     if(window.matchMedia('(hover:none) and (pointer:coarse)').matches)return true;
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   return false;
 }
 function sigajiApplyMobileNavMode(){
   var on=sigajiIsMobileNav();
-  try{document.documentElement.classList.toggle('sigaji-mobile-nav',on);}catch(e){}
+  try{document.documentElement.classList.toggle('sigaji-mobile-nav',on);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   if(on)sigajiMountNavToBody();
   else{sigajiCloseNavDrawer();sigajiRestoreNavDom();}
 }
@@ -53,7 +53,7 @@ function sigajiSyncNavDrawerA11y(){
     if(sb)sb.setAttribute('aria-hidden',open?'false':'true');
     var bd=document.getElementById('nav-backdrop');
     if(bd)bd.setAttribute('aria-hidden',open?'false':'true');
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
 }
 function sigajiSetNavDrawerOpen(open){
   try{
@@ -120,7 +120,7 @@ function refreshBackupTabContent(tid){
     if(typeof renderMigrationStatus==='function')renderMigrationStatus();
     if(typeof renderBackupRiwayat==='function')renderBackupRiwayat();
     if(typeof renderAuditLog==='function')renderAuditLog();
-    try{if(typeof sigajiUpdateCloudBackupUi==='function')sigajiUpdateCloudBackupUi();}catch(e){}
+    try{if(typeof sigajiUpdateCloudBackupUi==='function')sigajiUpdateCloudBackupUi();}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   }else if(tid==='bk-ringkas'){
     if(typeof renderSysStatus==='function')renderSysStatus();
   }
@@ -141,7 +141,7 @@ function switchBackupTab(el,tid){
     if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
     else if(d)d.style.display=id===tid?'block':'none';
   });
-  try{sessionStorage.setItem('sigaji_backup_tab',tid);}catch(e){}
+  try{sessionStorage.setItem('sigaji_backup_tab',tid);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   refreshBackupTabContent(tid);
 }
 function bindBackupTabsOnce(){
@@ -165,7 +165,7 @@ function initBackupPageTabs(){
       tid='bk-cadangan';
       sessionStorage.removeItem('sigaji_backup_tab');
     }else if(s&&ids.indexOf(s)>=0)tid=s;
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   var bar=document.getElementById('backup-tabs');
   if(bar){
     var tabs=bar.querySelectorAll('.tab');
@@ -190,13 +190,13 @@ if(typeof window!=='undefined'){
 }
 function sigajiPersistLastPg(pg){
   if(!pg)return;
-  try{localStorage.setItem('sigaji_last_pg',pg);}catch(e){}
+  try{localStorage.setItem('sigaji_last_pg',pg);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   try{
     if(window.history&&window.history.replaceState){
       var base=window.location.pathname+(window.location.search||'');
       window.history.replaceState(null,'',base+'#'+encodeURIComponent(pg));
     }
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
 }
 function sigajiReadLastPg(){
   try{
@@ -205,7 +205,7 @@ function sigajiReadLastPg(){
       var fromHash=decodeURIComponent(h.substring(1).split('?')[0].trim());
       if(fromHash)return fromHash;
     }
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   try{return localStorage.getItem('sigaji_last_pg')||'';}catch(e){return '';}
 }
 function sigajiResolveStartupPg(){
@@ -241,7 +241,7 @@ function showPg(pg){
   if(pg==='notifikasi'){notifikasi.forEach(function(n){n.read=true;});saveAll();renderNotif();updateNotifBadge();}
   if(pg==='absensi')setTimeout(function(){applyAbsensiSubtabVisibility();if(typeof renderMobileAbsensiTabs==='function')renderMobileAbsensiTabs();renderAbsensi();},50);
   if(pg==='slip')setTimeout(function(){renderPeriodeSelects();populateSelects();onSlipPeriodeChange();applyPayrollSpTabSimpleUi();},50);
-  if(pg==='master'){renderPeriodes();renderHariLibur();renderCutiRekap();loadPrsForm();applyBranding();initLibnasYearSelect();applyMasterSubtabVisibility();try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab2){}}
+  if(pg==='master'){renderPeriodes();renderHariLibur();renderCutiRekap();loadPrsForm();applyBranding();initLibnasYearSelect();applyMasterSubtabVisibility();try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab2){sigajiCatchWarn("js/modules/app-shell.js",eCab2);}}
   if(pg==='thr')renderTHR();
   if(pg==='mycuti'){if(typeof renderMyCutiPage==='function')renderMyCutiPage();else if(typeof renderMyCuti==='function')renderMyCuti();}
   if(pg==='myslip')loadMySlip();
@@ -325,7 +325,7 @@ function switchLaporanTab(el,panelId){
     else if(d)d.style.display=id===panelId?'block':'none';
   });
   if(panelId==='lap-tab-pph')renderPPH();
-  else if(panelId==='lap-tab-variance'){try{if(typeof renderLaporanVariance==='function')renderLaporanVariance();}catch(eV){}}
+  else if(panelId==='lap-tab-variance'){try{if(typeof renderLaporanVariance==='function')renderLaporanVariance();}catch(eV){sigajiCatchWarn("js/modules/app-shell.js",eV);}}
   else renderLaporan();
 }
 if(typeof window!=='undefined')window.switchLaporanTab=switchLaporanTab;
@@ -397,8 +397,8 @@ function switchMasterTab(el,tid){
   if(tid==='m-ter'){renderPTKPForm();renderTERTable();}
   if(tid==='m-umk')renderUmkPanel();
   if(tid==='m-libur'){initLibnasYearSelect();renderHariLibur();renderCutiRekap();}
-  if(tid==='m-prs'){try{if(typeof loadPrsForm==='function')loadPrsForm();}catch(ePrs){}}
-  if(tid==='m-cabang'){try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab3){}}
+  if(tid==='m-prs'){try{if(typeof loadPrsForm==='function')loadPrsForm();}catch(ePrs){sigajiCatchWarn("js/modules/app-shell.js",ePrs);}}
+  if(tid==='m-cabang'){try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab3){sigajiCatchWarn("js/modules/app-shell.js",eCab3);}}
   if(tid==='m-saldo-pph')refreshMigrasiPphSaldoPanel();
 }
 if(typeof window!=='undefined'){
@@ -456,7 +456,7 @@ function switchPayrollSpTab(el,tid){
 }
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
-var tT;function toast(msg){var t=document.getElementById('toast9');if(!t){try{console.warn(msg);}catch(e){}return;}t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show');},3200);}
+var tT;toast=function(msg){var t=document.getElementById('toast9');if(!t){try{console.warn(msg);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}return;}t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show');},3200);};
 function updateResetButtonState(){
   var phrase=(document.getElementById('reset-inp')&&document.getElementById('reset-inp').value)||'';
   var pw=(document.getElementById('reset-pw')&&document.getElementById('reset-pw').value)||'';
@@ -579,7 +579,7 @@ function resetTERCustom(){
 }
 
 // ── INIT ─────────────────────────────────────────
-setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_autobackup',JSON.stringify(Object.assign({},d,{_meta:Object.assign({},d._meta,{catatan:'Auto backup'})})));}catch(e){}},30*60*1000);
+setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_autobackup',JSON.stringify(Object.assign({},d,{_meta:Object.assign({},d._meta,{catatan:'Auto backup'})})));}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}},30*60*1000);
 initLibnasYearSelect();
 if(typeof document!=='undefined'){
   function sigajiDomReady(){
@@ -601,7 +601,7 @@ if(typeof window!=='undefined'){
       if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(document.body);
     });
     window.sigajiApplyMobileNavMode=sigajiApplyMobileNavMode;
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
 }
 /** Kuota karyawan aktif — diatur penjual (Supabase / Netlify license-set / config deploy). */
 (function () {

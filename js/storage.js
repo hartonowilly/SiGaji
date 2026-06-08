@@ -295,12 +295,12 @@ function dbLoad(){
     const snap=JSON.stringify(db);
     db=migrateStorage(db);
     if(JSON.stringify(db)!==snap){
-      try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}
+      try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){sigajiCatchWarn("js/storage.js",e);}
     }
     return db;
   }catch(e){
     console.error('dbLoad error:',e);
-    try{localStorage.removeItem(DB_KEY);}catch(x){}
+    try{localStorage.removeItem(DB_KEY);}catch(x){sigajiCatchWarn("js/storage.js",x);}
     if(recoverDbFromUniversal()){
       try{
         const raw3=localStorage.getItem(DB_KEY);
@@ -318,11 +318,11 @@ function dbSave(o){
     try{
       var prevRaw=localStorage.getItem(DB_KEY);
       if(prevRaw)localStorage.setItem('sigaji_db_prev',prevRaw);
-    }catch(e0){}
+    }catch(e0){sigajiCatchWarn("js/storage.js",e0);}
     const payload=Object.assign({schemaVersion:SCHEMA_VERSION},o);
     localStorage.setItem(DB_KEY,JSON.stringify(payload));
     showSI();
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
 function LS(k,d){const db=dbLoad();return db&&db[k]!==undefined?db[k]:d;}
 let karyawan=LS('karyawan',[]);
@@ -367,28 +367,28 @@ function markRecoveryBackup(tag){
   try{
     var p=Object.assign({_tag:tag||'manual',_ts:new Date().toISOString(),schemaVersion:SCHEMA_VERSION},currentPayloadLite());
     localStorage.setItem('sigaji_recovery_last',JSON.stringify(p));
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
 function saveAll(){
-  try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('saving');}catch(eSf){}
+  try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('saving');}catch(eSf){sigajiCatchWarn("js/storage.js",eSf);}
   try{
     if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan||[]);
     dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense});
   }catch(e){
     console.error('saveAll error:',e);
-    try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('error');}catch(eSf2){}
+    try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('error');}catch(eSf2){sigajiCatchWarn("js/storage.js",eSf2);}
   }
   try{
     try{
       var prevUni=localStorage.getItem('sigaji_universal');
       if(prevUni)localStorage.setItem('sigaji_universal_prev',prevUni);
-    }catch(e0){}
+    }catch(e0){sigajiCatchWarn("js/storage.js",e0);}
     localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense}));
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/storage.js",e);}
   try{
     if(window.sigajiApplyingCloud)return;
     if(typeof window.sigajiQueueCloudSave==='function')window.sigajiQueueCloudSave();
-  }catch(e){}
+  }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
 /** True jika menerima payload ini akan mengosongkan data penting yang sudah ada di perangkat (cegah “hilang” setelah login awan). */
 function cloudPayloadWouldWipeMeaningfulLocal(o){
@@ -407,7 +407,7 @@ function applyDbFromCloudPayload(payload){
   var o=migrateStorage(Object.assign({schemaVersion:SCHEMA_VERSION},payload));
   if(cloudPayloadWouldWipeMeaningfulLocal(o)){
     var msg='Sinkron awan ditolak: data di cloud tampak kosong (0 karyawan/periode/user) sementara di perangkat ini masih ada data. Lokal tidak ditimpa. Periksa baris di Supabase atau unggah cadangan. Cadangan ringan: localStorage key sigaji_universal / sigaji_db.';
-    try{if(typeof toast==='function')toast(msg);}catch(e){}
+    try{if(typeof toast==='function')toast(msg);}catch(e){sigajiCatchWarn("js/storage.js",e);}
     console.warn('Sigaji:',msg);
     return;
   }
@@ -440,17 +440,17 @@ function applyDbFromCloudPayload(payload){
       tenantLicense.planLabel=String(o.license.planLabel||'').trim();
       tenantLicense.multiBranchEnabled=!!o.license.multiBranchEnabled;
       tenantLicense.maxBranches=parseInt(o.license.maxBranches,10)>0?parseInt(o.license.maxBranches,10):1;
-      try{if(typeof window.sigajiApplyLicenseFromObject==='function')window.sigajiApplyLicenseFromObject(tenantLicense);}catch(eL){}
-      try{if(typeof window.sigajiApplyBranchPolicyFromObject==='function')window.sigajiApplyBranchPolicyFromObject(o.license);}catch(eBr){}
+      try{if(typeof window.sigajiApplyLicenseFromObject==='function')window.sigajiApplyLicenseFromObject(tenantLicense);}catch(eL){sigajiCatchWarn("js/storage.js",eL);}
+      try{if(typeof window.sigajiApplyBranchPolicyFromObject==='function')window.sigajiApplyBranchPolicyFromObject(o.license);}catch(eBr){sigajiCatchWarn("js/storage.js",eBr);}
     }
     dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense});
     try{
       localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense}));
-    }catch(e2){}
+    }catch(e2){sigajiCatchWarn("js/storage.js",e2);}
     showSI();
-    try{if(typeof applyBranding==='function')applyBranding();}catch(eB){}
-    try{if(o.perusahaan&&typeof o.perusahaan==='object')window.sigajiLoginBranding={nama:o.perusahaan.nama||'',logo:o.perusahaan.logo||''};}catch(eC){}
-    try{if(typeof window.sigajiRenderLicenseQuotaUi==='function')window.sigajiRenderLicenseQuotaUi();}catch(eR){}
+    try{if(typeof applyBranding==='function')applyBranding();}catch(eB){sigajiCatchWarn("js/storage.js",eB);}
+    try{if(o.perusahaan&&typeof o.perusahaan==='object')window.sigajiLoginBranding={nama:o.perusahaan.nama||'',logo:o.perusahaan.logo||''};}catch(eC){sigajiCatchWarn("js/storage.js",eC);}
+    try{if(typeof window.sigajiRenderLicenseQuotaUi==='function')window.sigajiRenderLicenseQuotaUi();}catch(eR){sigajiCatchWarn("js/storage.js",eR);}
   }finally{
     window.sigajiApplyingCloud=false;
   }

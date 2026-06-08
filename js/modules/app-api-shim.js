@@ -26,5 +26,5 @@ if (document.readyState === 'loading') {
     var mqNarrow = window.matchMedia('(max-width:900px)').matches;
     var mqTouch = window.matchMedia('(hover:none) and (pointer:coarse)').matches;
     if (mqNarrow || mqTouch) document.documentElement.classList.add('sigaji-mobile-nav');
-  } catch (e) {}
+  } catch(e){sigajiCatchWarn("js/modules/app-api-shim.js",e);}
 })();

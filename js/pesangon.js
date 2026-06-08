@@ -87,15 +87,15 @@
     var h='';
     h+='<div class="stit">'+escapeHtml(k.nama)+' <span class="font-11 text-muted fw-600">'+escapeHtml(k.nik)+'</span></div>';
     h+='<div class="fg2 mt-md">';
-    h+='<div class="fg"><label>Tgl. berhenti</label><input type="date" id="psg-tgl" value="'+(k.tgl_berhenti||'')+'" onchange="pesangonTglChange()"></div>';
+    h+='<div class="fg"><label>Tgl. berhenti</label><input type="date" id="psg-tgl" value="'+escapeAttr(k.tgl_berhenti||'')+'" onchange="pesangonTglChange()"></div>';
     h+='<div class="fg ff"><label>Alasan PHK</label><select id="psg-alasan" onchange="pesangonRefresh()">'+optHtml()+'</select></div>';
-    h+='<div class="fg"><label>Sisa cuti (hari) — kosongkan = otomatis dari absensi</label><input type="number" min="0" step="1" id="psg-sisa-cuti" placeholder="Otomatis" value="'+(phk.sisa_cuti_hari!==undefined&&phk.sisa_cuti_hari!==null&&String(phk.sisa_cuti_hari)!==''?phk.sisa_cuti_hari:'')+'" onchange="pesangonRefresh()"></div>';
-    h+='<div class="fg"><label>Override UP (Rp)</label><input type="number" min="0" step="1" id="psg-up-manual" placeholder="Opsional" value="'+(phk.up_manual!=null&&phk.up_manual!==''?phk.up_manual:'')+'" onchange="pesangonRefresh()"></div>';
-    h+='<div class="fg"><label>Override UPMK (Rp)</label><input type="number" min="0" step="1" id="psg-upmk-manual" placeholder="Opsional" value="'+(phk.upmk_manual!=null&&phk.upmk_manual!==''?phk.upmk_manual:'')+'" onchange="pesangonRefresh()"></div>';
-    h+='<div class="fg"><label>Override UPH total (Rp)</label><input type="number" min="0" step="1" id="psg-uph-manual" placeholder="Kosong = dari cuti" value="'+(phk.uph_manual!=null&&phk.uph_manual!==''?phk.uph_manual:'')+'" onchange="pesangonRefresh()"></div>';
-    h+='<div class="fg"><label>UPH tambahan (ongkos dll., Rp)</label><input type="number" min="0" step="1" id="psg-uph-tambahan" value="'+(phk.uph_tambahan||0)+'" onchange="pesangonRefresh()"></div>';
-    h+='<div class="fg"><label>Uang pisah PK (Rp)</label><input type="number" min="0" step="1" id="psg-pisah" value="'+(phk.pisah||0)+'" onchange="pesangonRefresh()"></div>';
-    h+='<div class="fg ff"><label>Keterangan</label><input id="psg-ket" value="'+escapeHtml(phk.keterangan||'')+'" onchange="pesangonRefresh()"></div>';
+    h+='<div class="fg"><label>Sisa cuti (hari) — kosongkan = otomatis dari absensi</label><input type="number" min="0" step="1" id="psg-sisa-cuti" placeholder="Otomatis" value="'+escapeAttr(phk.sisa_cuti_hari!==undefined&&phk.sisa_cuti_hari!==null&&String(phk.sisa_cuti_hari)!==''?phk.sisa_cuti_hari:'')+'" onchange="pesangonRefresh()"></div>';
+    h+='<div class="fg"><label>Override UP (Rp)</label><input type="number" min="0" step="1" id="psg-up-manual" placeholder="Opsional" value="'+escapeAttr(phk.up_manual!=null&&phk.up_manual!==''?phk.up_manual:'')+'" onchange="pesangonRefresh()"></div>';
+    h+='<div class="fg"><label>Override UPMK (Rp)</label><input type="number" min="0" step="1" id="psg-upmk-manual" placeholder="Opsional" value="'+escapeAttr(phk.upmk_manual!=null&&phk.upmk_manual!==''?phk.upmk_manual:'')+'" onchange="pesangonRefresh()"></div>';
+    h+='<div class="fg"><label>Override UPH total (Rp)</label><input type="number" min="0" step="1" id="psg-uph-manual" placeholder="Kosong = dari cuti" value="'+escapeAttr(phk.uph_manual!=null&&phk.uph_manual!==''?phk.uph_manual:'')+'" onchange="pesangonRefresh()"></div>';
+    h+='<div class="fg"><label>UPH tambahan (ongkos dll., Rp)</label><input type="number" min="0" step="1" id="psg-uph-tambahan" value="'+escapeAttr(phk.uph_tambahan||0)+'" onchange="pesangonRefresh()"></div>';
+    h+='<div class="fg"><label>Uang pisah PK (Rp)</label><input type="number" min="0" step="1" id="psg-pisah" value="'+escapeAttr(phk.pisah||0)+'" onchange="pesangonRefresh()"></div>';
+    h+='<div class="fg ff"><label>Keterangan</label><input id="psg-ket" value="'+escapeAttr(phk.keterangan||'')+'" onchange="pesangonRefresh()"></div>';
     h+='</div>';
     h+='<div class="fl gap1" style="margin:.75rem 0"><button class="btn btn-sm btn-p"'+sigajiDataAction('pesangon-save')+'>&#128190; Simpan ke profil</button><button class="btn btn-sm btn-out"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil karyawan</button></div>';
     h+='<div id="psg-breakdown"></div>';
@@ -120,7 +120,7 @@
       hb+='<tr class="fw-700"><td style="padding:8px;border-bottom:1px solid var(--bd)">Uang pisah</td><td class="text-right" style="padding:8px; border-bottom:1px solid var(--bd)">'+fmt(r.pisah)+'</td></tr>';
       hb+='<tr class="fw-800" style="background:#f0f9ff"><td style="padding:10px">Total estimasi</td><td class="text-right ct-brand" style="padding:10px">'+fmt(r.total)+'</td></tr>';
       hb+='</tbody></table>';
-    }else hb+='<div class="info-box info-red">'+(r.pesan||'')+'</div>';
+    }else hb+='<div class="info-box info-red">'+escapeHtml(r.pesan||'')+'</div>';
     bd.innerHTML=hb;
   }
   function escapeHtml(s){

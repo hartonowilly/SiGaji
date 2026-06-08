@@ -1,10 +1,8 @@
 /**
  * SiGaji UI — payroll-grade design system (load after styles.css)
+ * Font: dimuat via <link> di index; --font di sigaji-tokens.css
  */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-
 :root {
-  --font: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
   --ink-muted: #64748b;
   --border: rgba(15, 23, 42, 0.08);
   --radius-lg: 16px;
@@ -13,7 +11,7 @@
   --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.07);
   --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.12);
   --sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  --content-bg: #eef1f6;
+  --content-bg: var(--color-bg-content, #eef1f6);
 }
 
 body {
@@ -402,10 +400,10 @@ body {
   letter-spacing: 0.06em;
 }
 
-/* ── Tables (payroll grid) ── */
+/* ── Tables (payroll grid) — detail di sigaji-table.css ── */
 .card > div[style*='overflow'] {
   border-radius: var(--radius-md);
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--table-cell-border);
 }
 .card table {
   border-collapse: separate;
@@ -417,25 +415,25 @@ thead {
   z-index: 2;
 }
 th {
-  background: #f1f5f9;
+  background: var(--table-head-bg);
   font-size: 0.64rem;
   letter-spacing: 0.07em;
   padding: 11px 14px;
-  border-bottom: 1px solid #e2e8f0;
-  color: #475569;
+  border-bottom: 1px solid var(--table-head-border);
+  color: var(--table-head-color);
   font-weight: 700;
   text-transform: uppercase;
 }
 td {
   padding: 11px 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--table-cell-border);
   font-size: 0.82rem;
 }
 tbody tr {
   transition: background 0.12s;
 }
 tr:hover td {
-  background: #f8fafc;
+  background: var(--table-row-hover);
 }
 tbody tr:last-child td {
   border-bottom: none;

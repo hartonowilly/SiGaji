@@ -79,7 +79,8 @@
       btn.disabled = false;
       btn.classList.remove('is-loading');
       if (btn.dataset.sigajiOrigHtml) {
-        btn.innerHTML = btn.dataset.sigajiOrigHtml;
+        var h = btn.dataset.sigajiOrigHtml;
+        btn.innerHTML = h;
         delete btn.dataset.sigajiOrigHtml;
       }
     }
@@ -272,7 +273,7 @@
     _pgGajiCols = mode === 'lengkap' ? 'lengkap' : 'ringkas';
     try {
       localStorage.setItem('sigaji_pg_gaji_cols', _pgGajiCols);
-    } catch (e) {}
+    } catch(e){sigajiCatchWarn("js/modules/sigaji-hrd-ux.js",e);}
     document.body.setAttribute('data-pg-cols', _pgGajiCols);
     document.querySelectorAll('[data-pg-cols]').forEach(function (b) {
       b.classList.toggle('active', b.dataset.pgCols === _pgGajiCols);
@@ -283,7 +284,7 @@
   try {
     var saved = localStorage.getItem('sigaji_pg_gaji_cols');
     if (saved === 'lengkap' || saved === 'ringkas') _pgGajiCols = saved;
-  } catch (e) {}
+  } catch(e){sigajiCatchWarn("js/modules/sigaji-hrd-ux.js",e);}
 
   window.sigajiPatchMobileFetch = function () {
     if (typeof sigajiMobileFetch !== 'function' || sigajiMobileFetch._sigajiUxPatched) return;
@@ -292,7 +293,10 @@
       opts = opts || {};
       var host = opts.loadingHost;
       var btn = opts.loadingBtn;
-      if (host) host.innerHTML = sigajiSkeleton('table');
+      if (host) {
+        var h = sigajiSkeleton('table');
+        host.innerHTML = h;
+      }
       if (btn) sigajiBtnLoading(btn, true);
       try {
         return await orig(name, opts);
@@ -354,7 +358,7 @@
     var nama = (el('mob-loc-nama') || {}).value.trim();
     var tipe = (el('mob-loc-tipe') || {}).value || 'site';
     var rad = (el('mob-loc-radius') || {}).value || '250';
-    box.innerHTML =
+    var h =
       '<div class="mob-loc-preview-card">' +
       '<div><strong>' +
       escapeHtml(nama) +
@@ -367,6 +371,7 @@
       (typeof mobLocRadiusHint === 'function' ? mobLocRadiusHint(rad) : '') +
       '</div>' +
       '<div class="font-11 text-subtle mt-xs">Karyawan harus berada dalam radius ini saat check-in di APK.</div></div>';
+    box.innerHTML = h;
   };
 
   window.mobLocWizardReset = function () {

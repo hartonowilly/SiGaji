@@ -130,7 +130,7 @@
     var totPph = series.reduce(function (s, x) {
       return s + (x.pph || 0);
     }, 0);
-    el.innerHTML =
+    var h =
       '<p class="dash-att-hint">12 periode terakhir — batang: <span class="lg-bruto">bruto</span> / <span class="lg-pph">PPh</span> / <span class="lg-neto">neto</span> (skala relatif). Garis ungu = headcount.</p>' +
       '<div class="dash-trend-chart">' +
       bars +
@@ -143,8 +143,9 @@
       fmt(totPph) +
       '</strong></span>' +
       '<span>' +
-      series.length +
+      String(series.length) +
       ' bulan</span></div>';
+    el.innerHTML = h;
   };
 
   window.sigajiRenderDashAlerts = function (ctx) {
@@ -503,7 +504,8 @@
         '" min="2017" max="2030"></div>' +
         '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('invoke', { fn: 'loadLiburNasionalDinamis' }) + '>Muat libur nasional</button></div>',
     ];
-    body.innerHTML = steps[wizStep] || '';
+    var h = steps[wizStep] || '';
+    body.innerHTML = h;
     var prev = document.getElementById('wiz-btn-prev');
     var next = document.getElementById('wiz-btn-next');
     if (prev) prev.style.display = wizStep > 0 ? '' : 'none';

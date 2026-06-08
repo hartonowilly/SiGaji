@@ -171,7 +171,7 @@
     try {
       if (!id) sessionStorage.removeItem(CABANG_FILTER_KEY);
       else sessionStorage.setItem(CABANG_FILTER_KEY, String(id));
-    } catch (e2) {}
+    } catch(e2){sigajiCatchWarn("js/modules/sigaji-cabang.js",e2);}
     sigajiUpdateWorkspaceChrome();
     if (id && typeof showPg === 'function') showPg('dashboard');
     else if (typeof renderAll === 'function') renderAll();
@@ -180,7 +180,7 @@
         if (typeof renderKar === 'function') renderKar();
         if (typeof renderPenggajian === 'function') renderPenggajian();
         if (typeof renderDash === 'function') renderDash();
-      } catch (e3) {}
+      } catch(e3){sigajiCatchWarn("js/modules/sigaji-cabang.js",e3);}
     }
     if (id) {
       var c = sigajiCabangById(id);
@@ -234,7 +234,7 @@
     var nKar = sigajiBranchKarCount(f);
     var nitku = c && c.nitku != null ? String(c.nitku).trim() : '';
     el.style.display = '';
-    el.innerHTML =
+    var h =
       '<div class="sigaji-branch-ws-inner">' +
       '<div class="sigaji-branch-ws-title">&#127970; Workspace: <strong>' +
       escapeHtml(nama) +
@@ -244,7 +244,7 @@
       '</div>' +
       (nKar
         ? '<div class="sigaji-branch-ws-meta">' +
-          nKar +
+          String(nKar) +
           ' karyawan · NIK otomatis: <code>' +
           escapeHtml(
             (typeof sigajiBranchNikPrefix === 'function'
@@ -264,6 +264,7 @@
           ' <button type="button" class="btn btn-xs btn-out"' + sigajiDataAction('invoke', { fn: 'sigajiSetCabangFilter', arg: '' }) + '>Kembali gabungan</button>' +
           '</div>') +
       '</div>';
+    el.innerHTML = h;
   };
 
   window.sigajiTogglePrsNitkuField = function () {
@@ -313,11 +314,11 @@
   window.sigajiSyncKarTableHead = function () {
     var row = document.getElementById('kar-thead-row');
     if (!row) return;
-    var base =
+    var thead =
       '<th>No</th><th>Karyawan</th><th>Tipe</th>' +
       (sigajiMultiBranchEnabled() && !sigajiInBranchWorkspace() ? '<th>Lokasi</th>' : '') +
       '<th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th>';
-    row.innerHTML = base;
+    row.innerHTML = thead;
   };
 
   window.sigajiSyncPgGajiTableHead = function () {
@@ -325,10 +326,11 @@
     if (!tables.length) return;
     var cab =
       sigajiMultiBranchEnabled() && !sigajiInBranchWorkspace() ? '<th>Lokasi</th>' : '';
-    tables[0].innerHTML =
+    var thead =
       '<th class="pg-sticky-no">No</th><th class="pg-sticky-name">Karyawan</th>' +
       cab +
       '<th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th>';
+    tables[0].innerHTML = thead;
   };
 
   window.sigajiRenderCabangTopbar = function () {
@@ -464,7 +466,7 @@
     }
     var list = sigajiEnsureCabangDefault();
     var max = sigajiMaxBranches();
-    panel.innerHTML =
+    var h =
       '<div class="card border-accent-left">' +
       '<div class="ct ct-brand">&#127970; Master Cabang &amp; Identitas Pemotong</div>' +
       '<div class="info-box info-blue font-11 tabs-spaced-lg leading-tight">' +
@@ -472,11 +474,11 @@
       'e-Bupot &amp; XML Coretax memakai TKU cabang karyawan. NPWP benar-benar beda (PT terpisah) → gunakan <code>tenant_key</code> terpisah, bukan cabang.' +
       '</div>' +
       '<p class="font-12 text-body" style="margin:0 0 .65rem">Maks <strong>' +
-      max +
+      String(max) +
       '</strong> cabang · aktif <strong>' +
-      list.filter(function (c) {
+      String(list.filter(function (c) {
         return c && c.aktif !== false;
-      }).length +
+      }).length) +
       '</strong></p>' +
       '<div class="sigaji-cabang-cards">' +
       list.map(cabangCardHtml).join('') +
@@ -485,6 +487,7 @@
       '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('invoke', { fn: 'sigajiCabangTambah' }) + '>+ Cabang</button>' +
       '<button type="button" class="btn btn-sm btn-out"' + sigajiDataAction('invoke', { fn: 'sigajiCabangSimpan' }) + '>Simpan</button>' +
       '</div></div>';
+    panel.innerHTML = h;
   };
 
   function readCabangInputs(list) {

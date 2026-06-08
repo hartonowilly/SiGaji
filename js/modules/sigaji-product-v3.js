@@ -86,12 +86,12 @@
           });
           migrated = true;
         }
-      } catch (e) {}
+      } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
     });
     if (migrated && typeof saveAll === 'function') {
       try {
         saveAll();
-      } catch (e2) {}
+      } catch(e2){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e2);}
     }
   }
 
@@ -113,7 +113,7 @@
           return WIDGET_DEFS[id];
         });
       }
-    } catch (e3) {}
+    } catch(e3){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e3);}
     return DEFAULT_ORDER.slice();
   }
 
@@ -125,10 +125,10 @@
     bentoLayouts[role] = order.slice();
     try {
       localStorage.setItem(layoutKey(), JSON.stringify(order));
-    } catch (e2) {}
+    } catch(e2){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e2);}
     try {
       if (typeof saveAll === 'function') saveAll();
-    } catch (e4) {}
+    } catch(e4){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e4);}
   }
 
   function sparklineSvg(values, w, h) {
@@ -302,10 +302,10 @@
     sigajiBindBentoDrag(grid);
     try {
       if (typeof renderDashComplianceCalendar === 'function') renderDashComplianceCalendar();
-    } catch (e1) {}
+    } catch(e1){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e1);}
     try {
       if (typeof renderDashPayrollAnomalies === 'function') renderDashPayrollAnomalies();
-    } catch (e2) {}
+    } catch(e2){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e2);}
     try {
       if (typeof sigajiRenderDashAlerts === 'function')
         sigajiRenderDashAlerts({
@@ -316,16 +316,18 @@
           pendingAp: ctx.pAp,
           pphRet: ctx.pRet,
         });
-    } catch (e3) {}
+    } catch(e3){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e3);}
     if (ctx.attHtml && document.getElementById('d-att-chart')) {
-      document.getElementById('d-att-chart').innerHTML = ctx.attHtml;
+      var html = ctx.attHtml;
+      document.getElementById('d-att-chart').innerHTML = html;
     }
     if (ctx.deptTableHtml && document.getElementById('d-table')) {
-      document.getElementById('d-table').innerHTML = ctx.deptTableHtml;
+      var tableHtml = ctx.deptTableHtml;
+      document.getElementById('d-table').innerHTML = tableHtml;
     }
     try {
       if (typeof sigajiRenderPayrollNarrative === 'function') sigajiRenderPayrollNarrative(ctx);
-    } catch (e4) {}
+    } catch(e4){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e4);}
   };
 
   function sigajiBindBentoDrag(grid) {
@@ -367,7 +369,7 @@
     localStorage.removeItem(layoutKey());
     try {
       if (typeof saveAll === 'function') saveAll();
-    } catch (e) {}
+    } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
     if (typeof renderDash === 'function') renderDash();
     toast('Layout dashboard direset (tersimpan ke cloud)');
   };
@@ -459,7 +461,8 @@
     var panel = document.getElementById('wf-explain-panel');
     var ov = document.getElementById('wf-explain-overlay');
     if (!body || !panel) return;
-    body.innerHTML = sigajiBuildWaterfallHtml(k, pn, g);
+    var html = sigajiBuildWaterfallHtml(k, pn, g);
+    body.innerHTML = html;
     panel.classList.add('show');
     if (ov) ov.classList.add('show');
   };
@@ -490,11 +493,11 @@
     var panel = document.getElementById('wf-explain-panel');
     var ov = document.getElementById('wf-explain-overlay');
     if (!body || !panel) return;
-    body.innerHTML =
+    var html =
       '<div class="wf-header"><strong>Ringkasan periode</strong><span>' +
       escapeHtml(p.nama) +
       '</span></div><p class="u-muted-11">Agregat ' +
-      list.length +
+      String(list.length) +
       ' karyawan. Fokus: <strong>' +
       escapeHtml(focus || 'neto') +
       '</strong>. Klik ? di tabel penggajian untuk per orang.</p>' +
@@ -508,7 +511,7 @@
             '"><div class="wf-step-lbl">' +
             escapeHtml(s.lbl) +
             '</div><div class="wf-step-bar-wrap"><div class="wf-step-bar" style="width:' +
-            w +
+            String(w) +
             '%"></div></div><div class="wf-step-val">' +
             (s.val < 0 ? '−' : '') +
             fmt(Math.abs(s.val)) +
@@ -517,6 +520,7 @@
         })
         .join('') +
       '</div>';
+    body.innerHTML = html;
     panel.classList.add('show');
     if (ov) ov.classList.add('show');
   };
@@ -598,7 +602,7 @@
     sigajiRenderPeriodTimeline();
     try {
       if (typeof sigajiUpdatePeriodStickyBar === 'function') sigajiUpdatePeriodStickyBar();
-    } catch (e) {}
+    } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
   };
 
   /* ── Theme & density ── */
@@ -610,7 +614,7 @@
     try {
       var raw = localStorage.getItem(prefsKey());
       if (raw) return JSON.parse(raw);
-    } catch (e) {}
+    } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
     return { theme: 'light', density: 'comfortable' };
   };
 
@@ -626,13 +630,18 @@
     root.setAttribute('data-theme', prefs.theme || 'light');
     root.setAttribute('data-density', prefs.density || 'comfortable');
     if (prefs.theme === 'brand') {
-      root.style.setProperty('--ux-accent', brandAccent());
+      var accent = brandAccent();
+      root.style.setProperty('--ux-accent', accent);
+      root.style.setProperty('--blue', accent);
+      root.style.setProperty('--color-primary', accent);
     } else {
       root.style.removeProperty('--ux-accent');
+      root.style.removeProperty('--blue');
+      root.style.removeProperty('--color-primary');
     }
     try {
       localStorage.setItem(prefsKey(), JSON.stringify(prefs));
-    } catch (e2) {}
+    } catch(e2){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e2);}
     var densEl = document.getElementById('ui-pref-density');
     var themeEl = document.getElementById('ui-pref-theme');
     if (densEl) densEl.value = prefs.density || 'comfortable';
@@ -656,7 +665,7 @@
       return;
     }
     var text = sigajiGenerateNarrativeText(ctx);
-    wrap.innerHTML =
+    var html =
       '<div class="narrative-box">' +
       '<div class="narrative-text">' +
       text +
@@ -665,6 +674,7 @@
       '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('invoke', { fn: 'sigajiExportNarrativePdf' }) + '>&#128196; Export PDF</button>' +
       '<button type="button" class="btn btn-sm btn-out"' + sigajiDataAction('invoke', { fn: 'sigajiCopyNarrative' }) + '>Salin teks</button>' +
       '</div></div>';
+    wrap.innerHTML = html;
     window.__sigajiNarrativePlain = wrap.querySelector('.narrative-text')
       ? wrap.querySelector('.narrative-text').innerText
       : '';
@@ -812,7 +822,7 @@
     if (!force) {
       try {
         if (localStorage.getItem('sigaji_tour_done') === '1') return;
-      } catch (e) {}
+      } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
     }
     tourIdx = 0;
     sigajiProductTourShowStep();
@@ -876,7 +886,7 @@
     if (done) {
       try {
         localStorage.setItem('sigaji_tour_done', '1');
-      } catch (e) {}
+      } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
     }
   };
 

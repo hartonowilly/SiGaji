@@ -7,10 +7,13 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.5.38">
 <link rel="stylesheet" href="/css/styles.css?v=11.5.38">
 <link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.38">
 <link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.38">
 <link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.38">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.5.38">
 <link rel="stylesheet" href="/css/sigaji-print.css?v=11.5.38">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
@@ -348,8 +351,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button type="button" data-pg-cols="ringkas" class="active" data-sigaji-action="invoke" data-fn="sigajiSetPgGajiCols" data-arg="ringkas">Ringkas</button>
     <button type="button" data-pg-cols="lengkap" data-sigaji-action="invoke" data-fn="sigajiSetPgGajiCols" data-arg="lengkap">Lengkap</button>
   </div>
-  <div class="card pg-table-sticky"><div class="table-wrap">
-  <table><thead><tr><th class="pg-sticky-no">No</th><th class="pg-sticky-name">Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
+  <div class="card pg-table-sticky sigaji-table-sticky"><div class="table-wrap">
+  <table class="sigaji-table"><thead><tr><th class="pg-sticky-no sticky-no">No</th><th class="pg-sticky-name sticky-name">Karyawan</th><th>Pro-Rata</th><th class="num">Gross PPh</th><th class="pg-col-adv num">THR</th><th class="pg-col-adv num">TH Bruto</th><th class="pg-col-adv num">BPJS Kar</th><th class="num">PPh 21</th><th class="pg-col-adv num">PPh Return</th><th class="num">Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
   <tbody id="tb-penggajian"></tbody></table></div></div>
   </div>
 </div>

@@ -30,6 +30,19 @@
     return escapeAttr(nik);
   };
 
+  /** Bandingkan id periode/approval (string vs number dari DOM/JSON). */
+  window.sigajiSameId = function (a, b) {
+    if (a == null || b == null) return a === b;
+    return String(a).trim() === String(b).trim();
+  };
+
+  /** Log catch yang sebelumnya kosong — jangan telan error cloud/UI. */
+  window.sigajiCatchWarn = function (tag, e) {
+    if (e == null) return;
+    var label = tag ? 'SiGaji [' + tag + ']' : 'SiGaji';
+    console.warn(label + ':', e);
+  };
+
   /**
    * Atribut data-sigaji-action + data-* untuk event delegation (tanpa onclick).
    * @param {string} action

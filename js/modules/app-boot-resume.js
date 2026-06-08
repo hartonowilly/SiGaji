@@ -10,8 +10,8 @@
             var lg = document.getElementById('login');
             if (lg) lg.style.display = 'flex';
           }
-        } catch (e) {}
+        } catch(e){sigajiCatchWarn("js/modules/app-boot-resume.js",e);}
       }, 4000);
     }
-  } catch (e) {}
+  } catch(e){sigajiCatchWarn("js/modules/app-boot-resume.js",e);}
 })();

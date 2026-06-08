@@ -1,0 +1,120 @@
+/**
+ * SiGaji — semantic design tokens (load before styles.css).
+ * Legacy aliases (--blue, --bll, …) tetap di styles.css; file ini menambah
+ * nama semantik + nilai yang berubah per tema dark/brand.
+ */
+:root {
+  --font: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+
+  /* Semantic color (alias ke legacy) */
+  --color-primary: var(--blue);
+  --color-primary-dark: var(--blue-dark);
+  --color-primary-light: var(--blue-light);
+  --color-primary-subtle: var(--bll);
+
+  --color-success: var(--gr);
+  --color-success-bg: var(--grb);
+  --color-warning: var(--am);
+  --color-warning-bg: var(--amb);
+  --color-danger: var(--rd);
+  --color-danger-bg: var(--rdb);
+  --color-purple: var(--pu);
+  --color-purple-bg: var(--pul);
+
+  --color-text: var(--tx);
+  --color-text-muted: var(--muted);
+  --color-border: var(--bd);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-2);
+  --color-bg: var(--bg);
+  --color-bg-content: #eef1f6;
+  --content-bg: var(--color-bg-content);
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Table */
+  --table-head-bg: #f1f5f9;
+  --table-head-color: #475569;
+  --table-head-border: #e2e8f0;
+  --table-cell-border: #f1f5f9;
+  --table-sticky-bg: var(--color-surface);
+  --table-sticky-head-bg: var(--color-surface-elevated);
+  --table-zebra: #fafbfc;
+  --table-row-hover: var(--row-hover);
+  --table-sticky-shadow: rgba(0, 0, 0, 0.04);
+
+  /* Row semantics (payroll) */
+  --row-prorate-bg: #fffbf5;
+  --row-neto-neg-bg: #fef2f2;
+  --row-pending-bg: #fffbeb;
+
+  /* Money cells */
+  --cell-money-color: var(--color-text);
+  --cell-deduction-color: var(--color-danger);
+  --cell-neto-color: var(--color-success);
+}
+
+/* ── Dark theme: remap tokens, bukan patch per-komponen ── */
+[data-theme='dark'] {
+  --bg: #0f172a;
+  --tx: #e2e8f0;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --bd: #334155;
+  --wh: #1e293b;
+  --surface: #1e293b;
+  --surface-2: #0f172a;
+  --content-bg: #0f172a;
+
+  --bll: #1e3a5f;
+  --grb: #14532d;
+  --amb: #451a03;
+  --rdb: #450a0a;
+  --pul: #2e1065;
+  --row-hover: #273548;
+  --row-border: #334155;
+
+  --table-head-bg: #334155;
+  --table-head-color: #cbd5e1;
+  --table-head-border: #475569;
+  --table-cell-border: #334155;
+  --table-sticky-bg: #1e293b;
+  --table-sticky-head-bg: #334155;
+  --table-zebra: #1a2536;
+  --table-row-hover: #273548;
+  --table-sticky-shadow: rgba(0, 0, 0, 0.25);
+
+  --row-prorate-bg: #2d2419;
+  --row-neto-neg-bg: #3b1c1c;
+  --row-pending-bg: #2d2819;
+
+  --ink-muted: #94a3b8;
+  --border: rgba(148, 163, 184, 0.12);
+}
+
+[data-theme='dark'] body,
+[data-theme='dark'] .content {
+  background: var(--color-bg) !important;
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .card,
+[data-theme='dark'] .topbar {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* ── Brand PT: aksen dari logo / master perusahaan ── */
+[data-theme='brand'] {
+  --color-primary: var(--ux-accent, var(--blue));
+  --blue: var(--ux-accent, var(--blue));
+  --color-primary-subtle: color-mix(in srgb, var(--ux-accent, #1a56a0) 12%, white);
+  --bll: color-mix(in srgb, var(--ux-accent, #1a56a0) 12%, white);
+}

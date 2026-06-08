@@ -141,7 +141,7 @@ function onSlipPeriodeChange(){
   if(p.thr_aktif){
     if(typeEl)typeEl.style.display='inline-block';
     if(btnAll)btnAll.style.display='inline-block';
-    if(banner)banner.innerHTML='<div class="card-surface-purple p-inset-sm rounded-md mb-lg font-12 text-purple"><strong>&#127873; Periode ini ada THR ('+(p.thr_nama||'')+') - Tgl Bayar THR: '+(p.thr_bayar||'-')+'</strong><br>Pilih jenis slip di atas.</div>';
+    if(banner)banner.innerHTML='<div class="card-surface-purple p-inset-sm rounded-md mb-lg font-12 text-purple"><strong>&#127873; Periode ini ada THR ('+escapeHtml(p.thr_nama||'')+') - Tgl Bayar THR: '+escapeHtml(p.thr_bayar||'-')+'</strong><br>Pilih jenis slip di atas.</div>';
   } else {
     if(typeEl){typeEl.value='gaji';typeEl.style.display='none';}
     if(btnAll)btnAll.style.display='none';
@@ -165,7 +165,8 @@ function previewSlip(){
   const k=karyawan.find(function(x){return x.nik===nik;});
   if(!k)return;
   const type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
-  document.getElementById('slip-preview').innerHTML=(type==='thr'&&p.thr_aktif)?makeSlipTHR(k,p):makeSlip(k,p.nama);
+  var h=(type==='thr'&&p.thr_aktif)?makeSlipTHR(k,p):makeSlip(k,p.nama);
+  document.getElementById('slip-preview').innerHTML=h;
   var sb=document.getElementById('slip-share-bar');
   var nikSel=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;
   if(sb&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(sb,isSlipKirimTabActive()&&!!nikSel);
@@ -380,9 +381,9 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
     doc.setTextColor(0,0,0);doc.setFont(undefined,'normal');y+=12;
   }
   if(g.reconciliation){
-    var r=g.reconciliation;var isLb=r.lebihBayar>0;
+    var recon=g.reconciliation;var isLb=recon.lebihBayar>0;
     chk();
-    var rx='Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Resign)':'(Desember)')+': PPh Tahunan Progresif: '+fmt(r.pphTahunan)+' | Sudah dipotong: '+fmt(r.pphYTD)+' | '+(isLb?'Lebih Bayar: +'+fmt(r.lebihBayar):'Kurang Bayar: '+fmt(r.kurangBayar));
+    var rx='Rekonsiliasi PPh 21 '+(recon.tipePeriode==='resign'?'(Resign)':'(Desember)')+': PPh Tahunan Progresif: '+fmt(recon.pphTahunan)+' | Sudah dipotong: '+fmt(recon.pphYTD)+' | '+(isLb?'Lebih Bayar: +'+fmt(recon.lebihBayar):'Kurang Bayar: '+fmt(recon.kurangBayar));
     doc.setFontSize(8);doc.setTextColor(60,60,60);
     var rlines=doc.splitTextToSize(rx,pw-24);
     var boxH=6+rlines.length*3.6;
@@ -390,8 +391,8 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
     doc.rect(10,y,pw-20,boxH,'F');
     doc.setDrawColor(isLb?179:246,isLb?217:199,isLb?143:107);
     doc.rect(10,y,pw-20,boxH,'S');
-    var ty=y+4;
-    rlines.forEach(function(ln){doc.text(ln,12,ty);ty+=3.6;});
+    var tyBox=y+4;
+    rlines.forEach(function(ln){doc.text(ln,12,tyBox);tyBox+=3.6;});
     y+=boxH+4;
     doc.setFontSize(8.5);doc.setTextColor(0,0,0);
   }
@@ -570,7 +571,8 @@ function loadMySlip(){
   const p=periodesFindById(pid)||PA();
   var host=document.getElementById('my-slip-content');
   if(!host||!k)return;
-  host.innerHTML=mySlipAbsenSummaryHtml(k.nik,p)+makeSlip(k,p.nama);
+  var h=mySlipAbsenSummaryHtml(k.nik,p)+makeSlip(k,p.nama);
+  host.innerHTML=h;
 }
 function exportPDF(){
   const nik=document.getElementById('slip-kar')&&document.getElementById('slip-kar').value;

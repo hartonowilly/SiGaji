@@ -113,7 +113,7 @@
       } else {
         document.documentElement.removeAttribute('data-sigaji-resume-pending');
       }
-    } catch (e) {}
+    } catch(e){sigajiCatchWarn("js/cloud-sync.js",e);}
   }
 
   /** Dipanggil segera — login menunggu boot Supabase (tidak lagi bergantung pada fungsi yang baru ada setelah import). */
@@ -209,7 +209,7 @@
       if (typeof window.sigajiUpdateCloudBackupUi === 'function') {
         try {
           window.sigajiUpdateCloudBackupUi();
-        } catch (eBu) {}
+        } catch(eBu){sigajiCatchWarn("js/cloud-sync.js",eBu);}
       }
     } catch (e) {
       console.error('Sigaji cloud:', e);
@@ -246,7 +246,7 @@
       if (typeof openModal === 'function') openModal('m-pw-reset');
       try {
         window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
-      } catch (e2) {}
+      } catch(e2){sigajiCatchWarn("js/cloud-sync.js",e2);}
     }
 
     // Tangkap event PASSWORD_RECOVERY saat user klik link dari email reset
@@ -265,8 +265,8 @@
     window.sigajiQueueCloudSave = scheduleUpsert;
 
     window.sigajiCloudLogout = function () {
-      try { localStorage.removeItem('sigaji_resume_hint'); } catch (e) {}
-      try { localStorage.removeItem('sigaji_last_pg'); } catch (e) {}
+      try { localStorage.removeItem('sigaji_resume_hint'); } catch(e){sigajiCatchWarn("js/cloud-sync.js",e);}
+      try { localStorage.removeItem('sigaji_last_pg'); } catch(e){sigajiCatchWarn("js/cloud-sync.js",e);}
       if (!window.sigajiSupabase) return Promise.resolve();
       return window.sigajiSupabase.auth.signOut();
     };
@@ -296,7 +296,7 @@
           var ap0 = document.getElementById('app');
           if (lg0) lg0.style.display = 'flex';
           if (ap0) ap0.style.display = 'none';
-        } catch (eUi) {}
+        } catch(eUi){sigajiCatchWarn("js/cloud-sync.js",eUi);}
         toastSafe('Silakan buat password baru di jendela ini, lalu login.');
       }
     } finally {
@@ -382,7 +382,7 @@
   async function enterFromSession(session) {
     if (typeof window.sigajiCloudLoadStart === 'function') window.sigajiCloudLoadStart();
     try {
-      try { localStorage.setItem('sigaji_resume_hint', '1'); } catch (e) {}
+      try { localStorage.setItem('sigaji_resume_hint', '1'); } catch(e){sigajiCatchWarn("js/cloud-sync.js",e);}
       await withCloudTimeout(
         loadCloudPayloadIntoApp(session.user.id),
         'Timeout memuat data cloud — periksa koneksi atau coba refresh'
@@ -445,7 +445,7 @@
     if (typeof window.sigajiApplyLicenseFromObject === 'function') window.sigajiApplyLicenseFromObject(lic);
     if (typeof window.sigajiApplyBranchPolicyFromObject === 'function') window.sigajiApplyBranchPolicyFromObject(lic);
     if (typeof window.sigajiRenderLicenseQuotaUi === 'function') window.sigajiRenderLicenseQuotaUi();
-    try{if(typeof window.sigajiUiCabangAfterRender==='function')window.sigajiUiCabangAfterRender();}catch(eCb){}
+    try{if(typeof window.sigajiUiCabangAfterRender==='function')window.sigajiUiCabangAfterRender();}catch(eCb){sigajiCatchWarn("js/cloud-sync.js",eCb);}
   }
 
   async function loadCloudPayloadIntoApp(uid) {

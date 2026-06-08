@@ -51,7 +51,7 @@ async function absensiPrefetchMobileLogs(dateFrom,dateTo){
         var t=row.created_at?String(row.created_at).substring(11,16):'';
         if(t)window._mobLogByNikDate[key]=mobFmtTimeIso?mobFmtTimeIso(row.created_at):t;
       });
-    }catch(e){}
+    }catch(e){sigajiCatchWarn("js/modules/app-absensi.js",e);}
     cur.setDate(cur.getDate()+1);
   }
 }
@@ -184,9 +184,10 @@ function renderAbsensiBody(){
       +'</div></div>';
   });
   html+='</tbody></table>';
-  document.getElementById('ab-grid-wrap').innerHTML=roBanner+monthNav
+  var h=roBanner+monthNav
     +'<div class="table-wrap ab-grid-desktop">'+html+'</div>'
     +'<div class="ab-grid-mobile">'+mobileCards+'</div>';
+  document.getElementById('ab-grid-wrap').innerHTML=h;
   var hkP=hariKerjaRange(pAbs.start,pAbs.end);
   var cbB=0;
   if(masterCuti.cbPotong){
@@ -194,7 +195,8 @@ function renderAbsensiBody(){
       if(l.tipe==='cuti-bersama'&&l.tgl>=pAbs.start&&l.tgl<=pAbs.end&&!isHariLiburKerja(new Date(l.tgl+'T12:00:00').getDay()))cbB++;
     });
   }
-  document.getElementById('ab-rekap-wrap').innerHTML='<div class="card fl gap2 flex-wrap items-center"><span class="font-11 fw-700 text-muted">'+escapeHtml(pAbs.nama)+':</span><span class="ct-success rounded-pill fw-700" style="background:#e8f4de; padding:3px 12px">Hari Kerja (dalam rentang): '+hkP+'</span>'+(cbB>0?'<span class="ct-purple rounded-pill fw-700" style="background:#ede9fe; padding:3px 12px">Cuti Bersama (dalam rentang): '+cbB+' hari</span>':'')+'<span class="font-10 text-subtle ml-auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+' · hover H = jam check-in mobile</span></div>';
+  h='<div class="card fl gap2 flex-wrap items-center"><span class="font-11 fw-700 text-muted">'+escapeHtml(pAbs.nama)+':</span><span class="ct-success rounded-pill fw-700" style="background:#e8f4de; padding:3px 12px">Hari Kerja (dalam rentang): '+String(hkP)+'</span>'+(cbB>0?'<span class="ct-purple rounded-pill fw-700" style="background:#ede9fe; padding:3px 12px">Cuti Bersama (dalam rentang): '+String(cbB)+' hari</span>':'')+'<span class="font-10 text-subtle ml-auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+' · hover H = jam check-in mobile</span></div>';
+  document.getElementById('ab-rekap-wrap').innerHTML=h;
   absensiPrefetchMobileLogs(pAbs.start,pAbs.end);
 }
 function toggleAb(nik,date,el){
