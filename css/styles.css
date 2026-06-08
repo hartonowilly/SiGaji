@@ -53,8 +53,8 @@ body{font-family:var(--font,'Segoe UI',system-ui,sans-serif);background:var(--bg
 .layout{display:flex;flex:1}
 .sidebar{width:200px;background:var(--sidebar);padding:.6rem 0;flex-shrink:0;min-height:calc(100vh - 52px);display:flex;flex-direction:column;justify-content:space-between;overflow-y:auto}
 .nsec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);padding:.7rem 1rem .3rem}
-.ni{display:flex;align-items:center;gap:7px;padding:8px 1rem;cursor:pointer;color:var(--ink-subtle);font-size:12px;font-weight:500;border-left:3px solid transparent;transition:all .15s;user-select:none}
-.ni:hover{background:rgba(255,255,255,.06);color:var(--color-border-light)}
+.ni{display:flex;align-items:center;gap:7px;padding:8px 1rem;cursor:pointer;color:var(--sidebar-fg-muted,var(--ink-subtle));font-size:12px;font-weight:500;border-left:3px solid transparent;transition:all .15s;user-select:none}
+.ni:hover{background:rgba(255,255,255,.06);color:var(--sidebar-fg-hover,var(--color-slate-200))}
 .ni.active{background:rgba(26,86,160,.25);color:#60a5fa;border-left-color:var(--color-primary-light);font-weight:700}
 .ni.danger{color:#f87171}.ni.danger:hover{background:rgba(155,33,33,.2);border-left-color:#ef4444}
 .nic{width:15px;text-align:center;font-size:13px;flex-shrink:0}

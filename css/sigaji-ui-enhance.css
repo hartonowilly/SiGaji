@@ -1652,7 +1652,7 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 }
 .sidebar-collapse-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: var(--table-head-bg);
+  color: var(--sidebar-fg-hover);
 }
 .sidebar-collapse-btn:hover .sidebar-collapse-btn-ico {
   background: rgba(59, 130, 246, 0.25);

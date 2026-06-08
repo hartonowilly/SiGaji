@@ -6,12 +6,55 @@
 :root {
   --font: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
 
+  /* Base palette — nilai sumber (styles.css alias ke sini; jangan circular) */
+  --wh: #ffffff;
+  --sidebar: #1e2330;
+  --tx: #1e2330;
+  --ink: #1e2330;
+  --muted: #6b7280;
+  --ink-body: #374151;
+  --ink-subtle: #9ca3af;
+  --bd: #dde1e9;
+
+  --blue: #1a56a0;
+  --blue-dark: #0d3d7a;
+  --blue-light: #3b82f6;
+  --bll: #e8f0fb;
+  --indigo: #2563eb;
+  --indigo-ink: #1d4ed8;
+
+  --gr: #2d6a0a;
+  --grb: #e8f4de;
+  --am: #7d4800;
+  --amb: #fef3e2;
+  --rd: #9b2121;
+  --rdb: #fdeaea;
+  --pu: #5b21b6;
+  --pul: #f5f0ff;
+  --pub: #c4b5fd;
+
+  --row-hover: #f8f9fc;
+
+  /* Sidebar nav (kontras di atas --sidebar-bg gelap) */
+  --sidebar-fg: #cbd5e1;
+  --sidebar-fg-muted: #94a3b8;
+  --sidebar-fg-hover: #e2e8f0;
+  --sidebar-fg-active: #93c5fd;
+
+  --bg: #f4f5f8;
+  --surface: var(--wh);
+  --surface-2: #f8fafc;
+
   /* Semantic color (alias ke legacy) */
   --color-primary: var(--blue);
+  --color-purple-muted: #ede9fe;
+
+  --color-text: var(--tx);
+  --color-text-muted: var(--muted);
+  --color-border: var(--bd);
   --color-primary-dark: var(--blue-dark);
   --color-primary-light: var(--blue-light);
   --color-primary-subtle: var(--bll);
-
   --color-success: var(--gr);
   --color-success-bg: var(--grb);
   --color-warning: var(--am);
@@ -21,11 +64,6 @@
   --color-purple: var(--pu);
   --color-purple-bg: var(--pul);
   --color-purple-border: var(--pub);
-  --color-purple-muted: #ede9fe;
-
-  --color-text: var(--tx);
-  --color-text-muted: var(--muted);
-  --color-border: var(--bd);
   --color-border-light: #e5e7eb;
   --color-surface-muted: #f3f4f6;
   --color-surface: var(--surface);
@@ -144,6 +182,11 @@
   --ink-muted: #94a3b8;
   --ink-subtle: #94a3b8;
   --ink-body: #cbd5e1;
+
+  --sidebar-fg: #cbd5e1;
+  --sidebar-fg-muted: #94a3b8;
+  --sidebar-fg-hover: #e2e8f0;
+  --sidebar-fg-active: #93c5fd;
   --border: rgba(148, 163, 184, 0.12);
   --color-border-light: #475569;
   --color-surface-muted: #273548;
