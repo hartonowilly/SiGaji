@@ -339,7 +339,7 @@
     var r0 = typeof hitungPesangon === 'function' ? hitungPesangon(k) : { ok: false };
     var r1 = hitungPesangon(kSim);
     if (!r1.ok) {
-      wrap.innerHTML = '<div class="ct-danger" style="padding:1rem">' + escapeHtml(r1.pesan || 'Tidak dapat dihitung') + '</div>';
+      wrap.innerHTML = '<div class="ct-danger p-md">' + escapeHtml(r1.pesan || 'Tidak dapat dihitung') + '</div>';
       if (detail) detail.innerHTML = '';
       return;
     }

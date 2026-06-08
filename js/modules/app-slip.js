@@ -95,7 +95,7 @@ function makeSlipTHR(k,p){
   h+='<div class="slip-head"><div>'+(logo?'<img src="'+logo+'" class="slip-logo"><br>':'')+'<strong class="font-14 ct-purple">&#9670; '+(perusahaan.nama||'Perusahaan')+'</strong></div>';
   h+='<div class="text-right"><strong class="font-13 ct-purple">SLIP THR</strong><div class="u-muted-10">'+namaHR+'</div><div class="u-muted-10">Tgl Bayar: '+(p.thr_bayar||'-')+'</div></div></div>';
   h+='<div class="semp"><div><span class="text-muted font-9">NIK</span><br><strong>'+k.nik+'</strong></div><div><span class="text-muted font-9">Nama</span><br><strong>'+k.nama+'</strong></div><div><span class="text-muted font-9">Jabatan</span><br>'+k.jabatan+'</div><div><span class="text-muted font-9">Dept</span><br>'+k.dept+'</div><div><span class="text-muted font-9">Masa Kerja</span><br>'+mb+'</div><div><span class="text-muted font-9">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
-  h+='<div class="rounded-sm tabs-spaced-lg" style="background:#f5f0ff; border:1.5px solid #c4b5fd; padding:1rem">';
+  h+='<div class="rounded-sm tabs-spaced-lg p-md" style="background:#f5f0ff; border:1.5px solid #c4b5fd">';
   h+='<div class="font-10 fw-800 mb-md" style="color:#4c1d95; text-transform:uppercase">&#127873; Perhitungan THR - '+namaHR+'</div>';
   h+='<div class="cr"><span>Gaji Pokok</span><span>'+fmt(k.gapok)+'</span></div>';
   (k.tunjangan||[]).filter(function(t){return t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';}).forEach(function(t){h+='<div class="cr"><span>'+t.nama+' (Tunjangan Tetap)</span><span>'+fmt(t.nilai)+'</span></div>';});
@@ -184,7 +184,7 @@ function getSlipContext(){
   var isThr=type==='thr'&&p.thr_aktif;
   return{k:k,p:p,isThr:isThr};
 }
-function sanitizePdfFileName(s){return String(s||'x').replace(/[^\w\u00C0-\u024f\d\-]+/g,'_').replace(/_+/g,'_').substring(0,80);}
+function sanitizePdfFileName(s){return String(s||'x').replace(/[^\w\u00C0-\u024f\d-]+/g,'_').replace(/_+/g,'_').substring(0,80);}
 function formatHPWhatsApp(hp){
   var d=String(hp||'').replace(/[^0-9]/g,'');
   if(d.startsWith('62'))return d;

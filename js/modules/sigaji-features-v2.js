@@ -320,7 +320,7 @@
               btnLabel: 'Master karyawan',
               btnAction:'showPg',btnActionArg:'karyawan',
             })
-          : '<div class="text-subtle" style="padding:1rem">Tidak ada data.</div>';
+          : '<div class="text-subtle p-md">Tidak ada data.</div>';
       if (sumEl) sumEl.innerHTML = '';
       return;
     }
@@ -475,7 +475,7 @@
     var nLib = (hariLibur || []).length;
     var yr = new Date().getFullYear();
     var steps = [
-      '<div class="wiz-step"><p class="font-12 text-body" style="margin:0 0 .75rem">Nama PT akan tampil di slip, laporan, dan branding login.</p>' +
+      '<div class="wiz-step"><p class="font-12 text-body mb-lg m-0">Nama PT akan tampil di slip, laporan, dan branding login.</p>' +
         '<div class="fg"><label>Nama perusahaan</label><input id="wiz-prs-nama" value="' +
         escapeHtml(prsNama) +
         '" placeholder="PT Contoh Indonesia"></div>' +

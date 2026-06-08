@@ -71,7 +71,7 @@ function mobFailDetailHtml(flags){
   }
   if(flags.fail_message)parts.push('<span class="text-muted">'+escapeHtml(String(flags.fail_message).substring(0,120))+'</span>');
   if(!parts.length)return '';
-  return '<div class="font-10 ct-danger mt-2px" style="line-height:1.45">'+parts.join('<br>')+'</div>';
+  return '<div class="font-10 ct-danger mt-2px leading-normal">'+parts.join('<br>')+'</div>';
 }
 function mobFmtTimeIso(iso){
   if(!iso)return '-';
@@ -222,7 +222,7 @@ async function mobAttendanceDecide(id,decide){
 // ── HRD: Lokasi kerja ───────────────────────────
 async function renderMobileLocations(){
   var el=document.getElementById('mob-locations-wrap');if(!el)return;
-  if(typeof sigajiSkeleton==='function')el.innerHTML=sigajiSkeleton('table');else el.innerHTML='<div class="text-muted" style="padding:1rem">Memuat…</div>';
+  if(typeof sigajiSkeleton==='function')el.innerHTML=sigajiSkeleton('table');else el.innerHTML='<div class="text-muted p-md">Memuat…</div>';
   var j=await sigajiMobileFetch('mobile-locations',{method:'GET'});
   if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat lokasi — jalankan SQL mobile + deploy API')+'</div>';return;}
   var items=j.items||[];
@@ -560,7 +560,7 @@ function mobAssignFormHtml(locations,editRow){
   var sat=editRow?!!editRow.works_saturday:true;
   var cat=editRow?(editRow.catatan||''):'';
   return '<div id="mob-assign-form" class="card card-surface-neutral" style="border:1px solid #e2e8f0; margin-bottom:.85rem">'
-    +'<div class="ct border-0 p-0" style="margin:0 0 .75rem">'+(editRow?'Edit penugasan':'Tambah penugasan baru')+'</div>'
+    +'<div class="ct border-0 p-0 mb-lg m-0">'+(editRow?'Edit penugasan':'Tambah penugasan baru')+'</div>'
     +'<input type="hidden" id="mob-assign-edit-id" value="'+(editRow?escapeHtml(editRow.id):'')+'">'
     +'<div class="fg"><label>Karyawan</label><select class="w-full" id="mob-assign-nik">'+mobKarSelectHtml(editRow?editRow.nik:'')+'</select></div>'
     +'<div class="fg"><label>Lokasi check-in</label><select class="w-full" id="mob-assign-loc">'+mobLocSelectHtml(locations,editRow?editRow.location_id:'')+'</select></div>'
@@ -575,7 +575,7 @@ function mobAssignFormHtml(locations,editRow){
 }
 async function renderMobileAssignments(){
   var el=document.getElementById('mob-assign-wrap');if(!el)return;
-  el.innerHTML='<div class="text-muted" style="padding:1rem">Memuat…</div>';
+  el.innerHTML='<div class="text-muted p-md">Memuat…</div>';
   var jAssign=await sigajiMobileFetch('mobile-locations?kind=assignments',{method:'GET'});
   var jLoc=await sigajiMobileFetch('mobile-locations',{method:'GET'});
   if(!jAssign||!jAssign.ok){el.innerHTML='<div class="info-box info-red">'+(jAssign&&jAssign.error||'Gagal memuat penugasan')+'</div>';return;}
@@ -595,7 +595,7 @@ async function renderMobileAssignments(){
   el.innerHTML=mobAssignFormHtml(locations,null)
     +mobAssignWeekCalendarHtml(items,locations)
     +'<div class="card"><div class="ct border-0 p-0 mb-md m-0">Daftar penugasan</div>'
-    +'<p class="font-11 text-muted" style="margin:0 0 .75rem">Tim menginap luar kota: pilih karyawan, lokasi mess/site, dan rentang tanggal.</p>'
+    +'<p class="font-11 text-muted mb-lg m-0">Tim menginap luar kota: pilih karyawan, lokasi mess/site, dan rentang tanggal.</p>'
     +'<table><thead><tr><th>Karyawan</th><th>Lokasi</th><th>Rentang</th><th>Sabtu</th><th></th></tr></thead><tbody>'
     +(rows||'<tr><td class="text-center text-subtle" colspan="5">Belum ada penugasan</td></tr>')
     +'</tbody></table></div>';
@@ -666,7 +666,7 @@ async function deleteMobileAssignment(id){
 // ── HRD: Approve cuti ───────────────────────────
 async function renderMobileLeavePending(){
   var el=document.getElementById('mob-leave-wrap');if(!el)return;
-  el.innerHTML='<div class="text-muted" style="padding:1rem">Memuat…</div>';
+  el.innerHTML='<div class="text-muted p-md">Memuat…</div>';
   var j=await sigajiMobileFetch('mobile-leave?status=pending',{method:'GET'});
   if(!j||!j.ok){el.innerHTML='<div class="info-box info-red">'+(j&&j.error||'Gagal memuat pengajuan')+'</div>';return;}
   var items=j.items||[];

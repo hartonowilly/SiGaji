@@ -1,7 +1,8 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import noUnsafeInnerhtml from './eslint-rules/no-unsafe-innerhtml.mjs';
 
-/** Global browser SiGaji (onclick, storage, payroll). */
+/** Global browser SiGaji (script tags, tanpa bundler). */
 const sigajiGlobals = {
   perusahaan: 'readonly',
   periodes: 'readonly',
@@ -41,6 +42,23 @@ const sigajiGlobals = {
   sigajiDataAction: 'readonly',
 };
 
+const sigajiPlugin = {
+  rules: {
+    'no-unsafe-innerhtml': noUnsafeInnerhtml,
+  },
+};
+
+/** Aturan umum modul legacy (banyak global dari script tag). */
+const legacyJsRules = {
+  'no-undef': 'off',
+  'no-global-assign': 'off',
+  'no-redeclare': 'warn',
+  'no-empty': 'warn',
+  'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
+  eqeqeq: ['warn', 'always', { null: 'ignore' }],
+  'sigaji/no-unsafe-innerhtml': 'warn',
+};
+
 export default [
   {
     ignores: ['js/vendor/**', '_archive/**', 'node_modules/**', 'sigaji_mobile/**'],
@@ -48,33 +66,13 @@ export default [
   js.configs.recommended,
   {
     files: ['js/**/*.js'],
+    plugins: { sigaji: sigajiPlugin },
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',
       globals: { ...globals.browser, ...sigajiGlobals },
     },
-    rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
-      eqeqeq: ['warn', 'always', { null: 'ignore' }],
-      'no-redeclare': 'warn',
-    },
-  },
-  {
-    files: [
-      'js/modules/app-core.js',
-      'js/modules/app-hr-tunjvar.js',
-      'js/sigaji-dom.js',
-      'js/sigaji-api.js',
-      'js/sigaji-events.js',
-      'js/constants.js',
-    ],
-    rules: {
-      'no-undef': 'off',
-      'no-global-assign': 'off',
-      'no-redeclare': 'off',
-      'no-empty': 'off',
-      'no-unused-vars': 'off',
-    },
+    rules: legacyJsRules,
   },
   {
     files: ['tests/**/*.mjs', 'scripts/**/*.js', 'eslint.config.mjs'],

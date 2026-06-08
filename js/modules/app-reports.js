@@ -267,7 +267,7 @@ function phkAlasanLbl(k){
   return id||'-';
 }
 function xlsxSheetNameSafe(s){
-  return String(s||'Sheet').replace(/[\\/*?:\[\]]/g,' ').trim().substring(0,31)||'Sheet';
+  return String(s||'Sheet').replace(/[\\/*?:[\]]/g,' ').trim().substring(0,31)||'Sheet';
 }
 /** Excel: rekonsiliasi PPh resign/PHK — per karyawan, Jan s.d. bulan berhenti */
 function exportExcelRekonResign(){

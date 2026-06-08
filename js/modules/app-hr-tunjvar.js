@@ -20,7 +20,7 @@ function renderTunjVarColEditor() {
       .map(function (c) {
         var idEsc = String(c.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return (
-          '<div class="fg m-0" style="min-width:160px"><label class="font-10">Nama kolom</label><div class="fl items-center" style="gap:4px">' +
+          '<div class="fg m-0 min-w-160"><label class="font-10">Nama kolom</label><div class="fl items-center" style="gap:4px">' +
           '<input class="flex-1 font-12" value="' +
           escapeHtml(c.nama) +
           '" placeholder="Nama" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="setTunjVarColNama(\'' +

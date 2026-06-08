@@ -1,0 +1,5 @@
+#!/bin/sh
+# SiGaji — jalankan quality gate sebelum push (pasang via npm run install:hooks)
+set -e
+echo "SiGaji pre-push: npm run check:quality"
+npm run check:quality

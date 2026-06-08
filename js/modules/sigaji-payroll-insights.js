@@ -580,7 +580,7 @@
               btnLabel: 'Atur periode',
               btnAction:'showPg',btnActionArg:'master',
             })
-          : '<div class="text-subtle" style="padding:1rem">Perlu 2+ periode.</div>';
+          : '<div class="text-subtle p-md">Perlu 2+ periode.</div>';
       return;
     }
 

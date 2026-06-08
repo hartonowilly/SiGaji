@@ -366,7 +366,7 @@
       ' m</strong>' +
       (typeof mobLocRadiusHint === 'function' ? mobLocRadiusHint(rad) : '') +
       '</div>' +
-      '<div class="font-11 text-subtle" style="margin-top:.25rem">Karyawan harus berada dalam radius ini saat check-in di APK.</div></div>';
+      '<div class="font-11 text-subtle mt-xs">Karyawan harus berada dalam radius ini saat check-in di APK.</div></div>';
   };
 
   window.mobLocWizardReset = function () {

@@ -154,7 +154,7 @@
       return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
     });
     if(!list.length){
-      tb.innerHTML='<tr><td colspan="7">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9878;',title:'Tidak ada PHK di periode ini',desc:'Isi tanggal berhenti & alasan PHK di profil karyawan yang resign bulan ini.',btnLabel:'Master karyawan',btnAction:'showPg',btnActionArg:'karyawan'}):'<div class="text-muted font-12" style="padding:1rem">Tidak ada karyawan berhenti pada periode aktif.</div>')+'</td></tr>';
+      tb.innerHTML='<tr><td colspan="7">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9878;',title:'Tidak ada PHK di periode ini',desc:'Isi tanggal berhenti & alasan PHK di profil karyawan yang resign bulan ini.',btnLabel:'Master karyawan',btnAction:'showPg',btnActionArg:'karyawan'}):'<div class="text-muted font-12 p-md">Tidak ada karyawan berhenti pada periode aktif.</div>')+'</td></tr>';
       selNik=null;renderDetail();return;
     }
     tb.innerHTML=list.map(function(k,i){

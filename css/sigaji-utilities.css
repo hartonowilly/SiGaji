@@ -181,6 +181,28 @@
 .section-divider-top { margin-top: 0.65rem; padding-top: 0.85rem; border-top: 1px solid #eee; }
 .hk-radio-label { padding: 8px 14px; border: 2px solid var(--bd); }
 .radio-accent { accent-color: var(--blue); width: 16px; height: 16px; }
+.chk-brand { width: 16px; height: 16px; accent-color: var(--blue); }
+.chk-purple { width: 16px; height: 16px; accent-color: var(--pu); }
+.font-20 { font-size: 20px; }
+.fw-500 { font-weight: 500; }
+.opacity-75 { opacity: 0.75; }
+.opacity-80 { opacity: 0.8; }
+.min-w-160 { min-width: 160px; }
+.max-w-120 { max-width: 120px; }
+.w-220 { width: 220px; }
+.w-200 { width: 200px; }
+.w-230 { width: 230px; }
+.w-150 { width: 150px; }
+.min-w-520 { min-width: 520px; }
+.leading-normal { line-height: 1.45; }
+.leading-relaxed { line-height: 1.7; }
+.p-md { padding: 1rem; }
+.grid-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.max-h-slip-table { max-height: min(420px, 55vh); }
+.card-thr-panel { background: #f5f0ff; border: 1.5px solid #c4b5fd; padding: 1rem; }
+.card-cuti-purple { background: #f0f0fd; border-color: #c4b5fd; }
+.cuti-cb-label { padding: 8px; border: 1px solid #c4b5fd; }
+.audit-select { padding: 6px 10px; border: 1.5px solid #dde1e9; font-family: inherit; outline: none; }
 .label-upper-brand {
   text-transform: uppercase;
   letter-spacing: 0.6px;

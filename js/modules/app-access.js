@@ -169,7 +169,7 @@ function renderPermMatrix(){
       subs.forEach(sub=>{
         const key=m.id+'.'+sub;
         const lbl=SUBTAB_LBL[key]||sub;
-        h+=`<div class="perm-row perm-sub"><div class="perm-cell font-12 text-body" style="min-width:200px; flex:2; padding-left:1.1rem; font-weight:500">${lbl}</div>`;
+        h+=`<div class="perm-row perm-sub"><div class="perm-cell font-12 text-body fw-500" style="min-width:200px; flex:2; padding-left:1.1rem">${lbl}</div>`;
         roleKeys.forEach(r=>{
           const isAdmin=r==='Admin';
           const chk=isAdmin||(roles[r]||[]).includes(key);

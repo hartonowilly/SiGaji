@@ -96,7 +96,7 @@ function renderDashBody(){
     }).join('');
     var avgHadir=nDays&&nKar?Math.round((stats.hadir/(nDays*nKar))*100):0;
     attHtml='<p class="dash-att-hint">Grafik harian — proporsi hadir per hari.</p>'
-      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-subtle" style="padding:1rem">—</div>')
+      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-subtle p-md">—</div>')
       +'<div class="dash-att-legend">'
       +'<span class="lg-hadir">Hadir: '+stats.hadir+'</span>'
       +'<span class="lg-izin">Izin: '+stats.izin+'</span>'
@@ -553,7 +553,7 @@ function loadBPJSPanel(k){
     const ok=bpjsKompAktif(k,c.key);
     const def=BPJS_DEF[c.key];const b=def.basis?Math.min(basis,def.basis):basis;
     const autoV=Math.round(b*def.pct/100);const isMn=bm[c.key]!==undefined;bmState[c.key]=isMn;
-    const chk='<label class="fl items-center cursor-pointer m-0"><input class="cursor-pointer m-0" type="checkbox" data-nik="'+k.nik+'" data-key="'+c.key+'" '+(ok?'checked':'')+' onchange="onBPJSKompChange(this)" style="accent-color:#1a56a0; width:15px; height:15px"></label>';
+    const chk='<label class="fl items-center cursor-pointer m-0"><input class="cursor-pointer m-0 chk-brand" type="checkbox" data-nik="'+k.nik+'" data-key="'+c.key+'" '+(ok?'checked':'')+' onchange="onBPJSKompChange(this)" style="width:15px; height:15px"></label>';
     const nomVal=ok?(isMn?bm[c.key]:autoV):0;
     const nomEl='<input type="text" class="bi inp-rp '+(isMn?'manual':'')+'" id="b-'+c.key+'-v" value="'+formatRpInputNum(nomVal)+'" data-rp="1" '+(!isMn||!ok?'readonly':'')+' data-nik="'+k.nik+'" data-key="'+c.key+'" oninput="onBMChange2(this)">';
     const modeEl=ok?('<button class="tm '+(isMn?'manual':'auto')+'" id="tm-'+c.key+'"'+sigajiDataAction('toggle-manual',{key:c.key})+'>'+(isMn?'Manual':'Auto')+'</button>'):'<span class="bdg b-gray font-10">Off</span>';
@@ -924,7 +924,7 @@ function detailGaji(nik,pNama){
   if(g.reconciliation){
     const r=g.reconciliation;
     const isLebih=r.lebihBayar>0;
-    h+='<div class="rounded-md mt-lg" style="background:'+(isLebih?'#e8f4de':'#fef3e2')+'; border:1.5px solid '+(isLebih?'#2d6a0a':'#7d4800')+'; padding:1rem">';
+    h+='<div class="rounded-md mt-lg p-md" style="background:'+(isLebih?'#e8f4de':'#fef3e2')+'; border:1.5px solid '+(isLebih?'#2d6a0a':'#7d4800')+'">';
     h+='<div class="fw-800 mb-md" style="color:'+(isLebih?'#2d6a0a':'#7d4800')+'">&#9654; Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Masa Pajak Terakhir - Resign)':'(Desember - Progresif)')+'</div>';
     if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
       h+='<div class="cr ct-brand"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+' — bruto / PPh</span><span>'+fmt(r.saldoAwalBruto)+' / '+fmt(r.saldoAwalPph)+'</span></div>';
