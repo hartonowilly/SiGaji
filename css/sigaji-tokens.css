@@ -72,9 +72,15 @@
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-2);
   --color-bg: var(--bg);
-  --color-bg-content: #f1f5f9;
+  --color-bg-content: #eef1f6;
   --sigaji-sidebar-w: 228px;
   --content-bg: var(--color-bg-content);
+
+  /* Topbar (light) */
+  --topbar-bg: rgba(255, 255, 255, 0.97);
+  --topbar-border: var(--bd);
+  --topbar-fg: var(--tx);
+  --topbar-accent: var(--blue);
 
   --color-primary-border: #c5d9f5;
   --color-success-border: var(--success-border, #b3d98f);
@@ -93,7 +99,7 @@
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.07);
   --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.12);
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 14px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow-topbar: 0 1px 4px rgba(0, 0, 0, 0.06);
 
   /* Absensi status */
@@ -206,6 +212,13 @@
   --ab-grid-head-border: #475569;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow-topbar: 0 1px 4px rgba(0, 0, 0, 0.25);
+
+  /* Topbar (dark) — kontras jelas, bukan blok hitam polos */
+  --topbar-bg: #1e293b;
+  --topbar-border: #475569;
+  --topbar-fg: #e2e8f0;
+  --topbar-accent: #60a5fa;
+  --color-text: #e2e8f0;
 }
 
 [data-theme='dark'] body,
@@ -214,11 +227,70 @@
   color: var(--color-text);
 }
 
-[data-theme='dark'] .card,
-[data-theme='dark'] .topbar {
+[data-theme='dark'] .card {
   background: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text);
+}
+
+[data-theme='dark'] .topbar {
+  background: var(--topbar-bg) !important;
+  border-bottom-color: var(--topbar-border) !important;
+  color: var(--topbar-fg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 0 var(--topbar-border), var(--shadow-topbar) !important;
+}
+
+[data-theme='dark'] .topbar .alogo {
+  color: var(--topbar-accent) !important;
+}
+
+[data-theme='dark'] .topbar .uname,
+[data-theme='dark'] .topbar .sync-status,
+[data-theme='dark'] .topbar .save-ind {
+  color: var(--topbar-fg);
+}
+
+[data-theme='dark'] .topbar .rbadge {
+  background: rgba(96, 165, 250, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+[data-theme='dark'] .topbar .periode-pill {
+  background: rgba(96, 165, 250, 0.12);
+  color: #93c5fd;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+[data-theme='dark'] .topbar .btn-out,
+[data-theme='dark'] .topbar .topbar-logout {
+  border-color: #64748b !important;
+  color: #e2e8f0 !important;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+[data-theme='dark'] .topbar .btn-out:hover,
+[data-theme='dark'] .topbar .topbar-logout:hover {
+  background: rgba(51, 65, 85, 0.6);
+  border-color: #94a3b8 !important;
+}
+
+[data-theme='dark'] .topbar .toolbar-select,
+[data-theme='dark'] .topbar .ui-pref-sel {
+  background: #0f172a;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+[data-theme='dark'] .topbar .notif-btn {
+  color: #e2e8f0;
+}
+
+[data-theme='dark'] .topbar .nav-drawer-btn {
+  background: rgba(96, 165, 250, 0.12);
+  color: #93c5fd;
 }
 
 /* ── Brand PT: aksen dari logo / master perusahaan ── */

@@ -61,7 +61,7 @@ body{font-family:var(--font,'Segoe UI',system-ui,sans-serif);background:var(--bg
 .nbadge{background:#e24b4a;color:var(--wh);border-radius:20px;font-size:9px;padding:1px 5px;margin-left:auto}
 .content{flex:1;min-width:0;padding:1.1rem;overflow:auto}
 .pg{display:none}.pg.active{display:block}
-.card{background:var(--wh);border-radius:10px;border:1px solid var(--color-slate-300);padding:1rem;margin-bottom:.75rem;box-shadow:var(--shadow-card)}
+.card{background:var(--surface);border-radius:10px;border:1px solid var(--bd);padding:1rem;margin-bottom:.75rem;box-shadow:var(--shadow-card)}
 .ct{font-size:13px;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem}
 .sg4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:.75rem}
 .sc{background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--bd);padding:.85rem}
@@ -128,7 +128,7 @@ tr:hover td{background:var(--row-hover)}
 .tm.auto{background:var(--color-success-bg);color:var(--color-success)}.tm.manual{background:var(--color-warning-bg);color:var(--color-warning)}
 .nat-row{display:grid;grid-template-columns:1.5fr 1fr 1fr auto;gap:.4rem;align-items:center;padding:.5rem .6rem;border-radius:7px;border:1px solid var(--bd);margin-bottom:.4rem;background:var(--row-hover)}
 .nat-row.kp{border-color:var(--color-danger-border);background:var(--color-danger-bg)}
-.slip{background:var(--wh);border:1.5px solid var(--color-slate-300);border-radius:12px;padding:1.5rem;max-width:680px;margin:0 auto;font-size:11px;box-shadow:0 2px 10px rgba(15,23,42,.09)}
+.slip{background:var(--wh);border:1px solid var(--color-primary-border);border-radius:10px;padding:1.5rem;max-width:680px;margin:0 auto;font-size:11px}
 .slip-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:2px solid var(--color-primary)}
 .slip-logo{max-height:44px;max-width:130px;object-fit:contain;margin-bottom:4px}
 .sr{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--color-surface-muted)}

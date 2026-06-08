@@ -4,11 +4,11 @@
  */
 :root {
   --ink-muted: var(--color-slate-500);
-  --border: #e2e8f0;
+  --border: rgba(15, 23, 42, 0.08);
   --radius-lg: 16px;
   --radius-xl: 22px;
   --sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  --content-bg: var(--color-bg-content, #f1f5f9);
+  --content-bg: var(--color-bg-content, #eef1f6);
 }
 
 body {
@@ -93,16 +93,17 @@ body {
 .topbar {
   height: var(--sigaji-topbar-h, 58px);
   padding: 0 1.5rem;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--topbar-bg, rgba(255, 255, 255, 0.97));
   backdrop-filter: blur(12px) saturate(1.2);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--topbar-border, var(--border));
+  box-shadow: var(--shadow-topbar);
+  color: var(--topbar-fg, var(--tx));
 }
 .alogo {
   font-size: 1.08rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: var(--blue);
+  color: var(--topbar-accent, var(--blue));
 }
 .periode-pill {
   border-radius: 999px;
@@ -143,7 +144,7 @@ body {
   background: var(--sidebar-bg);
   padding: 0.85rem 0.55rem 1rem;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: none;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
   flex-shrink: 0;
 }
 .sidebar {
@@ -208,7 +209,7 @@ body {
 }
 .pst {
   font-size: 0.82rem;
-  color: var(--color-slate-600);
+  color: var(--ink-muted);
   margin-top: 3px;
   font-weight: 500;
 }
@@ -216,11 +217,11 @@ body {
 /* ── Cards ── */
 .card {
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-slate-300);
+  border: 1px solid var(--border);
   padding: 1.2rem 1.35rem;
   margin-bottom: 1.1rem;
-  box-shadow: var(--shadow-card);
-  background: var(--wh);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
   transition: box-shadow 0.2s var(--ease);
 }
 .card:hover {
@@ -469,7 +470,6 @@ tbody tr:last-child td {
   margin-bottom: 1.1rem;
   padding: 5px;
   background: var(--color-slate-200);
-  border: 1px solid var(--color-slate-300);
   border-radius: var(--radius-md);
   width: fit-content;
   max-width: 100%;
@@ -768,9 +768,6 @@ button:focus-visible,
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.85rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--color-slate-200);
 }
 .page-actions {
   flex-shrink: 0;
