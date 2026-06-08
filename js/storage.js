@@ -319,7 +319,10 @@ function dbSave(o){
       var prevRaw=localStorage.getItem(DB_KEY);
       if(prevRaw)localStorage.setItem('sigaji_db_prev',prevRaw);
     }catch(e0){sigajiCatchWarn("js/storage.js",e0);}
-    const payload=Object.assign({schemaVersion:SCHEMA_VERSION},o);
+    var payload=Object.assign({schemaVersion:SCHEMA_VERSION},o);
+    if(typeof window.sigajiPayloadForLocalSave==='function'){
+      payload=window.sigajiPayloadForLocalSave(payload);
+    }
     localStorage.setItem(DB_KEY,JSON.stringify(payload));
     showSI();
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
@@ -365,11 +368,20 @@ function currentPayloadLite(){
 }
 function markRecoveryBackup(tag){
   try{
+    if(window.sigajiKaryawanRestricted)return;
     var p=Object.assign({_tag:tag||'manual',_ts:new Date().toISOString(),schemaVersion:SCHEMA_VERSION},currentPayloadLite());
+    if(typeof window.sigajiPayloadForLocalSave==='function')p=window.sigajiPayloadForLocalSave(p);
     localStorage.setItem('sigaji_recovery_last',JSON.stringify(p));
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
 function saveAll(){
+  if(window.sigajiKaryawanRestricted){
+    try{
+      if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan||[]);
+      dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense});
+    }catch(eKr){sigajiCatchWarn("js/storage.js",eKr);}
+    return;
+  }
   try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('saving');}catch(eSf){sigajiCatchWarn("js/storage.js",eSf);}
   try{
     if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan||[]);
@@ -387,6 +399,7 @@ function saveAll(){
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
   try{
     if(window.sigajiApplyingCloud)return;
+    if(typeof window.sigajiCanUploadCloudPayload==='function'&&!window.sigajiCanUploadCloudPayload())return;
     if(typeof window.sigajiQueueCloudSave==='function')window.sigajiQueueCloudSave();
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
@@ -443,9 +456,13 @@ function applyDbFromCloudPayload(payload){
       try{if(typeof window.sigajiApplyLicenseFromObject==='function')window.sigajiApplyLicenseFromObject(tenantLicense);}catch(eL){sigajiCatchWarn("js/storage.js",eL);}
       try{if(typeof window.sigajiApplyBranchPolicyFromObject==='function')window.sigajiApplyBranchPolicyFromObject(o.license);}catch(eBr){sigajiCatchWarn("js/storage.js",eBr);}
     }
-    dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense});
+    var lite={karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense};
+    if(typeof window.sigajiPayloadForLocalSave==='function')lite=window.sigajiPayloadForLocalSave(lite);
+    dbSave(lite);
     try{
-      localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense}));
+      if(!window.sigajiKaryawanRestricted){
+        localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:(lite.karyawan||[]).length},karyawan:lite.karyawan,periodes:lite.periodes,hariLibur:lite.hariLibur,masterCuti:lite.masterCuti,absensi:lite.absensi,lembur:lite.lembur,prorata:lite.prorata,approvals:lite.approvals,notifikasi:lite.notifikasi,perusahaan:lite.perusahaan,users:lite.users,roles:lite.roles,thrManual:lite.thrManual,tunjVarBulan:lite.tunjVarBulan,tunjVarLabels:lite.tunjVarLabels,tunjVarColumns:lite.tunjVarColumns,karSnapshot:lite.karSnapshot,auditLog:lite.auditLog,bentoLayouts:lite.bentoLayouts,cabang:lite.cabang,license:lite.license}));
+      }
     }catch(e2){sigajiCatchWarn("js/storage.js",e2);}
     showSI();
     try{if(typeof applyBranding==='function')applyBranding();}catch(eB){sigajiCatchWarn("js/storage.js",eB);}

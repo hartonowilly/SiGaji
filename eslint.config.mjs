@@ -100,9 +100,16 @@ export default [
       'no-unused-vars': 'off',
     },
   },
-  /** Inti payroll: innerHTML tidak aman = error. */
+  /** Inti payroll + modul data dinamis: innerHTML tidak aman = error. */
   {
-    files: ['js/modules/app-core.js', 'js/modules/app-hr-tunjvar.js', 'js/pesangon.js'],
+    files: [
+      'js/modules/app-core.js',
+      'js/modules/app-hr-tunjvar.js',
+      'js/modules/app-access.js',
+      'js/modules/app-master.js',
+      'js/modules/app-hr.js',
+      'js/pesangon.js',
+    ],
     rules: {
       'sigaji/no-unsafe-innerhtml': 'error',
     },

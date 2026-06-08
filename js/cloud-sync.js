@@ -389,6 +389,9 @@
       );
       bootstrapAdminEmailIfNeeded(session.user);
       var cu = pickCuAfterCloudLoad(session.user.email, session.user.id);
+      if (cu && typeof window.sigajiApplyKaryawanDataRestriction === 'function') {
+        window.sigajiApplyKaryawanDataRestriction(cu);
+      }
       if (!cu) {
         toastSafe(
           'Akun Supabase sudah cocok, tapi pengguna tidak ditemukan di data SiGaji. Pastikan di Manajemen User kolom "Email Supabase" sama persis dengan email login, atau approve ulang pendaftar agar sistem menyimpan tautan akun (auth_uid). Minta Admin cek juga baris payload di Supabase (sigaji_cloud) dan kebijakan RLS/shared.'
@@ -450,6 +453,22 @@
 
   async function loadCloudPayloadIntoApp(uid) {
     var sb = window.sigajiSupabase;
+
+    if (
+      window.sigajiCloudTables &&
+      typeof window.sigajiCloudTables.tryLoadKaryawanScoped === 'function'
+    ) {
+      try {
+        var scopedEarly = await window.sigajiCloudTables.tryLoadKaryawanScoped(sb, uid);
+        if (scopedEarly && typeof window.applyDbFromCloudPayload === 'function') {
+          window.applyDbFromCloudPayload(scopedEarly);
+          await refreshTenantLicenseFromCloud();
+          return;
+        }
+      } catch (eK) {
+        console.warn('Sigaji: load karyawan scoped', eK);
+      }
+    }
 
     if (window.sigajiCloudTables && typeof window.sigajiCloudTables.tryLoadWithTables === 'function') {
       try {
@@ -524,6 +543,10 @@
 
   async function cloudUpsert() {
     if (window.sigajiApplyingCloud) return;
+    if (typeof window.sigajiCanUploadCloudPayload === 'function' && !window.sigajiCanUploadCloudPayload()) {
+      if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('idle');
+      return;
+    }
     var sb = window.sigajiSupabase;
     if (!sb) return;
     var sess = await sb.auth.getSession();

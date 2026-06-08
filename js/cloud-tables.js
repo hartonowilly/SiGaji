@@ -471,6 +471,113 @@
     }
   }
 
+  /** Muat data terbatas untuk Karyawan (setelah RLS + sigaji_user_roles). */
+  async function tryLoadKaryawanScoped(sb, authUid) {
+    if (!authUid) return null;
+    var ok = await tablesExist(sb);
+    if (!ok) return null;
+
+    var roleRes = await sb
+      .from('sigaji_user_roles')
+      .select('role,nik')
+      .eq('tenant_key', TK)
+      .eq('auth_uid', authUid)
+      .maybeSingle();
+    if (roleRes.error) {
+      if (isTableMissingError(roleRes.error)) return null;
+      return null;
+    }
+    if (!roleRes.data) return null;
+    if (roleRes.data.role === 'Admin' || roleRes.data.role === 'HRD') return null;
+    var nik = roleRes.data.nik ? String(roleRes.data.nik).trim() : '';
+    if (!nik) return null;
+
+    var karRes = await sb
+      .from('sigaji_karyawan')
+      .select('data')
+      .eq('tenant_key', TK)
+      .eq('nik', nik)
+      .maybeSingle();
+    if (karRes.error) throw karRes.error;
+
+    var perRes = await sb.from('sigaji_periode').select('data').eq('tenant_key', TK);
+    if (perRes.error) throw perRes.error;
+
+    var storeKeys = ['perusahaan', 'masterCuti', 'hariLibur', 'notifikasi', 'roles', 'absensi'];
+    var store = {};
+    for (var si = 0; si < storeKeys.length; si++) {
+      var key = storeKeys[si];
+      var sr = await sb
+        .from('sigaji_store')
+        .select('data')
+        .eq('tenant_key', TK)
+        .eq('store_key', key)
+        .maybeSingle();
+      if (!sr.error && sr.data) store[key] = sr.data.data;
+    }
+
+    var nilRes = await sb
+      .from('sigaji_tunj_var_nilai')
+      .select('periode_nama,nik,kolom_id,nilai')
+      .eq('tenant_key', TK)
+      .eq('nik', nik);
+    if (nilRes.error) throw nilRes.error;
+
+    var kolRes = await sb.from('sigaji_tunj_var_kolom').select('id,nama,sort_order').eq('tenant_key', TK);
+    var tunjVarColumns = [];
+    if (!kolRes.error && kolRes.data) {
+      tunjVarColumns = kolRes.data
+        .slice()
+        .sort(function (a, b) {
+          return (a.sort_order || 0) - (b.sort_order || 0);
+        })
+        .map(function (c) {
+          return { id: c.id, nama: c.nama };
+        });
+    }
+
+    var absensi = pickOwnAbsensiFromStore(store.absensi || {}, nik);
+
+    return {
+      schemaVersion: 10,
+      karyawan: karRes.data && karRes.data.data ? [karRes.data.data] : [],
+      periodes: (perRes.data || []).map(function (r) {
+        return r.data;
+      }),
+      hariLibur: store.hariLibur || [],
+      masterCuti: store.masterCuti || {},
+      absensi: absensi,
+      lembur: {},
+      prorata: {},
+      approvals: [],
+      notifikasi: store.notifikasi || [],
+      perusahaan: store.perusahaan || {},
+      users: [],
+      roles: store.roles || { Karyawan: ['myslip', 'mycuti', 'notifikasi'] },
+      thrManual: {},
+      tunjVarBulan: buildTunjVarBulanFromRows(nilRes.data),
+      tunjVarLabels: store.tunjVarLabels || { v1: 'Bonus', v2: 'Uang Makan', v3: 'Lain-lain' },
+      tunjVarColumns: tunjVarColumns.length
+        ? tunjVarColumns
+        : [
+            { id: 'v1', nama: 'Bonus' },
+            { id: 'v2', nama: 'Uang Makan' },
+            { id: 'v3', nama: 'Lain-lain' },
+          ],
+      karSnapshot: {},
+      auditLog: [],
+      bentoLayouts: {},
+      cabang: [],
+    };
+  }
+
+  function pickOwnAbsensiFromStore(absensi, nik) {
+    if (!absensi || !nik || !absensi[nik]) return {};
+    var o = {};
+    o[nik] = absensi[nik];
+    return o;
+  }
+
   async function trySaveWithTables(sb, payload, saveBlobFn) {
     var mode = storageMode();
     if (mode === 'blob') {
@@ -501,6 +608,7 @@
     saveToTables: saveToTables,
     migrateBlobToTables: migrateBlobToTables,
     tryLoadWithTables: tryLoadWithTables,
+    tryLoadKaryawanScoped: tryLoadKaryawanScoped,
     trySaveWithTables: trySaveWithTables,
     flattenTunjVarBulan: flattenTunjVarBulan,
     buildTunjVarBulanFromRows: buildTunjVarBulanFromRows,

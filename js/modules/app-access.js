@@ -118,6 +118,9 @@ function simpanUser(){
     if(emailRaw)users[idx].email=emailRaw;else delete users[idx].email;
   }
   saveAll();renderUsers();closeModal('m-user');toast('User disimpan');
+  if(cloud&&typeof window.sigajiSyncUserRolesTable==='function'&&window.sigajiSupabase){
+    window.sigajiSyncUserRolesTable(window.sigajiSupabase,users);
+  }
 }
 async function hapusUser(i){
   var u=users[i];
@@ -1246,6 +1249,9 @@ function enterAppWithUser(user){
   showPg(startPg);
   updateNotifBadge();
   initIdleSession();
+  if((CU.role==='Admin'||CU.role==='HRD')&&typeof window.sigajiSyncUserRolesTable==='function'&&window.sigajiSupabase){
+    window.sigajiSyncUserRolesTable(window.sigajiSupabase,users);
+  }
 }
 function sigajiSetLoginBusy(busy){
   var btn=document.getElementById('btn-login');
