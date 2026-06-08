@@ -473,9 +473,9 @@
   flex-shrink: 0;
   margin: 0 calc(-1 * var(--content-pad-x, 1.65rem)) 1rem;
   padding: 0.4rem var(--content-pad-x, 1.65rem) 0;
-  background: var(--wh);
-  border-bottom: 1px solid var(--color-border-light);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: none;
 }
 .period-timeline-bar {
   position: static;
@@ -493,8 +493,8 @@
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.45rem 1rem;
-  background: linear-gradient(90deg, var(--color-primary-subtle) 0%, var(--color-surface-elevated) 100%);
-  border-top: 1px solid var(--color-primary-border);
+  background: linear-gradient(90deg, #eef6ff 0%, #f8fafc 100%);
+  border-top: 1px solid #c5d9f5;
   font-size: 12px;
 }
 .period-sticky-bar.is-hidden {
@@ -505,7 +505,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+  color: #6b7280;
   margin-right: 0.35rem;
 }
 .period-sticky-main {
@@ -515,11 +515,11 @@
   gap: 0.35rem 0.65rem;
 }
 #period-sticky-name {
-  color: var(--color-primary);
+  color: #1a56a0;
   font-size: 13px;
 }
 .period-sticky-meta {
-  color: var(--color-text-muted);
+  color: #6b7280;
   font-size: 11px;
 }
 .period-sticky-side {
@@ -530,21 +530,21 @@
 .period-sticky-chip {
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--wh);
-  border: 1px solid var(--color-border);
+  background: #fff;
+  border: 1px solid #dde1e9;
   font-size: 10px;
   font-weight: 700;
-  color: var(--ink-body);
+  color: #374151;
 }
 .period-sticky-chip.is-lock {
-  border-color: var(--color-warning-border);
-  color: var(--color-warning);
-  background: var(--row-prorate-bg);
+  border-color: #f5a623;
+  color: #7d4800;
+  background: #fffbf5;
 }
 .period-sticky-chip.is-edit {
-  border-color: var(--color-success-border);
-  color: var(--color-success);
-  background: var(--color-success-bg);
+  border-color: #86efac;
+  color: #166534;
+  background: #f0fdf4;
 }
 
 /* ── Indikator sync cloud ── */
@@ -1298,8 +1298,8 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   flex-shrink: 0;
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1.5px solid var(--bento-border, var(--color-border-light));
-  background: var(--bento-surface-2, var(--color-surface-elevated));
+  border: 1.5px solid var(--bento-border, #e5e7eb);
+  background: var(--bento-surface-2, #f8fafc);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -1404,35 +1404,23 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   --content-bg: #0f172a;
 }
 [data-theme="dark"] .bento-widget,
+[data-theme="dark"] .card,
 [data-theme="dark"] .period-chrome,
 [data-theme="dark"] .period-timeline-bar,
 [data-theme="dark"] .period-sticky-bar {
-  background: var(--color-surface);
-  border-color: var(--color-border-light);
-  color: var(--color-text);
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
 }
-[data-theme="dark"] .period-chrome {
-  box-shadow: 0 1px 0 var(--color-border-light);
+[data-theme="dark"] .topbar {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
-[data-theme="dark"] .period-sticky-bar {
-  background: linear-gradient(90deg, var(--bll) 0%, var(--color-surface) 100%);
-}
-[data-theme="dark"] .ptl-item {
-  background: var(--color-surface-muted);
-  border-color: var(--color-border-light);
-  color: var(--ink-body);
-}
-[data-theme="dark"] .ptl-item.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary-light);
-  color: #f8fafc;
-}
-[data-theme="dark"] .page-header .pt {
-  background: linear-gradient(135deg, #60a5fa, #93c5fd);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+[data-theme="dark"] .topbar .alogo { color: #60a5fa !important; }
+[data-theme="dark"] .topbar .uname { color: #e2e8f0; }
 [data-theme="dark"] .sidebar { filter: brightness(0.95); }
 [data-theme="dark"] .wf-explain-panel { background: #1e293b; }
 [data-theme="dark"] .sigaji-tour-popover { background: #1e293b; color: var(--color-slate-200); }
@@ -1521,7 +1509,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   to { opacity: 1; transform: translateY(0); }
 }
 .page-header .pt {
-  background: linear-gradient(135deg, var(--ux-accent, var(--color-primary)), var(--indigo));
+  background: linear-gradient(135deg, var(--ux-accent, #1a56a0), #2563eb);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

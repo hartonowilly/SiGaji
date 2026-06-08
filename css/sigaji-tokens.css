@@ -76,12 +76,6 @@
   --sigaji-sidebar-w: 228px;
   --content-bg: var(--color-bg-content);
 
-  /* Topbar (light) */
-  --topbar-bg: rgba(255, 255, 255, 0.97);
-  --topbar-border: var(--bd);
-  --topbar-fg: var(--tx);
-  --topbar-accent: var(--blue);
-
   --color-primary-border: #c5d9f5;
   --color-success-border: var(--success-border, #b3d98f);
   --color-warning-border: var(--warn-border, #f5a623);
