@@ -94,6 +94,15 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm btn-out topbar-logout" data-sigaji-action="invoke" data-fn="doLogout">Keluar</button>
   </div>
 </div>
+<div class="nav-backdrop" id="nav-backdrop" aria-hidden="true"></div>
+<div class="layout">
+<div class="sidebar-slot" aria-hidden="true"></div>
+<nav class="sidebar" id="sidebar-wrap" role="navigation" aria-label="Menu modul">
+  <div id="nav-top" class="sidebar-nav-top" aria-label="Kontrol sidebar"></div>
+  <div id="nav-dynamic"></div>
+  <div id="nav-bottom"></div>
+</nav>
+<div class="main-column">
 <div class="period-chrome" id="period-chrome">
 <div id="period-timeline-bar" class="period-timeline-bar" role="navigation" aria-label="Timeline periode gaji"></div>
 <div class="period-sticky-bar is-hidden" id="period-sticky-bar" role="region" aria-label="Periode gaji aktif">
@@ -109,14 +118,6 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
 </div>
 </div>
-<div class="nav-backdrop" id="nav-backdrop" aria-hidden="true"></div>
-<div class="layout">
-<div class="sidebar-slot" aria-hidden="true"></div>
-<nav class="sidebar" id="sidebar-wrap" role="navigation" aria-label="Menu modul">
-  <div id="nav-top" class="sidebar-nav-top" aria-label="Kontrol sidebar"></div>
-  <div id="nav-dynamic"></div>
-  <div id="nav-bottom"></div>
-</nav>
 <div class="content">
 
 <!-- DASHBOARD -->
@@ -926,7 +927,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
 </div>
 
-</div></div></div><!-- end content/layout/app -->
+</div></div></div></div><!-- end content/main-column/layout/app -->
 
 <!-- SLIDE PANEL KARYAWAN (profil SDM saja) -->
 <div class="po" id="panel-overlay" data-sigaji-action="invoke" data-fn="closeAnyPanel"></div>

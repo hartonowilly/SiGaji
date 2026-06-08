@@ -70,7 +70,8 @@
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-2);
   --color-bg: var(--bg);
-  --color-bg-content: #eef1f6;
+  --color-bg-content: #f8fafc;
+  --sigaji-sidebar-w: 228px;
   --content-bg: var(--color-bg-content);
 
   --color-primary-border: #c5d9f5;
