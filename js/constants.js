@@ -95,7 +95,7 @@ const SUBTABS={
   karyawan:['info'],
   kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
   absensi:['kalender','cuti','lokasi','pengajuan'],
-  master:['prs','periode','umk','libur','potongan','ter'],
+  master:['prs','periode','umk','libur','potongan','ter','saldo-pph'],
   laporan:['rekap','variance','pph'],
   approval:['pend','hist'],
 };
@@ -107,6 +107,7 @@ const SUBTAB_LBL={
   'absensi.lokasi':'Lokasi & Penugasan','absensi.pengajuan':'Persetujuan Cuti',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR','master.umk':'UMK',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
+  'master.saldo-pph':'Saldo PPh (migrasi onboarding)',
   'laporan.rekap':'Rekap Penggajian','laporan.variance':'Variance Bulanan','laporan.pph':'PPh 21 & Bukti Potong',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
 };
@@ -125,7 +126,7 @@ const MODULES=[
   {id:'simulasi',lbl:'Simulasi What-if',icon:'&#128202;',sec:'Penggajian'},
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
   {id:'laporan',lbl:'Laporan & PPh',icon:'&#128196;',sec:'Laporan',subtabs:['rekap','variance','pph']},
-  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter']},
+  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter','saldo-pph']},
   {id:'backup',lbl:'Backup & Sistem',icon:'&#128190;',sec:'Pengaturan',adminOnly:true},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
   {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
@@ -174,4 +175,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.5.37';
+const SIGAJI_MODULES_CACHE='11.5.38';

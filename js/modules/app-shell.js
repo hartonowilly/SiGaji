@@ -109,6 +109,11 @@ if(typeof window!=='undefined'){
   window.sigajiOpenNavDrawer=sigajiOpenNavDrawer;
   window.sigajiToggleNavDrawer=sigajiToggleNavDrawer;
 }
+function refreshMigrasiPphSaldoPanel(){
+  var mY=document.getElementById('migrasi-pph-tahun');
+  if(mY&&!mY.value)mY.value=String(new Date().getFullYear());
+  if(typeof renderMigrasiPphSaldo==='function')renderMigrasiPphSaldo();
+}
 function refreshBackupTabContent(tid){
   tid=tid||'bk-cadangan';
   if(tid==='bk-cadangan'){
@@ -116,10 +121,6 @@ function refreshBackupTabContent(tid){
     if(typeof renderBackupRiwayat==='function')renderBackupRiwayat();
     if(typeof renderAuditLog==='function')renderAuditLog();
     try{if(typeof sigajiUpdateCloudBackupUi==='function')sigajiUpdateCloudBackupUi();}catch(e){}
-  }else if(tid==='bk-saldo'){
-    var mY=document.getElementById('migrasi-pph-tahun');
-    if(mY&&!mY.value)mY.value=String(new Date().getFullYear());
-    if(typeof renderMigrasiPphSaldo==='function')renderMigrasiPphSaldo();
   }else if(tid==='bk-ringkas'){
     if(typeof renderSysStatus==='function')renderSysStatus();
   }
@@ -135,7 +136,7 @@ function switchBackupTab(el,tid){
       if(match)match.classList.add('active');
     }
   }
-  ['bk-cadangan','bk-saldo','bk-ringkas'].forEach(function(id){
+  ['bk-cadangan','bk-ringkas'].forEach(function(id){
     var d=document.getElementById(id);
     if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
     else if(d)d.style.display=id===tid?'block':'none';
@@ -156,9 +157,15 @@ function bindBackupTabsOnce(){
 }
 function initBackupPageTabs(){
   bindBackupTabsOnce();
-  var ids=['bk-cadangan','bk-saldo','bk-ringkas'];
+  var ids=['bk-cadangan','bk-ringkas'];
   var tid='bk-cadangan';
-  try{var s=sessionStorage.getItem('sigaji_backup_tab');if(s&&ids.indexOf(s)>=0)tid=s;}catch(e){}
+  try{
+    var s=sessionStorage.getItem('sigaji_backup_tab');
+    if(s==='bk-saldo'){
+      tid='bk-cadangan';
+      sessionStorage.removeItem('sigaji_backup_tab');
+    }else if(s&&ids.indexOf(s)>=0)tid=s;
+  }catch(e){}
   var bar=document.getElementById('backup-tabs');
   if(bar){
     var tabs=bar.querySelectorAll('.tab');
@@ -178,6 +185,7 @@ if(typeof window!=='undefined'){
   window.switchBackupTab=switchBackupTab;
   window.initBackupPageTabs=initBackupPageTabs;
   window.refreshBackupTabContent=refreshBackupTabContent;
+  window.refreshMigrasiPphSaldoPanel=refreshMigrasiPphSaldoPanel;
   window.bindBackupTabsOnce=bindBackupTabsOnce;
 }
 function sigajiPersistLastPg(pg){
@@ -347,7 +355,7 @@ function applyAbsensiSubtabVisibility(){
   if(first&&first.dataset.abpanel)switchAbTab(first,first.dataset.abpanel);
   else toast('Tidak ada sub-tab Absensi yang diizinkan untuk role ini.');
 }
-var MASTER_TAB_PANEL_IDS=['m-prs','m-periode','m-umk','m-libur','m-potongan','m-ter','m-cabang'];
+var MASTER_TAB_PANEL_IDS=['m-prs','m-periode','m-umk','m-libur','m-potongan','m-ter','m-saldo-pph','m-cabang'];
 function hideAllMasterTabPanels(){
   MASTER_TAB_PANEL_IDS.forEach(function(id){
     var d=document.getElementById(id);
@@ -367,7 +375,7 @@ function showMasterTabPanel(tid){
   d.classList.add('master-tab-panel-active');
 }
 function switchMasterTab(el,tid){
-  var masterSubs={'m-prs':'prs','m-periode':'periode','m-umk':'umk','m-libur':'libur','m-potongan':'potongan','m-ter':'ter','m-cabang':'cabang'};
+  var masterSubs={'m-prs':'prs','m-periode':'periode','m-umk':'umk','m-libur':'libur','m-potongan':'potongan','m-ter':'ter','m-saldo-pph':'saldo-pph','m-cabang':'cabang'};
   if(tid==='m-lanjut'){
     if(!canAccessSubTab('master','potongan')&&!canAccessSubTab('master','ter')){toast('Tidak punya akses ke pengaturan lanjutan');return;}
   }else if(masterSubs[tid]&&!canAccessSubTab('master',masterSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
@@ -391,6 +399,7 @@ function switchMasterTab(el,tid){
   if(tid==='m-libur'){initLibnasYearSelect();renderHariLibur();renderCutiRekap();}
   if(tid==='m-prs'){try{if(typeof loadPrsForm==='function')loadPrsForm();}catch(ePrs){}}
   if(tid==='m-cabang'){try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab3){}}
+  if(tid==='m-saldo-pph')refreshMigrasiPphSaldoPanel();
 }
 if(typeof window!=='undefined'){
   window.hideAllMasterTabPanels=hideAllMasterTabPanels;
