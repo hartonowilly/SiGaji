@@ -4,6 +4,8 @@
   var _saveHideT = null;
   var _pgGajiCols = 'ringkas';
   var _cloudLoadCount = 0;
+  var _cloudLoadFailsafe = null;
+  var CLOUD_LOAD_TIMEOUT_MS = 45000;
 
   function el(id) {
     return document.getElementById(id);
@@ -149,6 +151,23 @@
     node.innerHTML = '';
   };
 
+  function sigajiCloudLoadDismiss() {
+    var ov = el('sigaji-cloud-load');
+    if (ov) {
+      ov.classList.add('u-hidden');
+      ov.setAttribute('aria-busy', 'false');
+    }
+    document.documentElement.removeAttribute('data-sigaji-cloud-loading');
+  }
+
+  /** Paksa tutup overlay (timeout / recovery). */
+  window.sigajiCloudLoadForceEnd = function () {
+    clearTimeout(_cloudLoadFailsafe);
+    _cloudLoadFailsafe = null;
+    _cloudLoadCount = 0;
+    sigajiCloudLoadDismiss();
+  };
+
   /** Overlay skeleton saat fetch payload Supabase. */
   window.sigajiCloudLoadStart = function () {
     _cloudLoadCount++;
@@ -157,17 +176,23 @@
     ov.classList.remove('u-hidden');
     ov.setAttribute('aria-busy', 'true');
     document.documentElement.setAttribute('data-sigaji-cloud-loading', '1');
+    clearTimeout(_cloudLoadFailsafe);
+    _cloudLoadFailsafe = setTimeout(function () {
+      if (_cloudLoadCount <= 0) return;
+      console.warn('Sigaji: cloud load timeout — menutup overlay');
+      window.sigajiCloudLoadForceEnd();
+      if (typeof toast === 'function') {
+        toast('Memuat data cloud terlalu lama. Periksa koneksi lalu refresh (Ctrl+F5).');
+      }
+    }, CLOUD_LOAD_TIMEOUT_MS);
   };
 
   window.sigajiCloudLoadEnd = function () {
+    clearTimeout(_cloudLoadFailsafe);
+    _cloudLoadFailsafe = null;
     _cloudLoadCount = Math.max(0, _cloudLoadCount - 1);
     if (_cloudLoadCount > 0) return;
-    var ov = el('sigaji-cloud-load');
-    if (ov) {
-      ov.classList.add('u-hidden');
-      ov.setAttribute('aria-busy', 'false');
-    }
-    document.documentElement.removeAttribute('data-sigaji-cloud-loading');
+    sigajiCloudLoadDismiss();
   };
 
   /** Konfirmasi hapus massal dengan jumlah item. */

@@ -5,13 +5,18 @@
 @media print {
   .sidebar-wrap,
   .sidebar,
+  .sidebar-slot,
   .topbar,
   .nav-drawer-btn,
+  .nav-backdrop,
+  .ph,
+  .page-header,
   .page-actions,
   .page-toolbar-filters,
   .page-toolbar-slip,
   .tabs,
   .period-sticky-bar,
+  .period-timeline-bar,
   .period-pill,
   .sync-status,
   .save-ind,
@@ -24,23 +29,34 @@
   button,
   .ab-status-legend,
   .dash-kpi-hint,
+  .dash-bento-toolbar,
   details,
-  .empty-state:not(.slip *) {
+  #slip-thr-banner,
+  #slip-tab-kirim,
+  #slip-preview .empty-state {
     display: none !important;
   }
 
   html,
   body,
   #app,
-  .main,
-  #main-content {
+  .layout,
+  .content {
     display: block !important;
     width: 100% !important;
     height: auto !important;
+    min-height: 0 !important;
     overflow: visible !important;
     background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
+    visibility: visible !important;
+  }
+
+  html[data-sigaji-cloud-loading='1'] #app,
+  html[data-sigaji-cloud-loading='1'] #app .content,
+  html[data-sigaji-cloud-loading='1'] .layout {
+    visibility: visible !important;
   }
 
   .pg {
@@ -57,6 +73,36 @@
     display: block !important;
   }
 
+  #pg-slip.active #slip-tab-gaji,
+  #slip-preview,
+  #slip-preview .slip {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  #slip-preview .slip .cr,
+  #slip-preview .slip .sr {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  #slip-preview .slip .semp {
+    display: grid !important;
+    visibility: visible !important;
+  }
+
+  #slip-preview .slip .gross-sec,
+  #slip-preview .slip .pph-calc-sec,
+  #slip-preview .slip .slip-head,
+  #slip-preview .slip .stotal {
+    display: block !important;
+    visibility: visible !important;
+  }
+
   .card,
   .table-wrap,
   .slip {
@@ -70,6 +116,9 @@
     margin: 0 !important;
     padding: 0 !important;
     font-size: 11pt !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .slip-head {
@@ -101,19 +150,16 @@
     break-inside: avoid;
   }
 
-  #slip-preview,
   #lap-tab-rekap,
   #lap-tab-pph {
     display: block !important;
   }
 
-  #slip-tab-kirim,
   #lap-tab-variance.u-hidden,
   .u-hidden {
     display: none !important;
   }
 
-  #pg-slip.active #slip-tab-gaji,
   #pg-laporan.active #lap-tab-rekap,
   #pg-laporan.active #lap-tab-pph {
     display: block !important;

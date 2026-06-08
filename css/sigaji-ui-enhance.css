@@ -572,6 +572,11 @@
   background: rgba(248, 250, 252, 0.92);
   backdrop-filter: blur(4px);
 }
+.sigaji-cloud-load.u-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 .sigaji-cloud-load-card {
   width: min(420px, 92vw);
   padding: 1.5rem 1.25rem;
@@ -591,8 +596,7 @@
   font-weight: 600;
   color: #374151;
 }
-html[data-sigaji-cloud-loading='1'] #app .main,
-html[data-sigaji-cloud-loading='1'] #main-content {
+html[data-sigaji-cloud-loading='1'] #app .content {
   visibility: hidden;
 }
 @keyframes sigaji-pulse {

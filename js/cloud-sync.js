@@ -81,6 +81,19 @@
     else console.warn(msg);
   }
 
+  var CLOUD_FETCH_TIMEOUT_MS = 45000;
+
+  function withCloudTimeout(promise, label) {
+    return Promise.race([
+      promise,
+      new Promise(function (_, reject) {
+        setTimeout(function () {
+          reject(new Error(label || 'Timeout memuat data cloud'));
+        }, CLOUD_FETCH_TIMEOUT_MS);
+      }),
+    ]);
+  }
+
   function setResumeBootUi(booting, hasSession) {
     if (window.SIGAJI_RESUME_SESSION_ON_LOAD !== true) return;
     try {
@@ -288,6 +301,7 @@
       }
     } finally {
       setResumeBootUi(false, hasSession);
+      if (typeof window.sigajiCloudLoadForceEnd === 'function') window.sigajiCloudLoadForceEnd();
     }
   }
 
@@ -369,7 +383,10 @@
     if (typeof window.sigajiCloudLoadStart === 'function') window.sigajiCloudLoadStart();
     try {
       try { localStorage.setItem('sigaji_resume_hint', '1'); } catch (e) {}
-      await loadCloudPayloadIntoApp(session.user.id);
+      await withCloudTimeout(
+        loadCloudPayloadIntoApp(session.user.id),
+        'Timeout memuat data cloud — periksa koneksi atau coba refresh'
+      );
       bootstrapAdminEmailIfNeeded(session.user);
       var cu = pickCuAfterCloudLoad(session.user.email, session.user.id);
       if (!cu) {
@@ -382,6 +399,9 @@
       if (typeof window.enterAppWithUser === 'function') {
         window.enterAppWithUser(cu);
       }
+    } catch (e) {
+      console.error('Sigaji enterFromSession:', e);
+      toastSafe((e && e.message) || 'Gagal memuat data cloud');
     } finally {
       if (typeof window.sigajiCloudLoadEnd === 'function') window.sigajiCloudLoadEnd();
     }
