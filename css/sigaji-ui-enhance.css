@@ -379,6 +379,8 @@
 @media (max-width: 768px) {
   .content {
     padding: 1rem 0.85rem 2rem;
+    --content-pad-x: 0.85rem;
+    --content-pad-y: 1rem;
   }
   .ph .pt {
     font-size: 1.2rem;
@@ -444,7 +446,7 @@
   }
 }
 
-/* ── Kolom utama (sidebar | period + konten) ── */
+/* ── Kolom utama (sidebar | konten scroll) ── */
 .layout {
   min-height: 0;
 }
@@ -460,15 +462,20 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  position: relative;
 }
 
-/* ── Periode chrome: di kolom konten saja (tidak menimpa sidebar) ── */
+/* ── Periode chrome: sticky di dalam .content (urutan di atas halaman) ── */
 .period-chrome {
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 45;
   flex-shrink: 0;
-  z-index: 40;
+  margin: 0 calc(-1 * var(--content-pad-x, 1.65rem)) 1.25rem;
+  padding: 0.45rem var(--content-pad-x, 1.65rem) 0;
   background: var(--wh);
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 2px solid var(--color-slate-200);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
 }
 .period-timeline-bar {
   position: static;
@@ -486,7 +493,7 @@
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.45rem 1rem;
-  background: linear-gradient(90deg, var(--color-primary-subtle) 0%, var(--color-surface-elevated) 100%);
+  background: var(--color-primary-subtle);
   border-top: 1px solid var(--color-primary-border);
   font-size: 12px;
 }
@@ -1291,8 +1298,8 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   flex-shrink: 0;
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1.5px solid var(--bento-border, var(--color-border-light));
-  background: var(--bento-surface-2, var(--color-surface-elevated));
+  border: 1.5px solid var(--color-slate-300);
+  background: var(--wh);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -1470,8 +1477,13 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 .ptl-item.active {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
 }
-.pg:not(.active) { opacity: 0; pointer-events: none; }
+.pg:not(.active) {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+}
 .pg.active {
+  display: block;
   animation: sigajiPgIn 0.22s ease-out;
 }
 @keyframes sigajiPgIn {
@@ -1479,10 +1491,10 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   to { opacity: 1; transform: translateY(0); }
 }
 .page-header .pt {
-  background: linear-gradient(135deg, var(--ux-accent, var(--color-primary)), var(--indigo));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ink);
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
 }
 .dac {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -1617,8 +1629,8 @@ html:not(.sigaji-mobile-nav) #sidebar-wrap.sidebar {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: calc(100vh - 52px);
-  max-height: calc(100vh - 52px);
+  min-height: calc(100vh - var(--sigaji-topbar-h, 58px));
+  max-height: calc(100vh - var(--sigaji-topbar-h, 58px));
 }
 .sidebar-nav-top {
   flex-shrink: 0;
