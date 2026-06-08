@@ -1,5 +1,5 @@
 #!/bin/sh
-# SiGaji — jalankan quality gate sebelum push (pasang via npm run install:hooks)
+# SiGaji — quality gate sebelum push (Windows Git Bash + Unix)
 set -e
-echo "SiGaji pre-push: npm run check:quality"
-npm run check:quality
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+exec node "$ROOT/scripts/run-pre-push-check.js"
