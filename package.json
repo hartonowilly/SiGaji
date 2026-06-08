@@ -13,7 +13,7 @@
     "test:payroll": "node tests/run-payroll-tests.mjs",
     "test:cuti": "node tests/cuti-tracking.test.mjs",
     "test:all": "node tests/run-payroll-tests.mjs && node tests/cuti-tracking.test.mjs",
-    "lint": "eslint js/**/*.js tests/**/*.mjs",
+    "lint": "eslint js tests --no-warn-ignored",
     "lint:ratchet": "node scripts/lint-ratchet.js",
     "lint:ratchet:update": "node scripts/lint-ratchet.js --update",
     "lint:payroll": "eslint js/modules/app-core.js js/modules/app-hr-tunjvar.js",

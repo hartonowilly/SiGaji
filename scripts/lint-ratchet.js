@@ -12,7 +12,7 @@ const baselinePath = path.join(__dirname, 'lint-baseline.json');
 const update = process.argv.includes('--update');
 
 function runLint() {
-  const out = execSync('npx eslint js/**/*.js tests/**/*.mjs -f json', {
+  const out = execSync('npx eslint js tests --no-warn-ignored -f json', {
     cwd: root,
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe'],
