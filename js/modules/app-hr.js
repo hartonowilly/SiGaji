@@ -819,6 +819,51 @@ function renderPenggajian(skipTunjVar){
   }
   renderPenggajianBody(skipTunjVar);
 }
+function fillPgPenggajianFoot(foot,nKar,hasCab,sums){
+  foot.replaceChildren();
+  var tr=document.createElement('tr');
+  var tdLbl=document.createElement('td');
+  tdLbl.colSpan=2;
+  tdLbl.className='pg-sticky-no sticky-no';
+  var lbl=document.createElement('span');
+  lbl.className='foot-total-label';
+  lbl.textContent='Total ('+String(nKar)+' karyawan)';
+  tdLbl.appendChild(lbl);
+  tr.appendChild(tdLbl);
+  if(hasCab)tr.appendChild(document.createElement('td'));
+  tr.appendChild(document.createElement('td'));
+  function moneyTd(val,extraCls){
+    var td=document.createElement('td');
+    td.className='num cell-money'+(extraCls?' '+extraCls:'');
+    td.textContent=fmt(val);
+    return td;
+  }
+  tr.appendChild(moneyTd(sums.gross));
+  tr.appendChild(moneyTd(sums.thr,'pg-col-adv'));
+  tr.appendChild(moneyTd(sums.thBruto,'pg-col-adv'));
+  tr.appendChild(moneyTd(sums.bpjs,'pg-col-adv'));
+  tr.appendChild(moneyTd(sums.pph));
+  var tdRet=document.createElement('td');
+  tdRet.className='pg-col-adv num cell-money';
+  if(sums.pphRet>0){
+    var sp=document.createElement('span');
+    sp.className='ct-success';
+    sp.textContent='+'+fmt(sums.pphRet);
+    tdRet.appendChild(sp);
+  }else tdRet.textContent='\u2014';
+  tr.appendChild(tdRet);
+  var tdNeto=document.createElement('td');
+  tdNeto.className='num cell-neto';
+  var strong=document.createElement('strong');
+  strong.className='cell-neto-strong';
+  strong.textContent=fmt(sums.neto);
+  tdNeto.appendChild(strong);
+  tr.appendChild(tdNeto);
+  var tdTail=document.createElement('td');
+  tdTail.colSpan=2;
+  tr.appendChild(tdTail);
+  foot.appendChild(tr);
+}
 function renderPenggajianBody(skipTunjVar){
   try{if(typeof sigajiSyncPgGajiTableHead==='function')sigajiSyncPgGajiTableHead();}catch(eTh2){sigajiCatchWarn("js/modules/app-hr.js",eTh2);}
   const p=PA();
@@ -840,8 +885,16 @@ function renderPenggajianBody(skipTunjVar){
     thrInfo.innerHTML=html;
   }
   let prAktif=0;
+  var sumGross=0,sumThr=0,sumThBruto=0,sumBpjs=0,sumPph=0,sumPphRet=0,sumNeto=0;
   const rows=karyawanListPeriode(p).map(function(k,idx){
     const g=hitungGaji(k,p.nama);
+    sumGross+=g.grossPPh||0;
+    sumThr+=g.thrBruto||0;
+    sumThBruto+=g.brutoTH||0;
+    sumBpjs+=(g.bpjs.kes_kar||0)+(g.bpjs.jht_kar||0)+(g.bpjs.jp_kar||0);
+    sumPph+=g.pph||0;
+    sumPphRet+=g.pphRet||0;
+    sumNeto+=g.neto||0;
     const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
     const st=ap?ap.status:'draft';
     const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:''}[st]||'';
@@ -873,11 +926,17 @@ function renderPenggajianBody(skipTunjVar){
       +'<td><button class="btn btn-sm btn-out"'+sigajiDataAction('payroll-detail',{nik:k.nik,periode:p.nama})+'>Detail</button></td></tr>';
   });
   var tbPg=document.getElementById('tb-penggajian');
+  var tbFoot=document.getElementById('tb-penggajian-foot');
+  var hasCab=typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace());
+  var pgColspan=12+(hasCab?1:0);
   if(!rows.length&&typeof sigajiEmptyState==='function'){
-    var pgColspan=12+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
-    html='<tr><td colspan="'+String(pgColspan)+'">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnAction:'showPg',btnActionArg:'karyawan'})+'</td></tr>';
-    tbPg.innerHTML=html;
-  }else tbPg.innerHTML=rows.join('');
+    var emptyPgRow='<tr><td colspan="'+String(pgColspan)+'">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnAction:'showPg',btnActionArg:'karyawan'})+'</td></tr>';
+    if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tbPg,[emptyPgRow],1);
+    if(tbFoot)tbFoot.replaceChildren();
+  }else{
+    if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tbPg,rows,50);
+    if(tbFoot)fillPgPenggajianFoot(tbFoot,rows.length,hasCab,{gross:sumGross,thr:sumThr,thBruto:sumThBruto,bpjs:sumBpjs,pph:sumPph,pphRet:sumPphRet,neto:sumNeto});
+  }
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
 }
 function kirimApproval(){

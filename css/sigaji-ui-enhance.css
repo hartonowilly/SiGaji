@@ -444,19 +444,34 @@
   }
 }
 
-/* ── Sticky bar periode aktif ── */
-.period-sticky-bar {
+/* ── Periode chrome: satu blok sticky (hindari tumpuk timeline + sticky) ── */
+.period-chrome {
   position: sticky;
-  top: 52px;
-  z-index: 90;
+  top: var(--sigaji-topbar-h, 58px);
+  z-index: 95;
+  background: var(--wh);
+  border-bottom: 1px solid var(--color-border-light);
+  isolation: isolate;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+.period-timeline-bar {
+  position: static;
+  top: auto;
+  z-index: auto;
+  border-bottom: none;
+}
+.period-sticky-bar {
+  position: static;
+  top: auto;
+  z-index: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.45rem 1rem;
-  background: linear-gradient(90deg, #eef6ff 0%, var(--color-surface-elevated) 100%);
-  border-bottom: 1px solid var(--color-primary-border);
+  background: linear-gradient(90deg, var(--color-primary-subtle) 0%, var(--color-surface-elevated) 100%);
+  border-top: 1px solid var(--color-primary-border);
   font-size: 12px;
 }
 .period-sticky-bar.is-hidden {
@@ -504,9 +519,9 @@
   background: var(--row-prorate-bg);
 }
 .period-sticky-chip.is-edit {
-  border-color: #86efac;
-  color: #166534;
-  background: #f0fdf4;
+  border-color: var(--color-success-border);
+  color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 /* ── Indikator sync cloud ── */
@@ -797,7 +812,6 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 
 @media (max-width: 900px) {
   .period-sticky-bar {
-    top: 48px;
     padding: 0.4rem 0.75rem;
   }
   .ab-grid-desktop {
@@ -1248,11 +1262,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 
 .period-timeline-bar {
   background: var(--bento-surface, var(--wh));
-  border-bottom: 1px solid var(--bento-border, var(--color-border-light));
   padding: 0.35rem 0.75rem;
-  position: sticky;
-  top: 48px;
-  z-index: 90;
 }
 .ptl-scroll {
   display: flex;
@@ -1371,7 +1381,9 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   --content-bg: #0f172a;
 }
 [data-theme="dark"] .bento-widget,
-[data-theme="dark"] .period-timeline-bar { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
+[data-theme="dark"] .period-chrome,
+[data-theme="dark"] .period-timeline-bar,
+[data-theme="dark"] .period-sticky-bar { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
 [data-theme="dark"] .sidebar { filter: brightness(0.95); }
 [data-theme="dark"] .wf-explain-panel { background: #1e293b; }
 [data-theme="dark"] .sigaji-tour-popover { background: #1e293b; color: var(--color-slate-200); }

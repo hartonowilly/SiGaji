@@ -93,13 +93,13 @@ function renderAbsensiBody(){
   var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
   if(!karyawan.length){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Import Excel atau tambah manual di Master Karyawan untuk mulai mengisi absensi.',btnLabel:'Tambah karyawan',btnAction:'showPg',btnActionArg:'karyawan'}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada karyawan.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Import Excel atau tambah manual di Master Karyawan untuk mulai mengisi absensi.',btnLabel:'Tambah karyawan',btnAction:'showPg',btnActionArg:'karyawan'}):'<div class="text-center text-subtle p-empty-pad">Belum ada karyawan.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
   if(!pAbs||!pAbs.start||!pAbs.end){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Periode gaji belum lengkap',desc:'Atur tanggal mulai dan akhir di Master → Periode Gaji.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Periode gaji belum lengkap',desc:'Atur tanggal mulai dan akhir di Master → Periode Gaji.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-center text-subtle p-empty-pad">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
@@ -110,7 +110,7 @@ function renderAbsensiBody(){
   const daysAll=absensiDaysFromPeriode(pAbs);
   if(!daysAll.length){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML='<div class="text-center text-subtle" style="padding:2rem">Rentang periode tidak valid.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML='<div class="text-center text-subtle p-empty-pad">Rentang periode tidak valid.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
@@ -139,39 +139,38 @@ function renderAbsensiBody(){
   var roBanner=adaSelTerkunci?'<div class="info-box info-amber font-11 mb-lg">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
   var listKar=typeof karyawanListPeriode==='function'?karyawanListPeriode(pAbs):sortKaryawanByNik(karyawan||[]);
   listKar.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
-  var AB_NO=44,AB_NAME=272,AB_JAB_L=AB_NO+AB_NAME;
   var prevMY='';
-  var html='<table class="font-11 w-full sigaji-table" style="border-collapse:collapse; min-width:max-content"><thead><tr class="ab-grid-head">'
-    +'<th class="text-center ab-grid-head-sticky" style="left:0; padding:6px 6px; width:'+AB_NO+'px; min-width:'+AB_NO+'px">No</th>'
-    +'<th class="text-left ab-grid-head-sticky sticky-name" style="left:'+AB_NO+'px; padding:6px 10px; min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; border-right-width:2px; vertical-align:bottom">Nama</th>'
-    +'<th class="text-left font-11 ab-grid-head-sticky" style="left:'+AB_JAB_L+'px; padding:6px 8px; white-space:nowrap; min-width:112px; border-right-width:2px; vertical-align:bottom">Jabatan</th>';
+  var html='<table class="font-11 w-full sigaji-table ab-grid-table"><thead><tr class="ab-grid-head">'
+    +'<th class="text-center ab-grid-head-sticky ab-sticky-no">No</th>'
+    +'<th class="text-left ab-grid-head-sticky ab-sticky-name">Nama</th>'
+    +'<th class="text-left font-11 ab-grid-head-sticky ab-sticky-jab">Jabatan</th>';
   days.forEach(function(x){
     var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
     var myKey=x.date.substring(0,7);
     var tglParts=x.date.split('-');
     var showMon=myKey!==prevMY;
     prevMY=myKey;
-    var bg=isHL(x.date)?'var(--ab-libnas-bg)':isHariLiburKerja(x.dow)?'var(--ink-body)':'var(--ab-grid-head-bg)';
-    var co=isHL(x.date)?'var(--ab-libnas-fg)':isHariLiburKerja(x.dow)?'var(--ab-libur-fg)':'var(--color-slate-300)';
+    var thCls='ab-day-th '+(isHL(x.date)?'is-libnas':isHariLiburKerja(x.dow)?'is-libur':'is-normal');
     var dd=parseInt(tglParts[2],10);
-    html+='<th class="text-center" style="position:sticky; top:0; z-index:6; background:'+bg+'; color:'+co+'; padding:4px 3px; min-width:36px; border-right:1px solid var(--ab-grid-head-border)"><div class="font-9">'+dowN+'</div><div class="font-12 fw-700">'+dd+'</div>'
-      +(showMon?'<div style="font-size:8px;opacity:.85">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
+    html+='<th class="'+thCls+'"><div class="font-9">'+dowN+'</div><div class="font-12 fw-700">'+dd+'</div>'
+      +(showMon?'<div class="ab-day-mon-lbl">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
   });
-  html+='<th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px; border-left:2px solid var(--ab-grid-head-border)">H</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">C</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">S</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">I</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">A</th></tr></thead><tbody>';
+  html+='<th class="text-center ab-grid-sum-head ab-day-th">H</th><th class="text-center ab-grid-sum-head ab-day-th">C</th><th class="text-center ab-grid-sum-head ab-day-th">S</th><th class="text-center ab-grid-sum-head ab-day-th">I</th><th class="text-center ab-grid-sum-head ab-day-th">A</th></tr></thead><tbody>';
   var mobileCards='';
   listKar.forEach(function(k,ki){
-    var rb=ki%2===0?'var(--wh)':'var(--table-zebra)';
-    html+='<tr style="background:'+rb+'"><td class="text-center fw-800 text-subtle sticky-no" style="position:sticky; left:0; z-index:3; background:'+rb+'; padding:5px 6px; border-right:1px solid var(--color-border-light); border-bottom:1px solid var(--color-surface-muted); box-shadow:1px 0 0 var(--color-border-light)">'+(ki+1)+'</td><td class="fw-700 sticky-name" style="position:sticky; left:'+AB_NO+'px; z-index:3; background:'+rb+'; padding:5px 10px; border-right:2px solid var(--color-border-light); border-bottom:1px solid var(--color-surface-muted); min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; box-shadow:1px 0 0 var(--color-border-light); vertical-align:middle"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1" style="min-width:0"><div class="font-12 fw-700" style="line-height:1.25; word-break:break-word; white-space:normal">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle" style="word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td class="font-11 text-muted" style="position:sticky; left:'+AB_JAB_L+'px; z-index:3; background:'+rb+'; padding:5px 8px; white-space:nowrap; border-right:2px solid var(--color-border-light); border-bottom:1px solid var(--color-surface-muted); min-width:112px; box-shadow:1px 0 0 var(--color-border-light)">'+(k.jabatan||'')+'</td>';
+    var rowCls=ki%2===0?'ab-row-even':'ab-row-odd';
+    html+='<tr class="'+rowCls+'"><td class="text-center fw-800 text-subtle ab-sticky-no">'+(ki+1)+'</td><td class="fw-700 ab-sticky-name"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1 min-w-0"><div class="font-12 fw-700 ab-kar-name">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle ab-kar-nik">'+escapeHtml(k.nik)+'</div></div></div></td><td class="font-11 text-muted ab-sticky-jab">'+escapeHtml(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
       var isLN=isHL(x.date);
       var isLK=isHariLiburKerja(x.dow);
       var st=absensi[k.nik][x.date]||(isLN?'libnas':isLK?'libur':'hadir');
-      var bg=ST_BG[st]||'var(--ab-libur-bg)';var tx=ST_TX[st]||'var(--color-text-muted)';var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
+      var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
       var canCell=cc&&canEditDataPadaTanggalIso(x.date);
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
-      html+='<td class="p-0 text-center font-10" style="background:'+bg+'; color:'+tx+'; border-right:1px solid rgba(0,0,0,.06); border-bottom:1px solid var(--color-surface-muted); opacity:'+(canCell?'1':cc?'0.88':'1')+'; '+(canCell?'cursor:pointer; ':cc?'cursor:not-allowed; ':'')+'font-weight:700" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
+      var cellCls='ab-cell ab-st-'+(st||'libur')+(canCell?' is-clickable':'')+(cc&&!canCell?' is-readonly':'');
+      html+='<td class="'+cellCls+'" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
     });
     html+='<td class="text-center fw-800 ct-success num ab-total-h">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+(cA||'')+'</td></tr>';
     mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
@@ -204,10 +203,10 @@ function toggleAb(nik,date,el){
   if(!absensi[nik])absensi[nik]={};
   const S=['hadir','cuti','izin','sakit','setengah_sakit','setengah_ijin','alpha'];
   const SL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A'};
-  const SB={hadir:'var(--ab-hadir-bg)',cuti:'var(--ab-cuti-bg)',izin:'var(--ab-izin-bg)',sakit:'var(--ab-sakit-bg)',setengah_sakit:'var(--ab-half-sakit-bg)',setengah_ijin:'var(--ab-half-ijin-bg)',alpha:'var(--ab-alpha-bg)'};
-  const ST={hadir:'var(--ab-hadir-fg)',cuti:'var(--ab-cuti-fg)',izin:'var(--ab-izin-fg)',sakit:'var(--ab-sakit-fg)',setengah_sakit:'var(--ab-half-sakit-fg)',setengah_ijin:'var(--ab-half-ijin-fg)',alpha:'var(--ab-alpha-fg)'};
   const cur=absensi[nik][date]||'hadir';const next=S[(S.indexOf(cur)+1)%S.length];
-  absensi[nik][date]=next;el.textContent=SL[next];el.style.background=SB[next];el.style.color=ST[next];saveAll();
+  absensi[nik][date]=next;el.textContent=SL[next];
+  el.className='ab-cell ab-st-'+next+(el.classList.contains('is-readonly')?' is-readonly':' is-clickable');
+  saveAll();
 }
 // ── CUTI REKAP ───────────────────────────────────
 function renderCutiRekap(){
@@ -258,14 +257,14 @@ function renderLemburList(){
   el.innerHTML=listLem.map(function(k){
     const ld=lembur[k.nik]||[];const upj=k.gapok/173;if(!ld.length)return'';
     num++;
-    return '<div class="tabs-spaced-lg"><div class="fw-700 font-12 ct-brand" style="margin-bottom:.4rem">'+num+'. '+k.nama+'</div>'
+    return '<div class="tabs-spaced-lg"><div class="fw-700 font-12 ct-brand mb-xs">'+escapeHtml(k.nama)+' <span class="text-muted">#'+num+'</span></div>'
       +ld.map(function(r,i){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);
         var lr=r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal);
         var lemRo=CU&&CU.role!=='Admin'&&lr;
         return '<div class="fl gap1 mb1 items-center flex-wrap">'
-          +'<input type="date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'style="width:135px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updLembur(\''+k.nik+'\','+i+',\'tanggal\',this.value)">'
-          +'<input type="number" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'style="width:65px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" min="1" max="12" onchange="updLembur(\''+k.nik+'\','+i+',\'jam\',this.value)">'
-          +'<span class="font-11 text-muted" style="min-width:90px">'+(j>0?fmt(Math.round(h)):'')+'</span>'
+          +'<input type="date" class="comp-inp lembur-inp-date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'onchange="updLembur(\''+k.nik+'\','+i+',\'tanggal\',this.value)">'
+          +'<input type="number" class="comp-inp lembur-inp-jam" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'min="1" max="12" onchange="updLembur(\''+k.nik+'\','+i+',\'jam\',this.value)">'
+          +'<span class="font-11 text-muted lembur-inp-amt">'+(j>0?fmt(Math.round(h)):'')+'</span>'
           +(lemRo?'':'<button class="btn btn-sm btn-r"'+sigajiDataAction('del-lembur',{nik:k.nik,i:i})+'>&#10007;</button>')+'</div>';
       }).join('')+'</div>';
   }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnAction:'addLemburForKar'}):'<div class="text-subtle font-12">Belum ada.</div>');

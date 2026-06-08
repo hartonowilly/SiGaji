@@ -105,23 +105,23 @@
     var st = sigajiKarTaxIdStatus({ ktp: ktpEl.value, npwp: npwpEl ? npwpEl.value : '' });
     if (ktpHint) {
       if (st === 'npwp_empty_ok_nik' || st === 'has_npwp') {
-        ktpHint.innerHTML = '<span style="color:#059669">✓ NIK 16 digit terisi — boleh dipakai e-Bupot jika NPWP kosong</span>';
+        ktpHint.innerHTML = '<span class="ct-success">✓ NIK 16 digit terisi — boleh dipakai e-Bupot jika NPWP kosong</span>';
       } else if (st === 'nik_incomplete') {
         ktpHint.innerHTML =
-          '<span style="color:#d97706">NIK belum 16 digit — wajib untuk e-Bupot bila NPWP kosong</span>';
+          '<span class="ct-warn">NIK belum 16 digit — wajib untuk e-Bupot bila NPWP kosong</span>';
       } else {
         ktpHint.textContent = 'NIK Dukcapil (16 digit) — dipakai Coretax jika NPWP tidak diisi';
       }
     }
     if (npwpHint) {
       if (st === 'has_npwp') {
-        npwpHint.innerHTML = '<span style="color:#059669">✓ NPWP terisi</span>';
+        npwpHint.innerHTML = '<span class="ct-success">✓ NPWP terisi</span>';
       } else if (st === 'npwp_empty_ok_nik') {
         npwpHint.innerHTML =
-          '<span style="color:#2563eb">NPWP kosong — OK jika NIK 16 digit terisi. <a class="ct-indigo" href="#" data-sigaji-action="djp-nik-validasi">Cek validasi di portal DJP</a></span>';
+          '<span class="ct-brand">NPWP kosong — OK jika NIK 16 digit terisi. <a class="ct-indigo" href="#" data-sigaji-action="djp-nik-validasi">Cek validasi di portal DJP</a></span>';
       } else if (st === 'nik_incomplete') {
         npwpHint.innerHTML =
-          '<span style="color:#d97706">NPWP kosong &amp; NIK tidak lengkap — isi NPWP atau lengkapi KTP 16 digit</span>';
+          '<span class="ct-warn">NPWP kosong &amp; NIK tidak lengkap — isi NPWP atau lengkapi KTP 16 digit</span>';
       } else {
         npwpHint.innerHTML =
           '<span class="ct-danger">NPWP kosong — NIK juga kosong. Isi NPWP atau No. KTP 16 digit sebelum e-Bupot.</span>';
@@ -631,7 +631,7 @@
       });
 
     var html =
-      '<div class="table-wrap"><table><thead><tr><th>Departemen</th><th>Bruto</th><th>Δ Bruto</th><th>PPh</th><th>Δ PPh</th><th>Neto</th><th>Δ Neto</th><th></th></tr></thead><tbody>';
+      '<div class="table-wrap"><table class="sigaji-table"><thead><tr><th>Departemen</th><th class="num">Bruto</th><th class="num">Δ Bruto</th><th class="num">PPh</th><th class="num">Δ PPh</th><th class="num">Neto</th><th class="num">Δ Neto</th><th></th></tr></thead><tbody>';
     rows.forEach(function (row, idx) {
       var d = row.d;
       var dB = d.b - d.b0;
@@ -645,31 +645,31 @@
         '<td><strong>' +
         escapeHtml(row.dept) +
         '</strong></td>' +
-        '<td>' +
+        '<td class="num">' +
         fmt(d.b) +
         '</td>' +
-        '<td style="color:' +
-        (dB >= 0 ? '#2d6a0a' : '#9b2121') +
+        '<td class="num ' +
+        (dB >= 0 ? 'cell-delta-up' : 'cell-delta-down') +
         '">' +
         (dB >= 0 ? '+' : '') +
         fmt(dB) +
         ' (' +
         pct(d.b, d.b0) +
         '%)</td>' +
-        '<td>' +
+        '<td class="num">' +
         fmt(d.p) +
         '</td>' +
-        '<td style="color:' +
-        (dP >= 0 ? '#7d4800' : '#2d6a0a') +
+        '<td class="num ' +
+        (dP >= 0 ? 'cell-delta-warn' : 'cell-delta-up') +
         '">' +
         (dP >= 0 ? '+' : '') +
         fmt(dP) +
         '</td>' +
-        '<td><strong>' +
+        '<td class="num fw-700 cell-neto">' +
         fmt(d.n) +
-        '</strong></td>' +
-        '<td class="fw-700" style="color:' +
-        (dN >= 0 ? '#2d6a0a' : '#9b2121') +
+        '</td>' +
+        '<td class="num fw-700 ' +
+        (dN >= 0 ? 'cell-delta-up' : 'cell-delta-down') +
         '">' +
         (dN >= 0 ? '+' : '') +
         fmt(dN) +
@@ -680,15 +680,15 @@
       html +=
         '<tr class="u-hidden" id="lap-var-drill-' +
         idx +
-        '"><td class="card-surface-neutral" colspan="8" style="padding:.65rem 1rem">' +
+        '"><td class="card-surface-neutral p-var-drill" colspan="8">' +
         '<div class="font-11 fw-700 text-muted mb-sm">Top perubahan neto — ' +
         escapeHtml(row.dept) +
         '</div>' +
-        '<table class="w-full font-11"><thead><tr><th>Karyawan</th><th>' +
+        '<table class="w-full font-11 sigaji-table"><thead><tr><th>Karyawan</th><th class="num">' +
         escapeHtml(prev.nama) +
-        '</th><th>' +
+        '</th><th class="num">' +
         escapeHtml(cur.nama) +
-        '</th><th>Δ Neto</th></tr></thead><tbody>' +
+        '</th><th class="num">Δ Neto</th></tr></thead><tbody>' +
         d.kar
           .slice(0, 8)
           .map(function (kr) {
@@ -699,12 +699,12 @@
                 : '') +
               '>' +
               escapeHtml(kr.nama) +
-              '</a></td><td>' +
+              '</a></td><td class="num">' +
               fmt(kr.neto0) +
-              '</td><td>' +
+              '</td><td class="num">' +
               fmt(kr.neto) +
-              '</td><td class="fw-700" style="color:' +
-              (kr.dN >= 0 ? '#2d6a0a' : '#9b2121') +
+              '</td><td class="num fw-700 ' +
+              (kr.dN >= 0 ? 'cell-delta-up' : 'cell-delta-down') +
               '">' +
               (kr.dN >= 0 ? '+' : '') +
               fmt(kr.dN) +

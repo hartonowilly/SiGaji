@@ -61,6 +61,7 @@ const FILES = [
   'css/styles.css',
   'css/sigaji-utilities.css',
   'css/sigaji-components.css',
+  'css/sigaji-print.css',
 ];
 
 /** Jangan ganti hex di baris definisi token (--foo: #hex) agar tidak circular */

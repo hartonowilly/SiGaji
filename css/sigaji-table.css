@@ -17,6 +17,45 @@
   z-index: 2;
 }
 
+/* Baris total — sticky bawah saat scroll tabel panjang */
+.pg-table-sticky .table-wrap,
+.sigaji-table-scroll .table-wrap {
+  overflow: auto;
+  max-height: min(72vh, calc(100vh - var(--sigaji-topbar-h, 58px) - 220px));
+  -webkit-overflow-scrolling: touch;
+}
+
+.sigaji-table tfoot.sigaji-table-foot,
+.sigaji-table-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+.sigaji-table-foot td,
+.sigaji-table tfoot.sigaji-table-foot td {
+  background: var(--table-sticky-head-bg);
+  border-top: 2px solid var(--color-primary-border);
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 0 -4px 12px var(--table-sticky-shadow);
+}
+
+.sigaji-table-foot td.sticky-no,
+.sigaji-table-foot td.sticky-name,
+.sigaji-table-foot td.pg-sticky-no,
+.sigaji-table-foot td.pg-sticky-name {
+  background: var(--table-sticky-head-bg);
+  z-index: 4;
+}
+
+.sigaji-table-foot .foot-total-label {
+  color: var(--color-primary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .sigaji-table th,
 .content .table-wrap table th {
   background: var(--table-head-bg);

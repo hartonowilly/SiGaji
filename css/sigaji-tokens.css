@@ -5,6 +5,7 @@
  */
 :root {
   --font: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  --sigaji-topbar-h: 58px;
 
   /* Base palette — nilai sumber (styles.css alias ke sini; jangan circular) */
   --wh: #ffffff;

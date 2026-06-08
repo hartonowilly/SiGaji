@@ -91,7 +91,7 @@ body {
   background: var(--content-bg);
 }
 .topbar {
-  height: 58px;
+  height: var(--sigaji-topbar-h, 58px);
   padding: 0 1.5rem;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px) saturate(1.2);
@@ -414,11 +414,14 @@ body {
   border-collapse: separate;
   border-spacing: 0;
 }
-thead {
+.content .table-wrap thead,
+.sigaji-table thead {
   position: sticky;
   top: 0;
   z-index: 2;
 }
+.content .table-wrap th,
+.sigaji-table th,
 th {
   background: var(--table-head-bg);
   font-size: 0.64rem;

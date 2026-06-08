@@ -1,4 +1,10 @@
 /* SiGaji — mobile absensi API (web HRD + Cuti Saya) */
+function sigajiBrandColor(){
+  try{
+    var v=getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+    return v||'#1a56a0';
+  }catch(e){return '#1a56a0';}
+}
 function sigajiMobileApiUrl(name){
   return typeof sigajiFunctionUrl==='function'?sigajiFunctionUrl(name):'/api/'+name;
 }
@@ -279,8 +285,9 @@ function mobInitLocationMiniMaps(items){
     try{
       var map=L.map(el,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false}).setView([loc.lat,loc.lon],15);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
-      L.circleMarker([loc.lat,loc.lon],{radius:5,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:1}).addTo(map);
-      L.circle([loc.lat,loc.lon],{radius:loc.radius_m||250,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:0.12,weight:1}).addTo(map);
+      var bc=sigajiBrandColor();
+      L.circleMarker([loc.lat,loc.lon],{radius:5,color:bc,fillColor:bc,fillOpacity:1}).addTo(map);
+      L.circle([loc.lat,loc.lon],{radius:loc.radius_m||250,color:bc,fillColor:bc,fillOpacity:0.12,weight:1}).addTo(map);
       setTimeout(function(){try{map.invalidateSize();}catch(e){sigajiCatchWarn("js/modules/app-mobile.js",e);}},120);
     }catch(e){sigajiCatchWarn("js/modules/app-mobile.js",e);}
   });
@@ -358,7 +365,8 @@ function mobLocInitMapPicker(){
   var map=L.map(host).setView([lat,lon],15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(map);
   var marker=L.marker([lat,lon],{draggable:true}).addTo(map);
-  var circle=L.circle([lat,lon],{radius:rad,color:'#1a56a0',fillColor:'#1a56a0',fillOpacity:0.15}).addTo(map);
+  var bc=sigajiBrandColor();
+  var circle=L.circle([lat,lon],{radius:rad,color:bc,fillColor:bc,fillOpacity:0.15}).addTo(map);
   marker.on('dragend',function(){
     var p=marker.getLatLng();
     var latEl=document.getElementById('mob-loc-lat');

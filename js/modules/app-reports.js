@@ -1,4 +1,109 @@
 /* SiGaji — PPh 21, laporan, THR */
+function fillLapRekapFoot(foot,nPer,sums){
+  if(!foot)return;
+  foot.replaceChildren();
+  var tr=document.createElement('tr');
+  function td(txt,cls){
+    var el=document.createElement('td');
+    if(cls)el.className=cls;
+    el.textContent=txt;
+    return el;
+  }
+  var tdLbl=document.createElement('td');
+  var lbl=document.createElement('span');
+  lbl.className='foot-total-label';
+  lbl.textContent='Total ('+String(nPer)+' periode)';
+  tdLbl.appendChild(lbl);
+  tr.appendChild(tdLbl);
+  tr.appendChild(td(String(sums.kar), 'num'));
+  tr.appendChild(td(fmt(sums.gross), 'num cell-money'));
+  tr.appendChild(td(fmt(sums.thr), 'num cell-money'));
+  tr.appendChild(td(fmt(sums.pph), 'num cell-money'));
+  var tdNeto=document.createElement('td');
+  tdNeto.className='num cell-neto';
+  var strong=document.createElement('strong');
+  strong.className='cell-neto-strong';
+  strong.textContent=fmt(sums.neto);
+  tdNeto.appendChild(strong);
+  tr.appendChild(tdNeto);
+  tr.appendChild(document.createElement('td'));
+  foot.appendChild(tr);
+}
+function fillPphFoot(foot,nKar,sums){
+  if(!foot)return;
+  foot.replaceChildren();
+  var tr=document.createElement('tr');
+  var tdLbl=document.createElement('td');
+  tdLbl.colSpan=3;
+  tdLbl.className='sticky-no';
+  var lbl=document.createElement('span');
+  lbl.className='foot-total-label';
+  lbl.textContent='Total ('+String(nKar)+' karyawan)';
+  tdLbl.appendChild(lbl);
+  tr.appendChild(tdLbl);
+  function moneyTd(val,extra){
+    var td=document.createElement('td');
+    td.className='num cell-money'+(extra?' '+extra:'');
+    td.textContent=fmt(val);
+    return td;
+  }
+  tr.appendChild(moneyTd(sums.gross));
+  tr.appendChild(moneyTd(sums.thr));
+  var tdTer=document.createElement('td');
+  tdTer.className='num text-muted';
+  tdTer.textContent='\u2014';
+  tr.appendChild(tdTer);
+  tr.appendChild(moneyTd(sums.pkp));
+  tr.appendChild(moneyTd(sums.pphY));
+  var tdPm=document.createElement('td');
+  tdPm.className='num cell-money';
+  var strong=document.createElement('strong');
+  strong.textContent=fmt(sums.pphM);
+  tdPm.appendChild(strong);
+  tr.appendChild(tdPm);
+  var tdRet=document.createElement('td');
+  tdRet.className='num cell-money';
+  if(sums.pphRet>0){
+    var sp=document.createElement('span');
+    sp.className='ct-success';
+    sp.textContent='+'+fmt(sums.pphRet);
+    tdRet.appendChild(sp);
+  }else tdRet.textContent='\u2014';
+  tr.appendChild(tdRet);
+  foot.appendChild(tr);
+}
+function fillThrFoot(foot,nElig,total,pphEst){
+  if(!foot)return;
+  foot.replaceChildren();
+  var tr=document.createElement('tr');
+  var tdLbl=document.createElement('td');
+  tdLbl.colSpan=6;
+  tdLbl.className='sticky-no';
+  var lbl=document.createElement('span');
+  lbl.className='foot-total-label';
+  lbl.textContent='Total eligible: '+String(nElig);
+  tdLbl.appendChild(lbl);
+  tr.appendChild(tdLbl);
+  var tdBr=document.createElement('td');
+  tdBr.className='num cell-money';
+  var strong=document.createElement('strong');
+  strong.className='thr-val-auto';
+  strong.textContent=fmt(total);
+  tdBr.appendChild(strong);
+  tr.appendChild(tdBr);
+  var tdPph=document.createElement('td');
+  tdPph.className='num cell-money';
+  tdPph.textContent=fmt(pphEst);
+  tr.appendChild(tdPph);
+  var tdNeto=document.createElement('td');
+  tdNeto.className='num cell-neto';
+  var strongN=document.createElement('strong');
+  strongN.className='cell-neto-strong';
+  strongN.textContent=fmt(total);
+  tdNeto.appendChild(strongN);
+  tr.appendChild(tdNeto);
+  foot.appendChild(tr);
+}
 // ── PPH & LAPORAN ────────────────────────────────
 function renderPPH(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -8,17 +113,28 @@ function renderPPH(){
 }
 function renderPPHBody(){
   var list=karyawanListPeriode(PA());
-  document.getElementById('tb-pph').innerHTML=list.map(function(k,idx){
+  var sums={gross:0,thr:0,pkp:0,pphY:0,pphM:0,pphRet:0};
+  var rows=list.map(function(k,idx){
     const g=hitungGaji(k);
     const tbl=getTERTable(k.ptkp);const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
     const bj=Math.min(g.grossPPh*12*.05,6e6);const pv=nilaiPTKP(k.ptkp);const pkp=Math.max(0,g.grossPPh*12-bj-pv);
-    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+k.nama+'</div></div></td>'
-      +'<td><span class="bdg b-info">'+k.ptkp+'</span></td><td>'+fmt(g.grossPPh)+'</td>'
-      +'<td>'+(g.thrBruto>0?'<span class="ct-purple fw-700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
-      +'<td>'+(rate*100).toFixed(2)+'%</td><td>'+fmt(pkp)+'</td><td>'+fmt(g.pph*12)+'</td>'
-      +'<td><strong>'+fmt(g.pph)+'</strong></td>'
-      +'<td>'+(g.pphRet>0?'<span class="bdg b-ok">+ '+fmt(g.pphRet)+'</span>':'&#8212;')+'</td></tr>';
-  }).join('');
+    sums.gross+=g.grossPPh||0;
+    sums.thr+=g.thrBruto||0;
+    sums.pkp+=pkp;
+    sums.pphY+=g.pph*12||0;
+    sums.pphM+=g.pph||0;
+    sums.pphRet+=g.pphRet||0;
+    return '<tr><td class="text-center fw-700 text-muted sticky-no">'+(idx+1)+'</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+escapeHtml(k.nama)+'</div></div></td>'
+      +'<td><span class="bdg b-info">'+escapeHtml(k.ptkp)+'</span></td><td class="num cell-money">'+fmt(g.grossPPh)+'</td>'
+      +'<td class="num cell-money">'+(g.thrBruto>0?'<span class="ct-purple fw-700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
+      +'<td class="num" title="TER '+escapeHtml(k.ptkp)+'">'+(rate*100).toFixed(2)+'%</td><td class="num cell-money">'+fmt(pkp)+'</td><td class="num cell-money">'+fmt(g.pph*12)+'</td>'
+      +'<td class="num cell-money"><strong>'+fmt(g.pph)+'</strong></td>'
+      +'<td class="num cell-money">'+(g.pphRet>0?'<span class="ct-success fw-700">+ '+fmt(g.pphRet)+'</span>':'&#8212;')+'</td></tr>';
+  });
+  var tb=document.getElementById('tb-pph');
+  var foot=document.getElementById('tb-pph-foot');
+  if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows,50);
+  if(foot)fillPphFoot(foot,rows.length,sums);
   var ys=getTahunPajakList();
   var selY=document.getElementById('a1-tahun');
   if(selY){
@@ -58,21 +174,31 @@ function renderLaporanBody(){
       +'<strong>Selesai</strong> = periode sudah <em>tutup</em> di Master → Periode Gaji. '
       +'Total gross/PPh/neto = jumlah hitungGaji semua karyawan periode itu (bukan transfer bank yang sudah cair).';
   }
-  document.getElementById('tb-lap').innerHTML=sorted.map(function(p){
+  var sums={kar:0,gross:0,thr:0,pph:0,neto:0};
+  var rows=sorted.map(function(p){
     let tB=0,tP=0,tN=0,tT=0;
     var list=karyawanListPeriode(p);
     list.forEach(function(k){const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;});
-    var rentang=(p.start&&p.end)?('<div class="font-10 text-subtle" style="font-weight:400">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div>'):'';
+    sums.kar+=list.length;
+    sums.gross+=tB;
+    sums.thr+=tT;
+    sums.pph+=tP;
+    sums.neto+=tN;
+    var rentang=(p.start&&p.end)?('<div class="font-10 text-subtle fw-400">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div>'):'';
     var stLbl=p.status==='aktif'?'Proses':'Selesai';
     var stTip=p.status==='aktif'
       ?'Periode aktif — estimasi, bisa berubah sebelum tutup periode'
       :'Periode tutup — rekap arsip periode tersebut';
     return '<tr'+(p.status==='aktif'?' class="row-period-active"':'')+'>'
       +'<td><strong>'+escapeHtml(p.nama)+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+rentang+'</td>'
-      +'<td>'+list.length+'</td><td>'+fmt(tB)+'</td><td>'+(tT>0?fmt(tT):'&#8212;')+'</td>'
-      +'<td>'+fmt(tP)+'</td><td>'+fmt(tN)+'</td>'
+      +'<td class="num">'+list.length+'</td><td class="num cell-money">'+fmt(tB)+'</td><td class="num cell-money">'+(tT>0?fmt(tT):'&#8212;')+'</td>'
+      +'<td class="num cell-money">'+fmt(tP)+'</td><td class="num cell-neto"><strong class="cell-neto-strong">'+fmt(tN)+'</strong></td>'
       +'<td><span class="bdg '+(p.status==='aktif'?'b-warn':'b-ok')+'" title="'+escapeHtml(stTip)+'">'+stLbl+'</span></td></tr>';
-  }).join('');
+  });
+  var tb=document.getElementById('tb-lap');
+  var foot=document.getElementById('tb-lap-foot');
+  if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows,50);
+  if(foot)fillLapRekapFoot(foot,rows.length,sums);
 }
 function exportCSV(){
   const rows=[['No','Nama','Dept','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','PPh Return','Neto']];
@@ -512,15 +638,20 @@ function renderTHRBody(){
   const pNama=p.nama;
   const tbThr=document.getElementById('tb-thr');
   if(!tbThr)return;
+  var footThr=document.getElementById('tb-thr-foot');
   if(!(karyawan||[]).length&&typeof sigajiEmptyState==='function'){
-    tbThr.innerHTML='<tr><td colspan="9">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah karyawan untuk menghitung preview THR.',btnLabel:'Master karyawan',btnAction:'showPg',btnActionArg:'karyawan'})+'</td></tr>';
+    var emptyThr='<tr><td colspan="9">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah karyawan untuk menghitung preview THR.',btnLabel:'Master karyawan',btnAction:'showPg',btnActionArg:'karyawan'})+'</td></tr>';
+    if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tbThr,[emptyThr],1);
+    if(footThr)footThr.replaceChildren();
     const sum=document.getElementById('thr-summary');if(sum)sum.innerHTML='';
     return;
   }
-  tbThr.innerHTML=sortKaryawanByNik(karyawan||[]).map(function(k,idx){
+  var totalPphEst=0;
+  var thrRows=sortKaryawanByNik(karyawan||[]).map(function(k,idx){
     const t=hitungTHRBruto(k,pNama);const isE=t.eligible;if(isE){total+=t.nilai;eligible++;}
     const mb=Math.floor(t.mb/12)+'thn '+t.mb%12+'bln';
     const g=isE&&periodeAdaTHR?hitungGaji(k,pNama):null;const pphEst=g?g.pphAtasThr:0;
+    if(isE)totalPphEst+=pphEst;
     const manData=(thrManual[pNama]||{})[k.nik]||{aktif:false,nilai:0};
     const isManual=manData.aktif;
     // Kolom input manual
@@ -544,16 +675,18 @@ function renderTHRBody(){
     }else{
       manCell='<span class="font-11 text-dash-muted">&#8212;</span>';
     }
-    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div><strong>'+k.nama+'</strong><br><small class="text-muted">'+k.nik+'</small></div></div></td>'
+    return '<tr><td class="text-center fw-700 text-muted sticky-no">'+(idx+1)+'</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div><strong>'+escapeHtml(k.nama)+'</strong><br><small class="text-muted">'+escapeHtml(k.nik)+'</small></div></div></td>'
       +'<td>'+mb+'</td>'
-      +'<td>'+fmt(t.dasar)+'</td>'
+      +'<td class="num cell-money">'+fmt(t.dasar)+'</td>'
       +'<td>'+(isE?t.pl:'<span class="bdg b-err">Belum eligible</span>')+'</td>'
       +'<td>'+manCell+'</td>'
-      +'<td><strong class="'+(isManual?'thr-val-manual':'thr-val-auto')+'">'+(isE?fmt(t.nilai+(isManual?0:0)):'&#8212;')+'</strong>'
+      +'<td class="num cell-money"><strong class="'+(isManual?'thr-val-manual':'thr-val-auto')+'">'+(isE?fmt(t.nilai+(isManual?0:0)):'&#8212;')+'</strong>'
         +(isManual?'<div class="font-9 text-purple">&#9998; Manual</div>':'')+'</td>'
-      +'<td>'+(isE&&periodeAdaTHR?'<span class="ct-warn">'+fmt(pphEst)+'</span>':'<span class="text-subtle">'+(periodeAdaTHR?'&#8212;':'Set THR di Periode')+'</span>')+'</td>'
-      +'<td><strong class="ct-success">'+(isE?fmt(t.nilai):'&#8212;')+'</strong>'+(isE?'<div class="font-9 ct-success">(full netto)</div>':'')+'</td></tr>';
-  }).join('');
+      +'<td class="num cell-money">'+(isE&&periodeAdaTHR?'<span class="ct-warn">'+fmt(pphEst)+'</span>':'<span class="text-subtle">'+(periodeAdaTHR?'&#8212;':'Set THR di Periode')+'</span>')+'</td>'
+      +'<td class="num cell-neto"><strong class="cell-neto-strong">'+(isE?fmt(t.nilai):'&#8212;')+'</strong>'+(isE?'<div class="font-9 ct-success">(full netto)</div>':'')+'</td></tr>';
+  });
+  if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tbThr,thrRows,50);
+  if(footThr)fillThrFoot(footThr,eligible,total,totalPphEst);
   var h='<div class="fl gap2 flex-wrap">'
     +'<div><div class="font-22 fw-800 ct-success">'+String(eligible)+'</div><div class="u-muted-11">Eligible</div></div>'
     +'<div><div class="font-22 fw-800 ct-purple">'+fmt(total)+'</div><div class="u-muted-11">Total THR Bruto</div></div>'

@@ -15,6 +15,7 @@
   .page-toolbar-filters,
   .page-toolbar-slip,
   .tabs,
+  .period-chrome,
   .period-sticky-bar,
   .period-timeline-bar,
   .period-pill,
@@ -47,7 +48,7 @@
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
-    background: #fff !important;
+    background: var(--wh) !important;
     margin: 0 !important;
     padding: 0 !important;
     visibility: visible !important;
@@ -122,7 +123,7 @@
   }
 
   .slip-head {
-    border-bottom: 2px solid #1a56a0 !important;
+    border-bottom: 2px solid var(--color-primary) !important;
     margin-bottom: 12px !important;
   }
 
@@ -138,7 +139,7 @@
 
   th,
   td {
-    border: 1px solid #ccc !important;
+    border: 1px solid var(--color-border) !important;
     padding: 4px 6px !important;
   }
 

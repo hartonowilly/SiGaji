@@ -94,6 +94,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm btn-out topbar-logout" data-sigaji-action="invoke" data-fn="doLogout">Keluar</button>
   </div>
 </div>
+<div class="period-chrome" id="period-chrome">
 <div id="period-timeline-bar" class="period-timeline-bar" role="navigation" aria-label="Timeline periode gaji"></div>
 <div class="period-sticky-bar is-hidden" id="period-sticky-bar" role="region" aria-label="Periode gaji aktif">
   <div class="period-sticky-main">
@@ -106,6 +107,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <span class="period-sticky-chip" id="period-sticky-lock"></span>
     <span class="period-sticky-chip" id="period-sticky-days"></span>
   </div>
+</div>
 </div>
 <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true"></div>
 <div class="layout">
@@ -307,8 +309,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
   <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
     <div class="table-wrap">
-    <table><thead><tr><th>No</th><th>Karyawan</th><th>Masa Kerja</th><th>Dasar THR</th><th>Proporsi</th><th>Input THR</th><th>THR Bruto</th><th>PPh Estimasi (di gaji)</th><th>THR Netto Karyawan</th></tr></thead>
-    <tbody id="tb-thr"></tbody></table></div>
+    <table class="sigaji-table sigaji-table-sticky"><thead><tr><th class="sticky-no">No</th><th class="sticky-name">Karyawan</th><th>Masa Kerja</th><th class="num">Dasar THR</th><th>Proporsi</th><th>Input THR</th><th class="num">THR Bruto</th><th class="num">PPh Estimasi</th><th class="num">THR Netto</th></tr></thead>
+    <tbody id="tb-thr"></tbody><tfoot id="tb-thr-foot" class="sigaji-table-foot"></tfoot></table></div>
   </div>
   <div class="card card-surface-success"><div class="ct">Ringkasan THR</div><div id="thr-summary"></div></div>
 </div>
@@ -354,7 +356,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
   <div class="card pg-table-sticky sigaji-table-sticky"><div class="table-wrap">
   <table class="sigaji-table"><thead><tr><th class="pg-sticky-no sticky-no">No</th><th class="pg-sticky-name sticky-name">Karyawan</th><th>Pro-Rata</th><th class="num">Gross PPh</th><th class="pg-col-adv num">THR</th><th class="pg-col-adv num">TH Bruto</th><th class="pg-col-adv num">BPJS Kar</th><th class="num">PPh 21</th><th class="pg-col-adv num">PPh Return</th><th class="num">Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
-  <tbody id="tb-penggajian"></tbody></table></div></div>
+  <tbody id="tb-penggajian"></tbody>
+  <tfoot id="tb-penggajian-foot" class="sigaji-table-foot"></tfoot></table></div></div>
   </div>
 </div>
 
@@ -528,8 +531,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
   <div id="lap-tab-rekap">
     <div id="lap-rekap-hint" class="dash-kpi-hint tabs-spaced-lg"></div>
-    <div class="card"><div class="table-wrap"><table><thead><tr><th>Periode</th><th>Karyawan</th><th>Total Gross</th><th>Total THR</th><th>Total PPh</th><th>Total Neto</th><th>Status</th></tr></thead>
-    <tbody id="tb-lap"></tbody></table></div></div>
+    <div class="card pg-table-sticky"><div class="table-wrap"><table class="sigaji-table"><thead><tr><th>Periode</th><th class="num">Karyawan</th><th class="num">Total Gross</th><th class="num">Total THR</th><th class="num">Total PPh</th><th class="num">Total Neto</th><th>Status</th></tr></thead>
+    <tbody id="tb-lap"></tbody><tfoot id="tb-lap-foot" class="sigaji-table-foot"></tfoot></table></div></div>
   </div>
   <div class="u-hidden" id="lap-tab-variance">
     <div id="lap-variance-hint" class="dash-kpi-hint tabs-spaced-lg"></div>
@@ -549,10 +552,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportCsvEbupotBulanan">CSV (arsip)</button>
       </div>
     </div>
-    <div class="card"><div class="ct">Rekap PPh 21</div>
+    <div class="card pg-table-sticky"><div class="ct">Rekap PPh 21</div>
       <div class="table-wrap">
-      <table><thead><tr><th>No</th><th>Nama</th><th>PTKP</th><th>Gross/bln</th><th>THR</th><th>Biaya Jabatan</th><th>PKP/tahun</th><th>PPh/tahun</th><th>PPh/bulan</th><th>PPh Return</th></tr></thead>
-      <tbody id="tb-pph"></tbody></table></div>
+      <table class="sigaji-table sigaji-table-sticky"><thead><tr><th class="sticky-no">No</th><th class="sticky-name">Nama</th><th>PTKP</th><th class="num">Gross/bln</th><th class="num">THR</th><th class="num">Biaya Jabatan</th><th class="num">PKP/tahun</th><th class="num">PPh/tahun</th><th class="num">PPh/bulan</th><th class="num">PPh Return</th></tr></thead>
+      <tbody id="tb-pph"></tbody><tfoot id="tb-pph-foot" class="sigaji-table-foot"></tfoot></table></div>
     </div>
     <div class="card">
       <div class="ct">Bukti potong PPh 21 — Form 1721-A1 (rekap tahunan)</div>
