@@ -73,15 +73,13 @@ function renderPeriodeSnapshotGuardUi(blocking){
     return '<li style="margin:.2rem 0"><strong>'+escapeHtml(p.nama)+'</strong>'+aktif+' — snapshot terbuka</li>';
   }).join('');
   var names=open.map(function(p){return p.nama;}).join(', ');
-  var bg=blocking?'#fdeaea':'#fffbf5';
-  var bd=blocking?'#f5a3a3':'#f5a623';
-  var col=blocking?'#9b2121':'#7d4800';
+  var guardCls=blocking?'snap-guard-blocking':'snap-guard-warn';
   var title=blocking?'<strong>Periode baru ditolak.</strong> ':'<strong>Perhatian:</strong> ';
   var sub=blocking
     ?'Kunci snapshot periode berikut (tombol <em>Kunci</em> di tabel Riwayat Periode) sebelum menambah periode baru:'
     :'Sebelum menambah periode baru, kunci snapshot periode berikut:';
   el.style.display='block';
-  var html='<div class="rounded-md mt-lg font-12 leading-tight" style="background:'+bg+'; border:1.5px solid '+bd+'; padding:.75rem 1rem; color:'+col+'">'
+  var html='<div class="rounded-md mt-lg font-12 leading-tight '+guardCls+'" style="border:1.5px solid; padding:.75rem 1rem">'
     +title+sub+'<ul style="margin:.45rem 0 .55rem 1.15rem">'+items+'</ul>'
     +'<button type="button" class="btn btn-sm btn-p"'+sigajiDataAction('invoke',{fn:'goToDaftarPeriode'})+'>Ke daftar periode</button></div>';
   el.innerHTML=html;
@@ -312,7 +310,7 @@ function simpanPTKP(){
   saveAll();toast('Tabel PTKP disimpan');renderPenggajian();renderPPH();renderPTKPForm();
 }
 function resetPTKP(){if(!confirm('Reset semua nilai PTKP ke default (seperti PMK umum)?'))return;perusahaan.ptkp_nilai={};saveAll();renderPTKPForm();renderPenggajian();renderPPH();toast('PTKP direset');}
-function updateHKRadioStyle(){var hk=perusahaan.hariKerja||6;var l5=document.getElementById('hk-5-lbl');var l6=document.getElementById('hk-6-lbl');if(l5){l5.style.borderColor=hk===5?'#1a56a0':'#dde1e9';l5.style.background=hk===5?'#e8f0fb':'#fff';}if(l6){l6.style.borderColor=hk===6?'#1a56a0':'#dde1e9';l6.style.background=hk===6?'#e8f0fb':'#fff';}}
+function updateHKRadioStyle(){var hk=perusahaan.hariKerja||6;var l5=document.getElementById('hk-5-lbl');var l6=document.getElementById('hk-6-lbl');if(l5){l5.className='fl items-center gap-sm cursor-pointer rounded-sm flex-1 hk-radio-label '+(hk===5?'hk-radio-active':'hk-radio-idle');}if(l6){l6.className='fl items-center gap-sm cursor-pointer rounded-sm flex-1 hk-radio-label '+(hk===6?'hk-radio-active':'hk-radio-idle');}}
 document.addEventListener('change',function(e){if(e.target.name==='hk-radio'){perusahaan.hariKerja=parseInt(e.target.value)||6;updateHKRadioStyle();}});
 // ── ATURAN POTONGAN ──────────────────────────────
 var JENIS_POT=[{key:'cuti_dalam_kuota',lbl:'Cuti (dalam kuota)',ket:'Dalam saldo'},{key:'cuti_luar_kuota',lbl:'Cuti (luar kuota)',ket:'Saldo habis'},{key:'izin',lbl:'Izin 1 hari',ket:'Izin tertulis'},{key:'sakit',lbl:'Sakit 1 hari',ket:'Dengan/tanpa surat'},{key:'setengah_sakit',lbl:'1/2 Sakit',ket:'Hadir 1/2 hari'},{key:'setengah_ijin',lbl:'1/2 Izin',ket:'Hadir 1/2 hari'},{key:'alpha',lbl:'Alpha/Mangkir',ket:'Tanpa keterangan'}];
@@ -321,10 +319,10 @@ function loadAturanPotongan(){
   var ap=perusahaan.aturan_potongan||{};
   document.getElementById('tb-aturan-pot').innerHTML=JENIS_POT.map(function(j){
     var rule=ap[j.key]||{mode:'prorata',nilai:0};var show=rule.mode==='nominal'||rule.mode==='persen';
-    return '<tr><td class="fw-700" style="padding:8px 10px; border-bottom:1px solid #f3f4f6"><span class="ct-brand font-11" style="background:#e8f0fb; padding:2px 8px; border-radius:5px">'+j.lbl+'</span></td>'
-      +'<td class="font-11 text-muted" style="padding:8px 10px; border-bottom:1px solid #f3f4f6">'+j.ket+'</td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid #f3f4f6"><select class="w-full font-11" id="ap-mode-'+j.key+'" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="onApModeChange(\''+j.key+'\')">'+MODE_OPTS+'</select></td>'
-      +'<td style="padding:8px 10px;border-bottom:1px solid #f3f4f6"><div class="fl items-center" style="gap:4px"><span class="u-muted-11" id="ap-pfx-'+j.key+'">'+(rule.mode==='persen'?'%':rule.mode==='nominal'?'Rp':'')+'</span><input class="w-full font-12" type="number" id="ap-val-'+j.key+'" value="'+(rule.nilai||0)+'" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none; display:'+(show?'block':'none')+'"></div></td></tr>';
+    return '<tr><td class="fw-700 border-bottom-muted"><span class="master-jab-badge">'+j.lbl+'</span></td>'
+      +'<td class="font-11 text-muted border-bottom-muted">'+j.ket+'</td>'
+      +'<td class="border-bottom-muted"><select class="w-full font-11 comp-inp" id="ap-mode-'+j.key+'" onchange="onApModeChange(\''+j.key+'\')">'+MODE_OPTS+'</select></td>'
+      +'<td class="border-bottom-muted"><div class="fl items-center gap-xs"><span class="u-muted-11" id="ap-pfx-'+j.key+'">'+(rule.mode==='persen'?'%':rule.mode==='nominal'?'Rp':'')+'</span><input class="w-full font-12 comp-inp" type="number" id="ap-val-'+j.key+'" value="'+(rule.nilai||0)+'" style="display:'+(show?'block':'none')+'"></div></td></tr>';
   }).join('');
   JENIS_POT.forEach(function(j){var sel=document.getElementById('ap-mode-'+j.key);var rule=ap[j.key]||{mode:'prorata'};if(sel)sel.value=rule.mode;});
 }
@@ -367,9 +365,9 @@ function renderMyCuti(){
   var kuota=masterCuti.kuota||12;
   var manual=cutiManual(k.nik,yr);var cb=countCutiBersama(yr);var total=manual+cb;
   var sisa=kuota-total;
-  var sisaCol=sisa<=0?'#9b2121':sisa<=3?'#7d4800':'#2d6a0a';
+  var sisaCls=sisa<=0?'cuti-sisa-danger':sisa<=3?'cuti-sisa-warn':'cuti-sisa-ok';
   var cutiDays=Object.entries(absensi[k.nik]||{}).filter(function(e){return e[1]==='cuti'&&e[0].startsWith(String(yr));}).sort();
-  var html='<div class="card" style="background:#ede9fe;border-color:#c4b5fd"><div class="fl-between-wrap"><div><strong class="font-14 ct-purple">Saldo Cuti '+String(yr)+' - '+escapeHtml(k.nama)+'</strong></div><div class="fl gap2"><div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(kuota)+'</div><div class="u-muted-10">Kuota</div></div><div class="text-center"><div class="font-22 fw-800 ct-warn">'+String(manual)+'</div><div class="u-muted-10">Cuti Manual</div></div>'+(cb>0?'<div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(cb)+'</div><div class="u-muted-10">Cuti Bersama</div></div>':'')+'<div class="text-center"><div class="font-22 fw-800" style="color:'+sisaCol+'">'+String(sisa)+'</div><div class="u-muted-10">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+String(yr)+'</div>'+(cutiDays.length?'<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+escapeHtml(e[0])+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div class="text-muted font-12">Belum ada cuti.</div>')+'</div>';
+  var html='<div class="card card-surface-purple"><div class="fl-between-wrap"><div><strong class="font-14 ct-purple">Saldo Cuti '+String(yr)+' - '+escapeHtml(k.nama)+'</strong></div><div class="fl gap2"><div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(kuota)+'</div><div class="u-muted-10">Kuota</div></div><div class="text-center"><div class="font-22 fw-800 ct-warn">'+String(manual)+'</div><div class="u-muted-10">Cuti Manual</div></div>'+(cb>0?'<div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(cb)+'</div><div class="u-muted-10">Cuti Bersama</div></div>':'')+'<div class="text-center"><div class="font-22 fw-800 '+sisaCls+'">'+String(sisa)+'</div><div class="u-muted-10">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+String(yr)+'</div>'+(cutiDays.length?'<table class="sigaji-table"><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+escapeHtml(e[0])+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div class="text-muted font-12">Belum ada cuti.</div>')+'</div>';
   document.getElementById('my-cuti-content').innerHTML=html;
 }
 // ── SELECTS & BACKUP ─────────────────────────────
@@ -550,7 +548,7 @@ async function exportCloudDatabaseBackup(){
 }
 if(typeof window!=='undefined')window.exportCloudDatabaseBackup=exportCloudDatabaseBackup;
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}}
-function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div style="border:1px solid var(--bd); '+(i===0?'background:#e8f4de; border-color:#b3d98f':'')+'"><div><div class="fw-700">'+(x.tanggalDisplay||x.tanggal)+'</div><div class="u-muted-10">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada.</div>';}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}}
+function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div class="border-default'+(i===0?' backup-latest-row':'')+'"><div><div class="fw-700">'+(x.tanggalDisplay||x.tanggal)+'</div><div class="u-muted-10">'+(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+x.catatan+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada.</div>';}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}}
 function renderAuditLog(){
   var wrap=document.getElementById('audit-log');
   var sel=document.getElementById('audit-periode');

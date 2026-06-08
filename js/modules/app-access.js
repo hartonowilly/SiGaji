@@ -1471,7 +1471,7 @@ function renderSysStatus(){
   if(!el)return;
   try{
     if(!CU||CU.role!=='Admin'){
-      el.innerHTML='<div class="info-box" style="border-color:#fecaca;background:#fef2f2;color:#991b1b">Halaman ini hanya untuk Administrator.</div>';
+      el.innerHTML='<div class="info-box is-danger">Halaman ini hanya untuk Administrator.</div>';
       return;
     }
     var appLabel=typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji';
@@ -1495,14 +1495,14 @@ function renderSysStatus(){
     var nKar=(karyawan||[]).filter(function(k){return k&&k.nik&&!String(k.tgl_berhenti||'').trim();}).length;
     function row(lbl,val,badge){
       var b=badge?'<span class="bdg '+escapeAttr(badge.cls)+'" style="margin-left:8px">'+escapeHtml(badge.txt)+'</span>':'';
-      return '<tr><td class="p-inset-xs fw-600 text-body" style="width:38%; border-bottom:1px solid #f3f4f6">'+lbl+'</td>'
-        +'<td class="p-inset-xs font-12" style="border-bottom:1px solid #f3f4f6">'+val+b+'</td></tr>';
+      return '<tr><td class="p-inset-xs fw-600 text-body border-bottom-muted">'+lbl+'</td>'
+        +'<td class="p-inset-xs font-12 border-bottom-muted">'+val+b+'</td></tr>';
     }
     var cloudLbl=sigajiIsCloudOnlyMode()?'Online (Supabase wajib)':(cloudOn?(cloudOnly?'Cloud (wajib email)':'Cloud aktif'):'Lokal (legacy)');
     var schemaLbl=schemaStored==null?'belum ada data tersimpan':String(schemaStored);
     if(schemaStored!=null&&!schemaOk)schemaLbl+=' - buka app sekali untuk migrasi otomatis';
     var deployWarn=!modOk
-      ?'<div id="sysstatus-deploy-warn" class="info-box tabs-spaced-lg" style="border-color:#f6d088; background:#fff8e6; color:#713f12">'
+      ?'<div id="sysstatus-deploy-warn" class="info-box is-warn tabs-spaced-lg">'
         +(modVers.length>1
           ?'<strong>Versi cache tidak seragam di kode lokal.</strong> Browser memuat beberapa <code>?v=</code> ('+escapeHtml(modVerTxt)+') — target <strong>'+escapeHtml(targetVer)+'</strong> (<code>SIGAJI_BUILD</code>). Jalankan <code>npm run bump -- '+escapeHtml(targetVer)+'</code> (samakan css+js+SIGAJI_BUILD, lalu assemble otomatis).'
           :'<strong>Browser masih cache lama.</strong> Target deploy: <strong>'+escapeHtml(targetVer)+'</strong>, browser: <strong>'+escapeHtml(modVerTxt||'-')+'</strong>. Ctrl+F5; jika tetap beda, push <code>index.html</code> ke GitHub dan tunggu Cloudflare deploy.')
@@ -1512,7 +1512,7 @@ function renderSysStatus(){
       deployWarn
       +'<div class="card border-accent-left">'
       +'<div class="ct ct-brand">Ringkasan</div>'
-      +'<table class="w-full" style="border-collapse:collapse"><tbody>'
+      +'<table class="w-full sysstatus-table" style="border-collapse:collapse"><tbody>'
       +row('Versi aplikasi',escapeHtml(appLabel)+' <span class="text-muted">(label rilis)</span>')
       +row('Target cache (kode)',escapeHtml(targetVer),{cls:'b-info',txt:'deploy'})
       +row('Modul JS (browser)',escapeHtml(modVerTxt),modBadge)
@@ -1564,7 +1564,7 @@ function renderSysStatus(){
     }
   }catch(err){
     console.error('renderSysStatus',err);
-    el.innerHTML='<div class="info-box" style="border-color:#fecaca;background:#fef2f2;color:#991b1b">Gagal memuat status: '
+    el.innerHTML='<div class="info-box is-danger">Gagal memuat status: '
       +escapeHtml(String(err&&err.message?err.message:err))+'. Coba Ctrl+F5 atau pastikan js/modules/app-access.js terbaru termuat.</div>';
   }
 }

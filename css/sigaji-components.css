@@ -1,0 +1,220 @@
+/**
+ * SiGaji — komponen UI berulang (ganti inline hex di JS).
+ * Semua warna lewat token agar dark/brand ikut.
+ */
+
+/* ── Form inline (komponen gaji, master) ── */
+.inp-bordered,
+.comp-inp {
+  padding: 5px 8px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.inp-bordered:focus,
+.comp-inp:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.snap-field-disabled {
+  background: var(--color-surface-muted) !important;
+  color: var(--color-text-muted) !important;
+  cursor: not-allowed;
+}
+
+/* ── Gaji summary panel ── */
+.gs-row-total {
+  border-top: 1px solid var(--color-primary-border);
+  padding-top: 3px;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+.gs-divider {
+  border-top: 1px solid var(--color-border-light);
+  padding-top: 4px;
+  margin-top: 0.25rem;
+}
+.thr-callout {
+  background: var(--color-purple-bg);
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--color-purple);
+  margin-top: 2px;
+}
+.thr-callout-lg {
+  background: var(--color-purple-bg);
+  border: 1px solid var(--color-purple-border);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--color-purple);
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+/* ── Approval & rekonsiliasi ── */
+.approval-pending-card {
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-warning);
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+}
+.approval-done-card {
+  border: 1px solid var(--color-border);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.4rem;
+}
+.approval-done-card.is-approved {
+  border-left: 3px solid var(--color-success);
+}
+.approval-done-card.is-rejected {
+  border-left: 3px solid var(--color-danger);
+}
+.recon-panel {
+  border-radius: var(--radius-md);
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+  border: 1.5px solid;
+}
+.recon-panel.is-refund {
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+}
+.recon-panel.is-owe {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning);
+}
+.recon-panel-title.is-refund { color: var(--color-success); }
+.recon-panel-title.is-owe { color: var(--color-warning); }
+.recon-panel-amount.is-refund { color: var(--color-success); }
+.recon-panel-amount.is-owe { color: var(--color-danger); }
+
+/* ── Master: snapshot guard, HK radio ── */
+.snap-guard-blocking {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border) !important;
+  color: var(--color-danger);
+}
+.snap-guard-warn {
+  background: var(--row-prorate-bg);
+  border-color: var(--color-warning-border) !important;
+  color: var(--color-warning);
+}
+.hk-radio-label {
+  border: 1.5px solid var(--color-border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.hk-radio-active {
+  border-color: var(--color-primary) !important;
+  background: var(--color-primary-subtle) !important;
+}
+.hk-radio-idle {
+  border-color: var(--color-border) !important;
+  background: var(--wh) !important;
+}
+.border-bottom-muted {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-surface-muted);
+}
+.master-jab-badge {
+  background: var(--color-primary-subtle);
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.cuti-sisa-ok { color: var(--color-success); }
+.cuti-sisa-warn { color: var(--color-warning); }
+.cuti-sisa-danger { color: var(--color-danger); }
+.backup-latest-row {
+  background: var(--color-success-bg);
+  border-color: var(--success-border, var(--color-success-border));
+}
+
+/* ── Absensi: status sel & rekap ── */
+.ab-stat-pill {
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.ab-stat-pill.is-hadir { background: var(--ab-hadir-bg); color: var(--ab-hadir-fg); }
+.ab-stat-pill.is-cuti { background: var(--ab-cuti-bg); color: var(--ab-cuti-fg); }
+.ab-stat-pill.is-warn { background: var(--ab-sakit-bg); color: var(--ab-sakit-fg); }
+.ab-stat-pill.is-brand { background: var(--ab-izin-bg); color: var(--ab-izin-fg); }
+.ab-stat-pill.is-danger { background: var(--ab-alpha-bg); color: var(--ab-alpha-fg); }
+
+.ab-mobile-stat {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.ab-mobile-stat.is-hadir { background: var(--ab-hadir-bg); color: var(--ab-hadir-fg); }
+.ab-mobile-stat.is-cuti { background: var(--ab-cuti-bg); color: var(--ab-cuti-fg); }
+.ab-mobile-stat.is-warn { background: var(--ab-sakit-bg); color: var(--ab-sakit-fg); }
+.ab-mobile-stat.is-brand { background: var(--ab-izin-bg); color: var(--ab-izin-fg); }
+.ab-mobile-stat.is-danger { background: var(--ab-alpha-bg); color: var(--ab-alpha-fg); }
+
+.ab-total-h { background: var(--ab-hadir-bg); border-left: 2px solid var(--color-border-light); }
+.ab-total-c { background: var(--ab-cuti-bg); }
+.ab-total-s { background: var(--ab-sakit-bg); }
+.ab-total-i { background: var(--ab-izin-bg); }
+.ab-total-a { background: var(--ab-alpha-bg); }
+
+.ab-grid-head {
+  background: var(--ab-grid-head-bg);
+  color: var(--ab-grid-head-fg);
+}
+.ab-grid-head-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: var(--ab-grid-head-bg);
+  color: var(--ab-grid-head-fg);
+  border-right: 1px solid var(--ab-grid-head-border);
+  box-shadow: 1px 0 0 var(--ab-grid-head-border);
+}
+.ab-grid-sum-head {
+  background: var(--color-primary-dark);
+  color: var(--wh);
+}
+.ab-zebra-even { background: var(--table-zebra); }
+.ab-zebra-odd { background: var(--wh); }
+.ab-kar-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-primary-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.p-empty-pad { padding: 2rem; }
+.p-empty-sm { padding: 0.5rem; }
+.p-empty-md { padding: 1.25rem; }
+
+/* ── Info box tone (ganti inline hex di JS) ── */
+.info-box.is-danger {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+.info-box.is-warn {
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+.sysstatus-table .border-bottom-muted {
+  width: 38%;
+}

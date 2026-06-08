@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.38">
 <link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.38">
 <link rel="stylesheet" href="/css/sigaji-table.css?v=11.5.38">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.5.38">
 <link rel="stylesheet" href="/css/sigaji-print.css?v=11.5.38">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
@@ -158,7 +159,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <span class="meta-muted" id="kar-count"></span>
     </div>
     <div class="table-wrap">
-    <table><thead><tr id="kar-thead-row"><th>No</th><th>Karyawan</th><th>Tipe</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
+    <table class="sigaji-table"><thead><tr id="kar-thead-row"><th class="sticky-no">No</th><th class="sticky-name">Karyawan</th><th>Tipe</th><th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th></tr></thead>
     <tbody id="tb-kar"></tbody></table></div>
   </div>
 </div>
@@ -167,7 +168,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-kompgaji">
   <div class="ph page-header">
     <div><div class="pt">Komponen Gaji</div><div class="pst">Gaji pokok, BPJS, tunjangan, dan natura per karyawan</div></div>
-    <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderKompgaji">&#8635; Refresh</button></div>
+    <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderKompgajiPage">&#8635; Refresh</button></div>
   </div>
   <div class="tabs tabs-spaced">
     <div class="tab active" data-kgtab="daftar" data-kgpanel="kg-tab-daftar">&#128203; Daftar Komponen</div>
@@ -180,7 +181,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <span class="meta-muted" id="kg-count"></span>
     </div>
     <div class="table-wrap">
-    <table><thead><tr><th>No</th><th>Karyawan</th><th>Dept</th><th>Gaji Pokok</th><th>BPJS</th><th>Tunjangan</th><th>Natura</th><th>Aksi</th></tr></thead>
+    <table class="sigaji-table"><thead><tr><th class="sticky-no">No</th><th class="sticky-name">Karyawan</th><th>Dept</th><th class="num">Gaji Pokok</th><th>BPJS</th><th>Tunjangan</th><th>Natura</th><th>Aksi</th></tr></thead>
     <tbody id="tb-kompgaji"></tbody></table></div>
   </div>
   </div>

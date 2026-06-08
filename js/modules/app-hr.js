@@ -133,7 +133,7 @@ function karRowHtml(k,no){
   const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span>`;
   const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out"${sigajiDataAction('telegram',{nik:k.nik})}>Telegram</button>`:'';
   var cabCol=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
-  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="font-10 text-muted" style="font-family:monospace">${escapeHtml(k.nik)}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
+  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="font-10 text-muted" style="font-family:monospace">${escapeHtml(k.nik)}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -179,7 +179,7 @@ function kompgajiRowHtml(k,no){
   const nTunj=(kPer.tunjangan||[]).length;
   const nNat=(kPer.natura||[]).length;
   const showGapok=CU&&(CU.role==='Admin'||canAccessPayrollSub('gaji'));
-  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-payroll',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="u-muted-10">${escapeHtml(k.nik)}</div></div></div></td><td>${escapeHtml(k.dept)}</td>${showGapok?`<td>${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${escapeHtml(bpjsLbl)}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p"${sigajiDataAction('open-payroll',{nik:k.nik})}>Edit Komponen</button></td></tr>`;
+  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-payroll',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="u-muted-10">${escapeHtml(k.nik)}</div></div></div></td><td>${escapeHtml(k.dept)}</td>${showGapok?`<td class="num cell-money">${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${escapeHtml(bpjsLbl)}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p"${sigajiDataAction('open-payroll',{nik:k.nik})}>Edit Komponen</button></td></tr>`;
 }
 function renderKompgaji(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -434,7 +434,6 @@ function renderTunjPanel(k){
   const list=k.tunjangan||[];
   const nik=k.nik;
   const snapMode=isPayrollSnapshotMode();
-  const nilaiStyle=snapMode?'':'background:#f3f4f6;color:#6b7280;cursor:not-allowed';
   document.getElementById('tunj-list').innerHTML=list.length?list.map(function(t,i){
     const showThr=t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';
     const thrIkut=showThr&&t.thr_ikut!==false;
@@ -443,7 +442,7 @@ function renderTunjPanel(k){
     return '<div class="comp-row-card comp-row-tunj">'
       +'<div class="comp-row-grid comp-row-grid-tunj">'
       +'<div class="fg m-0"><label>Nama</label><input value="'+t.nama+'" data-nik="'+nik+'" data-i="'+i+'" data-f="nama" onchange="updTunjEl(this)"></div>'
-      +'<div class="fg m-0"><label>Nominal</label><input type="text" class="inp-rp" value="'+t.nilai+'" '+(snapMode?'':'readonly title="Nominal tunjangan diisi pada mode Snapshot Periode"')+' style="'+nilaiStyle+'" data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-rp="1" onchange="updTunjEl(this)"></div>'
+      +'<div class="fg m-0"><label>Nominal</label><input type="text" class="inp-rp'+(snapMode?'':' snap-field-disabled')+'" value="'+t.nilai+'" '+(snapMode?'':'readonly title="Nominal tunjangan diisi pada mode Snapshot Periode"')+' data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-rp="1" onchange="updTunjEl(this)"></div>'
       +'<div class="fg m-0"><label>Tipe</label><select data-nik="'+nik+'" data-i="'+i+'" data-f="tipe" onchange="updTunjEl(this);refreshTunjPanel(this.dataset.nik)">'+sel1+'</select></div>'
       +'<div class="fg m-0"><label>THR</label><select title="Ikut THR?" style="'+(showThr?'':'opacity:.35;pointer-events:none')+'" data-nik="'+nik+'" data-i="'+i+'" data-f="thr_ikut" onchange="updTunjEl(this)">'
         +'<option value="ya" '+(thrIkut?'selected':'')+'>&#127873; Ikut</option>'
@@ -720,8 +719,8 @@ function updateGajiSummary(){
   if(g.natKP>0)h+='<div class="gs-row"><span>Natura Kena Pajak</span><span>'+fmt(g.natKP)+'</span></div>';
   if(g.lb>0)h+='<div class="gs-row"><span>Uang Lembur</span><span>'+fmt(g.lb)+'</span></div>';
   if(g.thrBruto>0)h+='<div class="gs-row ct-purple fw-700"><span>THR Bruto (digabung ke Gross PPh)</span><span>'+fmt(g.thrBruto)+'</span></div>';
-  h+='<div class="gs-row fw-700 mt-xs" style="border-top:1px solid #c5d9f5; padding-top:3px"><span>Total Gross PPh 21</span><span>'+fmt(g.grossPPh)+'</span></div>';
-  if(g.thrBruto>0)h+='<div class="font-10 ct-purple mt-2px" style="background:#f5f0ff; padding:4px 6px; border-radius:4px">THR sudah digabung ke Gross PPh. Take Home akhir bulan = gaji saja (THR dibayar full netto terpisah).</div>';
+  h+='<div class="gs-row gs-row-total"><span>Total Gross PPh 21</span><span>'+fmt(g.grossPPh)+'</span></div>';
+  if(g.thrBruto>0)h+='<div class="thr-callout">THR sudah digabung ke Gross PPh. Take Home akhir bulan = gaji saja (THR dibayar full netto terpisah).</div>';
   h+='<div class="stit">Take Home Bruto (akhir bulan)</div><div class="gs-row"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH-g.natNKP)+'</span></div>';
   if(g.natNKP>0)h+='<div class="gs-row"><span>Natura Tidak KP</span><span>'+fmt(g.natNKP)+'</span></div>';
   h+='<div class="gs-row fw-700"><span>Total Take Home Bruto</span><span>'+fmt(g.brutoTH)+'</span></div>';
@@ -732,7 +731,7 @@ function updateGajiSummary(){
   (k.potongan||[]).forEach(function(pot){h+='<div class="gs-row"><span>'+escapeHtml(pot.nama)+'</span><span>&#8212; '+fmt(pot.nilai)+'</span></div>';});
   if(prv>0)h+='<div class="gs-row ct-success"><span>&#9312; Pengembalian PPh</span><span>+ '+fmt(prv)+'</span></div>';
   h+='<div class="gs-total"><span>TAKE HOME PAY (akhir bulan)</span><span>'+fmt(g.neto)+'</span></div>';
-  if(g.thrBruto>0){var thrBayarLbl=PA()&&PA().thr_bayar?PA().thr_bayar:'H-7 lebaran';h+='<div class="rounded-sm mt-xs font-11 ct-purple fw-700" style="background:#f5f0ff; padding:8px 10px">&#127873; THR '+fmt(g.thrBruto)+' dibayar full netto terpisah pada '+escapeHtml(thrBayarLbl)+'</div>';}
+  if(g.thrBruto>0){var thrBayarLbl=PA()&&PA().thr_bayar?PA().thr_bayar:'H-7 lebaran';h+='<div class="thr-callout-lg">&#127873; THR '+fmt(g.thrBruto)+' dibayar full netto terpisah pada '+escapeHtml(thrBayarLbl)+'</div>';}
   h+='<div class="stit">Beban Perusahaan</div><div class="gs-row"><span>BPJS Kes Prs</span><span>'+fmt(g.bpjs.kes_prs)+'</span></div>';
   h+='<div class="gs-row"><span>BPJS JHT+JP Prs</span><span>'+fmt(g.bpjs.jht_prs+g.bpjs.jp_prs)+'</span></div>';
   h+='<div class="gs-row"><span>JKK+JKM Prs</span><span>'+fmt(g.bpjs.jkk_prs+g.bpjs.jkm_prs)+'</span></div>';
@@ -768,6 +767,13 @@ function switchKompgajiTab(el,tid){
     renderTunjVariabelBulan();
   }else if(tid==='kg-tab-daftar')renderKompgaji();
 }
+function renderKompgajiPage(){
+  var tv=document.getElementById('kg-tab-tunjvar');
+  var tunjOn=tv&&(typeof sigajiIsPanelVisible==='function'?sigajiIsPanelVisible(tv):tv.style.display!=='none'&&!tv.classList.contains('u-hidden'));
+  if(tunjOn&&typeof renderTunjVariabelBulan==='function')renderTunjVariabelBulan();
+  else renderKompgaji();
+}
+if(typeof window!=='undefined')window.renderKompgajiPage=renderKompgajiPage;
 function applyKompgajiSubtabVisibility(){
   var tabs=document.querySelectorAll('#pg-kompgaji .tabs .tab');
   var first=null;
@@ -891,13 +897,13 @@ function renderApproval(){
   document.getElementById('ap-pend-list').innerHTML=pend.length?pend.map(function(a){
     const k=karyawan.find(function(x){return x.nik===a.nik;});
     const g=k?hitungGaji(k,a.period):null;
-    return '<div class="rounded-sm mb-md fl items-start flex-wrap" style="border:1px solid var(--bd); border-left:3px solid #7d4800; padding:.85rem; gap:.75rem">'
+    return '<div class="approval-pending-card fl items-start flex-wrap gap-md mb-md">'
       +'<div class="flex-1"><div class="font-12 fw-700">'+a.nama+' - '+a.period+'</div>'
       +'<div class="u-muted-11">'+a.time+' | Neto: <strong>'+(g?fmt(g.neto):fmt(a.neto))+'</strong></div></div>'
       +'<div class="fl gap1"><button class="btn btn-sm btn-g"'+sigajiDataAction('approval-approve',{id:a.id})+'>&#10003; Setujui</button><button class="btn btn-sm btn-r"'+sigajiDataAction('approval-reject',{id:a.id})+'>&#10007; Tolak</button></div></div>';
   }).join(''):'<div class="text-center text-muted" style="padding:1.5rem">Tidak ada yang tertunda</div>';
   document.getElementById('ap-hist-list').innerHTML=hist.map(function(a){
-    return '<div class="rounded-sm fl justify-between items-center flex-wrap gap-xs" style="border:1px solid var(--bd); border-left:3px solid '+(a.status==='approved'?'#2d6a0a':'#9b2121')+'; padding:.75rem; margin-bottom:.4rem">'
+    return '<div class="approval-done-card fl justify-between items-center flex-wrap gap-xs '+(a.status==='approved'?'is-approved':'is-rejected')+'">'
       +'<div><div class="font-12 fw-700">'+a.nama+' - '+a.period+'</div>'
       +'<div class="u-muted-11">'+a.time+(a.approvedBy?' | '+a.approvedBy:'')+'</div></div>'
       +'<span class="bdg '+(a.status==='approved'?'b-ok':'b-err')+'">'+(a.status==='approved'?'Disetujui':'Ditolak')+'</span></div>';
@@ -915,7 +921,7 @@ function detailGaji(nik,pNama){
   const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
   document.getElementById('m-gaji-t').textContent='Detail Gaji - '+k.nama+' ('+pN+')';
   let h='';
-  if(g.thrBruto>0)h+='<div class="rounded-sm p-inset-sm tabs-spaced-lg font-12" style="background:#f5f0ff; border:1px solid #c4b5fd"><strong>&#127873; THR:</strong> '+fmt(g.thrBruto)+' dibayar full netto. PPh THR: <strong>'+fmt(g.pphAtasThr)+'</strong> dipotong dari gaji ini.</div>';
+  if(g.thrBruto>0)h+='<div class="card-surface-purple p-inset-sm tabs-spaced-lg font-12"><strong>&#127873; THR:</strong> '+fmt(g.thrBruto)+' dibayar full netto. PPh THR: <strong>'+fmt(g.pphAtasThr)+'</strong> dipotong dari gaji ini.</div>';
   h+='<div class="gross-sec"><div class="gross-tit">GROSS INCOME (dasar PPh 21)</div>';
   h+='<div class="cr"><span>Gaji Pokok'+(g.isPR?' (Pro-Rata '+g.pr.hh+'/'+g.pr.hk+')':'')+'</span><span>'+fmt(g.gapokEff)+'</span></div>';
   g.tItems.forEach(function(t){h+='<div class="cr"><span>'+t.nama+(t.isHarian?' [masuk PPh, tidak TH]':(t.inTH===false?' [tidak TH]':''))+'</span><span>'+fmt(t.eff)+'</span></div>';});
@@ -931,7 +937,7 @@ function detailGaji(nik,pNama){
   h+='<div class="fl mt-lg flex-wrap" style="gap:.75rem">';
   h+='<div class="flex-1"><div class="stit">Take Home Bruto</div><div class="pr-row-info"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH-g.natNKP)+'</span></div>';
   if(g.natNKP>0)h+='<div class="pr-row-info"><span>Natura Tidak KP</span><span>'+fmt(g.natNKP)+'</span></div>';
-  h+='<div class="pr-row-info fw-700 mt-xs" style="border-top:1px solid #e5e7eb; padding-top:4px"><span>Total Take Home Bruto</span><span>'+fmt(g.brutoTH)+'</span></div>';
+  h+='<div class="pr-row-info fw-700 gs-divider"><span>Total Take Home Bruto</span><span>'+fmt(g.brutoTH)+'</span></div>';
   if(g.thrBruto>0)h+='<div class="font-10 text-purple">THR TIDAK masuk TH (dibayar terpisah)</div>';
   h+='</div>';
   h+='<div class="flex-1"><div class="stit">Potongan</div><div class="pr-row-info"><span>PPh 21</span><span>- '+fmt(g.pph)+'</span></div><div class="pr-row-info"><span>BPJS Kar</span><span>- '+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</span></div>';
@@ -943,8 +949,8 @@ function detailGaji(nik,pNama){
   if(g.reconciliation){
     const r=g.reconciliation;
     const isLebih=r.lebihBayar>0;
-    h+='<div class="rounded-md mt-lg p-md" style="background:'+(isLebih?'#e8f4de':'#fef3e2')+'; border:1.5px solid '+(isLebih?'#2d6a0a':'#7d4800')+'">';
-    h+='<div class="fw-800 mb-md" style="color:'+(isLebih?'#2d6a0a':'#7d4800')+'">&#9654; Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Masa Pajak Terakhir - Resign)':'(Desember - Progresif)')+'</div>';
+    h+='<div class="recon-panel '+(isLebih?'is-refund':'is-owe')+'">';
+    h+='<div class="fw-800 mb-md recon-panel-title '+(isLebih?'is-refund':'is-owe')+'">&#9654; Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Masa Pajak Terakhir - Resign)':'(Desember - Progresif)')+'</div>';
     if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
       h+='<div class="cr ct-brand"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+' — bruto / PPh</span><span>'+fmt(r.saldoAwalBruto)+' / '+fmt(r.saldoAwalPph)+'</span></div>';
       if(r.brutoDariPeriode>0||r.pphDariPeriode>0)h+='<div class="cr"><span>+ Dari periode SiGaji (sebelum bulan ini)</span><span>'+fmt(r.brutoDariPeriode)+' / '+fmt(r.pphDariPeriode)+'</span></div>';
@@ -954,7 +960,7 @@ function detailGaji(nik,pNama){
     h+='<div class="cr bold"><span>Total Bruto Setahun</span><span>'+fmt(r.brutoTahunan)+'</span></div>';
     h+='<div class="cr mt-xs"><span>PPh Tahunan (Progresif Pasal 17)</span><span>'+fmt(r.pphTahunan)+'</span></div>';
     h+='<div class="cr"><span>PPh sudah dipotong (Jan s.d. bulan lalu)</span><span>- '+fmt(r.pphYTD)+'</span></div>';
-    h+='<div class="cr bold" style="color:'+(isLebih?'#2d6a0a':'#9b2121')+'"><span>'+(isLebih?'&#10003; Lebih Bayar (dikembalikan)':'&#9888; Kurang Bayar (dipotong)')+' </span><span>'+( isLebih?'+ ':'')+fmt(isLebih?r.lebihBayar:r.kurangBayar)+'</span></div>';
+    h+='<div class="cr bold recon-panel-amount '+(isLebih?'is-refund':'is-owe')+'"><span>'+(isLebih?'&#10003; Lebih Bayar (dikembalikan)':'&#9888; Kurang Bayar (dipotong)')+' </span><span>'+( isLebih?'+ ':'')+fmt(isLebih?r.lebihBayar:r.kurangBayar)+'</span></div>';
     if(isLebih&&r.opsiLebihBayar==='carryover')h+='<div class="font-10 ct-purple mt-xs">&#8594; Lebih bayar di-carry over ke Januari tahun depan</div>';
     if(isLebih&&r.opsiLebihBayar==='refund')h+='<div class="font-10 ct-success mt-xs">&#8594; Lebih bayar dikembalikan langsung bulan ini (PPh = Rp 0)</div>';
     h+='</div>';

@@ -104,8 +104,8 @@ function renderAbsensiBody(){
     return;
   }
   const ST_LBL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A',libur:'L',libnas:'LN'};
-  const ST_BG={hadir:'#e8f4de',cuti:'#ede9fe',izin:'#e8f0fb',sakit:'#fef3e2',setengah_sakit:'#fff0e0',setengah_ijin:'#e0f0ff',alpha:'#fdeaea',libur:'#f3f4f6',libnas:'#fef9c3'};
-  const ST_TX={hadir:'#2d6a0a',cuti:'#5b21b6',izin:'#1a56a0',sakit:'#7d4800',setengah_sakit:'#b45309',setengah_ijin:'#0369a1',alpha:'#9b2121',libur:'#9ca3af',libnas:'#713f12'};
+  const ST_BG={hadir:'var(--ab-hadir-bg)',cuti:'var(--ab-cuti-bg)',izin:'var(--ab-izin-bg)',sakit:'var(--ab-sakit-bg)',setengah_sakit:'var(--ab-half-sakit-bg)',setengah_ijin:'var(--ab-half-ijin-bg)',alpha:'var(--ab-alpha-bg)',libur:'var(--ab-libur-bg)',libnas:'var(--ab-libnas-bg)'};
+  const ST_TX={hadir:'var(--ab-hadir-fg)',cuti:'var(--ab-cuti-fg)',izin:'var(--ab-izin-fg)',sakit:'var(--ab-sakit-fg)',setengah_sakit:'var(--ab-half-sakit-fg)',setengah_ijin:'var(--ab-half-ijin-fg)',alpha:'var(--ab-alpha-fg)',libur:'var(--ab-libur-fg)',libnas:'var(--ab-libnas-fg)'};
   const bulanSingkat=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const daysAll=absensiDaysFromPeriode(pAbs);
   if(!daysAll.length){
@@ -141,46 +141,46 @@ function renderAbsensiBody(){
   listKar.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
   var AB_NO=44,AB_NAME=272,AB_JAB_L=AB_NO+AB_NAME;
   var prevMY='';
-  var html='<table class="font-11 w-full" style="border-collapse:collapse; min-width:max-content"><thead><tr style="background:#1e2330;color:#fff">'
-    +'<th class="text-center" style="position:sticky; left:0; top:0; z-index:8; background:#1e2330; padding:6px 6px; width:'+AB_NO+'px; min-width:'+AB_NO+'px; border-right:1px solid #374151; box-shadow:1px 0 0 #374151">No</th>'
-    +'<th class="text-left" style="position:sticky; left:'+AB_NO+'px; top:0; z-index:8; background:#1e2330; padding:6px 10px; border-right:2px solid #374151; min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; box-shadow:1px 0 0 #374151; vertical-align:bottom">Nama</th>'
-    +'<th class="text-left font-11" style="position:sticky; left:'+AB_JAB_L+'px; top:0; z-index:8; background:#1e2330; padding:6px 8px; white-space:nowrap; border-right:2px solid #374151; min-width:112px; box-shadow:1px 0 0 #374151; vertical-align:bottom">Jabatan</th>';
+  var html='<table class="font-11 w-full sigaji-table" style="border-collapse:collapse; min-width:max-content"><thead><tr class="ab-grid-head">'
+    +'<th class="text-center ab-grid-head-sticky" style="left:0; padding:6px 6px; width:'+AB_NO+'px; min-width:'+AB_NO+'px">No</th>'
+    +'<th class="text-left ab-grid-head-sticky sticky-name" style="left:'+AB_NO+'px; padding:6px 10px; min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; border-right-width:2px; vertical-align:bottom">Nama</th>'
+    +'<th class="text-left font-11 ab-grid-head-sticky" style="left:'+AB_JAB_L+'px; padding:6px 8px; white-space:nowrap; min-width:112px; border-right-width:2px; vertical-align:bottom">Jabatan</th>';
   days.forEach(function(x){
     var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
     var myKey=x.date.substring(0,7);
     var tglParts=x.date.split('-');
     var showMon=myKey!==prevMY;
     prevMY=myKey;
-    var bg=isHL(x.date)?'#fef9c3':isHariLiburKerja(x.dow)?'#374151':'#1e2330';
-    var co=isHL(x.date)?'#713f12':isHariLiburKerja(x.dow)?'#9ca3af':'#d1d5db';
+    var bg=isHL(x.date)?'var(--ab-libnas-bg)':isHariLiburKerja(x.dow)?'var(--ink-body)':'var(--ab-grid-head-bg)';
+    var co=isHL(x.date)?'var(--ab-libnas-fg)':isHariLiburKerja(x.dow)?'var(--ab-libur-fg)':'var(--color-slate-300)';
     var dd=parseInt(tglParts[2],10);
-    html+='<th class="text-center" style="position:sticky; top:0; z-index:6; background:'+bg+'; color:'+co+'; padding:4px 3px; min-width:36px; border-right:1px solid #374151"><div class="font-9">'+dowN+'</div><div class="font-12 fw-700">'+dd+'</div>'
+    html+='<th class="text-center" style="position:sticky; top:0; z-index:6; background:'+bg+'; color:'+co+'; padding:4px 3px; min-width:36px; border-right:1px solid var(--ab-grid-head-border)"><div class="font-9">'+dowN+'</div><div class="font-12 fw-700">'+dd+'</div>'
       +(showMon?'<div style="font-size:8px;opacity:.85">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
   });
-  html+='<th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px; border-left:2px solid #374151">H</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">C</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">S</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">I</th><th class="text-center" style="position:sticky; top:0; z-index:6; background:#0d3d7a; color:#fff; padding:6px 4px; min-width:32px">A</th></tr></thead><tbody>';
+  html+='<th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px; border-left:2px solid var(--ab-grid-head-border)">H</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">C</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">S</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">I</th><th class="text-center ab-grid-sum-head" style="position:sticky; top:0; z-index:6; padding:6px 4px; min-width:32px">A</th></tr></thead><tbody>';
   var mobileCards='';
   listKar.forEach(function(k,ki){
-    var rb=ki%2===0?'#fff':'#f8f9fc';
-    html+='<tr style="background:'+rb+'"><td class="text-center fw-800 text-subtle" style="position:sticky; left:0; z-index:3; background:'+rb+'; padding:5px 6px; border-right:1px solid #e5e7eb; border-bottom:1px solid #f3f4f6; box-shadow:1px 0 0 #e5e7eb">'+(ki+1)+'</td><td class="fw-700" style="position:sticky; left:'+AB_NO+'px; z-index:3; background:'+rb+'; padding:5px 10px; border-right:2px solid #e5e7eb; border-bottom:1px solid #f3f4f6; min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; box-shadow:1px 0 0 #e5e7eb; vertical-align:middle"><div class="fl items-start gap-xs"><div class="ct-brand fl items-center font-9 fw-800 mt-2px" style="width:24px; height:24px; border-radius:50%; background:#e8f0fb; justify-content:center; flex-shrink:0">'+ini(k.nama)+'</div><div class="flex-1" style="min-width:0"><div class="font-12 fw-700" style="line-height:1.25; word-break:break-word; white-space:normal">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle" style="word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td class="font-11 text-muted" style="position:sticky; left:'+AB_JAB_L+'px; z-index:3; background:'+rb+'; padding:5px 8px; white-space:nowrap; border-right:2px solid #e5e7eb; border-bottom:1px solid #f3f4f6; min-width:112px; box-shadow:1px 0 0 #e5e7eb">'+(k.jabatan||'')+'</td>';
+    var rb=ki%2===0?'var(--wh)':'var(--table-zebra)';
+    html+='<tr style="background:'+rb+'"><td class="text-center fw-800 text-subtle sticky-no" style="position:sticky; left:0; z-index:3; background:'+rb+'; padding:5px 6px; border-right:1px solid var(--color-border-light); border-bottom:1px solid var(--color-surface-muted); box-shadow:1px 0 0 var(--color-border-light)">'+(ki+1)+'</td><td class="fw-700 sticky-name" style="position:sticky; left:'+AB_NO+'px; z-index:3; background:'+rb+'; padding:5px 10px; border-right:2px solid var(--color-border-light); border-bottom:1px solid var(--color-surface-muted); min-width:'+AB_NAME+'px; width:'+AB_NAME+'px; max-width:320px; box-shadow:1px 0 0 var(--color-border-light); vertical-align:middle"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1" style="min-width:0"><div class="font-12 fw-700" style="line-height:1.25; word-break:break-word; white-space:normal">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle" style="word-break:break-all">'+escapeHtml(k.nik)+'</div></div></div></td><td class="font-11 text-muted" style="position:sticky; left:'+AB_JAB_L+'px; z-index:3; background:'+rb+'; padding:5px 8px; white-space:nowrap; border-right:2px solid var(--color-border-light); border-bottom:1px solid var(--color-surface-muted); min-width:112px; box-shadow:1px 0 0 var(--color-border-light)">'+(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
       var isLN=isHL(x.date);
       var isLK=isHariLiburKerja(x.dow);
       var st=absensi[k.nik][x.date]||(isLN?'libnas':isLK?'libur':'hadir');
-      var bg=ST_BG[st]||'#f3f4f6';var tx=ST_TX[st]||'#6b7280';var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
+      var bg=ST_BG[st]||'var(--ab-libur-bg)';var tx=ST_TX[st]||'var(--color-text-muted)';var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
       var canCell=cc&&canEditDataPadaTanggalIso(x.date);
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
-      html+='<td class="p-0 text-center font-10" style="background:'+bg+'; color:'+tx+'; border-right:1px solid rgba(0,0,0,.06); border-bottom:1px solid #f3f4f6; opacity:'+(canCell?'1':cc?'0.88':'1')+'; '+(canCell?'cursor:pointer; ':cc?'cursor:not-allowed; ':'')+'font-weight:700" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
+      html+='<td class="p-0 text-center font-10" style="background:'+bg+'; color:'+tx+'; border-right:1px solid rgba(0,0,0,.06); border-bottom:1px solid var(--color-surface-muted); opacity:'+(canCell?'1':cc?'0.88':'1')+'; '+(canCell?'cursor:pointer; ':cc?'cursor:not-allowed; ':'')+'font-weight:700" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
     });
-    html+='<td class="text-center fw-800 ct-success" style="border-left:2px solid #e5e7eb; border-bottom:1px solid #f3f4f6; background:#e8f4de">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple" style="border-bottom:1px solid #f3f4f6; background:#ede9fe">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn" style="border-bottom:1px solid #f3f4f6; background:#fef3e2">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand" style="border-bottom:1px solid #f3f4f6; background:#e8f0fb">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger" style="border-bottom:1px solid #f3f4f6; background:#fdeaea">'+(cA||'')+'</td></tr>';
+    html+='<td class="text-center fw-800 ct-success num ab-total-h">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+(cA||'')+'</td></tr>';
     mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
       +'<div class="ab-mobile-stats">'
-      +'<span class="ab-mobile-stat ct-success" style="background:#e8f4de">H '+cH+'</span>'
-      +'<span class="ab-mobile-stat ct-purple" style="background:#ede9fe">C '+cC+'</span>'
-      +'<span class="ab-mobile-stat ct-warn" style="background:#fef3e2">S '+cS+'</span>'
-      +'<span class="ab-mobile-stat ct-brand" style="background:#e8f0fb">I '+cI+'</span>'
-      +'<span class="ab-mobile-stat ct-danger" style="background:#fdeaea">A '+cA+'</span>'
+      +'<span class="ab-mobile-stat is-hadir">H '+cH+'</span>'
+      +'<span class="ab-mobile-stat is-cuti">C '+cC+'</span>'
+      +'<span class="ab-mobile-stat is-warn">S '+cS+'</span>'
+      +'<span class="ab-mobile-stat is-brand">I '+cI+'</span>'
+      +'<span class="ab-mobile-stat is-danger">A '+cA+'</span>'
       +'</div></div>';
   });
   html+='</tbody></table>';
@@ -195,7 +195,7 @@ function renderAbsensiBody(){
       if(l.tipe==='cuti-bersama'&&l.tgl>=pAbs.start&&l.tgl<=pAbs.end&&!isHariLiburKerja(new Date(l.tgl+'T12:00:00').getDay()))cbB++;
     });
   }
-  h='<div class="card fl gap2 flex-wrap items-center"><span class="font-11 fw-700 text-muted">'+escapeHtml(pAbs.nama)+':</span><span class="ct-success rounded-pill fw-700" style="background:#e8f4de; padding:3px 12px">Hari Kerja (dalam rentang): '+String(hkP)+'</span>'+(cbB>0?'<span class="ct-purple rounded-pill fw-700" style="background:#ede9fe; padding:3px 12px">Cuti Bersama (dalam rentang): '+String(cbB)+' hari</span>':'')+'<span class="font-10 text-subtle ml-auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+' · hover H = jam check-in mobile</span></div>';
+  h='<div class="card fl gap2 flex-wrap items-center"><span class="font-11 fw-700 text-muted">'+escapeHtml(pAbs.nama)+':</span><span class="ab-stat-pill is-hadir">Hari Kerja (dalam rentang): '+String(hkP)+'</span>'+(cbB>0?'<span class="ab-stat-pill is-cuti">Cuti Bersama (dalam rentang): '+String(cbB)+' hari</span>':'')+'<span class="font-10 text-subtle ml-auto">Pola: Senin-'+((perusahaan.hariKerja||6)===6?'Sabtu':'Jumat')+' · hover H = jam check-in mobile</span></div>';
   document.getElementById('ab-rekap-wrap').innerHTML=h;
   absensiPrefetchMobileLogs(pAbs.start,pAbs.end);
 }
@@ -204,8 +204,8 @@ function toggleAb(nik,date,el){
   if(!absensi[nik])absensi[nik]={};
   const S=['hadir','cuti','izin','sakit','setengah_sakit','setengah_ijin','alpha'];
   const SL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A'};
-  const SB={hadir:'#e8f4de',cuti:'#ede9fe',izin:'#e8f0fb',sakit:'#fef3e2',setengah_sakit:'#fff0e0',setengah_ijin:'#e0f0ff',alpha:'#fdeaea'};
-  const ST={hadir:'#2d6a0a',cuti:'#5b21b6',izin:'#1a56a0',sakit:'#7d4800',setengah_sakit:'#b45309',setengah_ijin:'#0369a1',alpha:'#9b2121'};
+  const SB={hadir:'var(--ab-hadir-bg)',cuti:'var(--ab-cuti-bg)',izin:'var(--ab-izin-bg)',sakit:'var(--ab-sakit-bg)',setengah_sakit:'var(--ab-half-sakit-bg)',setengah_ijin:'var(--ab-half-ijin-bg)',alpha:'var(--ab-alpha-bg)'};
+  const ST={hadir:'var(--ab-hadir-fg)',cuti:'var(--ab-cuti-fg)',izin:'var(--ab-izin-fg)',sakit:'var(--ab-sakit-fg)',setengah_sakit:'var(--ab-half-sakit-fg)',setengah_ijin:'var(--ab-half-ijin-fg)',alpha:'var(--ab-alpha-fg)'};
   const cur=absensi[nik][date]||'hadir';const next=S[(S.indexOf(cur)+1)%S.length];
   absensi[nik][date]=next;el.textContent=SL[next];el.style.background=SB[next];el.style.color=ST[next];saveAll();
 }
@@ -318,7 +318,7 @@ function renderHariLibur(){
   if(!s.length){el.innerHTML='<div class="text-muted font-12" style="padding:.5rem">Belum ada.</div>';return;}
   var grouped={};s.forEach(function(l){var yr=l.tgl.substring(0,4);if(!grouped[yr])grouped[yr]=[];grouped[yr].push(l);});
   el.innerHTML=Object.entries(grouped).sort(function(a,b){return b[0]-a[0];}).map(function(kv){
-    return '<div class="tabs-spaced-lg"><div class="font-11 fw-700 text-muted" style="padding:4px 0; border-bottom:1px solid #e5e7eb; margin-bottom:.4rem">'+kv[0]+' — '+kv[1].length+' hari</div>'
+    return '<div class="tabs-spaced-lg"><div class="font-11 fw-700 text-muted border-bottom-muted" style="padding:4px 0; margin-bottom:.4rem">'+kv[0]+' — '+kv[1].length+' hari</div>'
       +kv[1].map(function(l){
         return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span class="font-9 ct-purple" style="margin-left:4px">-1 kuota</span>':'')+'<br><span class="u-muted-10">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r"'+sigajiDataAction('hapus-libur',{tgl:l.tgl})+'>&#10007;</button></div></div>';
       }).join('')+'</div>';

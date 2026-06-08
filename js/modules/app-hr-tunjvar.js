@@ -21,14 +21,14 @@ function renderTunjVarColEditor() {
         var idEsc = String(c.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return (
           '<div class="fg m-0 min-w-160"><label class="font-10">Nama kolom</label><div class="fl items-center" style="gap:4px">' +
-          '<input class="flex-1 font-12" value="' +
+          '<input class="comp-inp flex-1 font-12" value="' +
           escapeHtml(c.nama) +
-          '" placeholder="Nama" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="setTunjVarColNama(\'' +
+          '" placeholder="Nama" onchange="setTunjVarColNama(\'' +
           idEsc +
           "',this.value)\">" +
           (cols.length > 1
             ? '<button type="button" class="btn btn-xs btn-r" title="Hapus kolom"' +
-              sigajiDataAction('hapus-tunjvar-col', { 'col-id': id }) +
+              sigajiDataAction('hapus-tunjvar-col', { 'col-id': c.id }) +
               '>&#10007;</button>'
             : '') +
           '</div></div>'
@@ -308,19 +308,29 @@ function renderTunjVariabelBulan() {
   if (sub) sub.textContent = pn;
   var listK = karyawanListPeriode(p);
   if (!listK.length) {
-    wrap.innerHTML = '<div>Belum ada karyawan aktif untuk periode ini.</div>';
+    wrap.innerHTML =
+      typeof sigajiEmptyState === 'function'
+        ? sigajiEmptyState({
+            icon: '&#128101;',
+            title: 'Belum ada karyawan aktif',
+            desc: 'Tambah atau aktifkan karyawan untuk periode ' + escapeHtml(pn) + '.',
+            btnLabel: 'Buka Master Karyawan',
+            btnAction: 'showPg',
+            btnActionArg: 'karyawan',
+          })
+        : '<div class="p-empty-pad text-subtle">Belum ada karyawan aktif untuk periode ini.</div>';
     if (foot) foot.textContent = '';
     return;
   }
   if (!tunjVarBulan[pn]) tunjVarBulan[pn] = {};
   var thead =
-    '<th class="text-center" style="min-width:42px">No</th><th>Karyawan</th>' +
+    '<th class="text-center sticky-no" style="min-width:42px">No</th><th class="sticky-name">Karyawan</th>' +
     cols
       .map(function (c) {
-        return '<th style="min-width:110px">' + escapeHtml(c.nama) + '</th>';
+        return '<th class="num" style="min-width:110px">' + escapeHtml(c.nama) + '</th>';
       })
       .join('') +
-    '<th>Jumlah</th>';
+    '<th class="num">Jumlah</th>';
   var rows = listK.map(function (k, idx) {
     var r = tunjVarBulan[pn][k.nik] || {};
     var sum = 0;
@@ -359,9 +369,9 @@ function renderTunjVariabelBulan() {
       })
       .join('');
     return (
-      '<tr><td class="text-center fw-700 text-muted">' +
+      '<tr><td class="text-center fw-700 text-muted sticky-no">' +
       (idx + 1) +
-      '</td><td><div class="fl gap2 items-center"><div class="ka">' +
+      '</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">' +
       ini(k.nama) +
       '</div><div><div class="fw-600 font-12">' +
       escapeHtml(k.nama) +
@@ -369,7 +379,7 @@ function renderTunjVariabelBulan() {
       escapeHtml(k.nik) +
       '</div></div></div></td>' +
       tds +
-      '<td class="font-11 fw-700 ct-brand" data-tunjvar-sum="' +
+      '<td class="num cell-money font-11 fw-700 ct-brand" data-tunjvar-sum="' +
       escapeAttr(k.nik) +
       '">' +
       fmt(sum) +
@@ -377,12 +387,19 @@ function renderTunjVariabelBulan() {
     );
   });
   if (typeof sigajiSetTbodyRows === 'function') {
-    wrap.innerHTML = '<table><thead><tr>' + thead + '</tr></thead><tbody></tbody></table>';
+    wrap.innerHTML =
+      '<table class="sigaji-table sigaji-table-sticky"><thead><tr>' +
+      thead +
+      '</tr></thead><tbody></tbody></table>';
     var tb = wrap.querySelector('tbody');
     sigajiSetTbodyRows(tb, rows, 50);
   } else {
     wrap.innerHTML =
-      '<table><thead><tr>' + thead + '</tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+      '<table class="sigaji-table sigaji-table-sticky"><thead><tr>' +
+      thead +
+      '</tr></thead><tbody>' +
+      rows.join('') +
+      '</tbody></table>';
   }
   sigajiBindRpInputs(wrap);
   refreshTunjVarTotals();

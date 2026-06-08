@@ -3,15 +3,15 @@
  * Pakai var() dari styles.css agar tema dark/brand ikut.
  */
 :root {
-  --pu: #5b21b6;
-  --pul: #f5f0ff;
-  --pub: #c4b5fd;
-  --indigo: #2563eb;
-  --indigo-ink: #1d4ed8;
-  --ink-body: #374151;
-  --ink-subtle: #9ca3af;
-  --warn-border: #f5a623;
-  --success-border: #b3d98f;
+  --pu: var(--color-purple);
+  --pul: var(--color-purple-bg);
+  --pub: var(--color-purple-border);
+  --indigo: var(--indigo);
+  --indigo-ink: var(--indigo-ink);
+  --ink-body: var(--ink-body);
+  --ink-subtle: var(--ink-subtle);
+  --warn-border: var(--color-warning-border);
+  --success-border: var(--color-success-border);
 }
 
 /* display */
@@ -110,7 +110,7 @@
 
 .card-surface-purple { background: var(--pul); border-color: var(--pub); }
 .card-surface-success { background: var(--grb); border-color: var(--success-border); }
-.card-surface-warn { background: #fffbf5; border-color: var(--warn-border); }
+.card-surface-warn { background: var(--row-prorate-bg); border-color: var(--warn-border); }
 .card-surface-neutral { background: var(--surface-2); }
 .card-surface-blue { background: var(--bll); }
 .card-surface-danger { background: var(--rdb); }
@@ -199,25 +199,25 @@
 .p-md { padding: 1rem; }
 .grid-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 .max-h-slip-table { max-height: min(420px, 55vh); }
-.card-thr-panel { background: #f5f0ff; border: 1.5px solid #c4b5fd; padding: 1rem; }
-.card-cuti-purple { background: #f0f0fd; border-color: #c4b5fd; }
-.cuti-cb-label { padding: 8px; border: 1px solid #c4b5fd; }
-.audit-select { padding: 6px 10px; border: 1.5px solid #dde1e9; font-family: inherit; outline: none; }
+.card-thr-panel { background: var(--color-purple-bg); border: 1.5px solid var(--color-purple-border); padding: 1rem; }
+.card-cuti-purple { background: #f0f0fd; border-color: var(--color-purple-border); }
+.cuti-cb-label { padding: 8px; border: 1px solid var(--color-purple-border); }
+.audit-select { padding: 6px 10px; border: 1.5px solid var(--color-border); font-family: inherit; outline: none; }
 .label-upper-brand {
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
 .surface-sim-purple { background: #faf5ff; }
-.surface-sim-amber { background: #fffbeb; }
+.surface-sim-amber { background: var(--row-pending-bg); }
 .surface-info-light {
   background: #eef6ff;
-  border: 1px solid #c5d9f5;
+  border: 1px solid var(--color-primary-border);
   padding: 0.65rem 1rem;
 }
 .surface-prs-hk {
   background: var(--bll);
   padding: 0.85rem;
-  border: 1px solid #c5d9f5;
+  border: 1px solid var(--color-primary-border);
 }
 .slip-tg-hint {
   color: #1565a8;
@@ -234,10 +234,10 @@
 .btn-wa { background: #25d366; color: var(--wh); }
 
 /* dark theme overrides */
-[data-theme="dark"] .card-surface-purple { background: #2e1065; border-color: #5b21b6; color: #e9d5ff; }
+[data-theme="dark"] .card-surface-purple { background: #2e1065; border-color: var(--color-purple); color: #e9d5ff; }
 [data-theme="dark"] .card-surface-success { background: #14532d; border-color: #166534; color: #bbf7d0; }
 [data-theme="dark"] .card-surface-warn { background: #451a03; border-color: #92400e; color: #fde68a; }
 [data-theme="dark"] .card-surface-neutral { background: #1e293b; }
 [data-theme="dark"] .pill-warn,
 [data-theme="dark"] .pill-neutral { background: #1e293b; }
-[data-theme="dark"] .text-body { color: #cbd5e1; }
+[data-theme="dark"] .text-body { color: var(--color-slate-300); }
