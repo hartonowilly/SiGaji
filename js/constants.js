@@ -35,7 +35,7 @@ function sigajiBindRpInputs(root){
     inp.addEventListener('focus',function(){
       inp.dataset.rpEditing='1';
       inp.value=String(parseRpInput(inp.value)||'');
-      try{inp.select();}catch(_e){/* select() tidak didukung di beberapa input */}
+      try{inp.select();}catch(_e){void _e;}
     });
     inp.addEventListener('blur',function(){
       delete inp.dataset.rpEditing;

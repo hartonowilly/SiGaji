@@ -175,4 +175,10 @@ assert('CB tail: 3 hari cuti-bersama Des dalam periode',cb===3);
 var total=m+cb;
 assert('Total terpakai A (1 manual Jan + 3 CB Des)=4',total===4);
 
+var cbPeriode=countCutiBersamaUntukTahunDanPeriode(2026,periodes[0],hariLiburCb,masterCuti);
+assert('CB helper per periode (Des dalam rentang)',cbPeriode===3);
+
+var cmPeriode=cutiManualUntukTahunDanPeriode('A',2026,periodes[0],absensi,hariLiburCb,masterCuti);
+assert('Cuti manual helper per periode',cmPeriode===1);
+
 console.log('\nSemua tes lulus.');

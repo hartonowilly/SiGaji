@@ -54,7 +54,10 @@ const legacyJsRules = {
   'no-global-assign': 'off',
   'no-redeclare': 'warn',
   'no-empty': 'warn',
-  'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
+  'no-unused-vars': [
+    'warn',
+    { argsIgnorePattern: '^_', caughtErrors: 'none', caughtErrorsIgnorePattern: '^_' },
+  ],
   eqeqeq: ['warn', 'always', { null: 'ignore' }],
   'sigaji/no-unsafe-innerhtml': 'warn',
 };
@@ -73,6 +76,14 @@ export default [
       globals: { ...globals.browser, ...sigajiGlobals },
     },
     rules: legacyJsRules,
+  },
+  /** Mendefinisikan global browser — dipakai modul lain lewat script tag, bukan import. */
+  {
+    files: ['js/constants.js', 'js/ptkp.js'],
+    rules: {
+      'no-unused-vars': 'off',
+      'no-redeclare': 'off',
+    },
   },
   {
     files: ['tests/**/*.mjs', 'scripts/**/*.js', 'eslint.config.mjs'],
