@@ -1470,10 +1470,11 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   color: #93c5fd;
   border-color: rgba(96, 165, 250, 0.25);
 }
-[data-theme="brand"] .sigaji-build-chip {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--wh);
-  border-color: rgba(255, 255, 255, 0.35);
+[data-theme="brand"] .sigaji-build-chip,
+.topbar.topbar--brand-accent .sigaji-build-chip {
+  background: var(--color-primary-subtle, #e8f0fb);
+  color: var(--ux-accent, #1a56a0);
+  border-color: var(--color-primary-border, #c5d9f5);
 }
 .bento-widget {
   transition: transform 0.2s ease, box-shadow 0.2s ease;

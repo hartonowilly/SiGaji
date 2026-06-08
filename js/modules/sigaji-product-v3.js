@@ -618,18 +618,41 @@
     return { theme: 'light', density: 'comfortable' };
   };
 
+  function brandAccentLuminance(hex) {
+    var h = String(hex || '').replace('#', '').trim();
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    if (!/^[0-9a-f]{6}$/i.test(h)) return 0;
+    var r = parseInt(h.slice(0, 2), 16) / 255;
+    var g = parseInt(h.slice(2, 4), 16) / 255;
+    var b = parseInt(h.slice(4, 6), 16) / 255;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
   function brandAccent() {
     var c = perusahaan && perusahaan.brand_color;
-    if (c && String(c).trim()) return String(c).trim();
+    if (c && String(c).trim()) {
+      c = String(c).trim();
+      if (/^#[0-9a-f]{3,8}$/i.test(c) && brandAccentLuminance(c) > 0.72) return '#1a56a0';
+      return c;
+    }
     return '#1a56a0';
+  }
+
+  function paintBrandTopbar(theme) {
+    var tb = document.querySelector('.topbar');
+    if (!tb) return;
+    if (theme === 'brand') tb.classList.add('topbar--brand-accent');
+    else tb.classList.remove('topbar--brand-accent');
   }
 
   window.sigajiApplyUiPrefs = function (prefs) {
     prefs = prefs || sigajiGetUiPrefs();
     var root = document.documentElement;
-    root.setAttribute('data-theme', prefs.theme || 'light');
+    var theme = prefs.theme || 'light';
+    root.setAttribute('data-theme', theme);
     root.setAttribute('data-density', prefs.density || 'comfortable');
-    if (prefs.theme === 'brand') {
+    paintBrandTopbar(theme);
+    if (theme === 'brand') {
       var accent = brandAccent();
       root.style.setProperty('--ux-accent', accent);
       root.style.setProperty('--blue', accent);
