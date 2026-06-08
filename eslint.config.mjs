@@ -38,6 +38,7 @@ const sigajiGlobals = {
   sigajiFetchJson: 'readonly',
   sigajiApiToast: 'readonly',
   sigajiSetTbodyRows: 'readonly',
+  sigajiDataAction: 'readonly',
 };
 
 export default [
@@ -59,7 +60,14 @@ export default [
     },
   },
   {
-    files: ['js/modules/app-core.js', 'js/modules/app-hr-tunjvar.js', 'js/sigaji-dom.js', 'js/sigaji-api.js'],
+    files: [
+      'js/modules/app-core.js',
+      'js/modules/app-hr-tunjvar.js',
+      'js/sigaji-dom.js',
+      'js/sigaji-api.js',
+      'js/sigaji-events.js',
+      'js/constants.js',
+    ],
     rules: {
       'no-undef': 'off',
       'no-global-assign': 'off',

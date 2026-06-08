@@ -93,13 +93,13 @@ function renderAbsensiBody(){
   var pAbs=periodes.find(function(x){return String(x.id)===String(pid);})||PA();
   if(!karyawan.length){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Import Excel atau tambah manual di Master Karyawan untuk mulai mengisi absensi.',btnLabel:'Tambah karyawan',btnOnclick:"showPg('karyawan')"}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada karyawan.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Import Excel atau tambah manual di Master Karyawan untuk mulai mengisi absensi.',btnLabel:'Tambah karyawan',btnAction:'showPg',btnActionArg:'karyawan'}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada karyawan.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
   if(!pAbs||!pAbs.start||!pAbs.end){
     hideKalBanner();
-    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Periode gaji belum lengkap',desc:'Atur tanggal mulai dan akhir di Master → Periode Gaji.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
+    document.getElementById('ab-grid-wrap').innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Periode gaji belum lengkap',desc:'Atur tanggal mulai dan akhir di Master → Periode Gaji.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-center text-subtle" style="padding:2rem">Belum ada periode gaji dengan tanggal mulai/akhir. Atur di Master → Periode Gaji.</div>';
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
@@ -123,9 +123,9 @@ function renderAbsensiBody(){
   var days=daysAll.filter(function(x){return x.date.substring(0,7)===window.__sigajiAbMonth;});
   var mi=monthKeys.indexOf(window.__sigajiAbMonth);
   var monthNav='<div class="ab-month-nav">'
-    +'<button type="button" class="btn btn-xs btn-out" onclick="abShiftViewMonth(-1)"'+(mi<=0?' disabled':'')+'>&#9664;</button>'
+    +'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('ab-shift-month',{delta:-1})+(mi<=0?' disabled':'')+'>&#9664;</button>'
     +'<span class="ab-month-lbl">'+abMonthLabel(window.__sigajiAbMonth)+'</span>'
-    +'<button type="button" class="btn btn-xs btn-out" onclick="abShiftViewMonth(1)"'+(mi>=monthKeys.length-1?' disabled':'')+'>&#9654;</button>'
+    +'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('ab-shift-month',{delta:1})+(mi>=monthKeys.length-1?' disabled':'')+'>&#9654;</button>'
     +'<select class="toolbar-select ab-month-sel" onchange="abSetViewMonth(this.value)">'
     +monthKeys.map(function(k){return'<option value="'+k+'" '+(k===window.__sigajiAbMonth?'selected':'')+'>'+abMonthLabel(k)+'</option>';}).join('')
     +'</select></div>';
@@ -171,7 +171,7 @@ function renderAbsensiBody(){
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
       var canCell=cc&&canEditDataPadaTanggalIso(x.date);
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
-      html+='<td class="p-0 text-center font-10" style="background:'+bg+'; color:'+tx+'; border-right:1px solid rgba(0,0,0,.06); border-bottom:1px solid #f3f4f6; opacity:'+(canCell?'1':cc?'0.88':'1')+'; '+(canCell?'cursor:pointer; ':cc?'cursor:not-allowed; ':'')+'font-weight:700" '+(canCell?'onclick="toggleAb(\''+k.nik+'\',\''+x.date+'\',this)"':cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
+      html+='<td class="p-0 text-center font-10" style="background:'+bg+'; color:'+tx+'; border-right:1px solid rgba(0,0,0,.06); border-bottom:1px solid #f3f4f6; opacity:'+(canCell?'1':cc?'0.88':'1')+'; '+(canCell?'cursor:pointer; ':cc?'cursor:not-allowed; ':'')+'font-weight:700" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
     });
     html+='<td class="text-center fw-800 ct-success" style="border-left:2px solid #e5e7eb; border-bottom:1px solid #f3f4f6; background:#e8f4de">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple" style="border-bottom:1px solid #f3f4f6; background:#ede9fe">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn" style="border-bottom:1px solid #f3f4f6; background:#fef3e2">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand" style="border-bottom:1px solid #f3f4f6; background:#e8f0fb">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger" style="border-bottom:1px solid #f3f4f6; background:#fdeaea">'+(cA||'')+'</td></tr>';
     mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
@@ -232,7 +232,7 @@ function renderCutiRekap(){
     const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
     const sisaCls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
-    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></td>'
+    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+k.nama+'</div></td>'
       +'<td>'+Math.floor(mb/12)+'thn '+mb%12+'bln</td>'
       +'<td>'+kuota+'</td><td><span class="bdg '+(manual>0?'b-warn':'b-gray')+'">'+manual+'</span></td>'
       +'<td>'+(cb>0?'<span class="bdg b-pu">'+cb+'</span>':'<span class="text-subtle">0</span>')+'</td>'
@@ -264,9 +264,9 @@ function renderLemburList(){
           +'<input type="date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'style="width:135px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updLembur(\''+k.nik+'\','+i+',\'tanggal\',this.value)">'
           +'<input type="number" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'style="width:65px;padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" min="1" max="12" onchange="updLembur(\''+k.nik+'\','+i+',\'jam\',this.value)">'
           +'<span class="font-11 text-muted" style="min-width:90px">'+(j>0?fmt(Math.round(h)):'')+'</span>'
-          +(lemRo?'':'<button class="btn btn-sm btn-r" onclick="delLembur(\''+k.nik+'\','+i+')">&#10007;</button>')+'</div>';
+          +(lemRo?'':'<button class="btn btn-sm btn-r"'+sigajiDataAction('del-lembur',{nik:k.nik,i:i})+'>&#10007;</button>')+'</div>';
       }).join('')+'</div>';
-  }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnOnclick:'addLemburForKar()'}):'<div class="text-subtle font-12">Belum ada.</div>');
+  }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnAction:'addLemburForKar'}):'<div class="text-subtle font-12">Belum ada.</div>');
   let tot=0;karyawan.forEach(function(k){const upj=k.gapok/173;(lembur[k.nik]||[]).forEach(function(r){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);tot+=Math.round(h);});});
   const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128200;',title:'Rekap kosong',desc:'Total lembur muncul setelah ada input jam.'}):'<div class="text-subtle font-12">Belum ada.</div>');
 }
@@ -305,7 +305,7 @@ function renderHariLibur(){
   el.innerHTML=Object.entries(grouped).sort(function(a,b){return b[0]-a[0];}).map(function(kv){
     return '<div class="tabs-spaced-lg"><div class="font-11 fw-700 text-muted" style="padding:4px 0; border-bottom:1px solid #e5e7eb; margin-bottom:.4rem">'+kv[0]+' — '+kv[1].length+' hari</div>'
       +kv[1].map(function(l){
-        return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span class="font-9 ct-purple" style="margin-left:4px">-1 kuota</span>':'')+'<br><span class="u-muted-10">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r" onclick="hapusLibur(\''+l.tgl+'\')">&#10007;</button></div></div>';
+        return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span class="font-9 ct-purple" style="margin-left:4px">-1 kuota</span>':'')+'<br><span class="u-muted-10">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r"'+sigajiDataAction('hapus-libur',{tgl:l.tgl})+'>&#10007;</button></div></div>';
       }).join('')+'</div>';
   }).join('');
 }

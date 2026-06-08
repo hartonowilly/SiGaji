@@ -97,7 +97,7 @@
     h+='<div class="fg"><label>Uang pisah PK (Rp)</label><input type="number" min="0" step="1" id="psg-pisah" value="'+(phk.pisah||0)+'" onchange="pesangonRefresh()"></div>';
     h+='<div class="fg ff"><label>Keterangan</label><input id="psg-ket" value="'+escapeHtml(phk.keterangan||'')+'" onchange="pesangonRefresh()"></div>';
     h+='</div>';
-    h+='<div class="fl gap1" style="margin:.75rem 0"><button class="btn btn-sm btn-p" onclick="pesangonSimpan()">&#128190; Simpan ke profil</button><button class="btn btn-sm btn-out" onclick="openPanel(\''+escJsStr(k.nik)+'\')">Profil karyawan</button></div>';
+    h+='<div class="fl gap1" style="margin:.75rem 0"><button class="btn btn-sm btn-p"'+sigajiDataAction('pesangon-save')+'>&#128190; Simpan ke profil</button><button class="btn btn-sm btn-out"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil karyawan</button></div>';
     h+='<div id="psg-breakdown"></div>';
     wrap.innerHTML=h;
     var al2=document.getElementById('psg-alasan');if(al2)al2.value=phk.alasan||'';
@@ -154,7 +154,7 @@
       return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
     });
     if(!list.length){
-      tb.innerHTML='<tr><td colspan="7">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9878;',title:'Tidak ada PHK di periode ini',desc:'Isi tanggal berhenti & alasan PHK di profil karyawan yang resign bulan ini.',btnLabel:'Master karyawan',btnOnclick:"showPg('karyawan')"}):'<div class="text-muted font-12" style="padding:1rem">Tidak ada karyawan berhenti pada periode aktif.</div>')+'</td></tr>';
+      tb.innerHTML='<tr><td colspan="7">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9878;',title:'Tidak ada PHK di periode ini',desc:'Isi tanggal berhenti & alasan PHK di profil karyawan yang resign bulan ini.',btnLabel:'Master karyawan',btnAction:'showPg',btnActionArg:'karyawan'}):'<div class="text-muted font-12" style="padding:1rem">Tidak ada karyawan berhenti pada periode aktif.</div>')+'</td></tr>';
       selNik=null;renderDetail();return;
     }
     tb.innerHTML=list.map(function(k,i){
@@ -163,7 +163,7 @@
       var r=hitungPesangon(k);
       var al=opt.lbl||'—';
       var cls=selNik===k.nik?'style="background:#eff6ff"':'';
-      return '<tr '+cls+' class="psg-row" data-nik="'+escapeHtml(k.nik)+'" onclick="pesangonPilih(\''+escJsStr(k.nik)+'\')"><td class="text-center fw-700 text-muted">'+(i+1)+'</td><td><strong>'+escapeHtml(k.nama)+'</strong><div class="u-muted-10">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td class="font-11" style="max-width:180px">'+escapeHtml(al)+'</td><td class="text-right">'+(r.ok?fmt(r.total):'—')+'</td><td class="text-center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out" onclick="event.stopPropagation();openPanel(\''+escJsStr(k.nik)+'\')">Profil</button></td></tr>';
+      return '<tr '+cls+' class="psg-row"'+sigajiDataAction('pesangon-pick',{nik:k.nik})+'><td class="text-center fw-700 text-muted">'+(i+1)+'</td><td><strong>'+escapeHtml(k.nama)+'</strong><div class="u-muted-10">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td class="font-11" style="max-width:180px">'+escapeHtml(al)+'</td><td class="text-right">'+(r.ok?fmt(r.total):'—')+'</td><td class="text-center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil</button></td></tr>';
     }).join('');
     if(selNik&&!list.find(function(k){return k.nik===selNik;}))selNik=list[0].nik;
     if(!selNik&&list.length)selNik=list[0].nik;

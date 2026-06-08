@@ -263,7 +263,7 @@
     var head = document.getElementById('nav-top');
     if (!head || document.getElementById('sidebar-collapse-btn')) return;
     head.innerHTML =
-      '<button type="button" id="sidebar-collapse-btn" class="sidebar-collapse-btn sidebar-collapse-btn-top" onclick="sigajiToggleSidebarCollapse()" title="Sembunyikan menu" aria-label="Sembunyikan menu">' +
+      '<button type="button" id="sidebar-collapse-btn" class="sidebar-collapse-btn sidebar-collapse-btn-top" data-sigaji-action="sidebar-collapse" title="Sembunyikan menu" aria-label="Sembunyikan menu">' +
       '<span class="sidebar-collapse-btn-ico">&#9664;</span>' +
       '<span class="sidebar-collapse-btn-lbl">Sembunyikan menu</span>' +
       '</button>';

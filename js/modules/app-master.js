@@ -26,12 +26,12 @@ function renderPeriodesBody(){
   }
   document.getElementById('tb-periode').innerHTML=periodes.map(function(p){
     var lockBdg=p.snapshot_locked?'<span class="bdg b-err" style="margin-left:6px">Snapshot Terkunci</span>':'<span class="bdg b-gray" style="margin-left:6px">Snapshot Terbuka</span>';
-    var lockBtn='<button class="btn btn-sm '+(p.snapshot_locked?'btn-out':'btn-r')+'" onclick="toggleLockPeriode(\''+p.id+'\')">'+(p.snapshot_locked?'Buka Kunci':'Kunci')+'</button>';
-    var rebuildBtn='<button class="btn btn-sm btn-out" onclick="rebuildSnapshotPeriode(\''+p.id+'\')">Rebuild Snapshot</button>';
+    var lockBtn='<button class="btn btn-sm '+(p.snapshot_locked?'btn-out':'btn-r')+'"'+sigajiDataAction('periode-lock',{id:p.id})+'>'+(p.snapshot_locked?'Buka Kunci':'Kunci')+'</button>';
+    var rebuildBtn='<button class="btn btn-sm btn-out"'+sigajiDataAction('periode-rebuild',{id:p.id})+'>Rebuild Snapshot</button>';
     return '<tr><td><strong>'+p.nama+'</strong></td><td>'+p.start+'</td><td>'+p.end+'</td><td>'+p.bayar+'</td>'
       +'<td>'+(p.thr_aktif?'<div class="font-11 ct-purple fw-700">&#127873; '+(p.thr_nama||'THR')+'<br><span class="text-subtle" style="font-weight:400">Bayar: '+fmtDate(p.thr_bayar||'-')+'</span></div>':'&#8212;')+'</td>'
       +'<td><span class="bdg '+(p.status==='aktif'?'b-ok':'b-gray')+'">'+(p.status==='aktif'?'Aktif':'Tutup')+'</span>'+lockBdg+'</td>'
-      +'<td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="aktifkanPeriode(\''+p.id+'\')">Aktifkan</button>'+lockBtn+rebuildBtn+'<button class="btn btn-sm btn-r" onclick="hapusPeriode(\''+p.id+'\')">Hapus</button></div></td></tr>';
+      +'<td><div class="fl gap1"><button class="btn btn-sm btn-out"'+sigajiDataAction('periode-aktifkan',{id:p.id})+'>Aktifkan</button>'+lockBtn+rebuildBtn+'<button class="btn btn-sm btn-r"'+sigajiDataAction('periode-hapus',{id:p.id})+'>Hapus</button></div></td></tr>';
   }).join('');
   renderPeriodeSnapshotGuardUi(false);
   updatePeriodeSimpanButtonState();
@@ -83,7 +83,7 @@ function renderPeriodeSnapshotGuardUi(blocking){
   el.style.display='block';
   el.innerHTML='<div class="rounded-md mt-lg font-12 leading-tight" style="background:'+bg+'; border:1.5px solid '+bd+'; padding:.75rem 1rem; color:'+col+'">'
     +title+sub+'<ul style="margin:.45rem 0 .55rem 1.15rem">'+items+'</ul>'
-    +'<button type="button" class="btn btn-sm btn-p" onclick="goToDaftarPeriode()">Ke daftar periode</button></div>';
+    +'<button type="button" class="btn btn-sm btn-p"'+sigajiDataAction('invoke',{fn:'goToDaftarPeriode'})+'>Ke daftar periode</button></div>';
   if(blocking)toast('Kunci dulu: '+names+' (snapshot terbuka)');
 }
 function goToDaftarPeriode(){
@@ -343,7 +343,7 @@ function renderNotifBody(){
     return '<div class="notif-item'+(n.read?'':' notif-unread')+'">'+
       '<span class="notif-dot" aria-hidden="true"></span>'+
       '<div class="notif-body"><div class="notif-title">'+n.title+'</div><div class="notif-text">'+n.body+'</div></div>'+
-      '<button type="button" class="btn btn-sm btn-r" onclick="hapusNotif('+n.id+')" aria-label="Hapus">&#10007;</button></div>';
+      '<button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('hapus-notif',{id:n.id})+' aria-label="Hapus">&#10007;</button></div>';
   }).join(''):'<div class="notif-empty">Belum ada notifikasi</div>';
 }
 function hapusNotif(id){notifikasi=notifikasi.filter(function(n){return n.id!==id;});saveAll();renderNotif();updateNotifBadge();}
@@ -556,7 +556,7 @@ function renderAuditLog(){
     return s.indexOf(q)>=0;
   }).slice(0,200);
   if(!list.length){
-    wrap.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128221;',title:'Belum ada jejak audit',desc:'Perubahan komponen gaji, tunjangan, dan potongan akan tercatat otomatis.',btnLabel:'Buka Komponen Gaji',btnOnclick:"showPg('kompgaji')"}):'<div class="text-muted font-12" style="padding:12px">Belum ada audit log.</div>';
+    wrap.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128221;',title:'Belum ada jejak audit',desc:'Perubahan komponen gaji, tunjangan, dan potongan akan tercatat otomatis.',btnLabel:'Buka Komponen Gaji',btnAction:'showPg',btnActionArg:'kompgaji'}):'<div class="text-muted font-12" style="padding:12px">Belum ada audit log.</div>';
     return;
   }
   wrap.innerHTML='<div class="sigaji-audit-timeline-inner">'+list.map(function(e,idx){

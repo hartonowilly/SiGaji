@@ -98,7 +98,7 @@ async function renderMobileAttendanceLog(btn){
       +'<select class="rounded-sm select-inline" id="mob-log-filter" style="padding:6px 10px; border:1.5px solid #dde1e9" onchange="mobRenderLogFromCache()">'
       +'<option value="">Semua status</option><option value="ok">OK</option><option value="pending_review">Review</option>'
       +'<option value="outside_geofence">Luar radius</option><option value="rejected">Ditolak / mock</option></select>'
-      +'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileAttendanceLog(this)">&#8635; Muat</button>'
+      +'<button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('mob-att-log')+'>&#8635; Muat</button>'
       +'</div></div><div id="mob-log-table">Memuat…</div></div>';
     dateEl=document.getElementById('mob-log-date');
     workDate=dateEl?dateEl.value:today;
@@ -126,7 +126,7 @@ function mobRenderLogFromCache(){
   var filterEl=document.getElementById('mob-log-filter');
   var filter=filterEl?filterEl.value:'';
   if(!items.length){
-    host.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128241;',title:'Belum ada absensi mobile',desc:'Tidak ada check-in/check-out pada tanggal '+workDate+'.',btnLabel:'Muat ulang',btnOnclick:'renderMobileAttendanceLog()'}):'<p class="text-muted font-12" style="padding:.5rem 0">Belum ada check-in/check-out pada tanggal '+escapeHtml(workDate)+'.</p>';
+    host.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128241;',title:'Belum ada absensi mobile',desc:'Tidak ada check-in/check-out pada tanggal '+workDate+'.',btnLabel:'Muat ulang',btnAction:'renderMobileAttendanceLog'}):'<p class="text-muted font-12" style="padding:.5rem 0">Belum ada check-in/check-out pada tanggal '+escapeHtml(workDate)+'.</p>';
     return;
   }
   var byNik={};
@@ -151,11 +151,11 @@ function mobRenderLogFromCache(){
       var idEsc=String(r.id).replace(/'/g,"\\'");
       if(r.validation_status==='pending_review'||r.validation_status==='outside_geofence'){
         decideBtns='<div class="fl gap1 mt-xs">'
-          +'<button type="button" class="btn btn-xs btn-g" onclick="mobAttendanceDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
-          +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div>';
+          +'<button type="button" class="btn btn-xs btn-g"'+sigajiDataAction('mob-attendance-decide',{id:r.id,decision:'approve'})+'>Setujui</button>'
+          +'<button type="button" class="btn btn-xs btn-r"'+sigajiDataAction('mob-attendance-decide',{id:r.id,decision:'reject'})+'>Tolak</button></div>';
       }else if(r.validation_status==='ok'){
         decideBtns='<div class="fl gap1 mt-xs flex-wrap">'
-          +'<button type="button" class="btn btn-xs btn-r" onclick="mobAttendanceDecide(\''+idEsc+'\',\'reject\')">Tolak (salah lokasi)</button>'
+          +'<button type="button" class="btn btn-xs btn-r"'+sigajiDataAction('mob-attendance-decide',{id:r.id,decision:'reject'})+'>Tolak (salah lokasi)</button>'
           +'<span class="u-muted-10">Sudah OK GPS — tolak bila lokasi/penugasan salah</span></div>';
       }else if(r.validation_status==='rejected'){
         decideBtns='<div class="font-10 ct-danger mt-2px">Karyawan dapat absen ulang di HP</div>';
@@ -232,11 +232,11 @@ async function renderMobileLocations(){
       +'<td><div id="mob-loc-mini-'+loc.id+'" class="mob-loc-mini" title="Peta lokasi"></div>'
       +'<div class="font-9 text-subtle mt-2px">'+loc.lat.toFixed(5)+', '+loc.lon.toFixed(5)+'</div></td>'
       +'<td>'+loc.radius_m+' m</td><td>'+(loc.aktif?'<span class="bdg b-teal">Aktif</span>':'<span class="bdg b-gray">Off</span>')+'</td>'
-      +'<td><button class="btn btn-sm btn-out" onclick="editMobileLocation(\''+idEsc+'\')">Edit</button></td></tr>';
+      +'<td><button class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileLocation',arg:loc.id})+'>Edit</button></td></tr>';
   }).join('');
-  el.innerHTML='<div class="card"><div class="flb mb2"><div class="ct m-0 border-0 p-0">Lokasi check-in GPS</div><button class="btn btn-sm btn-p" onclick="editMobileLocation()">+ Lokasi</button></div>'
+  el.innerHTML='<div class="card"><div class="flb mb2"><div class="ct m-0 border-0 p-0">Lokasi check-in GPS</div><button class="btn btn-sm btn-p"'+sigajiDataAction('invoke',{fn:'editMobileLocation'})+'>+ Lokasi</button></div>'
     +'<table><thead><tr><th>Nama</th><th>Tipe</th><th>Peta</th><th>Radius</th><th>Status</th><th></th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="6">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128205;',title:'Belum ada lokasi GPS',desc:'Tambahkan lokasi kantor/site agar karyawan bisa check-in di APK.',btnLabel:'+ Tambah lokasi',btnOnclick:'editMobileLocation()'}):'<span class="text-subtle">Belum ada lokasi</span>')+'</td></tr>')+'</tbody></table></div>';
+    +(rows||'<tr><td colspan="6">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128205;',title:'Belum ada lokasi GPS',desc:'Tambahkan lokasi kantor/site agar karyawan bisa check-in di APK.',btnLabel:'+ Tambah lokasi',btnAction:'editMobileLocation'}):'<span class="text-subtle">Belum ada lokasi</span>')+'</td></tr>')+'</tbody></table></div>';
   setTimeout(function(){mobInitLocationMiniMaps(items);},200);
 }
 function mobLocRadiusToSlider(radiusM){
@@ -454,7 +454,7 @@ async function renderMobileFaceEnrollments(){
     var st=en?'<span class="bdg b-teal">Terdaftar</span>':'<span class="bdg b-gray">Belum</span>';
     var meta=en?('<span class="u-muted-10"> · '+escapeHtml(en.model_version||'')+' · '+mobFmtTimeIso(en.updated_at||en.enrolled_at)+'</span>'):'';
     var nikEsc=String(k.nik).replace(/'/g,"\\'");
-    var btn=en?'<button type="button" class="btn btn-xs btn-r" onclick="deleteMobileFaceEnroll(\''+nikEsc+'\')">Hapus</button>':'';
+    var btn=en?'<button type="button" class="btn btn-xs btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileFaceEnroll',arg:k.nik})+'>Hapus</button>':'';
     return '<tr><td>'+escapeHtml(k.nik)+'</td><td>'+escapeHtml(k.nama||'')+'</td><td>'+st+meta+'</td><td>'+btn+'</td></tr>';
   }).join('');
   el.innerHTML='<div class="card"><div class="ct border-0 p-0 mb-md m-0">Enrollment wajah (APK)</div>'
@@ -518,7 +518,7 @@ async function mobInitLokasiTab(){
       +'<div class="flb mb2 flex-wrap gap-sm"><div class="ct m-0 border-0 p-0">Dashboard absensi hari ini</div>'
       +'<div class="fl gap1"><input class="rounded-sm select-inline" type="date" id="mob-dash-date" value="'+today+'" style="padding:6px 10px; border:1.5px solid #dde1e9">'
       +'<select class="rounded-sm select-inline" id="mob-dash-loc" style="padding:6px 10px; border:1.5px solid #dde1e9">'+locOpts+'</select>'
-      +'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileDashboard()">Muat</button></div></div>'
+      +'<button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'renderMobileDashboard'})+'>Muat</button></div></div>'
       +'<div id="mob-dashboard-wrap"></div></div>';
     dashHost.dataset.inited='1';
     var dEl=document.getElementById('mob-dash-date');
@@ -569,8 +569,8 @@ function mobAssignFormHtml(locations,editRow){
     +'<label class="fl items-center gap-xs font-12 mb-lg cursor-pointer">'
     +'<input type="checkbox" id="mob-assign-sat" '+(sat?'checked':'')+' style="width:16px;height:16px"> Sabtu termasuk hari kerja di lokasi ini</label>'
     +'<div class="fg"><label>Catatan (opsional)</label><input type="text" id="mob-assign-cat" value="'+escapeHtml(cat)+'" placeholder="Mis. proyek Site B"></div>'
-    +'<div class="fl gap1"><button type="button" class="btn btn-sm btn-p" onclick="saveMobileAssignment()">Simpan penugasan</button>'
-    +(editRow?'<button type="button" class="btn btn-sm btn-out" onclick="renderMobileAssignments()">Batal</button>':'')
+    +'<div class="fl gap1"><button type="button" class="btn btn-sm btn-p"'+sigajiDataAction('invoke',{fn:'saveMobileAssignment'})+'>Simpan penugasan</button>'
+    +(editRow?'<button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'renderMobileAssignments'})+'>Batal</button>':'')
     +'</div></div>';
 }
 async function renderMobileAssignments(){
@@ -590,7 +590,7 @@ async function renderMobileAssignments(){
     var loc=a.sigaji_work_locations||{};
     var namaKar=(karyawan||[]).find(function(k){return k&&k.nik===a.nik;});
     var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
-    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out" onclick="editMobileAssignment(\''+a.id+'\')">Edit</button><button type="button" class="btn btn-sm btn-r" onclick="deleteMobileAssignment(\''+a.id+'\')">Hapus</button></div></td></tr>';
+    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
   }).join('');
   el.innerHTML=mobAssignFormHtml(locations,null)
     +mobAssignWeekCalendarHtml(items,locations)
@@ -648,7 +648,7 @@ async function editMobileAssignment(id){
     var loc=a.sigaji_work_locations||{};
     var namaKar=(karyawan||[]).find(function(k){return k&&k.nik===a.nik;});
     var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
-    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out" onclick="editMobileAssignment(\''+a.id+'\')">Edit</button><button type="button" class="btn btn-sm btn-r" onclick="deleteMobileAssignment(\''+a.id+'\')">Hapus</button></div></td></tr>';
+    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
   }).join('');
   el.innerHTML=mobAssignFormHtml(locations,row)
     +mobAssignWeekCalendarHtml(items,locations)
@@ -680,8 +680,8 @@ async function renderMobileLeavePending(){
         +'<div class="font-12 text-body mt-xs">'+r.date_from+' → '+r.date_to+'</div>'
         +'<div class="font-11 text-muted mt-xs">'+escapeHtml(r.reason||'-')+'</div>'+att
         +'<div class="fl gap1" style="margin-top:.65rem">'
-        +'<button class="btn btn-sm btn-g" onclick="mobileLeaveDecide(\''+idEsc+'\',\'approve\')">Setujui</button>'
-        +'<button class="btn btn-sm btn-r" onclick="mobileLeaveDecide(\''+idEsc+'\',\'reject\')">Tolak</button></div></div>'
+        +'<button class="btn btn-sm btn-g"'+sigajiDataAction('mobile-leave-decide',{id:r.id,decision:'approve'})+'>Setujui</button>'
+        +'<button class="btn btn-sm btn-r"'+sigajiDataAction('mobile-leave-decide',{id:r.id,decision:'reject'})+'>Tolak</button></div></div>'
         +mobLeaveQuotaPanel(r.nik,r.request_type)+'</div>';
     }).join('')+'</div>';
 }
@@ -740,7 +740,7 @@ async function renderMyCutiPage(){
     +'<div class="fg"><label>Dari</label><input type="date" id="mycuti-from"></div><div class="fg"><label>Sampai</label><input type="date" id="mycuti-to"></div></div>'
     +'<div class="fg"><label>Alasan</label><textarea class="w-full" id="mycuti-reason" rows="2"></textarea></div>'
     +'<div class="fg u-hidden" id="mycuti-file-wrap"><label>Surat dokter (wajib)</label><input type="file" id="mycuti-file" accept="image/*,.pdf"></div>'
-    +'<button class="btn btn-p btn-sm" onclick="submitMyCutiRequest()">Kirim pengajuan</button>'
+    +'<button class="btn btn-p btn-sm"'+sigajiDataAction('invoke',{fn:'submitMyCutiRequest'})+'>Kirim pengajuan</button>'
     +'<div id="mycuti-notif-cloud" class="mt1 u-hidden"></div>'
     +'<div id="mycuti-requests-list" class="mt1"></div></div>';
   var sel=document.getElementById('mycuti-type');
@@ -773,7 +773,7 @@ async function loadMyCutiNotifCloud(){
         +'<div class="fw-700">'+escapeHtml(n.title||'')+'</div>'
         +'<div class="text-muted">'+escapeHtml(n.body||'')+'</div></div>';
     }).join('')
-    +(unread.length?'<button type="button" class="btn btn-sm btn-out mt05" onclick="markMyCutiNotifRead()">Tandai dibaca</button>':'');
+    +(unread.length?'<button type="button" class="btn btn-sm btn-out mt05"'+sigajiDataAction('invoke',{fn:'markMyCutiNotifRead'})+'>Tandai dibaca</button>':'');
 }
 async function markMyCutiNotifRead(){
   await sigajiMobileFetch('mobile-notifications',{method:'POST',body:{action:'mark_read',all:true}});

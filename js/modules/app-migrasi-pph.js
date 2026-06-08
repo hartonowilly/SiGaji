@@ -91,7 +91,7 @@ function renderMigrasiPphSaldo(){
       +'<td class="text-right">'+(s.bruto>0?fmt(s.bruto):'—')+'</td>'
       +'<td class="text-right">'+(s.pph>0?fmt(s.pph):'—')+'</td>'
       +'<td class="u-muted-11">'+escapeHtml(sd)+'</td>'
-      +'<td><button type="button" class="btn btn-xs btn-out" onclick="openPanel(\''+String(k.nik).replace(/'/g,"\\'")+'\')">Profil</button></td>'
+      +'<td><button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil</button></td>'
       +'</tr>';
   }).join('');
   wrap.innerHTML='<table class="tbl font-12"><thead><tr>'

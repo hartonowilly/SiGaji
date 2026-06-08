@@ -10,11 +10,14 @@
   window.sigajiEmptyState = function (opts) {
     opts = opts || {};
     var btn = '';
-    if (opts.btnLabel && opts.btnOnclick) {
+    if (opts.btnLabel && (opts.btnAction || opts.btnOnclick)) {
+      var actAttrs = opts.btnAction
+        ? sigajiDataAction('invoke', { fn: opts.btnAction, arg: opts.btnActionArg || '' })
+        : ' onclick="' + opts.btnOnclick + '"';
       btn =
-        '<button type="button" class="btn btn-sm btn-p sigaji-empty-btn" onclick="' +
-        opts.btnOnclick +
-        '">' +
+        '<button type="button" class="btn btn-sm btn-p sigaji-empty-btn"' +
+        actAttrs +
+        '>' +
         escapeHtml(opts.btnLabel) +
         '</button>';
     }

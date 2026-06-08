@@ -118,7 +118,7 @@
         npwpHint.innerHTML = '<span style="color:#059669">✓ NPWP terisi</span>';
       } else if (st === 'npwp_empty_ok_nik') {
         npwpHint.innerHTML =
-          '<span style="color:#2563eb">NPWP kosong — OK jika NIK 16 digit terisi. <a class="ct-indigo" href="#" onclick="sigajiOpenDjpNikValidasi(document.getElementById(\'sp-ktp-f\').value);return false">Cek validasi di portal DJP</a></span>';
+          '<span style="color:#2563eb">NPWP kosong — OK jika NIK 16 digit terisi. <a class="ct-indigo" href="#" data-sigaji-action="djp-nik-validasi">Cek validasi di portal DJP</a></span>';
       } else if (st === 'nik_incomplete') {
         npwpHint.innerHTML =
           '<span style="color:#d97706">NPWP kosong &amp; NIK tidak lengkap — isi NPWP atau lengkapi KTP 16 digit</span>';
@@ -520,16 +520,15 @@
               : a.severity === 'info'
                 ? 'alert-blue'
                 : 'alert-item';
-          var nikEsc = String(a.nik).replace(/'/g, "\\'");
           var ktpArg =
             a.ktpNik != null
               ? String(a.ktpNik).replace(/'/g, "\\'")
               : '';
           var djpBtn =
             a.code === 'npwp_ok_nik'
-              ? '<button type="button" class="btn btn-xs btn-out mt-xs" style="margin-right:4px" onclick="sigajiOpenDjpNikValidasi(\'' +
-                ktpArg +
-                '\')">Cek validasi NIK (DJP)</button>'
+              ? '<button type="button" class="btn btn-xs btn-out mt-xs" style="margin-right:4px"' +
+                sigajiDataAction('djp-nik-validasi', { ktp: a.ktpNik != null ? String(a.ktpNik) : '' }) +
+                '>Cek validasi NIK (DJP)</button>'
               : '';
           return (
             '<div class="alert-item ' +
@@ -546,9 +545,11 @@
             escapeHtml(a.desc) +
             '</span><br>' +
             djpBtn +
-            '<button type="button" class="btn btn-xs btn-out mt-xs" onclick="openPanel(\'' +
-            nikEsc +
-            '\')">Buka profil</button></div>'
+            '<button type="button" class="btn btn-xs btn-out mt-xs"' +
+            (typeof sigajiDataAction === 'function'
+              ? sigajiDataAction('open-profile', { nik: a.nik })
+              : '') +
+            '>Buka profil</button></div>'
           );
         })
         .join('');
@@ -577,7 +578,7 @@
               title: 'Belum bisa bandingkan',
               desc: 'Buat minimal dua periode gaji di Master → Periode.',
               btnLabel: 'Atur periode',
-              btnOnclick: "showPg('master')",
+              btnAction:'showPg',btnActionArg:'master',
             })
           : '<div class="text-subtle" style="padding:1rem">Perlu 2+ periode.</div>';
       return;
@@ -639,9 +640,7 @@
       html +=
         '<tr class="lap-var-dept-row cursor-pointer" data-idx="' +
         idx +
-        '" onclick="sigajiToggleVarianceDrill(' +
-        idx +
-        ')">' +
+        '"' + sigajiDataAction('variance-drill', { idx: idx }) + '>' +
         '<td><strong>' +
         escapeHtml(row.dept) +
         '</strong></td>' +
@@ -692,11 +691,12 @@
         d.kar
           .slice(0, 8)
           .map(function (kr) {
-            var nikEsc = String(kr.nik).replace(/'/g, "\\'");
             return (
-              '<tr><td><a href="#" onclick="openPanel(\'' +
-              nikEsc +
-              '\');return false">' +
+              '<tr><td><a href="#"' +
+              (typeof sigajiDataAction === 'function'
+                ? sigajiDataAction('open-profile', { nik: kr.nik })
+                : '') +
+              '>' +
               escapeHtml(kr.nama) +
               '</a></td><td>' +
               fmt(kr.neto0) +

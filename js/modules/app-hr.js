@@ -96,7 +96,7 @@ function renderDashBody(){
     }).join('');
     var avgHadir=nDays&&nKar?Math.round((stats.hadir/(nDays*nKar))*100):0;
     attHtml='<p class="dash-att-hint">Grafik harian — proporsi hadir per hari.</p>'
-      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnOnclick:"showPg('master')"}):'<div class="text-subtle" style="padding:1rem">—</div>')
+      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-subtle" style="padding:1rem">—</div>')
       +'<div class="dash-att-legend">'
       +'<span class="lg-hadir">Hadir: '+stats.hadir+'</span>'
       +'<span class="lg-izin">Izin: '+stats.izin+'</span>'
@@ -132,10 +132,9 @@ function karRowHtml(k,no){
   const tipeLbl=typeof sigajiKarTipeLabel==='function'?sigajiKarTipeLabel(tipe):(tipe==='tidak_tetap'?'Tidak Tetap':'Tetap');
   const tipeCls=tipe==='tidak_tetap'?'b-warn':'b-teal';
   const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span>`;
-  const nikA=typeof escNik==='function'?escNik(k.nik):String(k.nik).replace(/'/g,"\\'");
-  const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out" onclick="openTelegramModalForNik('${nikA}')">Telegram</button>`:'';
+  const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out"${sigajiDataAction('telegram',{nik:k.nik})}>Telegram</button>`:'';
   var cabCol=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
-  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPanel('${nikA}')">${escapeHtml(k.nama)} &#8599;</div><div class="font-10 text-muted" style="font-family:monospace">${escapeHtml(k.nik)}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p" onclick="openPanel('${nikA}')">Profil</button>${tgBtn}<button class="btn btn-sm btn-r" onclick="hapusKar('${nikA}')">Hapus</button></div></td></tr>`;
+  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="font-10 text-muted" style="font-family:monospace">${escapeHtml(k.nik)}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -152,7 +151,7 @@ function renderKarBody(){
   const tb=document.getElementById('tb-kar');if(!tb)return;
   if(!list.length&&typeof sigajiEmptyState==='function'){
     var karColspan=9+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
-    tb.innerHTML='<tr><td colspan="'+karColspan+'">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnOnclick:"openNewKar('tetap')"})+'</td></tr>';
+    tb.innerHTML='<tr><td colspan="'+karColspan+'">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnAction:'openNewKar',btnActionArg:'tetap'})+'</td></tr>';
     return;
   }
   var rows=list.map((k,i)=>karRowHtml(k,i+1));
@@ -180,8 +179,7 @@ function kompgajiRowHtml(k,no){
   const nTunj=(kPer.tunjangan||[]).length;
   const nNat=(kPer.natura||[]).length;
   const showGapok=CU&&(CU.role==='Admin'||canAccessPayrollSub('gaji'));
-  var nikA=typeof escNik==='function'?escNik(k.nik):String(k.nik).replace(/'/g,"\\'");
-  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl" onclick="openPayrollPanel('${nikA}')">${escapeHtml(k.nama)} &#8599;</div><div class="u-muted-10">${escapeHtml(k.nik)}</div></div></div></td><td>${escapeHtml(k.dept)}</td>${showGapok?`<td>${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${escapeHtml(bpjsLbl)}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p" onclick="openPayrollPanel('${nikA}')">Edit Komponen</button></td></tr>`;
+  return`<tr><td class="text-center text-muted fw-700">${no}</td><td><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-payroll',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="u-muted-10">${escapeHtml(k.nik)}</div></div></div></td><td>${escapeHtml(k.dept)}</td>${showGapok?`<td>${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${escapeHtml(bpjsLbl)}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p"${sigajiDataAction('open-payroll',{nik:k.nik})}>Edit Komponen</button></td></tr>`;
 }
 function renderKompgaji(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -456,7 +454,7 @@ function renderTunjPanel(k){
         +'<option value="tidak" '+(!prIkut?'selected':'')+'>Penuh</option>'
       +'</select></div>'
       +'</div>'
-      +'<button type="button" class="btn btn-xs btn-r comp-row-del" data-nik="'+nik+'" data-i="'+i+'" onclick="delTunjEl(this)">&#10007;</button>'
+      +'<button type="button" class="btn btn-xs btn-r comp-row-del"'+sigajiDataAction('del-tunj',{nik:nik,i:i})+'>&#10007;</button>'
     +'</div>';
   }).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada tunjangan.</div>';
   sigajiBindRpInputs(document.getElementById('tunj-list'));
@@ -476,7 +474,7 @@ function updTunjEl(el){
   updTunj(nik,i,f,v);
 }
 function delTunjEl(el){delTunj(el.dataset.nik,parseInt(el.dataset.i));}
-function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div class="comp-row-card comp-row-pot"><div class="comp-row-grid comp-row-grid-pot"><div class="fg m-0"><label>Nama</label><input value="${p.nama}" onchange="updPot('${k.nik}',${i},'nama',this.value)"></div><div class="fg m-0"><label>Nominal</label><input type="text" class="inp-rp" value="${p.nilai}" data-rp="1" onchange="updPot('${k.nik}',${i},'nilai',parseRpInput(this.value))"></div><div class="fg m-0"><label>Keterangan</label><input value="${p.ket||''}" placeholder="Opsional" onchange="updPot('${k.nik}',${i},'ket',this.value)"></div></div><button type="button" class="btn btn-xs btn-r comp-row-del" onclick="delPot('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada potongan.</div>';sigajiBindRpInputs(document.getElementById('pot-list'));}
+function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div class="comp-row-card comp-row-pot"><div class="comp-row-grid comp-row-grid-pot"><div class="fg m-0"><label>Nama</label><input value="${p.nama}" onchange="updPot('${k.nik}',${i},'nama',this.value)"></div><div class="fg m-0"><label>Nominal</label><input type="text" class="inp-rp" value="${p.nilai}" data-rp="1" onchange="updPot('${k.nik}',${i},'nilai',parseRpInput(this.value))"></div><div class="fg m-0"><label>Keterangan</label><input value="${p.ket||''}" placeholder="Opsional" onchange="updPot('${k.nik}',${i},'ket',this.value)"></div></div><button type="button" class="btn btn-xs btn-r comp-row-del"${sigajiDataAction('del-pot',{nik:k.nik,i:i})}>&#10007;</button></div>`).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada potongan.</div>';sigajiBindRpInputs(document.getElementById('pot-list'));}
 function addTunj(){
   if(!canAccessPayrollSub('gaji'))return;
   if(!guardPayrollEditUnlocked())return;
@@ -558,7 +556,7 @@ function loadBPJSPanel(k){
     const chk='<label class="fl items-center cursor-pointer m-0"><input class="cursor-pointer m-0" type="checkbox" data-nik="'+k.nik+'" data-key="'+c.key+'" '+(ok?'checked':'')+' onchange="onBPJSKompChange(this)" style="accent-color:#1a56a0; width:15px; height:15px"></label>';
     const nomVal=ok?(isMn?bm[c.key]:autoV):0;
     const nomEl='<input type="text" class="bi inp-rp '+(isMn?'manual':'')+'" id="b-'+c.key+'-v" value="'+formatRpInputNum(nomVal)+'" data-rp="1" '+(!isMn||!ok?'readonly':'')+' data-nik="'+k.nik+'" data-key="'+c.key+'" oninput="onBMChange2(this)">';
-    const modeEl=ok?('<button class="tm '+(isMn?'manual':'auto')+'" id="tm-'+c.key+'" data-key="'+c.key+'" onclick="toggleManual(this.dataset.key)">'+(isMn?'Manual':'Auto')+'</button>'):'<span class="bdg b-gray font-10">Off</span>';
+    const modeEl=ok?('<button class="tm '+(isMn?'manual':'auto')+'" id="tm-'+c.key+'"'+sigajiDataAction('toggle-manual',{key:c.key})+'>'+(isMn?'Manual':'Auto')+'</button>'):'<span class="bdg b-gray font-10">Off</span>';
     return '<div class="bpjs-row '+(ok?'':'off')+'">'+chk+'<div class="font-11 fw-600">'+c.lbl+'</div><div><input class="bi font-11" value="'+c.tarif+'" readonly></div>'+nomEl+modeEl+'</div>';
   };
   document.getElementById('bpjs-kes-rows').innerHTML=KOMP.filter(function(c){return c.sec==='kes';}).map(mkRow).join('');
@@ -674,7 +672,7 @@ function renderNaturaPeriodeHint(nik){
 }
 function renderNaturaPanel(k){
   renderNaturaPeriodeHint(k&&k.nik);
-  const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input class="font-12 w-full" value="${n.nama}" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="text" class="inp-rp font-12 w-full" value="${n.nilai}" data-rp="1" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="updNat('${k.nik}',${i},'nilai',parseRpInput(this.value))"><select class="font-11" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r" onclick="delNat('${k.nik}',${i})">&#10007;</button></div>`).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span class="ct-success fw-700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span class="ct-danger fw-700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';sigajiBindRpInputs(document.getElementById('natura-list'));
+  const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input class="font-12 w-full" value="${n.nama}" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="text" class="inp-rp font-12 w-full" value="${n.nilai}" data-rp="1" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="updNat('${k.nik}',${i},'nilai',parseRpInput(this.value))"><select class="font-11" style="padding:5px 8px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit; outline:none" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r"${sigajiDataAction('del-nat',{nik:k.nik,i:i})}>&#10007;</button></div>`).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span class="ct-success fw-700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span class="ct-danger fw-700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';sigajiBindRpInputs(document.getElementById('natura-list'));
 }
 function addNatura(){if(!canAccessPayrollSub('natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama:'Natura Baru',nilai:0,kp:false});logPayrollAudit(cpNik,'Tambah Natura','Natura Baru (manual)');saveAll();renderNaturaPanel(k);updateGajiSummary();}
 function addNatTmpl(nama,nilai,kp){
@@ -826,9 +824,9 @@ function renderPenggajianBody(skipTunjVar){
     const pr=getPR(k.nik,p.nama);
     if(!pr.manual){pr.hk=hk;const ed=new Date(p.end);pr.hh=hariHadirBulan(k.nik,ed.getFullYear(),ed.getMonth()+1);}
     if(pr.enabled)prAktif++;
-    const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'" onclick="setPREnabled(\''+k.nik+'\',\''+p.nama+'\','+(!pr.enabled)+')">'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
+    const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'"'+sigajiDataAction('pr-toggle',{nik:k.nik,periode:p.nama,enabled:!pr.enabled?'1':'0'})+'>'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
     const prInputs=pr.enabled?'<div class="pr-input-row"><span class="u-muted-10">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span class="u-muted-10">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
-    const thrExplain=g.thrBruto>0?' onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Kenapa angka THR ini?"':'';
+    const thrExplain=g.thrBruto>0?sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa angka THR ini?"':'';
     const thrCell=g.thrBruto>0?'<div class="sigaji-money-click ct-purple fw-700"'+thrExplain+'>'+fmt(g.thrBruto)+'</div><div class="font-10 text-purple">PPh THR: '+fmt(g.pphAtasThr)+'</div>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):''):'&#8212;';
     var rowCls=[];
     if(pr.enabled)rowCls.push('pg-row-prorate');
@@ -838,22 +836,22 @@ function renderPenggajianBody(skipTunjVar){
     return '<tr class="'+rowCls.join(' ')+'">'
       +'<td class="pg-sticky-no text-center fw-700 text-muted">'+(idx+1)+'</td>'
       +'<td class="pg-sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div>'
-      +'<div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div><small class="text-muted">'+k.dept+'</small></div></div></td>'
+      +'<div><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+k.nama+'</div><small class="text-muted">'+k.dept+'</small></div></div></td>'
       +cabPg
       +'<td><div>'+prBtn+prInputs+'</div></td>'
-      +'<td><span class="sigaji-money-click" onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Kenapa gross ini?">'+fmt(g.grossPPh)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td><td class="pg-col-adv">'+thrCell+'</td>'
+      +'<td><span class="sigaji-money-click"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa gross ini?">'+fmt(g.grossPPh)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td><td class="pg-col-adv">'+thrCell+'</td>'
       +'<td class="pg-col-adv">'+fmt(g.brutoTH)+'</td>'
       +'<td class="pg-col-adv">'+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</td>'
-      +'<td><span class="sigaji-money-click" onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Kenapa angka ini?">'+fmt(g.pph)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+(g.reconciliation&&g.reconciliation.lebihBayar>0?'<div class="font-9 text-success fw-700">&#10003; Lebih Bayar '+fmt(g.reconciliation.lebihBayar)+'</div>':g.reconciliation&&g.reconciliation.kurangBayar>0?'<div class="font-9 ct-danger">&#9650; Kurang Bayar '+fmt(g.reconciliation.kurangBayar)+'</div>':'')+'</td>'
+      +'<td><span class="sigaji-money-click"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa angka ini?">'+fmt(g.pph)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+(g.reconciliation&&g.reconciliation.lebihBayar>0?'<div class="font-9 text-success fw-700">&#10003; Lebih Bayar '+fmt(g.reconciliation.lebihBayar)+'</div>':g.reconciliation&&g.reconciliation.kurangBayar>0?'<div class="font-9 ct-danger">&#9650; Kurang Bayar '+fmt(g.reconciliation.kurangBayar)+'</div>':'')+'</td>'
       +'<td class="pg-col-adv">'+(g.pphRet>0?'<span class="ct-success fw-700">+'+fmt(g.pphRet)+'</span>':'&#8212;')+'</td>'
-      +'<td><strong class="sigaji-money-click ct-success" onclick="sigajiOpenExplain(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')" title="Waterfall THP">'+fmt(g.neto)+'</strong>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td>'
+      +'<td><strong class="sigaji-money-click ct-success"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Waterfall THP">'+fmt(g.neto)+'</strong>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td>'
       +'<td>'+stBdg+'</td>'
-      +'<td><button class="btn btn-sm btn-out" onclick="detailGaji(\''+k.nik+'\',\''+String(p.nama).replace(/'/g,'\\\'')+'\')">Detail</button></td></tr>';
+      +'<td><button class="btn btn-sm btn-out"'+sigajiDataAction('payroll-detail',{nik:k.nik,periode:p.nama})+'>Detail</button></td></tr>';
   });
   var tbPg=document.getElementById('tb-penggajian');
   if(!rows.length&&typeof sigajiEmptyState==='function'){
     var pgColspan=12+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
-    tbPg.innerHTML='<tr><td colspan="'+pgColspan+'">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
+    tbPg.innerHTML='<tr><td colspan="'+pgColspan+'">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnAction:'showPg',btnActionArg:'karyawan'})+'</td></tr>';
   }else tbPg.innerHTML=rows.join('');
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
 }
@@ -877,7 +875,7 @@ function renderApproval(){
     return '<div class="rounded-sm mb-md fl items-start flex-wrap" style="border:1px solid var(--bd); border-left:3px solid #7d4800; padding:.85rem; gap:.75rem">'
       +'<div class="flex-1"><div class="font-12 fw-700">'+a.nama+' - '+a.period+'</div>'
       +'<div class="u-muted-11">'+a.time+' | Neto: <strong>'+(g?fmt(g.neto):fmt(a.neto))+'</strong></div></div>'
-      +'<div class="fl gap1"><button class="btn btn-sm btn-g" onclick="approveItem('+a.id+')">&#10003; Setujui</button><button class="btn btn-sm btn-r" onclick="rejectItem('+a.id+')">&#10007; Tolak</button></div></div>';
+      +'<div class="fl gap1"><button class="btn btn-sm btn-g"'+sigajiDataAction('approval-approve',{id:a.id})+'>&#10003; Setujui</button><button class="btn btn-sm btn-r"'+sigajiDataAction('approval-reject',{id:a.id})+'>&#10007; Tolak</button></div></div>';
   }).join(''):'<div class="text-center text-muted" style="padding:1.5rem">Tidak ada yang tertunda</div>';
   document.getElementById('ap-hist-list').innerHTML=hist.map(function(a){
     return '<div class="rounded-sm fl justify-between items-center flex-wrap gap-xs" style="border:1px solid var(--bd); border-left:3px solid '+(a.status==='approved'?'#2d6a0a':'#9b2121')+'; padding:.75rem; margin-bottom:.4rem">'

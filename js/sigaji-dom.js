@@ -25,9 +25,25 @@
     return escapeHtml(k && field ? k[field] : '');
   };
 
-  /** NIK aman untuk onclick="fn('...')". */
+  /** NIK aman untuk atribut data-* / string legacy. */
   window.escNik = function (nik) {
     return escapeAttr(nik);
+  };
+
+  /**
+   * Atribut data-sigaji-action + data-* untuk event delegation (tanpa onclick).
+   * @param {string} action
+   * @param {Record<string, string|number|boolean|null|undefined>} [attrs]
+   */
+  window.sigajiDataAction = function (action, attrs) {
+    var s = ' data-sigaji-action="' + escapeAttr(action) + '"';
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (v != null && v !== '') s += ' data-' + k + '="' + escapeAttr(String(v)) + '"';
+      });
+    }
+    return s;
   };
 
   /**

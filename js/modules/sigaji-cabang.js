@@ -260,8 +260,8 @@
               : '') + 'K0001'
           ) +
           ' — tidak melanjutkan nomor kantor pusat.' +
-          ' <button type="button" class="btn btn-xs btn-p" onclick="showPg(\'karyawan\');openNewKar(\'tetap\')">+ Pegawai</button>' +
-          ' <button type="button" class="btn btn-xs btn-out" onclick="sigajiSetCabangFilter(\'\')">Kembali gabungan</button>' +
+          ' <button type="button" class="btn btn-xs btn-p"' + sigajiDataAction('open-new-kar', { tipe: 'tetap' }) + '>+ Pegawai</button>' +
+          ' <button type="button" class="btn btn-xs btn-out"' + sigajiDataAction('invoke', { fn: 'sigajiSetCabangFilter', arg: '' }) + '>Kembali gabungan</button>' +
           '</div>') +
       '</div>';
   };
@@ -442,9 +442,7 @@
       '></div>' +
       '</div>' +
       (c.id !== 'utama' && !ro
-        ? '<button type="button" class="btn btn-xs btn-r" onclick="sigajiCabangHapus(' +
-          i +
-          ')">Hapus cabang</button>'
+        ? '<button type="button" class="btn btn-xs btn-r"' + sigajiDataAction('invoke', { fn: 'sigajiCabangHapus', arg: String(i) }) + '>Hapus cabang</button>'
         : '') +
       '</div>'
     );
@@ -484,8 +482,8 @@
       list.map(cabangCardHtml).join('') +
       '</div>' +
       '<div class="fl gap1 mt-lg flex-wrap">' +
-      '<button type="button" class="btn btn-sm btn-p" onclick="sigajiCabangTambah()">+ Cabang</button>' +
-      '<button type="button" class="btn btn-sm btn-out" onclick="sigajiCabangSimpan()">Simpan</button>' +
+      '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('invoke', { fn: 'sigajiCabangTambah' }) + '>+ Cabang</button>' +
+      '<button type="button" class="btn btn-sm btn-out"' + sigajiDataAction('invoke', { fn: 'sigajiCabangSimpan' }) + '>Simpan</button>' +
       '</div></div>';
   };
 

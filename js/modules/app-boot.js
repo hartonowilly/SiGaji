@@ -275,8 +275,8 @@ async function loadRegRequests() {
             + '<td>' + (typeof escapeHtml === 'function' ? escapeHtml(nk) : nk) + '</td>'
             + '<td class="u-muted-11">' + (typeof escapeHtml === 'function' ? escapeHtml(dt) : dt) + '</td>'
             + '<td><div class="fl gap1">'
-            + '<button class="btn btn-sm btn-g" onclick="decideRegReq(\'' + String(it.id).replace(/'/g, '') + '\',\'approve\')">Approve</button>'
-            + '<button class="btn btn-sm btn-r" onclick="decideRegReq(\'' + String(it.id).replace(/'/g, '') + '\',\'reject\')">Reject</button>'
+            + '<button class="btn btn-sm btn-g"' + sigajiDataAction('reg-decide', { id: it.id, decision: 'approve' }) + '>Approve</button>'
+            + '<button class="btn btn-sm btn-r"' + sigajiDataAction('reg-decide', { id: it.id, decision: 'reject' }) + '>Reject</button>'
             + '</div></td>'
             + '</tr>'
           );

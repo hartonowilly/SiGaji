@@ -64,7 +64,7 @@
               title: 'Belum ada data tren',
               desc: 'Buat minimal satu periode gaji di Master → Periode untuk melihat grafik 12 bulan.',
               btnLabel: 'Atur periode',
-              btnOnclick: "showPg('master')",
+              btnAction:'showPg',btnActionArg:'master',
             })
           : '<div class="text-subtle font-12">Belum ada periode.</div>';
       return;
@@ -163,7 +163,8 @@
           fmt(ctx.thrTotal || 0) +
           ' · bayar ' +
           (ctx.thrBayar || '-'),
-        onclick: "showPg('thr')",
+        action: 'showPg',
+        actionArg: 'thr',
       });
     }
     if (ctx.pendingAp > 0) {
@@ -172,7 +173,8 @@
         icon: '&#9203;',
         title: ctx.pendingAp + ' approval tertunda',
         desc: 'Periksa sebelum finalisasi gaji',
-        onclick: "showPg('penggajian')",
+        action: 'showPg',
+        actionArg: 'penggajian',
       });
     }
     if (ctx.pphRet > 0) {
@@ -181,7 +183,8 @@
         icon: '&#128176;',
         title: 'Pengembalian PPh 21',
         desc: fmt(ctx.pphRet),
-        onclick: "showPg('laporan')",
+        action: 'showPg',
+        actionArg: 'laporan',
       });
     }
     if (typeof sigajiDetectPayrollAnomalies === 'function' && typeof PA === 'function') {
@@ -196,7 +199,8 @@
             icon: '&#9888;',
             title: anom.length + ' anomali payroll',
             desc: 'Perlu dicek sebelum final',
-            onclick: "showPg('dashboard')",
+            action: 'showPg',
+            actionArg: 'dashboard',
           });
         }
       }
@@ -213,9 +217,11 @@
           return (
             '<button type="button" class="dac ' +
             c.cls +
-            '" onclick="' +
-            (c.onclick || '') +
-            '">' +
+            '"' +
+            (c.action
+              ? sigajiDataAction('invoke', { fn: c.action, arg: c.actionArg || '' })
+              : '') +
+            '>' +
             '<span class="dac-icon">' +
             c.icon +
             '</span>' +
@@ -278,7 +284,7 @@
               title: 'Periode belum aktif',
               desc: 'Atur periode gaji di Master terlebih dahulu.',
               btnLabel: 'Master periode',
-              btnOnclick: "showPg('master')",
+              btnAction:'showPg',btnActionArg:'master',
             })
           : '';
       return;
@@ -312,7 +318,7 @@
               title: 'Tidak ada karyawan',
               desc: 'Sesuaikan filter dept/NIK atau tambah karyawan.',
               btnLabel: 'Master karyawan',
-              btnOnclick: "showPg('karyawan')",
+              btnAction:'showPg',btnActionArg:'karyawan',
             })
           : '<div class="text-subtle" style="padding:1rem">Tidak ada data.</div>';
       if (sumEl) sumEl.innerHTML = '';
@@ -473,21 +479,21 @@
         '<div class="fg"><label>Nama perusahaan</label><input id="wiz-prs-nama" value="' +
         escapeHtml(prsNama) +
         '" placeholder="PT Contoh Indonesia"></div>' +
-        '<button type="button" class="btn btn-sm btn-out" onclick="showPg(\'master\');var t=document.querySelector(\'#pg-master .tab[data-mstab=prs]\');if(t)switchTab(t,\'m-prs\')">Buka profil lengkap</button></div>',
+        '<button type="button" class="btn btn-sm btn-out"' + sigajiDataAction('master-tab', { mstab: 'prs' }) + '>Buka profil lengkap</button></div>',
       '<div class="wiz-step"><p class="font-12 text-body">Buat periode gaji bulan pertama (mis. Januari ' +
         yr +
         ').</p>' +
         '<div class="wiz-stat-row"><span>Periode terdaftar</span><strong>' +
         nPer +
         '</strong></div>' +
-        '<button type="button" class="btn btn-sm btn-p" onclick="showPg(\'master\');var t=document.querySelector(\'#pg-master .tab[data-mstab=periode]\');if(t)switchTab(t,\'m-periode\')">+ Atur periode gaji</button></div>',
+        '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('master-tab', { mstab: 'periode' }) + '>+ Atur periode gaji</button></div>',
       '<div class="wiz-step"><p class="font-12 text-body">Import Excel atau tambah manual pegawai tetap / tidak tetap.</p>' +
         '<div class="wiz-stat-row"><span>Karyawan</span><strong>' +
         nKar +
         '</strong></div>' +
-        '<button type="button" class="btn btn-sm btn-p" onclick="showPg(\'karyawan\')">Buka Master Karyawan</button></div>',
+        '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('invoke', { fn: 'showPg', arg: 'karyawan' }) + '>Buka Master Karyawan</button></div>',
       '<div class="wiz-step"><p class="font-12 text-body">Pastikan UMK provinsi/kota sesuai untuk validasi upah minimum (opsional tapi disarankan).</p>' +
-        '<button type="button" class="btn btn-sm btn-out" onclick="showPg(\'master\');var t=document.querySelector(\'#pg-master .tab[data-mstab=umk]\');if(t)switchTab(t,\'m-umk\')">Atur UMK</button></div>',
+        '<button type="button" class="btn btn-sm btn-out"' + sigajiDataAction('master-tab', { mstab: 'umk' }) + '>Atur UMK</button></div>',
       '<div class="wiz-step"><p class="font-12 text-body">Muat kalender libur nasional agar absensi &amp; cuti akurat.</p>' +
         '<div class="wiz-stat-row"><span>Hari libur</span><strong>' +
         nLib +
@@ -495,7 +501,7 @@
         '<div class="fg" style="max-width:140px"><label>Tahun</label><input type="number" id="wiz-libur-yr" value="' +
         yr +
         '" min="2017" max="2030"></div>' +
-        '<button type="button" class="btn btn-sm btn-p" onclick="loadLiburNasionalDinamis()">Muat libur nasional</button></div>',
+        '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('invoke', { fn: 'loadLiburNasionalDinamis' }) + '>Muat libur nasional</button></div>',
     ];
     body.innerHTML = steps[wizStep] || '';
     var prev = document.getElementById('wiz-btn-prev');

@@ -170,7 +170,7 @@
               title: 'Periode belum aktif',
               desc: 'Atur periode gaji di Master terlebih dahulu.',
               btnLabel: 'Master periode',
-              btnOnclick: "showPg('master')",
+              btnAction:'showPg',btnActionArg:'master',
             })
           : '';
       if (sumEl) sumEl.innerHTML = '';
@@ -207,7 +207,7 @@
               title: 'Tidak ada karyawan',
               desc: 'Sesuaikan filter atau tambah karyawan.',
               btnLabel: 'Master karyawan',
-              btnOnclick: "showPg('karyawan')",
+              btnAction:'showPg',btnActionArg:'karyawan',
             })
           : '';
       if (sumEl) sumEl.innerHTML = '';
@@ -321,7 +321,7 @@
               title: 'Pilih karyawan',
               desc: 'Simulasi pesangon membutuhkan satu karyawan — tidak menyimpan ke profil.',
               btnLabel: 'Master karyawan',
-              btnOnclick: "showPg('karyawan')",
+              btnAction:'showPg',btnActionArg:'karyawan',
             })
           : '';
       if (detail) detail.innerHTML = '';

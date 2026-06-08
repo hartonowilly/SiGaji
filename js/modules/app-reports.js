@@ -12,7 +12,7 @@ function renderPPHBody(){
     const g=hitungGaji(k);
     const tbl=getTERTable(k.ptkp);const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
     const bj=Math.min(g.grossPPh*12*.05,6e6);const pv=nilaiPTKP(k.ptkp);const pkp=Math.max(0,g.grossPPh*12-bj-pv);
-    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl" onclick="openPanel(\''+k.nik+'\')">'+k.nama+'</div></div></td>'
+    return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+k.nama+'</div></div></td>'
       +'<td><span class="bdg b-info">'+k.ptkp+'</span></td><td>'+fmt(g.grossPPh)+'</td>'
       +'<td>'+(g.thrBruto>0?'<span class="ct-purple fw-700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
       +'<td>'+(rate*100).toFixed(2)+'%</td><td>'+fmt(pkp)+'</td><td>'+fmt(g.pph*12)+'</td>'
@@ -512,7 +512,7 @@ function renderTHRBody(){
   const tbThr=document.getElementById('tb-thr');
   if(!tbThr)return;
   if(!(karyawan||[]).length&&typeof sigajiEmptyState==='function'){
-    tbThr.innerHTML='<tr><td colspan="9">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah karyawan untuk menghitung preview THR.',btnLabel:'Master karyawan',btnOnclick:"showPg('karyawan')"})+'</td></tr>';
+    tbThr.innerHTML='<tr><td colspan="9">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah karyawan untuk menghitung preview THR.',btnLabel:'Master karyawan',btnAction:'showPg',btnActionArg:'karyawan'})+'</td></tr>';
     const sum=document.getElementById('thr-summary');if(sum)sum.innerHTML='';
     return;
   }
@@ -528,7 +528,7 @@ function renderTHRBody(){
       var nikE=k.nik.replace(/'/g,"\\'");
       var pNE=pNama.replace(/'/g,"\\'");
       manCell='<div class="fl items-center gap-xs flex-wrap">'
-        +'<button onclick="setTHRManual(this)" data-nik="'+k.nik+'" data-pnama="'+pNama+'" data-aktif="'+(isManual?'0':'1')+'" '
+        +'<button'+sigajiDataAction('thr-manual',{nik:k.nik,periode:pNama,enabled:isManual?'0':'1'})+' data-pnama="'+pNama+'" data-aktif="'+(isManual?'0':'1')+'" '
         +'style="padding:3px 10px;border-radius:20px;border:1.5px solid '+(isManual?'#5b21b6':'#dde1e9')+';'
         +'background:'+(isManual?'#5b21b6':'#fff')+';color:'+(isManual?'#fff':'#6b7280')+';'
         +'font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">'

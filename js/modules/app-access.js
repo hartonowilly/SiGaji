@@ -65,7 +65,7 @@ function renderUsers(){
 }
 function renderUsersBody(){
   const tb=document.getElementById('tb-users');if(!tb)return;
-  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${escapeHtml(u.username)}</strong></td><td class="font-11" style="max-width:140px; word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${escapeHtml(u.nama)}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${escapeHtml(u.role)}</span></td><td>${u.nik?`<span class="bdg b-info">${escapeHtml(u.nik)}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out" onclick="openUserModal(${i})">Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r" onclick="hapusUser(${i})">Hapus</button>`:''}</div></td></tr>`).join('');
+  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${escapeHtml(u.username)}</strong></td><td class="font-11" style="max-width:140px; word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${escapeHtml(u.nama)}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':'b-ok'}">${escapeHtml(u.role)}</span></td><td>${u.nik?`<span class="bdg b-info">${escapeHtml(u.nik)}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out"${sigajiDataAction('user-edit',{idx:i})}>Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r"${sigajiDataAction('user-delete',{idx:i})}>Hapus</button>`:''}</div></td></tr>`).join('');
 }
 function openUserModal(idx=-1){
   var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
@@ -274,8 +274,8 @@ async function loadRegRequests(){
           +'<td>'+escapeHtml(nk)+'</td>'
           +'<td class="u-muted-11">'+escapeHtml(dt)+'</td>'
           +'<td><div class="fl gap1">'
-            +'<button class="btn btn-sm btn-g" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'approve\')">Approve</button>'
-            +'<button class="btn btn-sm btn-r" onclick="decideRegReq(\''+String(it.id).replace(/'/g,'')+'\',\'reject\')">Reject</button>'
+            +'<button class="btn btn-sm btn-g"'+sigajiDataAction('reg-decide',{id:it.id,decision:'approve'})+'>Approve</button>'
+            +'<button class="btn btn-sm btn-r"'+sigajiDataAction('reg-decide',{id:it.id,decision:'reject'})+'>Reject</button>'
           +'</div></td>'
         +'</tr>';
       }).join('')

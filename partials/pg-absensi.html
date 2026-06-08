@@ -7,13 +7,13 @@
     <select id="ab-periode-sel" class="toolbar-select" onchange="renderAbsensi();renderCutiRekap();"></select>
     <label class="toolbar-lbl">Tahun cuti</label>
     <select class="toolbar-select" id="ab-yr" onchange="renderAbsensi();renderCutiRekap();"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
-    <button class="btn btn-sm btn-out" onclick="renderAbsensi()">&#8635; Refresh</button>
+    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderAbsensi">&#8635; Refresh</button>
   </div></div>
   <div class="tabs">
-    <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender" onclick="switchAbTab(this,'abt-kalender')">&#128197; Kalender Absensi</div>
-    <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti" onclick="switchAbTab(this,'abt-cuti')">&#127774; Tracking Cuti</div>
-    <div class="tab" data-abtab="lokasi" data-abpanel="abt-lokasi" onclick="switchAbTab(this,'abt-lokasi')">&#128205; Lokasi GPS</div>
-    <div class="tab" data-abtab="pengajuan" data-abpanel="abt-pengajuan" onclick="switchAbTab(this,'abt-pengajuan')">&#128221; Pengajuan Cuti</div>
+    <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender">&#128197; Kalender Absensi</div>
+    <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti">&#127774; Tracking Cuti</div>
+    <div class="tab" data-abtab="lokasi" data-abpanel="abt-lokasi">&#128205; Lokasi GPS</div>
+    <div class="tab" data-abtab="pengajuan" data-abpanel="abt-pengajuan">&#128221; Pengajuan Cuti</div>
   </div>
   <div id="abt-kalender">
     <div class="ab-status-legend">
@@ -49,14 +49,14 @@
         <div class="ct m-0 border-0 p-0">Rekap keterlambatan</div>
         <div class="fl gap1">
           <input type="month" id="mob-late-month" class="toolbar-select select-inline" onchange="renderMobileLateReport()">
-          <button type="button" class="btn btn-sm btn-out" onclick="renderMobileLateReport()">Muat</button>
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderMobileLateReport">Muat</button>
         </div>
       </div>
       <div id="mob-late-wrap"></div>
     </div>
     <div class="fl gap1 mt1 flex-wrap">
-      <button type="button" class="btn btn-sm btn-out" onclick="mobImportLibnas()">Impor libur nasional</button>
-      <button type="button" class="btn btn-sm btn-warn" onclick="mobSyncAlpha()">Sinkron alpha dari absen mobile</button>
+      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="mobImportLibnas">Impor libur nasional</button>
+      <button type="button" class="btn btn-sm btn-warn" data-sigaji-action="invoke" data-fn="mobSyncAlpha">Sinkron alpha dari absen mobile</button>
     </div>
   </div>
   <div class="u-hidden" id="abt-pengajuan">

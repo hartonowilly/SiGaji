@@ -27,9 +27,9 @@ function renderTunjVarColEditor() {
           idEsc +
           "',this.value)\">" +
           (cols.length > 1
-            ? '<button type="button" class="btn btn-xs btn-r" title="Hapus kolom" onclick="hapusTunjVarColumn(\'' +
-              idEsc +
-              "')\">&#10007;</button>"
+            ? '<button type="button" class="btn btn-xs btn-r" title="Hapus kolom"' +
+              sigajiDataAction('hapus-tunjvar-col', { 'col-id': id }) +
+              '>&#10007;</button>'
             : '') +
           '</div></div>'
         );
@@ -342,11 +342,9 @@ function renderTunjVariabelBulan() {
             "','" +
             idEsc +
             '\',this.value);}">' +
-            '<button type="button" class="btn btn-xs btn-g" onclick="tunjVarCommitCell(\'' +
-            nikA +
-            "','" +
-            idEsc +
-            "',this.previousElementSibling.value)\">Simpan</button></div></td>"
+            '<button type="button" class="btn btn-xs btn-g"' +
+            sigajiDataAction('tunjvar-commit', { nik: k.nik, 'col-id': c.id }) +
+            '>Simpan</button></div></td>'
           );
         }
         return (
@@ -354,11 +352,9 @@ function renderTunjVariabelBulan() {
           '<span class="font-12 fw-600" style="min-width:76px">' +
           formatRpInputNum(v) +
           '</span>' +
-          '<button type="button" class="btn btn-xs btn-out" onclick="tunjVarUnlockCell(\'' +
-          nikA +
-          "','" +
-          idEsc +
-          "')\">Edit</button></div></td>"
+          '<button type="button" class="btn btn-xs btn-out"' +
+          sigajiDataAction('tunjvar-unlock', { nik: k.nik, 'col-id': c.id }) +
+          '>Edit</button></div></td>'
         );
       })
       .join('');

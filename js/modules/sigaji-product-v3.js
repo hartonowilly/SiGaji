@@ -160,16 +160,14 @@
     );
   }
 
-  function explainMoneyBtn(nik, pNama, label) {
+  function explainMoneyBtn(nik, pNama) {
     if (!nik) return '';
-    var pe = String(pNama || '').replace(/'/g, "\\'");
-    var ne = String(nik).replace(/'/g, "\\'");
     return (
-      ' <button type="button" class="sigaji-explain-btn" title="Kenapa angka ini?" onclick="sigajiOpenExplain(\'' +
-      ne +
-      "','" +
-      pe +
-      '\')">?</button>'
+      ' <button type="button" class="sigaji-explain-btn" title="Kenapa angka ini?"' +
+      (typeof sigajiDataAction === 'function'
+        ? sigajiDataAction('explain', { nik: nik, periode: pNama || '' })
+        : '') +
+      '>?</button>'
     );
   }
 
@@ -245,13 +243,13 @@
         '<div class="bento-kpi" data-tour="kpi-kar"><span class="bento-kpi-lbl">Karyawan</span><span class="bento-kpi-val">' +
         (ctx.nKar != null ? ctx.nKar : '-') +
         '</span></div>' +
-        '<div class="bento-kpi bento-kpi-click" onclick="sigajiOpenExplainSummary(\'bruto\')"><span class="bento-kpi-lbl">Gross PPh</span><span class="bento-kpi-val sigaji-money">' +
+        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'bruto' }) + '><span class="bento-kpi-lbl">Gross PPh</span><span class="bento-kpi-val sigaji-money">' +
         fmt(ctx.tB || 0) +
         '</span><span class="bento-kpi-hint">klik → waterfall</span></div>' +
-        '<div class="bento-kpi bento-kpi-click" onclick="sigajiOpenExplainSummary(\'pph\')"><span class="bento-kpi-lbl">PPh 21</span><span class="bento-kpi-val sigaji-money-warn">' +
+        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'pph' }) + '><span class="bento-kpi-lbl">PPh 21</span><span class="bento-kpi-val sigaji-money-warn">' +
         fmt(ctx.tP || 0) +
         '</span></div>' +
-        '<div class="bento-kpi bento-kpi-click" onclick="sigajiOpenExplainSummary(\'neto\')"><span class="bento-kpi-lbl">Neto</span><span class="bento-kpi-val sigaji-money-ok">' +
+        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'neto' }) + '><span class="bento-kpi-lbl">Neto</span><span class="bento-kpi-val sigaji-money-ok">' +
         fmt(ctx.tN || 0) +
         '</span></div></div>' +
         (ctx.hintHtml ? '<div class="dash-kpi-hint mt-md">' + ctx.hintHtml + '</div>' : ''),
@@ -583,9 +581,7 @@
           return (
             '<button type="button" class="' +
             cls +
-            '" onclick="sigajiSwitchPeriodeTimeline(\'' +
-            String(p.id).replace(/'/g, "\\'") +
-            '\')" title="' +
+            '"' + sigajiDataAction('periode-timeline', { id: p.id }) + ' title="' +
             escapeHtml(tip) +
             '">' +
             escapeHtml(lbl) +
@@ -666,8 +662,8 @@
       text +
       '</div>' +
       '<div class="fl gap1 flex-wrap" style="margin-top:.65rem">' +
-      '<button type="button" class="btn btn-sm btn-p" onclick="sigajiExportNarrativePdf()">&#128196; Export PDF</button>' +
-      '<button type="button" class="btn btn-sm btn-out" onclick="sigajiCopyNarrative()">Salin teks</button>' +
+      '<button type="button" class="btn btn-sm btn-p"' + sigajiDataAction('invoke', { fn: 'sigajiExportNarrativePdf' }) + '>&#128196; Export PDF</button>' +
+      '<button type="button" class="btn btn-sm btn-out"' + sigajiDataAction('invoke', { fn: 'sigajiCopyNarrative' }) + '>Salin teks</button>' +
       '</div></div>';
     window.__sigajiNarrativePlain = wrap.querySelector('.narrative-text')
       ? wrap.querySelector('.narrative-text').innerText

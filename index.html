@@ -7,17 +7,17 @@
 <title>SiGaji v10 — Sistem Penggajian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/css/styles.css?v=11.5.33">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.33">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.33">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.33">
+<link rel="stylesheet" href="/css/styles.css?v=11.5.35">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.35">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.35">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.35">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.33"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.35"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.33"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.35"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -35,11 +35,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <span id="remember-username-lbl">Ingat email</span>
   </label>
   <div id="cloud-login-hint" class="login-config-hint u-hidden"></div>
-  <button type="button" class="btn btn-p btn-full" id="btn-login" onclick="doLogin()"><span class="btn-login-label">Masuk ke Sistem</span></button>
+  <button type="button" class="btn btn-p btn-full" id="btn-login" data-sigaji-action="invoke" data-fn="doLogin"><span class="btn-login-label">Masuk ke Sistem</span></button>
   <div id="forgot-pw-wrap" class="login-footer u-hidden">
-    <button type="button" class="login-link" onclick="doForgotPassword()">Lupa password?</button>
+    <button type="button" class="login-link" data-sigaji-action="invoke" data-fn="doForgotPassword">Lupa password?</button>
     <span class="login-footer-sep" aria-hidden="true">|</span>
-    <button type="button" class="login-link login-link-accent" onclick="openRegisterModal()">Daftar Email</button>
+    <button type="button" class="login-link login-link-accent" data-sigaji-action="invoke" data-fn="openRegisterModal">Daftar Email</button>
   </div>
   <div id="file-protocol-hint" class="login-file-hint u-hidden">
     <strong>Jangan buka lewat file:///</strong> — gunakan alamat situs (mis. <code>https://www.cemerlang.online</code>) atau server lokal (<code>start-sigaji.cmd</code> → <code>http://localhost:3333</code>). SiGaji hanya mode <strong>online</strong> (login email Supabase).
@@ -51,10 +51,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div id="app">
 <div class="topbar">
   <div class="tl">
-    <button type="button" class="nav-drawer-btn" id="nav-drawer-btn" aria-label="Buka menu modul" aria-expanded="false" aria-controls="sidebar-wrap" onclick="return sigajiToggleNavDrawer(event)">&#9776;</button>
+    <button type="button" class="nav-drawer-btn" id="nav-drawer-btn" aria-label="Buka menu modul" aria-expanded="false" aria-controls="sidebar-wrap" data-sigaji-action="nav-drawer">&#9776;</button>
     <img class="topbar-logo-img" id="topbar-logo">
     <span class="alogo" id="topbar-nama">&#9670; SiGaji</span>
-    <button class="periode-pill" onclick="showPg('master')" title="Buka Master Periode Gaji">&#128197; <span id="top-periode">-</span></button>
+    <button class="periode-pill" data-sigaji-action="invoke" data-fn="showPg" data-arg="master" title="Buka Master Periode Gaji">&#128197; <span id="top-periode">-</span></button>
     <span id="sigaji-cabang-topbar" class="sigaji-cabang-topbar u-hidden"></span>
     <span class="sigaji-build-chip" id="sigaji-build-chip" title="Versi deploy (SIGAJI_BUILD)"></span>
     <span class="sync-status" id="sync-status" aria-live="polite"></span>
@@ -70,11 +70,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <option value="dark">Dark</option>
       <option value="brand">Brand PT</option>
     </select>
-    <button type="button" class="btn btn-xs btn-out" onclick="sigajiProductTourStart(true)" title="Tur produk">?</button>
-    <button class="notif-btn" onclick="showPg('notifikasi')">&#128276;<span class="ndot" id="ndot"></span></button>
+    <button type="button" class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="sigajiProductTourStart" data-bool="1" title="Tur produk">?</button>
+    <button class="notif-btn" data-sigaji-action="invoke" data-fn="showPg" data-arg="notifikasi">&#128276;<span class="ndot" id="ndot"></span></button>
     <div class="av" id="uav">A</div>
     <div><div class="uname" id="uname">-</div><span class="rbadge" id="urbadge">-</span></div>
-    <button class="btn btn-sm btn-out topbar-logout" onclick="doLogout()">Keluar</button>
+    <button class="btn btn-sm btn-out topbar-logout" data-sigaji-action="invoke" data-fn="doLogout">Keluar</button>
   </div>
 </div>
 <div id="period-timeline-bar" class="period-timeline-bar" role="navigation" aria-label="Timeline periode gaji"></div>
@@ -105,7 +105,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="sigaji-branch-workspace-banner" class="sigaji-branch-workspace-banner u-hidden" aria-live="polite"></div>
   <div class="dash-bento-toolbar flb toolbar-row">
     <div class="u-muted-12">Dashboard — seret widget · layout tersimpan per role (cloud sync)</div>
-    <button type="button" class="btn btn-xs btn-out" onclick="sigajiResetBentoLayout()">&#8635; Reset layout</button>
+    <button type="button" class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="sigajiResetBentoLayout">&#8635; Reset layout</button>
   </div>
   <div id="dash-bento-grid" class="dash-bento-grid" aria-label="Dashboard bento"></div>
 </div>
@@ -115,8 +115,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Notifikasi</div><div class="pst">Pesan sistem &amp; pengingat HR</div></div>
     <div class="page-actions fl gap1">
-      <button class="btn btn-sm btn-out" onclick="markAllRead()">Semua Dibaca</button>
-      <button class="btn btn-sm btn-r" onclick="hapusNotifSemua()">Hapus Semua</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="markAllRead">Semua Dibaca</button>
+      <button class="btn btn-sm btn-r" data-sigaji-action="invoke" data-fn="hapusNotifSemua">Hapus Semua</button>
     </div>
   </div>
   <div id="notif-list" class="notif-feed"></div>
@@ -127,8 +127,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Master Karyawan</div><div class="pst">Data SDM, PTKP, dan saldo cuti</div></div>
     <div class="page-actions fl gap1">
-  <button class="btn btn-sm btn-p" onclick="openNewKar('tetap')">+ Pegawai Tetap</button>
-  <button class="btn btn-sm btn-out" onclick="openNewKar('tidak_tetap')">+ Pegawai Tidak Tetap</button>
+  <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="openNewKar" data-arg="tetap">+ Pegawai Tetap</button>
+  <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="openNewKar" data-arg="tidak_tetap">+ Pegawai Tidak Tetap</button>
   </div></div>
   <div class="card">
     <div class="flb mb2 kar-toolbar">
@@ -151,7 +151,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-kompgaji">
   <div class="ph page-header">
     <div><div class="pt">Komponen Gaji</div><div class="pst">Gaji pokok, BPJS, tunjangan, dan natura per karyawan</div></div>
-    <div class="page-actions"><button class="btn btn-sm btn-out" onclick="renderKompgaji()">&#8635; Refresh</button></div>
+    <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderKompgaji">&#8635; Refresh</button></div>
   </div>
   <div class="tabs tabs-spaced">
     <div class="tab active" data-kgtab="daftar" data-kgpanel="kg-tab-daftar">&#128203; Daftar Komponen</div>
@@ -175,10 +175,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       Bonus, uang makan, insentif bulanan. Ikut Gross PPh, tidak masuk BPJS/THR/prorata. Periode: <strong id="tunjvar-per-lbl">-</strong>. Klik <strong>Edit</strong> pada sel untuk ubah nilai.
     </div>
     <div class="fl gap1 mb1 flex-wrap items-center">
-      <button type="button" class="btn btn-sm btn-p" onclick="addTunjVarColumn()">+ Tambah kolom</button>
-      <button type="button" class="btn btn-sm btn-out" onclick="salinTunjVarDariPeriodeLalu()">&#8635; Salin dari periode sebelumnya</button>
-      <button type="button" class="btn btn-sm btn-out" onclick="exportTunjVarExcelTemplate()">&#128196; Template Excel</button>
-      <button type="button" class="btn btn-sm btn-s" onclick="document.getElementById('inp-tunjvar-xlsx').click()">&#128229; Import Excel</button>
+      <button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="addTunjVarColumn">+ Tambah kolom</button>
+      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="salinTunjVarDariPeriodeLalu">&#8635; Salin dari periode sebelumnya</button>
+      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportTunjVarExcelTemplate">&#128196; Template Excel</button>
+      <button type="button" class="btn btn-sm btn-s" data-sigaji-action="click-input" data-target="inp-tunjvar-xlsx">&#128229; Import Excel</button>
       <input class="u-hidden" type="file" id="inp-tunjvar-xlsx" accept=".xlsx,.xls" onchange="importTunjVarExcel(this)">
     </div>
     <div id="tunjvar-col-editor" class="mb1 u-muted-12"></div>
@@ -197,13 +197,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <select id="ab-periode-sel" class="toolbar-select" onchange="renderAbsensi();renderCutiRekap();"></select>
     <label class="toolbar-lbl">Tahun cuti</label>
     <select class="toolbar-select" id="ab-yr" onchange="renderAbsensi();renderCutiRekap();"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
-    <button class="btn btn-sm btn-out" onclick="renderAbsensi()">&#8635; Refresh</button>
+    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderAbsensi">&#8635; Refresh</button>
   </div></div>
   <div class="tabs">
-    <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender" onclick="switchAbTab(this,'abt-kalender')">&#128197; Kalender Absensi</div>
-    <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti" onclick="switchAbTab(this,'abt-cuti')">&#127774; Tracking Cuti</div>
-    <div class="tab" data-abtab="lokasi" data-abpanel="abt-lokasi" onclick="switchAbTab(this,'abt-lokasi')">&#128205; Lokasi GPS</div>
-    <div class="tab" data-abtab="pengajuan" data-abpanel="abt-pengajuan" onclick="switchAbTab(this,'abt-pengajuan')">&#128221; Pengajuan Cuti</div>
+    <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender">&#128197; Kalender Absensi</div>
+    <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti">&#127774; Tracking Cuti</div>
+    <div class="tab" data-abtab="lokasi" data-abpanel="abt-lokasi">&#128205; Lokasi GPS</div>
+    <div class="tab" data-abtab="pengajuan" data-abpanel="abt-pengajuan">&#128221; Pengajuan Cuti</div>
   </div>
   <div id="abt-kalender">
     <div class="ab-status-legend">
@@ -239,14 +239,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="ct m-0 border-0 p-0">Rekap keterlambatan</div>
         <div class="fl gap1">
           <input type="month" id="mob-late-month" class="toolbar-select select-inline" onchange="renderMobileLateReport()">
-          <button type="button" class="btn btn-sm btn-out" onclick="renderMobileLateReport()">Muat</button>
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderMobileLateReport">Muat</button>
         </div>
       </div>
       <div id="mob-late-wrap"></div>
     </div>
     <div class="fl gap1 mt1 flex-wrap">
-      <button type="button" class="btn btn-sm btn-out" onclick="mobImportLibnas()">Impor libur nasional</button>
-      <button type="button" class="btn btn-sm btn-warn" onclick="mobSyncAlpha()">Sinkron alpha dari absen mobile</button>
+      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="mobImportLibnas">Impor libur nasional</button>
+      <button type="button" class="btn btn-sm btn-warn" data-sigaji-action="invoke" data-fn="mobSyncAlpha">Sinkron alpha dari absen mobile</button>
     </div>
   </div>
   <div class="u-hidden" id="abt-pengajuan">
@@ -259,14 +259,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-lembur">
   <div class="ph page-header">
     <div><div class="pt">Lembur</div><div class="pst">Input jam lembur dan rekap per periode aktif</div></div>
-    <div class="page-actions"><button class="btn btn-sm btn-out" onclick="initLemburPage()">&#8635; Refresh</button></div>
+    <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="initLemburPage">&#8635; Refresh</button></div>
   </div>
   <div class="card">
     <div class="ct">Input Lembur
       <div class="fl gap1">
         <select class="rounded-sm font-12 select-inline" id="lembur-kar-sel"></select>
-        <button class="btn btn-sm btn-p" onclick="addLemburForKar()">+ Tambah Lembur</button>
-        <button class="btn btn-sm btn-r" onclick="hapusLemburBulan()">Hapus Semua</button>
+        <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="addLemburForKar">+ Tambah Lembur</button>
+        <button class="btn btn-sm btn-r" data-sigaji-action="invoke" data-fn="hapusLemburBulan">Hapus Semua</button>
       </div>
     </div>
     <div id="lembur-list"></div>
@@ -278,7 +278,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-thr">
   <div class="ph page-header">
     <div><div class="pt">THR — Tunjangan Hari Raya</div><div class="pst">THR diatur per Periode Gaji di Master → Periode Gaji &amp; THR</div></div>
-    <div class="page-actions"><button class="btn btn-sm btn-p" onclick="renderTHR()">&#9654; Hitung Preview</button></div>
+    <div class="page-actions"><button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="renderTHR">&#9654; Hitung Preview</button></div>
   </div>
   <div class="card card-surface-purple">
     <div class="ct ct-purple">&#127873; Preview Perhitungan THR</div>
@@ -286,7 +286,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fg"><label>Hari Raya</label><select id="thr-hari"><option>Idul Fitri 1447 H</option><option>Natal 2026</option></select></div>
       <div class="fg"><label>Tgl Hari Raya (referensi)</label><input type="date" id="thr-batas" value="2026-03-20"></div>
     </div>
-    <button class="btn btn-pu" onclick="renderTHR()">&#9654; Hitung Preview THR</button>
+    <button class="btn btn-pu" data-sigaji-action="invoke" data-fn="renderTHR">&#9654; Hitung Preview THR</button>
   </div>
   <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
     <div class="table-wrap">
@@ -300,7 +300,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-pesangon">
   <div class="ph page-header">
     <div><div class="pt">Pesangon &amp; PHK</div><div class="pst">Estimasi hak sesuai UU Cipta Kerja / PP 35 Tahun 2021 — bukan pengganti konsultasi hukum</div></div>
-    <div class="page-actions"><button class="btn btn-sm btn-out" onclick="renderPesangon()">&#8635; Refresh</button></div>
+    <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderPesangon">&#8635; Refresh</button></div>
   </div>
   <div class="card"><div class="ct">Karyawan dengan tanggal berhenti</div>
     <div class="table-wrap">
@@ -315,12 +315,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Proses Penggajian</div><div class="pst" id="pg-periode-lbl">-</div></div>
     <div class="page-actions fl gap1">
-    <button class="btn btn-sm btn-out" onclick="showPg('simulasi')" title="Sandbox naik gaji / tunjangan">&#128202; Simulasi</button>
-    <button class="btn btn-sm btn-out" onclick="hitungUlangPenggajian()" title="Hitung ulang tabel gaji periode aktif">&#8635; Hitung Ulang</button>
-    <button class="btn btn-sm btn-g" onclick="exportExcelDaftarRekening()" title="Format daftar transfer bank">&#128196; Excel Daftar Rekening</button>
-    <button class="btn btn-sm btn-g" onclick="exportExcelBPJS()" title="Rekap iuran BPJS per karyawan">&#128196; Excel BPJS</button>
-    <button class="btn btn-sm btn-g" onclick="exportExcelKertasKerjaPPh()" title="Kertas kerja PPh 21 &amp; THP per karyawan">&#128196; Excel Kertas Kerja PPh</button>
-    <button class="btn btn-sm btn-g" onclick="exportExcelRekonResign()" title="Rekonsiliasi PPh Jan s.d. bulan berhenti — karyawan dengan tgl. berhenti &amp; alasan PHK">&#128196; Excel Rekonsiliasi Resign</button>
+    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="showPg" data-arg="simulasi" title="Sandbox naik gaji / tunjangan">&#128202; Simulasi</button>
+    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="hitungUlangPenggajian" title="Hitung ulang tabel gaji periode aktif">&#8635; Hitung Ulang</button>
+    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelDaftarRekening" title="Format daftar transfer bank">&#128196; Excel Daftar Rekening</button>
+    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelBPJS" title="Rekap iuran BPJS per karyawan">&#128196; Excel BPJS</button>
+    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelKertasKerjaPPh" title="Kertas kerja PPh 21 &amp; THP per karyawan">&#128196; Excel Kertas Kerja PPh</button>
+    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelRekonResign" title="Rekonsiliasi PPh Jan s.d. bulan berhenti — karyawan dengan tgl. berhenti &amp; alasan PHK">&#128196; Excel Rekonsiliasi Resign</button>
   </div></div>
   <div id="pg-gaji-proses">
   <div id="thr-period-info"></div>
@@ -332,8 +332,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
   </div>
   <div class="pg-cols-toggle" role="group" aria-label="Tampilan kolom penggajian">
-    <button type="button" data-pg-cols="ringkas" class="active" onclick="sigajiSetPgGajiCols('ringkas')">Ringkas</button>
-    <button type="button" data-pg-cols="lengkap" onclick="sigajiSetPgGajiCols('lengkap')">Lengkap</button>
+    <button type="button" data-pg-cols="ringkas" class="active" data-sigaji-action="invoke" data-fn="sigajiSetPgGajiCols" data-arg="ringkas">Ringkas</button>
+    <button type="button" data-pg-cols="lengkap" data-sigaji-action="invoke" data-fn="sigajiSetPgGajiCols" data-arg="lengkap">Lengkap</button>
   </div>
   <div class="card pg-table-sticky"><div class="table-wrap">
   <table><thead><tr><th class="pg-sticky-no">No</th><th class="pg-sticky-name">Karyawan</th><th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th></tr></thead>
@@ -345,7 +345,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-approval">
   <div class="ph page-header">
     <div><div class="pt">Approval Penggajian</div><div class="pst">Persetujuan payroll sebelum final</div></div>
-    <div class="page-actions"><button class="btn btn-sm btn-r" onclick="hapusApproval()">Hapus Riwayat</button></div>
+    <div class="page-actions"><button class="btn btn-sm btn-r" data-sigaji-action="invoke" data-fn="hapusApproval">Hapus Riwayat</button></div>
   </div>
   <div class="tabs"><div class="tab active" data-aptab="pend" data-panel="ap-pend">Menunggu</div><div class="tab" data-aptab="hist" data-panel="ap-hist">Riwayat</div></div>
   <div id="ap-pend"><div id="ap-pend-list"></div></div>
@@ -358,15 +358,15 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Simulasi What-if</div><div class="pst">Sandbox gaji, THR, dan pesangon — tidak mengubah snapshot atau profil</div></div>
   </div>
   <div class="tabs sim-sandbox-tabs tabs-spaced-lg" role="tablist">
-    <button type="button" class="tab active" data-simtab="gaji" onclick="sigajiSimSwitchTab('gaji')">&#128176; Gaji</button>
-    <button type="button" class="tab" data-simtab="thr" onclick="sigajiSimSwitchTab('thr')">&#127873; THR</button>
-    <button type="button" class="tab" data-simtab="pesangon" onclick="sigajiSimSwitchTab('pesangon')">&#9878; Pesangon</button>
+    <button type="button" class="tab active" data-simtab="gaji" data-sigaji-action="invoke" data-fn="sigajiSimSwitchTab" data-arg="gaji">&#128176; Gaji</button>
+    <button type="button" class="tab" data-simtab="thr" data-sigaji-action="invoke" data-fn="sigajiSimSwitchTab" data-arg="thr">&#127873; THR</button>
+    <button type="button" class="tab" data-simtab="pesangon" data-sigaji-action="invoke" data-fn="sigajiSimSwitchTab" data-arg="pesangon">&#9878; Pesangon</button>
   </div>
 
   <div id="sim-panel-gaji">
     <div class="page-actions fl gap1 toolbar-end">
-      <button class="btn btn-sm btn-out" onclick="sigajiSimReset()">&#8635; Reset</button>
-      <button class="btn btn-sm btn-p" onclick="renderSimulasiGaji()">Hitung ulang</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sigajiSimReset">&#8635; Reset</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="renderSimulasiGaji">Hitung ulang</button>
     </div>
     <div class="card border-accent-indigo">
       <div class="ct ct-indigo">Parameter simulasi gaji</div>
@@ -389,8 +389,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
   <div class="u-hidden" id="sim-panel-thr">
     <div class="page-actions fl gap1 toolbar-end">
-      <button class="btn btn-sm btn-out" onclick="sigajiSimThrReset()">&#8635; Reset</button>
-      <button class="btn btn-sm btn-p" onclick="renderSimulasiThr()">Hitung ulang</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sigajiSimThrReset">&#8635; Reset</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="renderSimulasiThr">Hitung ulang</button>
     </div>
     <div class="card border-accent-purple">
       <div class="ct ct-purple">Parameter simulasi THR</div>
@@ -414,8 +414,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
   <div class="u-hidden" id="sim-panel-pesangon">
     <div class="page-actions fl gap1 toolbar-end">
-      <button class="btn btn-sm btn-out" onclick="sigajiSimPsgReset()">&#8635; Reset</button>
-      <button class="btn btn-sm btn-p" onclick="renderSimulasiPesangon()">Hitung ulang</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sigajiSimPsgReset">&#8635; Reset</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="renderSimulasiPesangon">Hitung ulang</button>
     </div>
     <div class="card border-accent-amber">
       <div class="ct text-amber-800">Parameter simulasi pesangon / PHK</div>
@@ -445,8 +445,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <option value="thr">&#127873; Slip THR</option>
     </select>
     <select class="toolbar-select toolbar-select-wide" id="slip-kar" onchange="previewSlip()"><option value="">-- Pilih Karyawan --</option></select>
-    <button class="btn btn-sm btn-out" onclick="exportPDF()">&#128438; PDF</button>
-    <button class="btn btn-sm btn-thr-pdf u-hidden" id="btn-pdf-all-thr" onclick="exportAllTHRPDF()">&#127873; PDF THR Semua</button>
+    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportPDF">&#128438; PDF</button>
+    <button class="btn btn-sm btn-thr-pdf u-hidden" id="btn-pdf-all-thr" data-sigaji-action="invoke" data-fn="exportAllTHRPDF">&#127873; PDF THR Semua</button>
   </div></div>
   <div class="tabs">
     <div class="tab active" data-sliptab="gaji" data-slipanel="slip-tab-gaji">&#128203; Slip Gaji</div>
@@ -461,16 +461,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="rounded-md surface-info-light">
         <div class="font-11 fw-700 ct-brand mb-sm">Kirim satu orang (pilih karyawan di atas)</div>
         <div class="fl gap1 flex-wrap items-center">
-          <button class="btn btn-sm fw-800 btn-email" type="button" onclick="sendCurrentSlipToEmail()">&#9993; Kirim email</button>
-          <button class="btn btn-sm fw-800 btn-telegram" type="button" onclick="sendCurrentSlipToTelegram()">Telegram</button>
-          <button class="btn btn-sm btn-out" type="button" onclick="exportPDF()">&#128438; PDF</button>
+          <button class="btn btn-sm fw-800 btn-email" type="button" data-sigaji-action="invoke" data-fn="sendCurrentSlipToEmail">&#9993; Kirim email</button>
+          <button class="btn btn-sm fw-800 btn-telegram" type="button" data-sigaji-action="invoke" data-fn="sendCurrentSlipToTelegram">Telegram</button>
+          <button class="btn btn-sm btn-out" type="button" data-sigaji-action="invoke" data-fn="exportPDF">&#128438; PDF</button>
         </div>
         <details class="mt-md font-11">
           <summary class="cursor-pointer text-muted fw-600">Cara lain (WA, bagikan, email manual)</summary>
           <div class="fl gap1 flex-wrap mt-4px">
-            <button class="btn btn-sm btn-g" type="button" onclick="shareSlipNativePDF()">Bagikan PDF</button>
-            <button class="btn btn-sm fw-700 btn-wa" onclick="shareSlipWhatsAppWithPDF()">WA + PDF</button>
-            <button class="btn btn-sm btn-out" onclick="shareSlipEmailWithPDF()">Email manual</button>
+            <button class="btn btn-sm btn-g" type="button" data-sigaji-action="invoke" data-fn="shareSlipNativePDF">Bagikan PDF</button>
+            <button class="btn btn-sm fw-700 btn-wa" data-sigaji-action="invoke" data-fn="shareSlipWhatsAppWithPDF">WA + PDF</button>
+            <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="shareSlipEmailWithPDF">Email manual</button>
           </div>
         </details>
       </div>
@@ -482,11 +482,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="card border-accent-left card-shadow-brand">
         <div class="ct font-14">&#128232; Kirim slip ke banyak karyawan</div>
         <div class="fl gap1 mb1 flex-wrap items-center">
-          <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(true)">Pilih semua</button>
-          <button type="button" class="btn btn-sm btn-out" onclick="slipSendToggleAll(false)">Kosongkan</button>
-          <button type="button" class="btn btn-sm btn-out" onclick="renderSlipSendBatchChecklist(true)">&#8635; Segarkan status</button>
-          <button type="button" class="btn btn-sm fw-800 btn-email" onclick="sendSlipEmailBatch()">Kirim email terpilih</button>
-          <button type="button" class="btn btn-sm fw-800 btn-telegram" onclick="sendSlipTelegramBatch()">Kirim Telegram terpilih</button>
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="slipSendToggleAll" data-bool="1">Pilih semua</button>
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="slipSendToggleAll" data-bool="0">Kosongkan</button>
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderSlipSendBatchChecklist" data-bool="1">&#8635; Segarkan status</button>
+          <button type="button" class="btn btn-sm fw-800 btn-email" data-sigaji-action="invoke" data-fn="sendSlipEmailBatch">Kirim email terpilih</button>
+          <button type="button" class="btn btn-sm fw-800 btn-telegram" data-sigaji-action="invoke" data-fn="sendSlipTelegramBatch">Kirim Telegram terpilih</button>
         </div>
         <div id="slip-send-batch-wrap"></div>
       </div>
@@ -499,9 +499,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Laporan &amp; PPh 21</div><div class="pst">Rekap periode dan PPh / bukti potong</div></div>
     <div class="page-actions fl gap1">
-      <button class="btn btn-sm btn-p" onclick="exportXmlEbupotCoretax()">XML Coretax</button>
-      <button class="btn btn-sm btn-out" onclick="exportExcelEbupotBulanan()">Excel</button>
-      <button class="btn btn-sm btn-out" onclick="exportCSV()">CSV Rekap</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="exportXmlEbupotCoretax">XML Coretax</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelEbupotBulanan">Excel</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportCSV">CSV Rekap</button>
     </div>
   </div>
   <div class="tabs">
@@ -527,9 +527,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         Upload di Coretax → <strong>e-Bupot → Impor Data</strong>. Isi <strong>NPWP</strong> di Profil Perusahaan; <strong>NITKU unik per cabang</strong> di Master → Daftar Cabang.
       </div>
       <div class="fl gap1 flex-wrap">
-        <button type="button" class="btn btn-sm btn-p" onclick="exportXmlEbupotCoretax()">Unduh XML Coretax</button>
-        <button type="button" class="btn btn-sm btn-out" onclick="exportExcelEbupotBulanan()">Excel (acuan)</button>
-        <button type="button" class="btn btn-sm btn-out" onclick="exportCsvEbupotBulanan()">CSV (arsip)</button>
+        <button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="exportXmlEbupotCoretax">Unduh XML Coretax</button>
+        <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelEbupotBulanan">Excel (acuan)</button>
+        <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportCsvEbupotBulanan">CSV (arsip)</button>
       </div>
     </div>
     <div class="card"><div class="ct">Rekap PPh 21</div>
@@ -547,7 +547,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fg3 items-end tabs-spaced-lg">
         <div class="fg"><label>Tahun pajak</label><select id="a1-tahun"></select></div>
         <div class="fg ff"><label>Karyawan</label><select id="a1-kar"><option value="">-- Pilih karyawan --</option></select></div>
-        <div class="fg"><label>&nbsp;</label><button type="button" class="btn btn-sm btn-g" onclick="exportPDF1721A1()">&#128438; Unduh PDF 1721-A1</button></div>
+        <div class="fg"><label>&nbsp;</label><button type="button" class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportPDF1721A1">&#128438; Unduh PDF 1721-A1</button></div>
       </div>
     </div>
   </div>
@@ -574,13 +574,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fl gap2 items-start flex-wrap">
         <div>
           <img class="logo-prev" id="logo-preview">
-          <div class="logo-drop" onclick="document.getElementById('logo-input').click()">
+          <div class="logo-drop" data-sigaji-action="click-input" data-target="logo-input">
             <input type="file" id="logo-input" accept="image/*" onchange="uploadLogo(this)">
             <div class="mb-xs font-28">&#128247;</div>
             <div class="font-12 fw-700 text-brand">Klik untuk upload logo</div>
             <div class="font-10 text-subtle mt-2px">PNG, JPG, SVG — maks 2MB</div>
           </div>
-          <button class="btn btn-sm btn-r mt1" onclick="hapusLogo()">&#10007; Hapus Logo</button>
+          <button class="btn btn-sm btn-r mt1" data-sigaji-action="invoke" data-fn="hapusLogo">&#10007; Hapus Logo</button>
         </div>
         <div class="flex-1 min-w-220">
           <div class="info-box info-blue font-11">Logo tampil di: halaman login, topbar, dan header slip gaji.</div>
@@ -623,7 +623,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </div>
         </div>
       </div>
-      <button class="btn btn-sm btn-p" onclick="simpanPerusahaan()">Simpan Data Perusahaan</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanPerusahaan">Simpan Data Perusahaan</button>
     </div>
     <div class="card u-hidden" id="lic-card">
       <div class="ct">Informasi paket (kuota)</div>
@@ -643,10 +643,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           <label>Nilai UMK (Rp)</label>
           <div class="fl gap1 items-center flex-wrap">
             <input type="text" class="inp-rp flex-1" id="umk-nilai" data-rp="1" readonly style="min-width:160px">
-            <button type="button" class="btn btn-sm btn-out" id="umk-btn-edit" onclick="toggleUmkEdit()">Edit</button>
+            <button type="button" class="btn btn-sm btn-out" id="umk-btn-edit" data-sigaji-action="invoke" data-fn="toggleUmkEdit">Edit</button>
           </div>
         </div>
-        <button type="button" class="btn btn-p" onclick="applyUmkToAllGapok()">Set gaji pokok = UMK (semua karyawan)</button>
+        <button type="button" class="btn btn-p" data-sigaji-action="invoke" data-fn="applyUmkToAllGapok">Set gaji pokok = UMK (semua karyawan)</button>
       </div>
       <div id="umk-history-wrap"></div>
     </div>
@@ -707,7 +707,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         </div>
       </div>
       <div class="u-hidden" id="periode-guard-msg"></div>
-      <button type="button" class="btn btn-sm btn-p mt-lg" id="btn-simpan-periode" onclick="simpanPeriode()">Simpan Periode</button>
+      <button type="button" class="btn btn-sm btn-p mt-lg" id="btn-simpan-periode" data-sigaji-action="invoke" data-fn="simpanPeriode">Simpan Periode</button>
     </div>
     <div class="card"><div class="ct">Riwayat Periode</div>
       <table><thead><tr><th>Nama</th><th>Mulai</th><th>Selesai</th><th>Bayar Gaji</th><th>THR</th><th>Status</th><th>Aksi</th></tr></thead>
@@ -735,8 +735,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="info-box info-blue font-11">Database mencakup <strong>2017–2030</strong>. Cuti bersama memotong kuota jika opsi di atas diaktifkan.</div>
       <div class="fl gap1 flex-wrap items-center">
         <select class="p-inset-xs rounded-sm font-13 fw-700" id="libnas-yr" style="border:1.5px solid #dde1e9; font-family:inherit; outline:none"></select>
-        <button class="btn btn-p" onclick="loadLiburNasionalDinamis()">&#128229; Muat Hari Libur Nasional</button>
-        <button class="btn btn-out btn-sm" onclick="hapusSemuaLibur()">&#9888; Hapus Semua</button>
+        <button class="btn btn-p" data-sigaji-action="invoke" data-fn="loadLiburNasionalDinamis">&#128229; Muat Hari Libur Nasional</button>
+        <button class="btn btn-out btn-sm" data-sigaji-action="invoke" data-fn="hapusSemuaLibur">&#9888; Hapus Semua</button>
       </div>
     </div>
     <div class="card">
@@ -746,7 +746,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Nama Libur</label><input id="lib-nama" placeholder="Idul Fitri 1447 H"></div>
         <div class="fg"><label>Tipe</label><select id="lib-tipe"><option value="nasional">Nasional</option><option value="cuti-bersama">Cuti Bersama</option><option value="perusahaan">Perusahaan</option></select></div>
       </div>
-      <div class="fl gap1"><button class="btn btn-sm btn-p" onclick="tambahLibur()">+ Tambah</button></div>
+      <div class="fl gap1"><button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="tambahLibur">+ Tambah</button></div>
     </div>
     <div class="card"><div class="ct">Daftar Hari Libur</div><div id="libur-list"></div></div>
   </div>
@@ -762,8 +762,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <tbody id="tb-aturan-pot"></tbody>
       </table>
       <div class="mt1 fl gap1">
-        <button class="btn btn-sm btn-p" onclick="simpanAturanPotongan()">&#10003; Simpan Aturan</button>
-        <button class="btn btn-sm btn-out" onclick="resetAturanPotongan()">Reset ke Default</button>
+        <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanAturanPotongan">&#10003; Simpan Aturan</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="resetAturanPotongan">Reset ke Default</button>
       </div>
     </div>
   </div>
@@ -778,8 +778,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <table class="font-12" style="min-width:520px"><thead><tr><th>Kode</th><th>Penjelasan singkat</th><th>Nilai (Rp/tahun)</th></tr></thead>
       <tbody id="tb-ptkp-master"></tbody></table></div>
       <div class="mt1 fl gap1">
-        <button type="button" class="btn btn-sm btn-p" onclick="simpanPTKP()">&#10003; Simpan PTKP</button>
-        <button type="button" class="btn btn-sm btn-out" onclick="resetPTKP()">&#8635; Reset ke default</button>
+        <button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanPTKP">&#10003; Simpan PTKP</button>
+        <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="resetPTKP">&#8635; Reset ke default</button>
       </div>
     </div>
     <div class="info-box info-blue font-11" style="line-height:1.7">
@@ -789,8 +789,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       &#9679; <strong>Lampiran C</strong>: K/3 (PTKP Rp72jt)
     </div>
     <div class="fl gap1 mb2">
-      <button class="btn btn-sm btn-p" onclick="saveTERCustom()">&#10003; Simpan Perubahan</button>
-      <button class="btn btn-sm btn-out" onclick="resetTERCustom()">&#8635; Reset ke Default PMK</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="saveTERCustom">&#10003; Simpan Perubahan</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="resetTERCustom">&#8635; Reset ke Default PMK</button>
     </div>
     <div class="card table-wrap">
       <div class="ter-grid">
@@ -815,7 +815,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
   <div id="um-daftar">
     <div class="card">
-      <div class="ct">Daftar User <button class="btn btn-sm btn-p" onclick="openUserModal()">+ Tambah User</button></div>
+      <div class="ct">Daftar User <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="openUserModal">+ Tambah User</button></div>
       <div class="table-wrap">
       <table><thead><tr><th>Username</th><th>Email Supabase</th><th>Nama</th><th>Role</th><th>NIK Karyawan</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody id="tb-users"></tbody></table>
@@ -826,7 +826,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card">
       <div class="ct">Permintaan Registrasi (Email)</div>
       <div class="fl gap1 flex-wrap items-center mb-md">
-        <button class="btn btn-sm btn-out" onclick="loadRegRequests()">&#8635; Refresh</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="loadRegRequests">&#8635; Refresh</button>
       </div>
       <div id="reg-req-list" class="table-wrap"></div>
     </div>
@@ -834,7 +834,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="u-hidden" id="um-roles">
     <div class="card">
       <div class="ct">Matriks Hak Akses Modul per Role
-        <button class="btn btn-sm btn-p" onclick="openRoleModal()">+ Tambah Role</button>
+        <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="openRoleModal">+ Tambah Role</button>
       </div>
       <div id="perm-matrix-wrap" class="table-wrap"></div>
     </div>
@@ -847,10 +847,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Slip Gaji Saya</div><div class="pst">Unduh atau bagikan slip periode Anda</div></div>
     <div class="page-actions page-toolbar-slip fl gap1">
     <select class="toolbar-select" id="my-period" onchange="loadMySlip()"></select>
-    <button class="btn btn-sm btn-out" onclick="exportPDFMe()">&#128438; PDF</button>
-    <button class="btn btn-sm btn-g" type="button" onclick="shareMySlipNativePDF()">&#128229; Bagikan PDF</button>
-    <button class="btn btn-sm btn-wa" onclick="shareMySlipWhatsAppWithPDF()">&#128242; WA + PDF</button>
-    <button class="btn btn-sm btn-email" onclick="shareMySlipEmailWithPDF()">&#9993; Email + PDF</button>
+    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportPDFMe">&#128438; PDF</button>
+    <button class="btn btn-sm btn-g" type="button" data-sigaji-action="invoke" data-fn="shareMySlipNativePDF">&#128229; Bagikan PDF</button>
+    <button class="btn btn-sm btn-wa" data-sigaji-action="invoke" data-fn="shareMySlipWhatsAppWithPDF">&#128242; WA + PDF</button>
+    <button class="btn btn-sm btn-email" data-sigaji-action="invoke" data-fn="shareMySlipEmailWithPDF">&#9993; Email + PDF</button>
   </div></div>
   <div id="my-slip-content"></div>
 </div>
@@ -886,9 +886,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Catatan</label><input id="backup-catatan" placeholder="Opsional"></div>
       </div>
       <div class="fl gap1 flex-wrap items-center">
-        <button class="btn btn-g" onclick="exportBackup()">&#128190; Download .json</button>
-        <button type="button" class="btn btn-p" id="btn-cloud-db-export" onclick="exportCloudDatabaseBackup()">&#9729; Backup cloud</button>
-        <button class="btn btn-sm btn-out" onclick="exportCSVAll()">&#128196; CSV</button>
+        <button class="btn btn-g" data-sigaji-action="invoke" data-fn="exportBackup">&#128190; Download .json</button>
+        <button type="button" class="btn btn-p" id="btn-cloud-db-export" data-sigaji-action="invoke" data-fn="exportCloudDatabaseBackup">&#9729; Backup cloud</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportCSVAll">&#128196; CSV</button>
       </div>
       <label id="backup-exclude-logo-wrap" class="backup-exclude-logo-wrap fl items-center gap-xs mt-md font-12 cursor-pointer">
         <input type="checkbox" id="backup-exclude-logo" checked style="width:16px;height:16px;accent-color:#1a56a0">
@@ -898,7 +898,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div class="card border-accent-left">
       <div class="ct ct-brand">Import backup</div>
-      <div class="logo-drop" onclick="document.getElementById('import-file-input').click()" style="padding:1rem">
+      <div class="logo-drop" data-sigaji-action="click-input" data-target="import-file-input" style="padding:1rem">
         <input type="file" id="import-file-input" accept=".json" onchange="readImportFile(this)">
         <div class="mb-xs" style="font-size:20px">&#128229;</div>
         <div class="font-12 fw-700 text-brand">Pilih file .json</div>
@@ -915,11 +915,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="tabs-spaced-lg"><label class="font-10 fw-700 text-muted u-block mb-xs">Komponen:</label>
           <div class="u-grid gap-xs" style="grid-template-columns:1fr 1fr 1fr" id="import-checklist"></div>
         </div>
-        <button class="btn btn-p" onclick="eksekusiImport()">&#128229; Import</button>
+        <button class="btn btn-p" data-sigaji-action="invoke" data-fn="eksekusiImport">&#128229; Import</button>
       </div>
     </div>
     <div class="card">
-      <div class="ct">Riwayat backup <button class="btn btn-sm btn-out" onclick="renderBackupRiwayat()">&#8635;</button></div>
+      <div class="ct">Riwayat backup <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderBackupRiwayat">&#8635;</button></div>
       <div id="backup-riwayat"></div>
     </div>
     <div class="card border-accent-dark">
@@ -927,7 +927,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fl gap-sm flex-wrap items-center mb-md">
         <select class="rounded-sm font-12 select-inline" id="audit-periode" style="padding:6px 10px; border:1.5px solid #dde1e9; font-family:inherit; outline:none" onchange="renderAuditLog()"></select>
         <input id="audit-q" placeholder="Cari NIK / nama / aksi…" style="width:220px" oninput="renderAuditLog()">
-        <button class="btn btn-sm btn-out" onclick="renderAuditLog()">&#8635;</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderAuditLog">&#8635;</button>
       </div>
       <div id="audit-log" class="sigaji-audit-timeline"></div>
     </div>
@@ -939,11 +939,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fg2 items-end">
         <div class="fg"><label>Tahun pajak</label><input type="number" id="migrasi-pph-tahun" min="2020" max="2099" style="max-width:120px" onchange="renderMigrasiPphSaldo()"></div>
         <div class="fl gap1 flex-wrap">
-          <button type="button" class="btn btn-sm btn-s" onclick="exportMigrasiPphTemplate()">&#128196; Template</button>
-          <button type="button" class="btn btn-sm btn-p" onclick="document.getElementById('inp-migrasi-pph-xlsx').click()">&#128229; Import Excel</button>
+          <button type="button" class="btn btn-sm btn-s" data-sigaji-action="invoke" data-fn="exportMigrasiPphTemplate">&#128196; Template</button>
+          <button type="button" class="btn btn-sm btn-p" data-sigaji-action="click-input" data-target="inp-migrasi-pph-xlsx">&#128229; Import Excel</button>
           <input class="u-hidden" type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" onchange="importMigrasiPphExcel(this)">
-          <button type="button" class="btn btn-sm btn-out" onclick="renderMigrasiPphSaldo()">&#8635;</button>
-          <button type="button" class="btn btn-sm btn-r" onclick="clearMigrasiPphSaldoTahun()">Hapus saldo tahun</button>
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderMigrasiPphSaldo">&#8635;</button>
+          <button type="button" class="btn btn-sm btn-r" data-sigaji-action="invoke" data-fn="clearMigrasiPphSaldoTahun">Hapus saldo tahun</button>
         </div>
       </div>
       <label class="fl items-center gap-xs font-12 tabs-spaced cursor-pointer">
@@ -958,12 +958,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card card-danger-zone">
       <div class="ct ct-danger">&#9888; Reset semua data</div>
       <p class="danger-zone-desc">Menghapus seluruh karyawan, periode, gaji, dan pengaturan di browser ini. <strong>Export backup JSON</strong> di tab Backup terlebih dahulu. Tidak dapat dibatalkan.</p>
-      <button type="button" class="btn btn-r btn-sm" onclick="openResetModal()">Reset semua data…</button>
+      <button type="button" class="btn btn-r btn-sm" data-sigaji-action="invoke" data-fn="openResetModal">Reset semua data…</button>
     </div>
     <div class="card">
       <div class="flb mb2">
         <div class="ct m-0 border-0 p-0">Status deploy &amp; versi</div>
-        <button type="button" class="btn btn-sm btn-out" onclick="renderSysStatus()">&#8635; Perbarui</button>
+        <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderSysStatus">&#8635; Perbarui</button>
       </div>
       <div id="sysstatus-panel"></div>
     </div>
@@ -974,12 +974,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </div></div></div><!-- end content/layout/app -->
 
 <!-- SLIDE PANEL KARYAWAN (profil SDM saja) -->
-<div class="po" id="panel-overlay" onclick="closeAnyPanel()"></div>
-<div class="po" id="wf-explain-overlay" onclick="sigajiCloseExplain()"></div>
+<div class="po" id="panel-overlay" data-sigaji-action="invoke" data-fn="closeAnyPanel"></div>
+<div class="po" id="wf-explain-overlay" data-sigaji-action="invoke" data-fn="sigajiCloseExplain"></div>
 <aside id="wf-explain-panel" class="wf-explain-panel" aria-label="Penjelasan angka gaji">
   <div class="wf-explain-head">
     <strong>Kenapa angka ini?</strong>
-    <button type="button" class="spc" onclick="sigajiCloseExplain()" aria-label="Tutup">&times;</button>
+    <button type="button" class="spc" data-sigaji-action="invoke" data-fn="sigajiCloseExplain" aria-label="Tutup">&times;</button>
   </div>
   <div id="wf-explain-body" class="wf-explain-body"></div>
 </aside>
@@ -989,10 +989,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="fw-800 font-14" id="sigaji-tour-title" style="margin:.35rem 0"></div>
     <p class="font-12 text-body leading-tight" id="sigaji-tour-body" style="margin:0 0 .75rem"></p>
     <div class="fl gap1 justify-between">
-      <button type="button" class="btn btn-xs btn-out" onclick="sigajiProductTourEnd(false)">Lewati</button>
+      <button type="button" class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="sigajiProductTourEnd" data-bool="0">Lewati</button>
       <div class="fl gap1">
-        <button type="button" class="btn btn-xs btn-out" id="sigaji-tour-prev" onclick="sigajiProductTourPrev()">&#9664;</button>
-        <button type="button" class="btn btn-xs btn-p" onclick="sigajiProductTourNext()">Lanjut</button>
+        <button type="button" class="btn btn-xs btn-out" id="sigaji-tour-prev" data-sigaji-action="invoke" data-fn="sigajiProductTourPrev">&#9664;</button>
+        <button type="button" class="btn btn-xs btn-p" data-sigaji-action="invoke" data-fn="sigajiProductTourNext">Lanjut</button>
       </div>
     </div>
   </div>
@@ -1005,9 +1005,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="font-12 mt-xs" style="opacity:.8" id="sp-sub">Jabatan</div>
     </div>
     <div class="fl gap1">
-      <button class="u-hidden rounded-sm font-11 fw-700 cursor-pointer" type="button" id="sp-btn-telegram" onclick="openTelegramFromKarPanel()" style="background:#229ED9; color:#fff; border:1.5px solid rgba(255,255,255,.35); padding:5px 10px" title="Buat kode /start untuk hubungkan bot slip gaji">Telegram slip</button>
-      <button class="rounded-sm font-11 fw-700 cursor-pointer" onclick="hapusKarFromPanel()" style="background:rgba(255,255,255,.2); color:#fff; border:1.5px solid rgba(255,255,255,.4); padding:5px 10px">Hapus</button>
-      <button class="spc" onclick="closePanel()">&times;</button>
+      <button class="u-hidden rounded-sm font-11 fw-700 cursor-pointer" type="button" id="sp-btn-telegram" data-sigaji-action="invoke" data-fn="openTelegramFromKarPanel" style="background:#229ED9; color:#fff; border:1.5px solid rgba(255,255,255,.35); padding:5px 10px" title="Buat kode /start untuk hubungkan bot slip gaji">Telegram slip</button>
+      <button class="rounded-sm font-11 fw-700 cursor-pointer" data-sigaji-action="invoke" data-fn="hapusKarFromPanel" style="background:rgba(255,255,255,.2); color:#fff; border:1.5px solid rgba(255,255,255,.4); padding:5px 10px">Hapus</button>
+      <button class="spc" data-sigaji-action="invoke" data-fn="closePanel">&times;</button>
     </div>
   </div>
   <div class="spb">
@@ -1031,7 +1031,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         </div>
         <div class="fg"><label>No. NPWP <span class="text-muted" style="font-weight:500">(opsional jika KTP 16 digit)</span></label><input id="sp-npwp-f" maxlength="20" oninput="formatNPWP(this);sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()" inputmode="numeric">
           <div class="font-10 text-muted" id="sp-npwp-hint" style="margin-top:.25rem"></div>
-          <button type="button" class="btn btn-xs btn-out mt-xs" onclick="sigajiOpenDjpNikValidasi(document.getElementById('sp-ktp-f')&&document.getElementById('sp-ktp-f').value)">Cek validasi NIK (portal DJP)</button>
+          <button type="button" class="btn btn-xs btn-out mt-xs" data-sigaji-action="djp-nik-validasi">Cek validasi NIK (portal DJP)</button>
         </div>
         <div class="fg"><label>No. HP</label><input id="sp-hp-f"></div>
         <div class="fg"><label>Email</label><input id="sp-email-f"></div>
@@ -1084,8 +1084,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="spf">
     <div class="u-muted-11" id="sp-saved-lbl">-</div>
     <div class="fl gap1">
-      <button class="btn btn-sm btn-out" onclick="closePanel()">Tutup</button>
-      <button class="btn btn-sm btn-p" onclick="simpanKarPanel()">&#10003; Simpan Profil</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closePanel">Tutup</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanKarPanel">&#10003; Simpan Profil</button>
     </div>
   </div>
 </div>
@@ -1099,14 +1099,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="font-12 mt-xs" style="opacity:.8" id="kg-sp-sub">Jabatan</div>
     <div class="mt-sm fl gap-xs items-center flex-wrap" id="sp-payroll-mode-wrap">
       <span class="font-10" style="opacity:.85">Mode Payroll:</span>
-      <button class="btn btn-sm btn-out font-10" id="sp-mode-periode" onclick="setSpPayrollView('periode')" style="padding:2px 8px">Snapshot Periode</button>
-      <button class="btn btn-sm btn-out font-10" id="sp-mode-master" onclick="setSpPayrollView('master')" style="padding:2px 8px">Master Global</button>
+      <button class="btn btn-sm btn-out font-10" id="sp-mode-periode" data-sigaji-action="invoke" data-fn="setSpPayrollView" data-arg="periode" style="padding:2px 8px">Snapshot Periode</button>
+      <button class="btn btn-sm btn-out font-10" id="sp-mode-master" data-sigaji-action="invoke" data-fn="setSpPayrollView" data-arg="master" style="padding:2px 8px">Master Global</button>
       <span class="font-10" id="sp-mode-lbl" style="opacity:.85"></span>
     </div>
     <div class="mt-xs font-10 fw-800 u-inline-block" id="sp-mode-badge" style="padding:4px 8px; border-radius:999px"></div>
     </div>
     <div class="fl gap1">
-      <button class="spc" onclick="closePayrollPanel()">&times;</button>
+      <button class="spc" data-sigaji-action="invoke" data-fn="closePayrollPanel">&times;</button>
     </div>
   </div>
   <div class="spt-wrap" id="payroll-spt-wrap">
@@ -1115,14 +1115,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="spt" data-kgstab="natura" data-payroll-adv="1">&#127873; Natura</div>
     <div class="spt" data-kgstab="pphret" data-payroll-adv="1">&#9312; PPh Return</div>
     <div class="spt" data-kgstab="ring" data-payroll-adv="1">&#128200; Ringkasan</div>
-    <button type="button" id="payroll-sp-more-btn" class="btn btn-xs btn-out ml-auto font-10" style="align-self:center" onclick="sigajiTogglePayrollAdvTabs()">+ Lanjutan</button>
+    <button type="button" id="payroll-sp-more-btn" class="btn btn-xs btn-out ml-auto font-10" style="align-self:center" data-sigaji-action="invoke" data-fn="sigajiTogglePayrollAdvTabs">+ Lanjutan</button>
   </div>
   <div class="spb">
     <div class="u-hidden" id="sp-gaji">
       <div class="stit">Gaji Pokok</div>
       <div class="fg"><label>Gaji Pokok per Bulan (Rp)</label><input type="text" class="inp-rp" id="sp-gapok-f" data-rp="1" oninput="updateGajiSummary()"></div>
       <div class="stit flb">
-        <span>Komponen Tunjangan</span><button class="btn btn-xs btn-p" onclick="addTunj()">+ Tambah</button>
+        <span>Komponen Tunjangan</span><button class="btn btn-xs btn-p" data-sigaji-action="invoke" data-fn="addTunj">+ Tambah</button>
       </div>
       <div class="u-grid font-10 fw-700 text-muted" style="grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto; gap:.3rem; padding:.25rem .5rem; text-transform:uppercase">
         <div>Nama</div><div>Nilai (Rp)</div><div>Tipe</div><div>THR</div><div title="Pro-Rata gaji">PR</div><div></div>
@@ -1133,7 +1133,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <strong>Kolom PR:</strong> <em>Prorata</em> = nilai dikali (hari hadir ÷ hari kerja) saat Pro-Rata aktif di Proses Gaji; <em>Penuh</em> = nilai tetap utuh walau prorata.
       </div>
       <div class="stit fl justify-between items-center" style="margin-top:1.25rem">
-        <span>Potongan Tetap</span><button class="btn btn-xs btn-p" onclick="addPot()">+ Tambah</button>
+        <span>Potongan Tetap</span><button class="btn btn-xs btn-p" data-sigaji-action="invoke" data-fn="addPot">+ Tambah</button>
       </div>
       <div class="u-grid font-10 fw-700 text-muted" style="grid-template-columns:2fr 1fr 1fr auto; gap:.3rem; padding:.25rem .5rem; text-transform:uppercase"><div>Nama</div><div>Nilai (Rp)</div><div>Ket.</div><div></div></div>
       <div id="pot-list"></div>
@@ -1152,14 +1152,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div id="bpjs-tk-rows"></div>
       </div>
       <div class="mt-lg fl gap-xs flex-wrap">
-        <button class="btn btn-xs btn-out" onclick="bpjsSetAll(true)">&#10003; Aktifkan Semua</button>
-        <button class="btn btn-xs btn-out" onclick="bpjsSetAll(false)">&#9711; Nonaktifkan Semua</button>
-        <button class="btn btn-xs btn-out" onclick="bpjsSetPreset('jkk-jkm')">JKK+JKM Saja</button>
+        <button class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="bpjsSetAll" data-bool="1">&#10003; Aktifkan Semua</button>
+        <button class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="bpjsSetAll" data-bool="0">&#9711; Nonaktifkan Semua</button>
+        <button class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="bpjsSetPreset" data-arg="jkk-jkm">JKK+JKM Saja</button>
       </div>
     </div>
     <div class="u-hidden" id="sp-natura">
       <div class="u-hidden font-11 mb-lg card-surface-neutral rounded-sm leading-tight text-body" id="natura-periode-hint" style="padding:.55rem .7rem; border:1px solid #e5e7eb"></div>
-      <div class="ct"><span class="ct-brand fw-700" id="natura-kar-lbl">-</span><button class="btn btn-xs btn-p" onclick="addNatura()">+ Tambah</button></div>
+      <div class="ct"><span class="ct-brand fw-700" id="natura-kar-lbl">-</span><button class="btn btn-xs btn-p" data-sigaji-action="invoke" data-fn="addNatura">+ Tambah</button></div>
       <div class="u-grid font-10 fw-700 text-muted" style="grid-template-columns:1.5fr 1fr 1fr auto; gap:.3rem; padding:.25rem .5rem; text-transform:uppercase"><div>Nama</div><div>Nilai/Bulan</div><div>Status Pajak</div><div></div></div>
       <div id="natura-list"></div>
       <div id="natura-total" class="mt1"></div>
@@ -1170,7 +1170,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="rounded-sm" style="background:#e8f4de; border:1px solid #b3d98f; padding:.85rem">
         <div class="ct ct-success fl justify-between items-center flex-wrap gap-xs">
           <span>&#9312; Pengembalian Lebih Bayar PPh</span>
-          <button type="button" class="btn btn-xs btn-out" onclick="clearPphReturnPanel()">Kosongkan</button>
+          <button type="button" class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="clearPphReturnPanel">Kosongkan</button>
         </div>
         <div class="fg2">
           <div class="fg"><label>Nilai (Rp)</label><input type="text" class="inp-rp" id="sp-pphret-val" data-rp="1" oninput="onPPhRetChange()"></div>
@@ -1187,8 +1187,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="spf">
     <div class="u-muted-11" id="kg-sp-saved-lbl">-</div>
     <div class="fl gap1">
-      <button class="btn btn-sm btn-out" onclick="closePayrollPanel()">Tutup</button>
-      <button class="btn btn-sm btn-p" onclick="simpanPayrollPanel()">&#10003; Simpan Komponen Gaji</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closePayrollPanel">Tutup</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanPayrollPanel">&#10003; Simpan Komponen Gaji</button>
     </div>
   </div>
 </div>
@@ -1196,7 +1196,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL USER -->
 <div class="mbd" id="m-user">
   <div class="modal modal-sm">
-    <button class="mclose" onclick="closeModal('m-user')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-user">&times;</button>
     <div class="mtit" id="m-user-tit">User</div>
     <input type="hidden" id="u-idx" value="-1">
     <div class="fg"><label>Username</label><input id="u-username" placeholder="untuk login lokal (tanpa @)"></div>
@@ -1210,8 +1210,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <input type="checkbox" id="u-aktif" checked style="width:16px;height:16px;accent-color:#2d6a0a"> User aktif (bisa login)
     </label></div>
     <div class="mfoot">
-      <button class="btn btn-sm btn-out" onclick="closeModal('m-user')">Batal</button>
-      <button class="btn btn-sm btn-p" onclick="simpanUser()">Simpan</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-user">Batal</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanUser">Simpan</button>
     </div>
   </div>
 </div>
@@ -1219,13 +1219,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL ROLE -->
 <div class="mbd" id="m-role">
   <div class="modal modal-sm">
-    <button class="mclose" onclick="closeModal('m-role')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-role">&times;</button>
     <div class="mtit">Tambah Role Baru</div>
     <div class="fg"><label>Nama Role</label><input id="r-nama" placeholder="cth: Manager, Supervisor"></div>
     <div class="info-box info-amber font-11">Setelah dibuat, atur hak akses di tabel matriks.</div>
     <div class="mfoot">
-      <button class="btn btn-sm btn-out" onclick="closeModal('m-role')">Batal</button>
-      <button class="btn btn-sm btn-p" onclick="simpanRole()">Simpan Role</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-role">Batal</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanRole">Simpan Role</button>
     </div>
   </div>
 </div>
@@ -1238,8 +1238,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="fg"><label>Password Baru</label><input type="password" id="pw-reset-new" placeholder="min. 6 karakter"></div>
     <div class="fg"><label>Konfirmasi Password</label><input type="password" id="pw-reset-confirm" placeholder="ulangi password baru" onkeydown="if(event.key==='Enter')doUpdatePassword()"></div>
     <div class="mfoot">
-      <button class="btn btn-sm btn-out" onclick="closeModal('m-pw-reset')">Batal</button>
-      <button class="btn btn-sm btn-p" onclick="doUpdatePassword()">&#10003; Simpan Password</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-pw-reset">Batal</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="doUpdatePassword">&#10003; Simpan Password</button>
     </div>
   </div>
 </div>
@@ -1247,7 +1247,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL FORGOT PASSWORD (input email) -->
 <div class="mbd" id="m-forgot">
   <div class="modal modal-sm" style="border-top:4px solid #1a56a0">
-    <button class="mclose" onclick="closeModal('m-forgot')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-forgot">&times;</button>
     <div class="mtit ct-brand">&#128231; Lupa Password</div>
     <div class="info-box info-blue font-11 tabs-spaced-lg leading-tight">
       Masukkan <strong>email Supabase</strong> Anda. Kami akan kirim link untuk membuat password baru.
@@ -1257,8 +1257,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <input id="forgot-email" type="email" placeholder="nama@perusahaan.com" onkeydown="if(event.key==='Enter')submitForgotPassword()">
     </div>
     <div class="mfoot">
-      <button class="btn btn-sm btn-out" onclick="closeModal('m-forgot')">Batal</button>
-      <button class="btn btn-sm btn-p" onclick="submitForgotPassword()">Kirim Link Reset</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-forgot">Batal</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="submitForgotPassword">Kirim Link Reset</button>
     </div>
   </div>
 </div>
@@ -1266,7 +1266,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL REGISTER EMAIL (request approval) -->
 <div class="mbd" id="m-register">
   <div class="modal modal-sm border-accent-success">
-    <button class="mclose" onclick="closeModal('m-register')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-register">&times;</button>
     <div class="mtit ct-success">&#128100; Daftar Email</div>
     <div class="info-box info-green font-11 tabs-spaced-lg leading-tight">
       Isi data Anda untuk meminta akses. <strong>Admin/HRD</strong> akan menyetujui terlebih dahulu sebelum Anda bisa login.
@@ -1275,8 +1275,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="fg"><label>Nama (opsional)</label><input id="reg-nama" placeholder="Nama lengkap"></div>
     <div class="fg"><label>NIK (opsional)</label><input id="reg-nik" placeholder="NIK karyawan"></div>
     <div class="mfoot">
-      <button class="btn btn-sm btn-out" onclick="closeModal('m-register')">Batal</button>
-      <button class="btn btn-sm btn-g" onclick="submitRegisterRequest()">Kirim Permintaan</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-register">Batal</button>
+      <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="submitRegisterRequest">Kirim Permintaan</button>
     </div>
   </div>
 </div>
@@ -1284,30 +1284,30 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL SETUP WIZARD -->
 <div class="mbd" id="m-setup-wizard">
   <div class="modal" style="max-width:520px;border-top:4px solid #1a56a0">
-    <button class="mclose" onclick="sigajiSetupWizardSkip()">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="sigajiSetupWizardSkip">&times;</button>
     <div class="mtit ct-brand">&#128640; Setup SiGaji — pertama kali</div>
     <div class="font-11 text-muted tabs-spaced-lg" id="wiz-step-lbl">Langkah 1 / 5</div>
     <div class="wiz-progress"><span class="wiz-dot active"></span><span class="wiz-dot"></span><span class="wiz-dot"></span><span class="wiz-dot"></span><span class="wiz-dot"></span></div>
     <div id="wiz-body"></div>
     <div class="mfoot justify-between">
-      <button type="button" class="btn btn-sm btn-out" onclick="sigajiSetupWizardSkip()">Lewati</button>
+      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sigajiSetupWizardSkip">Lewati</button>
       <div class="fl gap1">
-        <button type="button" class="btn btn-sm btn-out" id="wiz-btn-prev" onclick="sigajiSetupWizardPrev()">&#9664; Kembali</button>
-        <button type="button" class="btn btn-sm btn-p" id="wiz-btn-next" onclick="sigajiSetupWizardNext()">Lanjut</button>
+        <button type="button" class="btn btn-sm btn-out" id="wiz-btn-prev" data-sigaji-action="invoke" data-fn="sigajiSetupWizardPrev">&#9664; Kembali</button>
+        <button type="button" class="btn btn-sm btn-p" id="wiz-btn-next" data-sigaji-action="invoke" data-fn="sigajiSetupWizardNext">Lanjut</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- MODAL KONFIRMASI -->
-<div class="mbd" id="m-confirm" onclick="if(event.target===this)sigajiConfirmClose(false)">
+<div class="mbd" id="m-confirm" data-sigaji-action="confirm-backdrop">
   <div class="modal modal-sm modal-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-    <button type="button" class="mclose" onclick="sigajiConfirmClose(false)" aria-label="Tutup">&times;</button>
+    <button type="button" class="mclose" data-sigaji-action="invoke" data-fn="sigajiConfirmClose" data-bool="0" aria-label="Tutup">&times;</button>
     <div class="mtit" id="confirm-title">Konfirmasi</div>
     <p id="confirm-body" class="confirm-body"></p>
     <div class="mfoot">
-      <button type="button" class="btn btn-sm btn-out" id="confirm-cancel" onclick="sigajiConfirmClose(false)">Batal</button>
-      <button type="button" class="btn btn-sm btn-p" id="confirm-ok" onclick="sigajiConfirmClose(true)">Ya, lanjutkan</button>
+      <button type="button" class="btn btn-sm btn-out" id="confirm-cancel" data-sigaji-action="invoke" data-fn="sigajiConfirmClose" data-bool="0">Batal</button>
+      <button type="button" class="btn btn-sm btn-p" id="confirm-ok" data-sigaji-action="invoke" data-fn="sigajiConfirmClose" data-bool="1">Ya, lanjutkan</button>
     </div>
   </div>
 </div>
@@ -1315,7 +1315,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL RESET -->
 <div class="mbd" id="m-reset">
   <div class="modal modal-sm" style="border-top:4px solid #9b2121">
-    <button class="mclose" onclick="closeModal('m-reset')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-reset">&times;</button>
     <div class="mtit ct-danger">&#9888; Reset Semua Data</div>
     <div class="info-box info-red">Menghapus <strong>semua</strong> karyawan, periode, gaji, dan pengaturan. Jika pakai cloud, data di Supabase ikut dikosongkan setelah simpan. Sudah unduh backup?</div>
     <p id="reset-admin-hint" class="reset-admin-hint font-11 text-muted mb-md m-0"></p>
@@ -1326,8 +1326,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <input class="rounded-sm w-full font-13" id="reset-inp" placeholder="RESET SEMUA DATA" autocomplete="off" style="border:2px solid #f5a3a3; padding:9px 12px; font-family:inherit; outline:none" oninput="updateResetButtonState()">
     </div>
     <div class="mfoot">
-      <button class="btn btn-sm btn-out" onclick="closeModal('m-reset')">Batal</button>
-      <button class="btn btn-sm btn-r" id="btn-reset" disabled onclick="execReset()">Hapus semua data</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-reset">Batal</button>
+      <button class="btn btn-sm btn-r" id="btn-reset" disabled data-sigaji-action="invoke" data-fn="execReset">Hapus semua data</button>
     </div>
   </div>
 </div>
@@ -1335,17 +1335,17 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL DETAIL GAJI -->
 <div class="mbd" id="m-gaji">
   <div class="modal" style="width:580px">
-    <button class="mclose" onclick="closeModal('m-gaji')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-gaji">&times;</button>
     <div class="mtit" id="m-gaji-t">Detail Gaji</div>
     <div id="m-gaji-c"></div>
-    <div class="mfoot"><button class="btn btn-sm btn-out" onclick="closeModal('m-gaji')">Tutup</button></div>
+    <div class="mfoot"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-gaji">Tutup</button></div>
   </div>
 </div>
 
 <!-- MODAL LOKASI GPS (wizard step-by-step) -->
 <div class="mbd" id="m-mob-location">
   <div class="modal" style="width:min(720px,96vw)">
-    <button class="mclose" onclick="closeModal('m-mob-location')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-mob-location">&times;</button>
     <div class="mtit" id="mob-loc-modal-title">Lokasi check-in GPS</div>
     <div class="mob-loc-wizard-steps">
       <div id="mob-loc-wiz-dot-1" class="mob-loc-wiz-dot active">1. Nama</div>
@@ -1369,7 +1369,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <input id="mob-loc-lon" type="hidden">
       <div class="rounded-md mb-lg" id="mob-loc-map" style="height:280px; border:1px solid #e2e8f0"></div>
       <div class="fl gap1 flex-wrap mb-md">
-        <button type="button" class="btn btn-sm btn-out" onclick="mobLocUseMyPosition()">&#128205; Gunakan lokasi saya sekarang</button>
+        <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="mobLocUseMyPosition">&#128205; Gunakan lokasi saya sekarang</button>
       </div>
     </div>
     <div class="u-hidden" id="mob-loc-step-3">
@@ -1377,10 +1377,10 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div id="mob-loc-wiz-preview"></div>
     </div>
     <div class="mfoot">
-      <button type="button" class="btn btn-sm btn-out u-hidden" id="mob-loc-wiz-prev" onclick="mobLocWizardPrev()">&#8592; Sebelumnya</button>
-      <button type="button" class="btn btn-sm btn-out" onclick="closeModal('m-mob-location')">Batal</button>
-      <button type="button" class="btn btn-sm btn-p" id="mob-loc-wiz-next" onclick="mobLocWizardNext()">Lanjut &#8594;</button>
-      <button type="button" class="btn btn-sm btn-p u-hidden" id="mob-loc-wiz-save" onclick="saveMobileLocationModal(this)">Simpan lokasi</button>
+      <button type="button" class="btn btn-sm btn-out u-hidden" id="mob-loc-wiz-prev" data-sigaji-action="invoke" data-fn="mobLocWizardPrev">&#8592; Sebelumnya</button>
+      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-mob-location">Batal</button>
+      <button type="button" class="btn btn-sm btn-p" id="mob-loc-wiz-next" data-sigaji-action="invoke" data-fn="mobLocWizardNext">Lanjut &#8594;</button>
+      <button type="button" class="btn btn-sm btn-p u-hidden" id="mob-loc-wiz-save" data-sigaji-action="mobile-loc-save">Simpan lokasi</button>
     </div>
   </div>
 </div>
@@ -1388,7 +1388,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MODAL TELEGRAM -->
 <div class="mbd" id="m-tg">
   <div class="modal modal-sm">
-    <button class="mclose" onclick="closeModal('m-tg')">&times;</button>
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-tg">&times;</button>
     <div class="mtit">Telegram Slip Gaji</div>
     <div class="info-box info-blue font-11 leading-tight">
       1) HRD/Admin buat <strong>kode link</strong> untuk karyawan.<br>
@@ -1400,12 +1400,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="fg"><label>Kode link (30 menit)</label>
       <div class="fl gap1">
         <input id="tg-code" readonly placeholder="Klik 'Buat kode'">
-        <button class="btn btn-sm btn-p" onclick="tgBuatKode()">Buat kode</button>
+        <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="tgBuatKode">Buat kode</button>
       </div>
       <div class="font-10 text-muted mt-xs">Bagikan kode ini ke karyawan (jangan umumkan di grup).</div>
     </div>
     <div class="mfoot">
-      <button class="btn btn-sm btn-out" onclick="closeModal('m-tg')">Tutup</button>
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-tg">Tutup</button>
     </div>
   </div>
 </div>
@@ -1423,42 +1423,42 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.5.33"></script>
-<script src="/js/sigaji-icons.js?v=11.5.33"></script>
-<script src="/js/sigaji-ui.js?v=11.5.33"></script>
-<script src="/js/sigaji-dom.js?v=11.5.33"></script>
-<script src="/js/sigaji-api.js?v=11.5.33"></script>
-<script src="/js/karyawan-tipe.js?v=11.5.33"></script>
-<script src="/js/storage.js?v=11.5.33"></script>
-<script src="/js/ptkp.js?v=11.5.33"></script>
-<script src="/js/modules/app-globals.js?v=11.5.33"></script>
-<script src="/js/modules/app-core.js?v=11.5.33"></script>
-<script src="/js/modules/app-access.js?v=11.5.33"></script>
-<script src="/js/modules/app-hr.js?v=11.5.33"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.5.33"></script>
-<script src="/js/modules/app-slip.js?v=11.5.33"></script>
-<script src="/js/modules/app-reports.js?v=11.5.33"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.33"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.33"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.33"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.33"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.33"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.5.33"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.5.33"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.33"></script>
-<script src="/js/modules/app-master.js?v=11.5.33"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.33"></script>
-<script src="/js/modules/app-shell.js?v=11.5.33"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.5.33"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.5.33"></script>
-<script src="/js/pesangon.js?v=11.5.33"></script>
-<script src="/js/config.js?v=11.5.33"></script>
+<script src="/js/constants.js?v=11.5.35"></script>
+<script src="/js/sigaji-icons.js?v=11.5.35"></script>
+<script src="/js/sigaji-ui.js?v=11.5.35"></script>
+<script src="/js/sigaji-dom.js?v=11.5.35"></script>
+<script src="/js/sigaji-api.js?v=11.5.35"></script>
+<script src="/js/karyawan-tipe.js?v=11.5.35"></script>
+<script src="/js/storage.js?v=11.5.35"></script>
+<script src="/js/ptkp.js?v=11.5.35"></script>
+<script src="/js/modules/app-globals.js?v=11.5.35"></script>
+<script src="/js/modules/app-core.js?v=11.5.35"></script>
+<script src="/js/modules/app-access.js?v=11.5.35"></script>
+<script src="/js/modules/app-hr.js?v=11.5.35"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.5.35"></script>
+<script src="/js/modules/app-slip.js?v=11.5.35"></script>
+<script src="/js/modules/app-reports.js?v=11.5.35"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.35"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.35"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.35"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.35"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.35"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.5.35"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.5.35"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.35"></script>
+<script src="/js/modules/app-master.js?v=11.5.35"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.35"></script>
+<script src="/js/modules/app-shell.js?v=11.5.35"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.5.35"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.5.35"></script>
+<script src="/js/pesangon.js?v=11.5.35"></script>
+<script src="/js/config.js?v=11.5.35"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.5.33"></script>
-<script src="/js/cloud-tables.js?v=11.5.33"></script>
+<script src="/js/cloud-branding.js?v=11.5.35"></script>
+<script src="/js/cloud-tables.js?v=11.5.35"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.5.33"></script>
-<script src="/js/modules/app-boot.js?v=11.5.33"></script>
-<script src="/js/sigaji-events.js?v=11.5.33"></script>
+<script src="/js/cloud-sync.js?v=11.5.35"></script>
+<script src="/js/modules/app-boot.js?v=11.5.35"></script>
+<script src="/js/sigaji-events.js?v=11.5.35"></script>
 </body>
 </html>
