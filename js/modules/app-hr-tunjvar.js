@@ -344,8 +344,8 @@ function renderTunjVariabelBulan() {
         var cellKey = tunjVarCellKey(k.nik, c.id);
         if (__tunjVarEditCells[cellKey]) {
           return (
-            '<td><div class="fl gap1 items-center" style="flex-wrap:nowrap">' +
-            '<input type="text" class="tunjvar-inp inp-rp" style="max-width:100px" value="' +
+            '<td><div class="fl gap1 items-center tunjvar-cell-wrap">' +
+            '<input type="text" class="tunjvar-inp inp-rp tunjvar-inp-narrow" value="' +
             formatRpInputNum(v) +
             '" data-rp="1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();tunjVarCommitCell(\'' +
             nikA +
@@ -358,8 +358,8 @@ function renderTunjVariabelBulan() {
           );
         }
         return (
-          '<td><div class="fl gap1 items-center" style="flex-wrap:nowrap">' +
-          '<span class="font-12 fw-600" style="min-width:76px">' +
+          '<td><div class="fl gap1 items-center tunjvar-cell-wrap">' +
+          '<span class="font-12 fw-600 tunjvar-val">' +
           formatRpInputNum(v) +
           '</span>' +
           '<button type="button" class="btn btn-xs btn-out"' +

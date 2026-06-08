@@ -218,3 +218,134 @@
 .sysstatus-table .border-bottom-muted {
   width: 38%;
 }
+
+/* ── Form inline (mobile, filter) ── */
+.select-inline-bordered {
+  padding: 6px 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  background: var(--wh);
+}
+.font-mono { font-family: monospace; }
+
+/* ── Mobile ── */
+.mob-card-bordered {
+  border: 1px solid var(--color-border-light);
+  margin-bottom: 0.85rem;
+}
+.mob-leave-split {
+  border: 1px solid var(--color-border-light);
+  padding: 0.75rem;
+}
+.mob-notif-unread { background: var(--color-blue-50); }
+.mob-list-row {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--color-surface-muted);
+}
+.mob-list-row-sm {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--color-surface-muted);
+}
+.mob-preview-cloud {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-border-light);
+}
+.mob-radius-warn { color: var(--ab-half-sakit-fg); }
+
+/* ── Slip gaji ── */
+.slip-prorate-badge {
+  background: var(--color-warning-bg);
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+.slip-thr-box {
+  background: var(--color-purple-bg);
+  border: 1.5px solid var(--color-purple-border);
+}
+.slip-thr-box-sm {
+  background: var(--color-purple-bg);
+  border: 1px solid var(--color-purple-border);
+}
+.slip-thr-heading {
+  color: var(--color-purple);
+  text-transform: uppercase;
+}
+.slip-thr-divider {
+  color: var(--color-purple);
+  border-top: 1px solid var(--color-purple-border);
+  padding-top: 4px;
+}
+.slip-thr-bruto-row {
+  border-top: 1.5px solid var(--color-purple);
+  padding-top: 6px;
+}
+.slip-pph-note {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-left: 3px solid var(--color-success);
+  border-radius: 6px;
+  padding: 0.65rem 0.9rem;
+}
+.slip-ineligible {
+  padding: 2rem;
+  background: var(--color-danger-bg);
+}
+.slip-terbilang {
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.slip-recon-lebih {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+}
+.slip-recon-kurang {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+}
+.slip-thr-total {
+  background: linear-gradient(90deg, var(--color-purple), #7c3aed);
+}
+.slip-pot-warn { color: var(--ab-half-sakit-fg); }
+.slip-terbilang-italic { font-style: italic; }
+
+/* ── Laporan & THR ── */
+.row-period-active { background: var(--color-success-bg); }
+.thr-mode-btn {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: var(--wh);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.thr-mode-btn.is-manual {
+  border-color: var(--color-purple);
+  background: var(--color-purple);
+  color: var(--wh);
+}
+.thr-manual-inp {
+  width: 120px;
+  padding: 4px 8px;
+  border: 1.5px solid var(--color-purple-border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  color: var(--color-purple);
+  font-weight: 700;
+}
+.thr-val-manual { color: var(--color-purple); }
+.thr-val-auto { color: var(--color-primary); }
+.text-dash-muted { color: var(--color-slate-300); }
+
+/* ── Tunjangan variabel ── */
+.tunjvar-cell-wrap { flex-wrap: nowrap; }
+.tunjvar-val { min-width: 76px; }
+.tunjvar-inp-narrow { max-width: 100px; }

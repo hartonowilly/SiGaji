@@ -94,8 +94,8 @@ async function renderMobileAttendanceLog(btn){
       +'<div class="ct m-0 border-0 p-0">Siapa sudah check-in / check-out</div>'
       +'<div class="fl gap1 items-center flex-wrap">'
       +'<label class="font-11 fw-700 text-muted">Tanggal:</label>'
-      +'<input class="rounded-sm select-inline" type="date" id="mob-log-date" value="'+escapeAttr(today)+'" style="padding:6px 10px; border:1.5px solid #dde1e9">'
-      +'<select class="rounded-sm select-inline" id="mob-log-filter" style="padding:6px 10px; border:1.5px solid #dde1e9" onchange="mobRenderLogFromCache()">'
+      +'<input class="rounded-sm select-inline select-inline-bordered" type="date" id="mob-log-date" value="'+escapeAttr(today)+'">'
+      +'<select class="rounded-sm select-inline select-inline-bordered" id="mob-log-filter" onchange="mobRenderLogFromCache()">'
       +'<option value="">Semua status</option><option value="ok">OK</option><option value="pending_review">Review</option>'
       +'<option value="outside_geofence">Luar radius</option><option value="rejected">Ditolak / mock</option></select>'
       +'<button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('mob-att-log')+'>&#8635; Muat</button>'
@@ -260,7 +260,7 @@ function mobLocRadiusLabel(m){
   var lbl=mobFmtDistanceM(m);
   var hint=mobLocRadiusHint(m);
   if(hint)lbl+='<span class="ct-brand fw-600">'+hint+'</span>';
-  if(m<100)return lbl+' <span style="color:#b45309">(sangat kecil — pastikan meter, bukan km)</span>';
+  if(m<100)return lbl+' <span class="mob-radius-warn">(sangat kecil — pastikan meter, bukan km)</span>';
   return lbl;
 }
 function mobGpsAccBadge(m){
@@ -521,8 +521,8 @@ async function mobInitLokasiTab(){
     });
     var h='<div class="card tabs-spaced-lg border-accent-left">'
       +'<div class="flb mb2 flex-wrap gap-sm"><div class="ct m-0 border-0 p-0">Dashboard absensi hari ini</div>'
-      +'<div class="fl gap1"><input class="rounded-sm select-inline" type="date" id="mob-dash-date" value="'+escapeAttr(today)+'" style="padding:6px 10px; border:1.5px solid #dde1e9">'
-      +'<select class="rounded-sm select-inline" id="mob-dash-loc" style="padding:6px 10px; border:1.5px solid #dde1e9">'+locOpts+'</select>'
+      +'<div class="fl gap1"><input class="rounded-sm select-inline select-inline-bordered" type="date" id="mob-dash-date" value="'+escapeAttr(today)+'">'
+      +'<select class="rounded-sm select-inline select-inline-bordered" id="mob-dash-loc">'+locOpts+'</select>'
       +'<button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'renderMobileDashboard'})+'>Muat</button></div></div>'
       +'<div id="mob-dashboard-wrap"></div></div>';
     dashHost.innerHTML=h;
@@ -565,7 +565,7 @@ function mobAssignFormHtml(locations,editRow){
   var dt=editRow?editRow.date_to:today;
   var sat=editRow?!!editRow.works_saturday:true;
   var cat=editRow?(editRow.catatan||''):'';
-  return '<div id="mob-assign-form" class="card card-surface-neutral" style="border:1px solid #e2e8f0; margin-bottom:.85rem">'
+  return '<div id="mob-assign-form" class="card card-surface-neutral mob-card-bordered">'
     +'<div class="ct border-0 p-0 mb-lg m-0">'+(editRow?'Edit penugasan':'Tambah penugasan baru')+'</div>'
     +'<input type="hidden" id="mob-assign-edit-id" value="'+(editRow?escapeHtml(editRow.id):'')+'">'
     +'<div class="fg"><label>Karyawan</label><select class="w-full" id="mob-assign-nik">'+mobKarSelectHtml(editRow?editRow.nik:'')+'</select></div>'
@@ -683,7 +683,7 @@ async function renderMobileLeavePending(){
     +items.map(function(r){
       var idEsc=String(r.id).replace(/'/g,"\\'");
       var att=r.attachment_path?'<div class="font-10 ct-brand">Surat: '+escapeHtml(r.attachment_path)+'</div>':'';
-      return '<div class="mob-leave-split rounded-md mb-md" style="border:1px solid #e5e7eb; padding:.75rem">'
+      return '<div class="mob-leave-split rounded-md mb-md">'
         +'<div><div class="fw-700 font-14">'+escapeHtml(r.nama_karyawan||r.nik)+' <span class="bdg b-info">'+escapeHtml(r.request_type)+'</span></div>'
         +'<div class="font-12 text-body mt-xs">'+r.date_from+' → '+r.date_to+'</div>'
         +'<div class="font-11 text-muted mt-xs">'+escapeHtml(r.reason||'-')+'</div>'+att
@@ -743,7 +743,7 @@ async function renderMyCutiPage(){
     +(cloud?'<p class="u-muted-11">Sakit wajib upload surat dokter sejak hari pertama. Cuti tahunan tidak boleh melebihi sisa kuota (termasuk pengajuan pending). Setelah disetujui HRD, kalender absensi ter-update otomatis.</p>'
       :'<p class="u-muted-11">Login cloud diperlukan untuk mengirim pengajuan ke HRD.</p>')
     +'<div id="mycuti-balance-cloud" class="info-box info-amber u-hidden font-11 mb-md" style="line-height:1.5"></div>'
-    +'<div class="u-hidden font-11 mb-md card-surface-neutral rounded-sm" id="mycuti-preview-cloud" style="padding:.45rem .6rem; border:1px solid #e2e8f0"></div>'
+    +'<div class="u-hidden font-11 mb-md card-surface-neutral rounded-sm mob-preview-cloud" id="mycuti-preview-cloud"></div>'
     +'<div class="fg2"><div class="fg"><label>Jenis</label><select id="mycuti-type"><option value="cuti">Cuti tahunan</option><option value="izin">Izin</option><option value="sakit">Sakit (wajib surat dokter)</option></select></div>'
     +'<div class="fg"><label>Dari</label><input type="date" id="mycuti-from"></div><div class="fg"><label>Sampai</label><input type="date" id="mycuti-to"></div></div>'
     +'<div class="fg"><label>Alasan</label><textarea class="w-full" id="mycuti-reason" rows="2"></textarea></div>'
@@ -776,8 +776,8 @@ async function loadMyCutiNotifCloud(){
   var h='<div class="font-11 fw-700 text-muted mb-sm">Notifikasi pengajuan'
     +(unread.length?' <span class="bdg b-warn">'+String(unread.length)+' baru</span>':'')+'</div>'
     +items.slice(0,8).map(function(n){
-      var st=!n.read_at?'background:#f0f6ff;':'';
-      return '<div class="font-11" style="padding:.45rem 0; border-bottom:1px solid #f3f4f6; '+st+'">'
+      var st=!n.read_at?' mob-notif-unread':'';
+      return '<div class="font-11 mob-list-row'+st+'">'
         +'<div class="fw-700">'+escapeHtml(n.title||'')+'</div>'
         +'<div class="text-muted">'+escapeHtml(n.body||'')+'</div></div>';
     }).join('')
@@ -828,7 +828,7 @@ async function refreshMyCutiPreviewCloud(){
   if(sel.value!=='cuti'||!mf.value||!mt.value){prev.style.display='none';return;}
   if(mt.value<mf.value){
     prev.style.display='block';
-    prev.innerHTML='<span style="color:#b91c1c">Tanggal akhir harus ≥ tanggal mulai</span>';
+    prev.innerHTML='<span class="text-danger">Tanggal akhir harus ≥ tanggal mulai</span>';
     return;
   }
   prev.style.display='block';
@@ -839,10 +839,12 @@ async function refreshMyCutiPreviewCloud(){
   var sisa=j.balance&&j.balance.sisa!=null?j.balance.sisa:0;
   if(j.allowed){
     prev.innerHTML='Mengajukan <b>'+String(req)+'</b> hari kerja. Sisa setelah ini: <b>'+String(Math.max(0,sisa-req))+'</b> hari.';
-    prev.style.color='#166534';
+    prev.classList.add('text-success');
+    prev.classList.remove('text-danger');
   }else{
-    prev.innerHTML='<span style="color:#b91c1c">'+escapeHtml(j.error||'Melebihi sisa cuti')+'</span> (mengajukan '+String(req)+' hari, sisa '+String(Math.max(0,sisa))+' hari)';
-    prev.style.color='#b91c1c';
+    prev.innerHTML='<span class="text-danger">'+escapeHtml(j.error||'Melebihi sisa cuti')+'</span> (mengajukan '+String(req)+' hari, sisa '+String(Math.max(0,sisa))+' hari)';
+    prev.classList.add('text-danger');
+    prev.classList.remove('text-success');
   }
 }
 async function loadMyCutiRequests(){
@@ -853,7 +855,7 @@ async function loadMyCutiRequests(){
   el.innerHTML='<div class="font-11 fw-700 text-muted mb-sm">Riwayat pengajuan</div>'
     +(items.length?items.map(function(r){
       var st=r.status==='approved'?'b-teal':r.status==='rejected'?'b-err':'b-warn';
-      return '<div class="font-11" style="padding:.4rem 0; border-bottom:1px solid #f3f4f6">'
+      return '<div class="font-11 mob-list-row-sm">'
         +'<span class="bdg '+st+'">'+r.status+'</span> '+r.request_type+' '+r.date_from+'–'+r.date_to+'</div>';
     }).join(''):'<div class="text-subtle">Belum ada</div>');
 }

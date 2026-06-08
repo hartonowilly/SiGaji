@@ -67,7 +67,7 @@ function renderLaporanBody(){
     var stTip=p.status==='aktif'
       ?'Periode aktif — estimasi, bisa berubah sebelum tutup periode'
       :'Periode tutup — rekap arsip periode tersebut';
-    return '<tr '+(p.status==='aktif'?'style="background:#e8f4de"':'')+'>'
+    return '<tr'+(p.status==='aktif'?' class="row-period-active"':'')+'>'
       +'<td><strong>'+escapeHtml(p.nama)+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+rentang+'</td>'
       +'<td>'+list.length+'</td><td>'+fmt(tB)+'</td><td>'+(tT>0?fmt(tT):'&#8212;')+'</td>'
       +'<td>'+fmt(tP)+'</td><td>'+fmt(tN)+'</td>'
@@ -529,16 +529,12 @@ function renderTHRBody(){
       var nikE=k.nik.replace(/'/g,"\\'");
       var pNE=pNama.replace(/'/g,"\\'");
       manCell='<div class="fl items-center gap-xs flex-wrap">'
-        +'<button'+sigajiDataAction('thr-manual',{nik:k.nik,periode:pNama,enabled:isManual?'0':'1'})+' data-pnama="'+pNama+'" data-aktif="'+(isManual?'0':'1')+'" '
-        +'style="padding:3px 10px;border-radius:20px;border:1.5px solid '+(isManual?'#5b21b6':'#dde1e9')+';'
-        +'background:'+(isManual?'#5b21b6':'#fff')+';color:'+(isManual?'#fff':'#6b7280')+';'
-        +'font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">'
+        +'<button class="thr-mode-btn'+(isManual?' is-manual':'')+'"'+sigajiDataAction('thr-manual',{nik:k.nik,periode:pNama,enabled:isManual?'0':'1'})+' data-pnama="'+pNama+'" data-aktif="'+(isManual?'0':'1')+'">'
         +(isManual?'&#9998; Manual':'&#9711; Otomatis')+'</button>';
       if(isManual){
-        manCell+='<input type="text" id="thr-inp-'+k.nik+'" '
+        manCell+='<input type="text" class="thr-manual-inp" id="thr-inp-'+k.nik+'" '
           +'value="'+(manData.nilai>0?manData.nilai.toLocaleString('id-ID'):'')+'" '
           +'placeholder="Nominal Rp" '
-          +'style="width:120px;padding:4px 8px;border:1.5px solid #c4b5fd;border-radius:6px;font-size:12px;font-family:inherit;outline:none;color:#5b21b6;font-weight:700" '
           +'data-nik="'+k.nik+'" data-pnama="'+pNama+'" '
           +'onchange="simpanTHRManualEl(this)" '
           +'onkeydown="if(event.key===\'Enter\')simpanTHRManualEl(this)">';
@@ -546,14 +542,14 @@ function renderTHRBody(){
       }
       manCell+='</div>';
     }else{
-      manCell='<span class="font-11" style="color:#d1d5db">&#8212;</span>';
+      manCell='<span class="font-11 text-dash-muted">&#8212;</span>';
     }
     return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div><strong>'+k.nama+'</strong><br><small class="text-muted">'+k.nik+'</small></div></div></td>'
       +'<td>'+mb+'</td>'
       +'<td>'+fmt(t.dasar)+'</td>'
       +'<td>'+(isE?t.pl:'<span class="bdg b-err">Belum eligible</span>')+'</td>'
       +'<td>'+manCell+'</td>'
-      +'<td><strong style="color:'+(isManual?'#5b21b6':'#1a56a0')+'">'+(isE?fmt(t.nilai+(isManual?0:0)):'&#8212;')+'</strong>'
+      +'<td><strong class="'+(isManual?'thr-val-manual':'thr-val-auto')+'">'+(isE?fmt(t.nilai+(isManual?0:0)):'&#8212;')+'</strong>'
         +(isManual?'<div class="font-9 text-purple">&#9998; Manual</div>':'')+'</td>'
       +'<td>'+(isE&&periodeAdaTHR?'<span class="ct-warn">'+fmt(pphEst)+'</span>':'<span class="text-subtle">'+(periodeAdaTHR?'&#8212;':'Set THR di Periode')+'</span>')+'</td>'
       +'<td><strong class="ct-success">'+(isE?fmt(t.nilai):'&#8212;')+'</strong>'+(isE?'<div class="font-9 ct-success">(full netto)</div>':'')+'</td></tr>';

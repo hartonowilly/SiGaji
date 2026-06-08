@@ -112,7 +112,7 @@
 .card-surface-success { background: var(--grb); border-color: var(--success-border); }
 .card-surface-warn { background: var(--row-prorate-bg); border-color: var(--warn-border); }
 .card-surface-neutral { background: var(--surface-2); }
-.card-surface-blue { background: var(--bll); }
+.card-surface-blue { background: var(--color-primary-subtle); }
 .card-surface-danger { background: var(--rdb); }
 
 .ct-purple { color: var(--pu); }
@@ -215,7 +215,7 @@
   padding: 0.65rem 1rem;
 }
 .surface-prs-hk {
-  background: var(--bll);
+  background: var(--color-primary-subtle);
   padding: 0.85rem;
   border: 1px solid var(--color-primary-border);
 }

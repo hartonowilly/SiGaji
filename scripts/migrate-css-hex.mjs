@@ -53,21 +53,39 @@ const MAP = [
   ['#fff', 'var(--wh)'],
 ];
 
+const SKIP_FILES = new Set(['css/sigaji-tokens.css']);
+
 const FILES = [
   'css/ui-refresh.css',
   'css/sigaji-ui-enhance.css',
   'css/styles.css',
   'css/sigaji-utilities.css',
+  'css/sigaji-components.css',
 ];
 
+/** Jangan ganti hex di baris definisi token (--foo: #hex) agar tidak circular */
+function replaceHexSafe(text, hex, token) {
+  const re = new RegExp(hex.replace('#', '#'), 'gi');
+  return text.replace(re, (match, offset, src) => {
+    const lineStart = src.lastIndexOf('\n', offset) + 1;
+    const lineEnd = src.indexOf('\n', offset);
+    const line = src.slice(lineStart, lineEnd === -1 ? src.length : lineEnd);
+    if (/^\s*--[\w-]+\s*:\s*/.test(line) && line.includes(match)) return match;
+    return token;
+  });
+}
+
 function migrate(file) {
+  if (SKIP_FILES.has(file)) {
+    console.log(file + ': skipped (token source)');
+    return;
+  }
   const p = path.join(ROOT, file);
   let t = fs.readFileSync(p, 'utf8');
   let n = 0;
   for (const [hex, token] of MAP) {
-    const re = new RegExp(hex.replace('#', '#'), 'gi');
     const before = t;
-    t = t.replace(re, token);
+    t = replaceHexSafe(t, hex, token);
     if (t !== before) n++;
   }
   fs.writeFileSync(p, t);
