@@ -347,7 +347,16 @@ function renderNotifBody(){
   }).join(''):'<div class="notif-empty">Belum ada notifikasi</div>';
 }
 function hapusNotif(id){notifikasi=notifikasi.filter(function(n){return n.id!==id;});saveAll();renderNotif();updateNotifBadge();}
-function hapusNotifSemua(){if(!confirm('Hapus semua?'))return;notifikasi=[];saveAll();renderNotif();updateNotifBadge();toast('Dihapus');}
+function hapusNotifSemua(){
+  var n=(notifikasi||[]).length;
+  var go=typeof sigajiConfirmBulkDelete==='function'
+    ?sigajiConfirmBulkDelete({title:'Hapus semua notifikasi',count:n,noun:'notifikasi',okText:'Ya, hapus semua'})
+    :sigajiConfirm({title:'Hapus semua notifikasi',message:'Hapus '+n+' notifikasi?',danger:true,okText:'Ya, hapus semua'});
+  Promise.resolve(go).then(function(ok){
+    if(!ok)return;
+    notifikasi=[];saveAll();renderNotif();updateNotifBadge();toast(n+' notifikasi dihapus');
+  });
+}
 function markAllRead(){notifikasi.forEach(function(n){n.read=true;});saveAll();renderNotif();updateNotifBadge();}
 function updateNotifBadge(){var u=notifikasi.filter(function(n){return !n.read;}).length;var d=document.getElementById('ndot');if(d)d.className=u>0?'ndot on':'ndot';var b=document.getElementById('nc-badge');if(b){b.style.display=u>0?'inline':'none';b.textContent=u;}}
 // ── MY CUTI ──────────────────────────────────────

@@ -286,13 +286,26 @@ function delLembur(nik,i){
   if(row&&row.tanggal&&!canEditDataPadaTanggalIso(row.tanggal)){toast('Lembur di periode terkunci tidak dapat dihapus.');return;}
   lembur[nik].splice(i,1);saveAll();renderLemburList();
 }
+function countLemburEntries(){
+  var n=0;
+  (karyawan||[]).forEach(function(k){n+=(lembur[k.nik]||[]).length;});
+  return n;
+}
 function hapusLemburBulan(){
   if(CU&&CU.role!=='Admin'){
     var ada=false;
     karyawan.forEach(function(k){(lembur[k.nik]||[]).forEach(function(r){if(r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal))ada=true;});});
     if(ada){toast('Ada lembur di periode terkunci. Hanya Admin yang dapat menghapus semua.');return;}
   }
-  if(!confirm('Hapus semua lembur?'))return;karyawan.forEach(function(k){lembur[k.nik]=[];});saveAll();renderLemburList();toast('Semua dihapus');
+  var n=countLemburEntries();
+  var go=typeof sigajiConfirmBulkDelete==='function'
+    ?sigajiConfirmBulkDelete({title:'Hapus semua lembur',count:n,noun:'baris lembur',hint:'Semua entri lembur semua karyawan akan dihapus.',okText:'Ya, hapus '+n+' baris'})
+    :sigajiConfirm({title:'Hapus semua lembur',message:'Hapus '+n+' baris lembur?',danger:true,okText:'Ya, hapus'});
+  Promise.resolve(go).then(function(ok){
+    if(!ok)return;
+    karyawan.forEach(function(k){lembur[k.nik]=[];});
+    saveAll();renderLemburList();toast(n+' baris lembur dihapus');
+  });
 }
 // ── HARI LIBUR ───────────────────────────────────
 function initLibnasYearSelect(){var el=document.getElementById('libnas-yr');if(!el)return;var thn=new Date().getFullYear();el.innerHTML='';for(var y=thn+1;y>=2017;y--){var opt=document.createElement('option');opt.value=y;opt.textContent=y;if(y===thn)opt.selected=true;el.appendChild(opt);}}
@@ -311,5 +324,14 @@ function renderHariLibur(){
 }
 function tambahLibur(){var tgl=document.getElementById('lib-tgl').value;var nama=document.getElementById('lib-nama').value.trim();var tipe=document.getElementById('lib-tipe').value;if(!tgl||!nama){toast('Wajib diisi');return;}if(hariLibur.find(function(l){return l.tgl===tgl;})){toast('Tanggal sudah ada');return;}hariLibur.push({tgl:tgl,nama:nama,tipe:tipe});saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast('Ditambahkan');}
 function hapusLibur(tgl){hariLibur=hariLibur.filter(function(l){return l.tgl!==tgl;});saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast('Dihapus');}
-function hapusSemuaLibur(){if(!confirm('Hapus SEMUA hari libur?'))return;hariLibur=[];saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast('Semua dihapus');}
+function hapusSemuaLibur(){
+  var n=(hariLibur||[]).length;
+  var go=typeof sigajiConfirmBulkDelete==='function'
+    ?sigajiConfirmBulkDelete({title:'Hapus semua hari libur',count:n,noun:'hari libur',hint:'Kalender libur nasional, cuti bersama, dan libur perusahaan akan dikosongkan.',okText:'Ya, hapus '+n+' hari'})
+    :sigajiConfirm({title:'Hapus semua hari libur',message:'Hapus '+n+' hari libur?',danger:true,okText:'Ya, hapus'});
+  Promise.resolve(go).then(function(ok){
+    if(!ok)return;
+    hariLibur=[];saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast(n+' hari libur dihapus');
+  });
+}
 function loadLiburNasionalDinamis(){var yr=parseInt((document.getElementById('libnas-yr')&&document.getElementById('libnas-yr').value)||new Date().getFullYear());var lb=getLiburNasionalTahun(yr);var added=0;lb.forEach(function(l){if(!hariLibur.find(function(x){return x.tgl===l.tgl;})){hariLibur.push(l);added++;}});saveAll();renderHariLibur();renderAbsensi();renderCutiRekap();toast(added>0?added+' hari libur '+yr+' dimuat':'Semua tanggal '+yr+' sudah ada');}

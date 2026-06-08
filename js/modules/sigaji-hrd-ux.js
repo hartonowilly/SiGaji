@@ -1,7 +1,9 @@
 /* SiGaji — UX Web HRD: periode sticky, sync cloud, skeleton, empty state */
 (function () {
   var _syncHideT = null;
+  var _saveHideT = null;
   var _pgGajiCols = 'ringkas';
+  var _cloudLoadCount = 0;
 
   function el(id) {
     return document.getElementById(id);
@@ -81,31 +83,115 @@
     }
   };
 
+  /** Indikator simpan lokal (#save-ind): menyimpan → tersimpan. */
+  window.sigajiSaveFeedback = function (state) {
+    var node = el('save-ind');
+    if (!node) return;
+    clearTimeout(_saveHideT);
+    if (state === 'saving') {
+      node.dataset.state = 'saving';
+      node.textContent = 'Menyimpan…';
+      return;
+    }
+    if (state === 'saved') {
+      node.dataset.state = 'saved';
+      node.textContent = '✓ Tersimpan';
+      _saveHideT = setTimeout(function () {
+        if (node.dataset.state === 'saved') {
+          node.dataset.state = '';
+          node.textContent = '';
+        }
+      }, 2500);
+      return;
+    }
+    if (state === 'error') {
+      node.dataset.state = 'error';
+      node.textContent = '✗ Gagal simpan';
+    }
+  };
+
   window.sigajiSetSyncStatus = function (state, detail) {
     var node = el('sync-status');
     if (!node) return;
     clearTimeout(_syncHideT);
     node.dataset.state = state || 'idle';
-    var map = {
-      idle: '',
-      local: '&#10003; Tersimpan lokal',
-      pending: '&#8635; Menyinkronkan…',
-      synced: '&#9729; Cloud tersimpan',
-      error: '&#9888; Gagal sync cloud',
-    };
-    var txt = map[state] || '';
-    if (detail && state === 'error') txt += ' — ' + detail;
-    if (detail && state === 'synced') node.title = detail;
-    node.innerHTML = txt;
-    if (state === 'local' || state === 'synced') {
+    node.title = '';
+    if (state === 'local') {
+      if (typeof sigajiSaveFeedback === 'function') sigajiSaveFeedback('saved');
+      node.innerHTML = '';
+      return;
+    }
+    if (state === 'pending') {
+      node.innerHTML = '&#8635; Menyinkronkan…';
+      return;
+    }
+    if (state === 'synced') {
+      node.innerHTML = '&#9729; Cloud tersimpan';
+      if (detail) node.title = detail;
       _syncHideT = setTimeout(function () {
-        if (node.dataset.state === state) {
+        if (node.dataset.state === 'synced') {
           node.dataset.state = 'idle';
           node.innerHTML = '';
           node.title = '';
         }
-      }, state === 'synced' ? 5000 : 2500);
+      }, 5000);
+      return;
     }
+    if (state === 'error') {
+      var short = detail ? String(detail).slice(0, 48) : '';
+      node.innerHTML =
+        '&#9888; Gagal sync' +
+        (short ? ' — ' + escapeHtml(short) : '') +
+        ' <button type="button" class="sync-retry-btn" data-sigaji-action="invoke" data-fn="sigajiRetryCloudSync">Coba lagi</button>';
+      node.title = detail || '';
+      return;
+    }
+    node.innerHTML = '';
+  };
+
+  /** Overlay skeleton saat fetch payload Supabase. */
+  window.sigajiCloudLoadStart = function () {
+    _cloudLoadCount++;
+    var ov = el('sigaji-cloud-load');
+    if (!ov) return;
+    ov.classList.remove('u-hidden');
+    ov.setAttribute('aria-busy', 'true');
+    document.documentElement.setAttribute('data-sigaji-cloud-loading', '1');
+  };
+
+  window.sigajiCloudLoadEnd = function () {
+    _cloudLoadCount = Math.max(0, _cloudLoadCount - 1);
+    if (_cloudLoadCount > 0) return;
+    var ov = el('sigaji-cloud-load');
+    if (ov) {
+      ov.classList.add('u-hidden');
+      ov.setAttribute('aria-busy', 'false');
+    }
+    document.documentElement.removeAttribute('data-sigaji-cloud-loading');
+  };
+
+  /** Konfirmasi hapus massal dengan jumlah item. */
+  window.sigajiConfirmBulkDelete = function (opts) {
+    opts = opts || {};
+    var n = opts.count != null ? opts.count : 0;
+    if (!n) {
+      if (typeof toast === 'function') toast('Tidak ada data untuk dihapus.');
+      return Promise.resolve(false);
+    }
+    var noun = opts.noun || 'item';
+    var msg =
+      'Anda akan menghapus ' +
+      n +
+      ' ' +
+      noun +
+      '.\n\nTindakan ini tidak dapat dibatalkan.';
+    if (opts.hint) msg += '\n\n' + opts.hint;
+    return sigajiConfirm({
+      title: opts.title || 'Hapus data',
+      message: msg,
+      danger: true,
+      okText: opts.okText || 'Ya, hapus semua',
+    });
   };
 
   window.sigajiUpdatePeriodStickyBar = function () {

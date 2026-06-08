@@ -366,19 +366,24 @@
   }
 
   async function enterFromSession(session) {
-    try { localStorage.setItem('sigaji_resume_hint', '1'); } catch (e) {}
-    await loadCloudPayloadIntoApp(session.user.id);
-    bootstrapAdminEmailIfNeeded(session.user);
-    var cu = pickCuAfterCloudLoad(session.user.email, session.user.id);
-    if (!cu) {
-      toastSafe(
-        'Akun Supabase sudah cocok, tapi pengguna tidak ditemukan di data SiGaji. Pastikan di Manajemen User kolom "Email Supabase" sama persis dengan email login, atau approve ulang pendaftar agar sistem menyimpan tautan akun (auth_uid). Minta Admin cek juga baris payload di Supabase (sigaji_cloud) dan kebijakan RLS/shared.'
-      );
-      if (window.sigajiSupabase) await window.sigajiSupabase.auth.signOut();
-      return;
-    }
-    if (typeof window.enterAppWithUser === 'function') {
-      window.enterAppWithUser(cu);
+    if (typeof window.sigajiCloudLoadStart === 'function') window.sigajiCloudLoadStart();
+    try {
+      try { localStorage.setItem('sigaji_resume_hint', '1'); } catch (e) {}
+      await loadCloudPayloadIntoApp(session.user.id);
+      bootstrapAdminEmailIfNeeded(session.user);
+      var cu = pickCuAfterCloudLoad(session.user.email, session.user.id);
+      if (!cu) {
+        toastSafe(
+          'Akun Supabase sudah cocok, tapi pengguna tidak ditemukan di data SiGaji. Pastikan di Manajemen User kolom "Email Supabase" sama persis dengan email login, atau approve ulang pendaftar agar sistem menyimpan tautan akun (auth_uid). Minta Admin cek juga baris payload di Supabase (sigaji_cloud) dan kebijakan RLS/shared.'
+        );
+        if (window.sigajiSupabase) await window.sigajiSupabase.auth.signOut();
+        return;
+      }
+      if (typeof window.enterAppWithUser === 'function') {
+        window.enterAppWithUser(cu);
+      }
+    } finally {
+      if (typeof window.sigajiCloudLoadEnd === 'function') window.sigajiCloudLoadEnd();
     }
   }
 
@@ -534,6 +539,10 @@
   }
 
   window.sigajiTryCloudLogin = tryCloudLoginWhenReady;
+  window.sigajiRetryCloudSync = function () {
+    clearTimeout(cloudTimer);
+    return cloudUpsert();
+  };
 
   function friendlyAuthEmailError(msg) {
     var m = String(msg || '').toLowerCase();

@@ -1,0 +1,125 @@
+/**
+ * SiGaji — cetak slip & laporan dari browser (Ctrl+P).
+ * Melengkapi export PDF; sembunyikan chrome aplikasi.
+ */
+@media print {
+  .sidebar-wrap,
+  .sidebar,
+  .topbar,
+  .nav-drawer-btn,
+  .page-actions,
+  .page-toolbar-filters,
+  .page-toolbar-slip,
+  .tabs,
+  .period-sticky-bar,
+  .period-pill,
+  .sync-status,
+  .save-ind,
+  .sigaji-cloud-load,
+  .po,
+  .mbd,
+  .modal,
+  .sigaji-tour,
+  .btn,
+  button,
+  .ab-status-legend,
+  .dash-kpi-hint,
+  details,
+  .empty-state:not(.slip *) {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #app,
+  .main,
+  #main-content {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .pg {
+    display: none !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .pg.active {
+    display: block !important;
+  }
+
+  .card,
+  .table-wrap,
+  .slip {
+    box-shadow: none !important;
+    border: none !important;
+    break-inside: avoid;
+  }
+
+  .slip {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+  }
+
+  .slip-head {
+    border-bottom: 2px solid #1a56a0 !important;
+    margin-bottom: 12px !important;
+  }
+
+  .slip-logo {
+    max-height: 48px !important;
+  }
+
+  table {
+    width: 100% !important;
+    font-size: 9pt !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #ccc !important;
+    padding: 4px 6px !important;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  #slip-preview,
+  #lap-tab-rekap,
+  #lap-tab-pph {
+    display: block !important;
+  }
+
+  #slip-tab-kirim,
+  #lap-tab-variance.u-hidden,
+  .u-hidden {
+    display: none !important;
+  }
+
+  #pg-slip.active #slip-tab-gaji,
+  #pg-laporan.active #lap-tab-rekap,
+  #pg-laporan.active #lap-tab-pph {
+    display: block !important;
+  }
+
+  a[href]:after {
+    content: none !important;
+  }
+}

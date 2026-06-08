@@ -370,10 +370,14 @@ function markRecoveryBackup(tag){
   }catch(e){}
 }
 function saveAll(){
+  try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('saving');}catch(eSf){}
   try{
     if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan||[]);
     dbSave({karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense});
-  }catch(e){console.error('saveAll error:',e);}
+  }catch(e){
+    console.error('saveAll error:',e);
+    try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('error');}catch(eSf2){}
+  }
   try{
     try{
       var prevUni=localStorage.getItem('sigaji_universal');
@@ -509,6 +513,7 @@ if(typeof window!=='undefined'){
 }
 let siT;
 function showSI(){
+  if(typeof sigajiSaveFeedback==='function'){sigajiSaveFeedback('saved');return;}
   if(typeof sigajiSetSyncStatus==='function')sigajiSetSyncStatus('local');
   const e=document.getElementById('save-ind');if(!e)return;e.textContent='✓ Tersimpan';clearTimeout(siT);siT=setTimeout(()=>e.textContent='',2000);
 }
