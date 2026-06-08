@@ -619,9 +619,9 @@
   };
 
   function brandAccent() {
-    var logo = document.getElementById('topbar-logo');
-    if (logo && logo.src) return '#1a56a0';
-    return (perusahaan && perusahaan.brand_color) || '#1a56a0';
+    var c = perusahaan && perusahaan.brand_color;
+    if (c && String(c).trim()) return String(c).trim();
+    return '#1a56a0';
   }
 
   window.sigajiApplyUiPrefs = function (prefs) {

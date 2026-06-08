@@ -289,8 +289,75 @@
 
 /* ── Brand PT: aksen dari logo / master perusahaan ── */
 [data-theme='brand'] {
-  --color-primary: var(--ux-accent, var(--blue));
-  --blue: var(--ux-accent, var(--blue));
-  --color-primary-subtle: color-mix(in srgb, var(--ux-accent, #1a56a0) 12%, white);
-  --bll: color-mix(in srgb, var(--ux-accent, #1a56a0) 12%, white);
+  --ux-accent: #1a56a0;
+  --color-primary: var(--ux-accent);
+  --blue: var(--ux-accent);
+  --color-primary-subtle: color-mix(in srgb, var(--ux-accent) 12%, white);
+  --bll: color-mix(in srgb, var(--ux-accent) 12%, white);
+  --topbar-fg: #ffffff;
+  --topbar-accent: #ffffff;
+}
+
+[data-theme='brand'] .topbar {
+  background: linear-gradient(90deg, var(--ux-accent), var(--indigo)) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.18) !important;
+  color: var(--topbar-fg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12), 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme='brand'] .topbar .alogo {
+  color: var(--topbar-accent) !important;
+}
+
+[data-theme='brand'] .topbar .uname,
+[data-theme='brand'] .topbar .sync-status,
+[data-theme='brand'] .topbar .save-ind {
+  color: var(--topbar-fg);
+}
+
+[data-theme='brand'] .topbar .rbadge {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+[data-theme='brand'] .topbar .periode-pill {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+[data-theme='brand'] .topbar .btn-out,
+[data-theme='brand'] .topbar .topbar-logout {
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='brand'] .topbar .toolbar-select,
+[data-theme='brand'] .topbar .ui-pref-sel {
+  background: rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+[data-theme='brand'] .topbar .notif-btn {
+  color: #fff;
+}
+
+[data-theme='brand'] .topbar .nav-drawer-btn {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+[data-theme='brand'] .sigaji-cabang-lbl {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+[data-theme='brand'] .topbar .sigaji-cabang-sel {
+  background: rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
 }

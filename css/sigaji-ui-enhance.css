@@ -1425,17 +1425,8 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 [data-theme="dark"] .wf-explain-panel { background: #1e293b; }
 [data-theme="dark"] .sigaji-tour-popover { background: #1e293b; color: var(--color-slate-200); }
 
-/* Brand theme */
-[data-theme="brand"] {
-  --ux-accent: var(--color-primary);
-}
-[data-theme="brand"] .topbar {
-  background: linear-gradient(90deg, var(--ux-accent), var(--indigo));
-  color: var(--wh);
-}
-[data-theme="brand"] .topbar .alogo,
-[data-theme="brand"] .topbar .uname { color: var(--wh); }
-[data-theme="brand"] .ptl-item.active { background: var(--ux-accent); }
+/* Brand theme — topbar di sigaji-tokens.css */
+[data-theme="brand"] .ptl-item.active { background: var(--ux-accent, var(--blue)); }
 
 /* Density */
 [data-density="compact"] { font-size: 12px; }
