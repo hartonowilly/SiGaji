@@ -11,7 +11,7 @@ window.sigajiParseFunctionJson = async function (r) {
   }
   return r.json().catch(function () { return null; });
 };
-window.SIGAJI_BUILD = '11.5.50';
+window.SIGAJI_BUILD = '11.5.52';
 function sigajiPaintBuildChip() {
   var el = document.getElementById('sigaji-build-chip');
   if (el && window.SIGAJI_BUILD) el.textContent = 'v' + window.SIGAJI_BUILD;
