@@ -250,7 +250,7 @@ async function renderMobileLocations(){
 async function deleteMobileLocation(id){
   if(!id)return;
   var ok=typeof sigajiConfirm==='function'
-    ?await sigajiConfirm({title:'Hapus lokasi GPS',message:'Hapus lokasi ini? Penugasan karyawan yang masih mengarah ke lokasi ini bisa gagal check-in.',danger:true,okText:'Ya, hapus'})
+    ?await sigajiConfirm({title:'Hapus lokasi GPS',message:'Hapus lokasi ini? Jika masih ada penugasan karyawan ke lokasi ini, hapus penugasan di tab Penugasan dulu.',danger:true,okText:'Ya, hapus'})
     :confirm('Hapus lokasi GPS ini?');
   if(!ok)return;
   var r=await sigajiMobileFetch('mobile-locations',{method:'POST',body:{action:'delete_location',id:id}});

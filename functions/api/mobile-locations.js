@@ -113,6 +113,23 @@ export async function onRequestPost({ request, env }) {
     if (action === 'delete_location') {
       const id = String(body.id || '').trim();
       if (!id) return jsonResponse(400, { ok: false, error: 'id wajib' }, request);
+      const { count, error: assignErr } = await sb
+        .from('sigaji_location_assignments')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_key', tenant)
+        .eq('location_id', id);
+      if (assignErr && !/does not exist/i.test(assignErr.message || '')) throw assignErr;
+      if (!assignErr && (count || 0) > 0) {
+        return jsonResponse(
+          409,
+          {
+            ok: false,
+            error:
+              'Lokasi masih dipakai penugasan karyawan. Hapus penugasan di tab Penugasan terlebih dahulu.',
+          },
+          request
+        );
+      }
       const { error } = await sb
         .from('sigaji_work_locations')
         .delete()
@@ -192,7 +209,18 @@ export async function onRequestPost({ request, env }) {
 
 function errResp(e, request) {
   const msg = e.message || String(e);
-  if (/relation.*does not exist|sigaji_work/i.test(msg)) {
+  if (/violates foreign key|foreign key constraint|still referenced/i.test(msg)) {
+    return jsonResponse(
+      409,
+      {
+        ok: false,
+        error:
+          'Lokasi masih dipakai penugasan karyawan. Hapus penugasan di tab Penugasan terlebih dahulu.',
+      },
+      request
+    );
+  }
+  if (/relation .* does not exist|does not exist/i.test(msg)) {
     return jsonResponse(
       503,
       { ok: false, error: 'Tabel mobile belum ada — jalankan sql/supabase_sigaji_mobile_attendance.sql' },
