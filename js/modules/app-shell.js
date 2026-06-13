@@ -442,7 +442,7 @@ function switchPayrollSpTab(el,tid){
   const subId=tabMap[tid];
   if(subId&&!canAccessPayrollSub(subId)){toast('Tidak punya akses ke tab ini');return;}
   document.querySelectorAll('#slide-panel-payroll .spt').forEach(function(t){t.classList.remove('active');});
-  el.classList.add('active');
+  if(el)el.classList.add('active');
   ['sp-gaji','sp-bpjs','sp-natura','sp-pphret','sp-ring'].forEach(function(id){
     var d=document.getElementById(id);
     if(d&&typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(d,id===tid);
@@ -454,6 +454,7 @@ function switchPayrollSpTab(el,tid){
   if(tid==='sp-natura'){var k3=getPayrollTargetByNik(cpNik,true);if(k3)renderNaturaPanel(k3);}
   if(tid==='sp-pphret'){var k4=getPayrollTargetByNik(cpNik,true);if(k4)renderPPhRetPanel(k4);}
 }
+if(typeof window!=='undefined')window.switchPayrollSpTab=switchPayrollSpTab;
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 var tT;toast=function(msg){var t=document.getElementById('toast9');if(!t){try{console.warn(msg);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}return;}t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show');},3200);};

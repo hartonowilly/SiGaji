@@ -1097,6 +1097,51 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   padding: 1.35rem 1.65rem;
 }
 
+/* ── Panel komponen gaji: header & tab kontras jelas ── */
+#slide-panel-payroll .sph {
+  background: linear-gradient(120deg, #0c2340 0%, #1a56a0 52%, #4338ca 100%) !important;
+  color: #fff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.12);
+}
+#slide-panel-payroll .sph .font-10,
+#slide-panel-payroll .sph .font-12,
+#slide-panel-payroll .sph #kg-sp-name,
+#slide-panel-payroll .sph #kg-sp-nik,
+#slide-panel-payroll .sph #kg-sp-sub {
+  color: #fff !important;
+}
+#slide-panel-payroll .sph .btn-out {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.08);
+}
+#slide-panel-payroll .sph .spc {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+#slide-panel-payroll .spt-wrap {
+  background: #eef2f7;
+  border-bottom: 2px solid #cbd5e1;
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.04);
+}
+#slide-panel-payroll .spt {
+  cursor: pointer;
+  user-select: none;
+}
+#slide-panel-payroll .spt.active {
+  color: #1a56a0;
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom-color: #1a56a0;
+}
+#slide-panel-payroll .spb {
+  background: #fff;
+}
+#slide-panel-payroll #tunj-list .tr-row,
+#slide-panel-payroll #pot-list .tr-row {
+  align-items: center;
+}
+
 /* ── Komponen row cards (slide panel) ── */
 .comp-row-card {
   display: flex;

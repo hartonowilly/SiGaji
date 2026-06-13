@@ -295,31 +295,14 @@ function closeAnyPanel(){closePanel();closePayrollPanel();}
 // ── SLIDE PANEL KOMPONEN GAJI ────────────────────
 const PAYROLL_SP_TABS=[['sp-gaji','gaji'],['sp-bpjs','bpjs'],['sp-natura','natura'],['sp-pphret','pphret'],['sp-ring','ring']];
 function applyPayrollSpTabSimpleUi(){
-  var simple=typeof SIGAJI_UI_SIMPLE!=='undefined'&&SIGAJI_UI_SIMPLE;
   var wrap=document.getElementById('payroll-spt-wrap');
   if(!wrap)return;
-  var adv=wrap.querySelectorAll('[data-payroll-adv="1"]');
-  var btn=document.getElementById('payroll-sp-more-btn');
-  if(!simple){
-    adv.forEach(function(el){
-      if(typeof sigajiShowEl==='function')sigajiShowEl(el,'reset');
-      else{el.classList.remove('u-hidden');el.style.removeProperty('display');}
-    });
-    if(btn&&typeof sigajiHideEl==='function')sigajiHideEl(btn);
-    else if(btn)btn.style.display='none';
-    return;
-  }
-  var show=wrap.dataset.payrollAdvShow==='1';
-  adv.forEach(function(el){
-    if(el.id==='payroll-sp-more-btn')return;
-    if(typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(el,show,'reset');
-    else el.style.display=show?'':'none';
+  wrap.querySelectorAll('.spt[data-kgstab]').forEach(function(el){
+    el.classList.remove('u-hidden');
+    el.style.removeProperty('display');
   });
-  if(btn){
-    if(typeof sigajiShowEl==='function')sigajiShowEl(btn,'reset');
-    else btn.style.display='';
-    btn.textContent=show?'\u2212 Ringkas':'+ Lanjutan';
-  }
+  var btn=document.getElementById('payroll-sp-more-btn');
+  if(btn)btn.style.display='none';
 }
 function sigajiTogglePayrollAdvTabs(){
   var wrap=document.getElementById('payroll-spt-wrap');
@@ -434,26 +417,25 @@ function renderTunjPanel(k){
   const list=k.tunjangan||[];
   const nik=k.nik;
   const snapMode=isPayrollSnapshotMode();
+  const nilaiStyle=snapMode?'':'background:#f3f4f6;color:#6b7280;cursor:not-allowed';
   document.getElementById('tunj-list').innerHTML=list.length?list.map(function(t,i){
     const showThr=t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';
     const thrIkut=showThr&&t.thr_ikut!==false;
     const prIkut=t.prorata_ikut!==false;
     const sel1=Object.entries(TUNJ_TYPES).map(function(e){return'<option value="'+e[0]+'" '+(t.tipe===e[0]?'selected':'')+'>'+e[1]+'</option>';}).join('');
-    return '<div class="comp-row-card comp-row-tunj">'
-      +'<div class="comp-row-grid comp-row-grid-tunj">'
-      +'<div class="fg m-0"><label>Nama</label><input value="'+t.nama+'" data-nik="'+nik+'" data-i="'+i+'" data-f="nama" onchange="updTunjEl(this)"></div>'
-      +'<div class="fg m-0"><label>Nominal</label><input type="text" class="inp-rp'+(snapMode?'':' snap-field-disabled')+'" value="'+t.nilai+'" '+(snapMode?'':'readonly title="Nominal tunjangan diisi pada mode Snapshot Periode"')+' data-nik="'+nik+'" data-i="'+i+'" data-f="nilai" data-rp="1" onchange="updTunjEl(this)"></div>'
-      +'<div class="fg m-0"><label>Tipe</label><select data-nik="'+nik+'" data-i="'+i+'" data-f="tipe" onchange="updTunjEl(this);refreshTunjPanel(this.dataset.nik)">'+sel1+'</select></div>'
-      +'<div class="fg m-0"><label>THR</label><select title="Ikut THR?" style="'+(showThr?'':'opacity:.35;pointer-events:none')+'" data-nik="'+nik+'" data-i="'+i+'" data-f="thr_ikut" onchange="updTunjEl(this)">'
-        +'<option value="ya" '+(thrIkut?'selected':'')+'>&#127873; Ikut</option>'
-        +'<option value="tidak" '+(!thrIkut?'selected':'')+'>Exclude</option>'
-      +'</select></div>'
-      +'<div class="fg m-0"><label>Prorata</label><select data-nik="'+nik+'" data-i="'+i+'" data-f="prorata_ikut" onchange="updTunjEl(this)">'
-        +'<option value="ya" '+(prIkut?'selected':'')+'>Ikut</option>'
+    return '<div class="tr-row" style="grid-template-columns:1.25fr 1fr 1fr 0.58fr 0.72fr auto">'
+      +'<input value="'+escapeAttr(t.nama)+'" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" data-nik="'+escapeAttr(nik)+'" data-i="'+i+'" data-f="nama" onchange="updTunjEl(this)">'
+      +'<input type="text" class="inp-rp" value="'+t.nilai+'" '+(snapMode?'':'readonly title="Nominal tunjangan diisi pada mode Snapshot Periode"')+' style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none;'+nilaiStyle+'" data-nik="'+escapeAttr(nik)+'" data-i="'+i+'" data-f="nilai" data-rp="1" onchange="updTunjEl(this)">'
+      +'<select style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:11px;font-family:inherit;outline:none" data-nik="'+escapeAttr(nik)+'" data-i="'+i+'" data-f="tipe" onchange="updTunjEl(this);refreshTunjPanel(this.dataset.nik)">'+sel1+'</select>'
+      +'<select title="Ikut THR?" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:10px;font-family:inherit;outline:none;'+(showThr?'':'opacity:.35;pointer-events:none')+'" data-nik="'+escapeAttr(nik)+'" data-i="'+i+'" data-f="thr_ikut" onchange="updTunjEl(this)">'
+        +'<option value="ya" '+(thrIkut?'selected':'')+'>&#127873;THR</option>'
+        +'<option value="tidak" '+(!thrIkut?'selected':'')+'>Excl</option>'
+      +'</select>'
+      +'<select title="Ikut perhitungan prorata gaji?" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:10px;font-family:inherit;outline:none" data-nik="'+escapeAttr(nik)+'" data-i="'+i+'" data-f="prorata_ikut" onchange="updTunjEl(this)">'
+        +'<option value="ya" '+(prIkut?'selected':'')+'>Prorata</option>'
         +'<option value="tidak" '+(!prIkut?'selected':'')+'>Penuh</option>'
-      +'</select></div>'
-      +'</div>'
-      +'<button type="button" class="btn btn-xs btn-r comp-row-del"'+sigajiDataAction('del-tunj',{nik:nik,i:i})+'>&#10007;</button>'
+      +'</select>'
+      +'<button type="button" class="btn btn-xs btn-r"'+sigajiDataAction('del-tunj',{nik:nik,i:i})+'>&#10007;</button>'
     +'</div>';
   }).join(''):'<div class="font-12 text-muted" style="padding:.5rem">Belum ada tunjangan.</div>';
   sigajiBindRpInputs(document.getElementById('tunj-list'));
@@ -473,7 +455,7 @@ function updTunjEl(el){
   updTunj(nik,i,f,v);
 }
 function delTunjEl(el){delTunj(el.dataset.nik,parseInt(el.dataset.i));}
-function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div class="comp-row-card comp-row-pot"><div class="comp-row-grid comp-row-grid-pot"><div class="fg m-0"><label>Nama</label><input value="${p.nama}" onchange="updPot('${k.nik}',${i},'nama',this.value)"></div><div class="fg m-0"><label>Nominal</label><input type="text" class="inp-rp" value="${p.nilai}" data-rp="1" onchange="updPot('${k.nik}',${i},'nilai',parseRpInput(this.value))"></div><div class="fg m-0"><label>Keterangan</label><input value="${p.ket||''}" placeholder="Opsional" onchange="updPot('${k.nik}',${i},'ket',this.value)"></div></div><button type="button" class="btn btn-xs btn-r comp-row-del"${sigajiDataAction('del-pot',{nik:k.nik,i:i})}>&#10007;</button></div>`).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada potongan.</div>';sigajiBindRpInputs(document.getElementById('pot-list'));}
+function renderPotPanel(k){const list=k.potongan||[];document.getElementById('pot-list').innerHTML=list.length?list.map((p,i)=>`<div class="tr-row" style="grid-template-columns:2fr 1fr 1fr auto"><input value="${escapeAttr(p.nama)}" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updPot('${escapeAttr(k.nik)}',${i},'nama',this.value)"><input type="text" class="inp-rp" value="${p.nilai}" data-rp="1" style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updPot('${escapeAttr(k.nik)}',${i},'nilai',parseRpInput(this.value))"><input value="${escapeAttr(p.ket||'')}" placeholder="Ket." style="padding:5px 8px;border:1.5px solid #dde1e9;border-radius:6px;font-size:12px;font-family:inherit;outline:none" onchange="updPot('${escapeAttr(k.nik)}',${i},'ket',this.value)"><button type="button" class="btn btn-xs btn-r"${sigajiDataAction('del-pot',{nik:k.nik,i:i})}>&#10007;</button></div>`).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada potongan.</div>';sigajiBindRpInputs(document.getElementById('pot-list'));}
 function addTunj(){
   if(!canAccessPayrollSub('gaji'))return;
   if(!guardPayrollEditUnlocked())return;
