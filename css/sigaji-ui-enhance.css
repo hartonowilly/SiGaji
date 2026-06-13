@@ -1097,29 +1097,64 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   padding: 1.35rem 1.65rem;
 }
 
-/* ── Panel komponen gaji: header & tab kontras jelas ── */
+/* ── Panel samping (karyawan + komponen gaji): header seragam ── */
+#slide-panel .sph,
 #slide-panel-payroll .sph {
   background: linear-gradient(120deg, #0c2340 0%, #1a56a0 52%, #4338ca 100%) !important;
   color: #fff !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.12);
 }
+#slide-panel .sph .font-10,
+#slide-panel .sph .font-12,
+#slide-panel .sph #sp-name,
+#slide-panel .sph #sp-nik,
+#slide-panel .sph #sp-sub,
 #slide-panel-payroll .sph .font-10,
 #slide-panel-payroll .sph .font-12,
 #slide-panel-payroll .sph #kg-sp-name,
 #slide-panel-payroll .sph #kg-sp-nik,
-#slide-panel-payroll .sph #kg-sp-sub {
-  color: #fff !important;
+#slide-panel-payroll .sph #kg-sp-sub,
+#slide-panel-payroll .sph .sp-mode-lbl,
+#slide-panel-payroll .sph #sp-mode-lbl {
+  color: rgba(255, 255, 255, 0.92) !important;
 }
-#slide-panel-payroll .sph .btn-out {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.08);
-}
+#slide-panel .sph .spc,
 #slide-panel-payroll .sph .spc {
   background: rgba(255, 255, 255, 0.18);
   color: #fff;
 }
+#slide-panel .sph .btn-out,
+#slide-panel-payroll .sph .sp-mode-btn:not(.is-active) {
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+#slide-panel-payroll .sph .sp-mode-btn.is-active {
+  background: #fff !important;
+  color: #0c2340 !important;
+  border-color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
+}
+#slide-panel-payroll .sph .sp-mode-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+#slide-panel-payroll .sph .sp-mode-badge--periode {
+  background: rgba(255, 255, 255, 0.95);
+  color: #4338ca;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+#slide-panel-payroll .sph .sp-mode-badge--master {
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+#slide-panel .spt-wrap,
 #slide-panel-payroll .spt-wrap {
   background: #eef2f7;
   border-bottom: 2px solid #cbd5e1;
@@ -1134,6 +1169,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   background: rgba(255, 255, 255, 0.72);
   border-bottom-color: #1a56a0;
 }
+#slide-panel .spb,
 #slide-panel-payroll .spb {
   background: #fff;
 }

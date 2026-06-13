@@ -695,30 +695,32 @@ function setSpPayrollView(mode){
   var bP=document.getElementById('sp-mode-periode');
   var bM=document.getElementById('sp-mode-master');
   if(bP){
-    bP.style.borderColor=spPayrollView==='periode'?'#5b21b6':'';
-    bP.style.background=spPayrollView==='periode'?'#f5f0ff':'';
-    bP.style.color=spPayrollView==='periode'?'#4c1d95':'';
+    bP.classList.toggle('is-active',spPayrollView==='periode');
+    bP.style.removeProperty('border-color');
+    bP.style.removeProperty('background');
+    bP.style.removeProperty('color');
   }
   if(bM){
-    bM.style.borderColor=spPayrollView==='master'?'#1f2937':'';
-    bM.style.background=spPayrollView==='master'?'#f3f4f6':'';
-    bM.style.color=spPayrollView==='master'?'#111827':'';
+    bM.classList.toggle('is-active',spPayrollView==='master');
+    bM.style.removeProperty('border-color');
+    bM.style.removeProperty('background');
+    bM.style.removeProperty('color');
   }
   var lbl=document.getElementById('sp-mode-lbl');
   if(lbl)lbl.textContent=spPayrollView==='periode'?('Periode aktif: '+(p&&p.nama?p.nama:'-')):'Perubahan ke Master global';
   var bdg=document.getElementById('sp-mode-badge');
   if(bdg){
+    bdg.classList.remove('sp-mode-badge--periode','sp-mode-badge--master');
     if(spPayrollView==='periode'){
       bdg.textContent='EDIT SNAPSHOT PERIODE';
-      bdg.style.background='#ede9fe';
-      bdg.style.color='#4c1d95';
-      bdg.style.border='1px solid #c4b5fd';
+      bdg.classList.add('sp-mode-badge--periode');
     }else{
       bdg.textContent='EDIT MASTER GLOBAL';
-      bdg.style.background='#f3f4f6';
-      bdg.style.color='#111827';
-      bdg.style.border='1px solid #d1d5db';
+      bdg.classList.add('sp-mode-badge--master');
     }
+    bdg.style.removeProperty('background');
+    bdg.style.removeProperty('color');
+    bdg.style.removeProperty('border');
   }
   var hint=document.getElementById('kg-sp-saved-lbl');
   if(hint){
