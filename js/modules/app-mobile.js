@@ -240,12 +240,21 @@ async function renderMobileLocations(){
       +'<td><div id="mob-loc-mini-'+loc.id+'" class="mob-loc-mini" title="Peta lokasi"></div>'
       +'<div class="font-9 text-subtle mt-2px">'+loc.lat.toFixed(5)+', '+loc.lon.toFixed(5)+'</div></td>'
       +'<td>'+loc.radius_m+' m</td><td>'+(loc.aktif?'<span class="bdg b-teal">Aktif</span>':'<span class="bdg b-gray">Off</span>')+'</td>'
-      +'<td><button class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileLocation',arg:loc.id})+'>Edit</button></td></tr>';
+      +'<td><div class="fl gap1"><button class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileLocation',arg:loc.id})+'>Edit</button><button class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileLocation',arg:loc.id})+'>Hapus</button></div></td></tr>';
   }).join('');
   el.innerHTML='<div class="card"><div class="flb mb2"><div class="ct m-0 border-0 p-0">Lokasi check-in GPS</div><button class="btn btn-sm btn-p"'+sigajiDataAction('invoke',{fn:'editMobileLocation'})+'>+ Lokasi</button></div>'
     +'<table><thead><tr><th>Nama</th><th>Tipe</th><th>Peta</th><th>Radius</th><th>Status</th><th></th></tr></thead><tbody>'
     +(rows||'<tr><td colspan="6">'+(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128205;',title:'Belum ada lokasi GPS',desc:'Tambahkan lokasi kantor/site agar karyawan bisa check-in di APK.',btnLabel:'+ Tambah lokasi',btnAction:'editMobileLocation'}):'<span class="text-subtle">Belum ada lokasi</span>')+'</td></tr>')+'</tbody></table></div>';
   setTimeout(function(){mobInitLocationMiniMaps(items);},200);
+}
+async function deleteMobileLocation(id){
+  if(!id)return;
+  var ok=typeof sigajiConfirm==='function'
+    ?await sigajiConfirm({title:'Hapus lokasi GPS',message:'Hapus lokasi ini? Penugasan karyawan yang masih mengarah ke lokasi ini bisa gagal check-in.',danger:true,okText:'Ya, hapus'})
+    :confirm('Hapus lokasi GPS ini?');
+  if(!ok)return;
+  var r=await sigajiMobileFetch('mobile-locations',{method:'POST',body:{action:'delete_location',id:id}});
+  if(r&&r.ok){toast('Lokasi dihapus');renderMobileLocations();}else toast((r&&r.error)||'Gagal menghapus lokasi');
 }
 function mobLocRadiusToSlider(radiusM){
   var m=parseInt(radiusM,10)||250;
