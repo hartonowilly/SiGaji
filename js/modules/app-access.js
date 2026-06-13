@@ -138,7 +138,8 @@ function openUserModal(idx=-1){
   sigajiEnsureBuiltinRoles();
   const rs=document.getElementById('u-role');
   var ro=sigajiBuildUserRoleOptions(u.role||'HRD');
-  rs.innerHTML=ro.html;
+  var html=ro.html;
+  rs.innerHTML=html;
   rs.value=ro.value;
   var apkCb=document.getElementById('u-apk-only');
   if(apkCb)apkCb.checked=u.role==='Absen';
