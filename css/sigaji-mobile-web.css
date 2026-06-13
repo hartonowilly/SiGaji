@@ -481,4 +481,47 @@ html.sigaji-mobile-nav .notif-title {
   #slide-panel .spb {
     overflow-x: hidden;
   }
+  /* HP: tunjangan ditumpuk (panel sempit) */
+  #slide-panel-payroll .payroll-tunj-head,
+  #slide-panel-payroll .payroll-pot-head {
+    display: none;
+  }
+  #slide-panel-payroll #tunj-list .payroll-tunj-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    padding: 0.7rem 0.65rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+  #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(1),
+  #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(2) {
+    grid-column: 1 / -1;
+  }
+  #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(3) {
+    grid-column: 1 / 2;
+  }
+  #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(4) {
+    grid-column: 2 / 3;
+  }
+  #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(5) {
+    grid-column: 1 / 2;
+  }
+  #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(6) {
+    grid-column: 2 / 3;
+    justify-self: end;
+  }
+  #slide-panel-payroll #pot-list .payroll-pot-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    padding: 0.7rem 0.65rem;
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+    background: #fffafb;
+  }
+  #slide-panel-payroll #pot-list .payroll-pot-row > :nth-child(1) {
+    grid-column: 1 / -1;
+  }
+  #slide-panel-payroll #pot-list .payroll-pot-row > :nth-child(4) {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
 }
