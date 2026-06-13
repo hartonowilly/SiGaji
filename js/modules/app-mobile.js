@@ -86,6 +86,12 @@ function mobFmtTimeIso(iso){
     return d.toLocaleString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',hour12:false});
   }catch(e){return String(iso).substring(11,16);}
 }
+function mobFmtDateIso(iso){
+  if(!iso||iso==='-')return '-';
+  if(typeof fmtDate==='function')return fmtDate(iso).replace(/\//g,'-');
+  var p=String(iso).substring(0,10).split('-');
+  return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:iso;
+}
 function mobMapLink(lat,lon){
   if(lat==null||lon==null)return '';
   return ' <a class="font-10" href="https://www.google.com/maps?q='+lat+','+lon+'" target="_blank" rel="noopener">Peta</a>';
@@ -250,7 +256,7 @@ async function renderMobileLocations(){
 async function deleteMobileLocation(id){
   if(!id)return;
   var ok=typeof sigajiConfirm==='function'
-    ?await sigajiConfirm({title:'Hapus lokasi GPS',message:'Hapus lokasi ini? Jika masih ada penugasan karyawan ke lokasi ini, hapus penugasan di tab Penugasan dulu.',danger:true,okText:'Ya, hapus'})
+    ?await sigajiConfirm({title:'Hapus lokasi GPS',message:'Hapus lokasi ini? Penugasan yang sudah lewat tanggal akan dibersihkan otomatis. Penugasan aktif harus dihapus manual di tab Penugasan.',danger:true,okText:'Ya, hapus'})
     :confirm('Hapus lokasi GPS ini?');
   if(!ok)return;
   var r=await sigajiMobileFetch('mobile-locations',{method:'POST',body:{action:'delete_location',id:id}});
@@ -613,7 +619,7 @@ async function renderMobileAssignments(){
     var loc=a.sigaji_work_locations||{};
     var namaKar=(karyawan||[]).find(function(k){return k&&k.nik===a.nik;});
     var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
-    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
+    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(mobFmtDateIso(a.date_from))+' → '+escapeHtml(mobFmtDateIso(a.date_to))+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
   }).join('');
   var h=mobAssignFormHtml(locations,null)
     +mobAssignWeekCalendarHtml(items,locations)
@@ -672,7 +678,7 @@ async function editMobileAssignment(id){
     var loc=a.sigaji_work_locations||{};
     var namaKar=(karyawan||[]).find(function(k){return k&&k.nik===a.nik;});
     var lbl=namaKar?(namaKar.nama+' ('+a.nik+')'):a.nik;
-    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(a.date_from)+' → '+escapeHtml(a.date_to)+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
+    return '<tr><td>'+escapeHtml(lbl)+'</td><td>'+escapeHtml(loc.nama||'-')+'</td><td>'+escapeHtml(mobFmtDateIso(a.date_from))+' → '+escapeHtml(mobFmtDateIso(a.date_to))+'</td><td>'+(a.works_saturday?'Ya':'Tidak')+'</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('invoke',{fn:'editMobileAssignment',arg:a.id})+'>Edit</button><button type="button" class="btn btn-sm btn-r"'+sigajiDataAction('invoke',{fn:'deleteMobileAssignment',arg:a.id})+'>Hapus</button></div></td></tr>';
   }).join('');
   var h=mobAssignFormHtml(locations,row)
     +mobAssignWeekCalendarHtml(items,locations)

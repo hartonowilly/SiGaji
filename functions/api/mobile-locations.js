@@ -7,6 +7,7 @@ import {
 import {
   assertCallerIsHrdOrAdminMobile,
   parseDateOnly,
+  workDateJakarta,
 } from '../_lib/mobile-shared.js';
 
 export async function onRequestOptions({ request }) {
@@ -113,22 +114,33 @@ export async function onRequestPost({ request, env }) {
     if (action === 'delete_location') {
       const id = String(body.id || '').trim();
       if (!id) return jsonResponse(400, { ok: false, error: 'id wajib' }, request);
-      const { count, error: assignErr } = await sb
+      const today = workDateJakarta();
+      const { data: assigns, error: assignErr } = await sb
         .from('sigaji_location_assignments')
-        .select('id', { count: 'exact', head: true })
+        .select('id, date_to')
         .eq('tenant_key', tenant)
         .eq('location_id', id);
       if (assignErr && !/does not exist/i.test(assignErr.message || '')) throw assignErr;
-      if (!assignErr && (count || 0) > 0) {
-        return jsonResponse(
-          409,
-          {
-            ok: false,
-            error:
-              'Lokasi masih dipakai penugasan karyawan. Hapus penugasan di tab Penugasan terlebih dahulu.',
-          },
-          request
-        );
+      if (assigns && assigns.length) {
+        const active = assigns.filter((a) => String(a.date_to || '') >= today);
+        if (active.length) {
+          return jsonResponse(
+            409,
+            {
+              ok: false,
+              error:
+                'Lokasi masih dipakai penugasan aktif. Hapus atau ubah penugasan di tab Penugasan terlebih dahulu.',
+            },
+            request
+          );
+        }
+        const expiredIds = assigns.map((a) => a.id);
+        const { error: delAssignErr } = await sb
+          .from('sigaji_location_assignments')
+          .delete()
+          .eq('tenant_key', tenant)
+          .in('id', expiredIds);
+        if (delAssignErr) throw delAssignErr;
       }
       const { error } = await sb
         .from('sigaji_work_locations')
