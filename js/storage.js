@@ -340,7 +340,8 @@ let approvals=LS('approvals',[]);
 let notifikasi=LS('notifikasi',[]);
 let perusahaan=LS('perusahaan',{nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,ptkp_nilai:{},umk:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}});
 let users=LS('users',[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}]);
-let roles=LS('roles',{Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','absensi.lokasi','absensi.pengajuan','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','simulasi','slip','laporan','laporan.rekap','laporan.variance','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi']});
+let roles=LS('roles',{Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','absensi.lokasi','absensi.pengajuan','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','simulasi','slip','laporan','laporan.rekap','laporan.variance','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi'],Absen:[]});
+if(!roles.Absen)roles.Absen=[];
 let thrManual=LS('thrManual',{});
 let tunjVarBulan=LS('tunjVarBulan',{});
 let tunjVarLabels=LS('tunjVarLabels',{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'});
@@ -440,6 +441,7 @@ function applyDbFromCloudPayload(payload){
     if(o.perusahaan&&typeof o.perusahaan==='object')perusahaan=o.perusahaan;
     if(Array.isArray(o.users))users=o.users;
     if(o.roles&&typeof o.roles==='object')roles=o.roles;
+    if(!roles.Absen)roles.Absen=[];
     if(o.thrManual&&typeof o.thrManual==='object')thrManual=o.thrManual;
     if(o.tunjVarBulan&&typeof o.tunjVarBulan==='object')tunjVarBulan=o.tunjVarBulan;
     if(o.tunjVarLabels&&typeof o.tunjVarLabels==='object')tunjVarLabels=o.tunjVarLabels;

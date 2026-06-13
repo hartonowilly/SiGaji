@@ -12,7 +12,7 @@
 create table if not exists public.sigaji_user_roles (
   tenant_key text not null default 'main',
   auth_uid uuid not null references auth.users (id) on delete cascade,
-  role text not null check (role in ('Admin', 'HRD', 'Karyawan')),
+  role text not null check (role in ('Admin', 'HRD', 'Karyawan', 'Absen')),
   nik text,
   email text,
   username text,

@@ -553,7 +553,7 @@
       notifikasi: store.notifikasi || [],
       perusahaan: store.perusahaan || {},
       users: [],
-      roles: store.roles || { Karyawan: ['myslip', 'mycuti', 'notifikasi'] },
+      roles: store.roles || { Karyawan: ['myslip', 'mycuti', 'notifikasi'], Absen: [] },
       thrManual: {},
       tunjVarBulan: buildTunjVarBulanFromRows(nilRes.data),
       tunjVarLabels: store.tunjVarLabels || { v1: 'Bonus', v2: 'Uang Makan', v3: 'Lain-lain' },

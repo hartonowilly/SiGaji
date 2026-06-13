@@ -19,6 +19,17 @@
     return role === 'Admin' || role === 'HRD';
   };
 
+  /** Hanya absensi APK Android — tidak boleh login SiGaji web / PWA mobile browser. */
+  window.sigajiIsAbsenOnlyRole = function (role) {
+    return role === 'Absen';
+  };
+
+  window.sigajiRejectWebLoginMessage =
+    'Akun ini hanya untuk aplikasi absen Android (APK). Tidak bisa login SiGaji web atau browser HP.';
+
+  window.sigajiRejectMobilePwaMessage =
+    'Akun ini hanya untuk aplikasi Android SiGaji Absen (APK), bukan halaman mobile browser.';
+
   window.sigajiCanUploadCloudPayload = function () {
     if (typeof CU === 'undefined' || !CU) return true;
     return window.sigajiIsStaffRole(CU.role);
@@ -91,7 +102,19 @@
       if (cu.email && u.email && String(u.email).toLowerCase() === String(cu.email).toLowerCase()) return true;
       return false;
     });
-    var roleMap = full.roles && full.roles.Karyawan ? { Karyawan: full.roles.Karyawan.slice() } : { Karyawan: [] };
+    var roleKey = cu.role === 'Absen' ? 'Absen' : 'Karyawan';
+    var roleMap =
+      full.roles && full.roles[roleKey]
+        ? (function () {
+            var o = {};
+            o[roleKey] = full.roles[roleKey].slice();
+            return o;
+          })()
+        : (function () {
+            var o = {};
+            o[roleKey] = [];
+            return o;
+          })();
     return {
       schemaVersion: full.schemaVersion,
       karyawan: kar,

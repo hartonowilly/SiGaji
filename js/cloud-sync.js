@@ -399,6 +399,11 @@
         if (window.sigajiSupabase) await window.sigajiSupabase.auth.signOut();
         return;
       }
+      if (typeof window.sigajiIsAbsenOnlyRole === 'function' && window.sigajiIsAbsenOnlyRole(cu.role)) {
+        toastSafe(window.sigajiRejectWebLoginMessage || 'Akun hanya untuk aplikasi absen Android.');
+        if (window.sigajiSupabase) await window.sigajiSupabase.auth.signOut();
+        return;
+      }
       if (typeof window.enterAppWithUser === 'function') {
         window.enterAppWithUser(cu);
       }

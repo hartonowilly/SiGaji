@@ -391,20 +391,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LeaveScreen(config: widget.config),
-                        ),
-                      );
-                      _refresh();
-                    },
-                    icon: const Icon(Icons.event_note),
-                    label: const Text('Ajuan cuti / izin / sakit'),
-                  ),
-                  const SizedBox(height: 8),
+                  if (_profile?.role != 'Absen')
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LeaveScreen(config: widget.config),
+                          ),
+                        );
+                        _refresh();
+                      },
+                      icon: const Icon(Icons.event_note),
+                      label: const Text('Ajuan cuti / izin / sakit'),
+                    ),
+                  if (_profile?.role != 'Absen') const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () async {
                       await Navigator.push(

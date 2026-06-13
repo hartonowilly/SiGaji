@@ -96,6 +96,13 @@
       toast('User tidak ada di data SiGaji — hubungi HRD');
       return false;
     }
+    if (u.role === 'Absen') {
+      toast(
+        (typeof window.sigajiRejectMobilePwaMessage === 'string' && window.sigajiRejectMobilePwaMessage) ||
+          'Akun ini hanya untuk aplikasi Android SiGaji Absen (APK).'
+      );
+      return false;
+    }
     me = { nama: u.nama || u.username, nik: u.nik || '', role: u.role || '' };
     if (!me.nik) {
       toast('Akun belum punya NIK — hubungi HRD');

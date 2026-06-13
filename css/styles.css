@@ -104,7 +104,7 @@ tr:hover td{background:var(--row-hover)}
 .pb{background:linear-gradient(135deg,var(--color-primary-dark),#2e7fc1);color:var(--wh);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
 .po{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:300;display:none;opacity:0;transition:opacity .25s}
 .po.show{display:block;opacity:1}
-.sp{position:fixed;top:0;right:0;width:min(820px,100vw);height:100vh;background:var(--wh);z-index:301;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,.18)}
+.sp{position:fixed;top:0;right:0;width:min(820px,100vw);height:100vh;height:100dvh;background:var(--wh);z-index:301;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,.18)}
 .sp.show{transform:translateX(0)}
 .sph{background:linear-gradient(135deg,var(--color-primary-dark),var(--color-primary));color:var(--wh);padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0}
 .spc{background:rgba(255,255,255,.2);border:none;color:var(--wh);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
@@ -112,7 +112,7 @@ tr:hover td{background:var(--row-hover)}
 .spt-wrap{display:flex;padding:0 1.5rem;background:var(--row-hover);border-bottom:2px solid var(--bd);overflow-x:auto;flex-shrink:0}
 .spt{padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--color-text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
 .spt.active{color:var(--color-primary);border-bottom-color:var(--color-primary)}
-.spb{flex:1;overflow-y:auto;padding:1.25rem 1.5rem}
+.spb{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.25rem 1.5rem}
 .spf{padding:1rem 1.5rem;border-top:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:var(--row-hover)}
 .tr-row{display:grid;grid-template-columns:1.4fr 1fr 1.2fr auto;gap:.4rem;align-items:start;padding:.5rem .6rem;background:var(--row-hover);border-radius:7px;border:1px solid var(--bd);margin-bottom:.4rem}
 .tr-row.harian{border-color:var(--color-warning-border);background:var(--row-prorate-bg)}
