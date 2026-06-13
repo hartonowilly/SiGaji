@@ -57,6 +57,62 @@ function renderSidebar(){
   try{if(typeof sigajiUiCabangAfterRender==='function')sigajiUiCabangAfterRender();}catch(eCb){sigajiCatchWarn("js/modules/app-access.js",eCb);}
 }
 // ── USER MANAGEMENT ──────────────────────────────
+var SIGAJI_BUILTIN_ROLES=['Admin','HRD','Karyawan','Absen'];
+var SIGAJI_USER_ROLE_LABELS={
+  Admin:'Admin — akses penuh',
+  HRD:'HRD — penggajian & HR',
+  Karyawan:'Karyawan — slip/cuti (web, browser HP, APK)',
+  Absen:'Hanya APK Android — absen saja'
+};
+function sigajiEnsureBuiltinRoles(){
+  if(typeof roles!=='object'||!roles)roles={};
+  if(!roles.Admin)roles.Admin=typeof MODULES!=='undefined'?MODULES.map(function(m){return m.id;}):[];
+  if(!roles.HRD)roles.HRD=['dashboard','notifikasi'];
+  if(!roles.Karyawan)roles.Karyawan=['myslip','mycuti','notifikasi'];
+  if(!roles.Absen)roles.Absen=[];
+}
+function sigajiUserRoleDisplay(role){
+  if(role==='Absen')return 'APK Android (absen saja)';
+  return role||'';
+}
+function sigajiBuildUserRoleOptions(selectedRole){
+  sigajiEnsureBuiltinRoles();
+  var pick=selectedRole==='Absen'?'Karyawan':(selectedRole||'HRD');
+  var seen={};
+  var order=['Admin','HRD','Karyawan'];
+  var html='';
+  order.forEach(function(r){
+    if(!roles[r])return;
+    seen[r]=1;
+    var lbl=SIGAJI_USER_ROLE_LABELS[r]||r;
+    html+='<option value="'+escapeAttr(r)+'">'+escapeHtml(lbl)+'</option>';
+  });
+  Object.keys(roles).sort().forEach(function(r){
+    if(seen[r]||r==='Absen')return;
+    html+='<option value="'+escapeAttr(r)+'">'+escapeHtml(r)+' (role kustom)</option>';
+  });
+  return {html:html,value:roles[pick]?pick:(order.find(function(r){return roles[r];})||'HRD')};
+}
+function sigajiSyncUserApkOnlyUi(){
+  var rs=document.getElementById('u-role');
+  var wrap=document.getElementById('u-apk-only-wrap');
+  var cb=document.getElementById('u-apk-only');
+  var hint=document.getElementById('u-nik-req-hint');
+  if(!rs||!wrap||!cb)return;
+  var role=rs.value;
+  var staff=role==='Admin'||role==='HRD';
+  wrap.style.display=staff?'none':'';
+  if(staff)cb.checked=false;
+  if(hint)hint.textContent=cb.checked&&!staff?'(wajib untuk APK)':'(wajib untuk APK; opsional untuk Karyawan biasa)';
+}
+function sigajiBindUserApkOnlyUi(){
+  var rs=document.getElementById('u-role');
+  var cb=document.getElementById('u-apk-only');
+  if(!rs||rs.dataset.sigajiApkUiBound==='1')return;
+  rs.dataset.sigajiApkUiBound='1';
+  rs.addEventListener('change',sigajiSyncUserApkOnlyUi);
+  if(cb)cb.addEventListener('change',sigajiSyncUserApkOnlyUi);
+}
 function renderUsers(){
   if(typeof sigajiWithSkeleton==='function'){
     return sigajiWithSkeleton('tb-users',7,renderUsersBody);
@@ -65,7 +121,7 @@ function renderUsers(){
 }
 function renderUsersBody(){
   const tb=document.getElementById('tb-users');if(!tb)return;
-  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${escapeHtml(u.username)}</strong></td><td class="font-11" style="max-width:140px; word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${escapeHtml(u.nama)}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':u.role==='Absen'?'b-info':u.role==='Karyawan'?'b-ok':'b-gray'}">${escapeHtml(u.role)}</span></td><td>${u.nik?`<span class="bdg b-info">${escapeHtml(u.nik)}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out"${sigajiDataAction('user-edit',{idx:i})}>Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r"${sigajiDataAction('user-delete',{idx:i})}>Hapus</button>`:''}</div></td></tr>`).join('');
+  tb.innerHTML=users.map((u,i)=>`<tr><td><strong>${escapeHtml(u.username)}</strong></td><td class="font-11" style="max-width:140px; word-break:break-all">${u.email?escapeHtml(u.email):'&#8212;'}</td><td>${escapeHtml(u.nama)}</td><td><span class="bdg ${u.role==='Admin'?'b-err':u.role==='HRD'?'b-warn':u.role==='Absen'?'b-info':u.role==='Karyawan'?'b-ok':'b-gray'}">${escapeHtml(sigajiUserRoleDisplay(u.role))}</span></td><td>${u.nik?`<span class="bdg b-info">${escapeHtml(u.nik)}</span>`:'&#8212;'}</td><td><span class="bdg ${u.aktif!==false?'b-ok':'b-gray'}">${u.aktif!==false?'Aktif':'Nonaktif'}</span></td><td><div class="fl gap1"><button class="btn btn-sm btn-out"${sigajiDataAction('user-edit',{idx:i})}>Edit</button>${u.username!=='admin'?`<button class="btn btn-sm btn-r"${sigajiDataAction('user-delete',{idx:i})}>Hapus</button>`:''}</div></td></tr>`).join('');
 }
 function openUserModal(idx=-1){
   var cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
@@ -79,7 +135,15 @@ function openUserModal(idx=-1){
   document.getElementById('u-password').value=cloud?'':(u.password||'');
   document.getElementById('u-nama').value=u.nama||'';
   document.getElementById('u-aktif').checked=u.aktif!==false;
-  const rs=document.getElementById('u-role');var html=Object.keys(roles).map(function(r){return '<option value="'+escapeAttr(r)+'">'+escapeHtml(r)+'</option>';}).join('');rs.innerHTML=html;rs.value=u.role||'HRD';
+  sigajiEnsureBuiltinRoles();
+  const rs=document.getElementById('u-role');
+  var ro=sigajiBuildUserRoleOptions(u.role||'HRD');
+  rs.innerHTML=ro.html;
+  rs.value=ro.value;
+  var apkCb=document.getElementById('u-apk-only');
+  if(apkCb)apkCb.checked=u.role==='Absen';
+  sigajiBindUserApkOnlyUi();
+  sigajiSyncUserApkOnlyUi();
   const ns=document.getElementById('u-nik');var h=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(sortKaryawanByNik(karyawan||[]),'-- Tidak tertaut --'):'<option value="">-- Tidak tertaut --</option>'+sortKaryawanByNik(karyawan||[]).map(function(k){return '<option value="'+escapeAttr(k.nik)+'">'+escapeHtml(k.nik)+' &#8212; '+escapeHtml(k.nama)+'</option>';}).join('');ns.innerHTML=h;ns.value=u.nik||'';
   openModal('m-user');
 }
@@ -89,10 +153,16 @@ function simpanUser(){
   const emailRaw=document.getElementById('u-email').value.trim().toLowerCase();
   const passRaw=document.getElementById('u-password').value;
   const nama=document.getElementById('u-nama').value.trim();
-  const role=document.getElementById('u-role').value;const nik=document.getElementById('u-nik').value||null;
+  var role=document.getElementById('u-role').value;
+  const nik=document.getElementById('u-nik').value||null;
+  const apkOnly=!!(document.getElementById('u-apk-only')&&document.getElementById('u-apk-only').checked);
   const aktif=document.getElementById('u-aktif').checked;
   const cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
   if(!uname||!nama){toast('Username dan nama lengkap wajib');return;}
+  if(apkOnly&&role!=='Admin'&&role!=='HRD'){
+    if(!nik){toast('Untuk login APK Android, wajib tautkan NIK karyawan');return;}
+    role='Absen';
+  }
   if(cloud){
     if(!emailRaw){toast('Mode cloud: isi Email Supabase untuk tiap user yang boleh login.');return;}
   }else if(!passRaw){toast('Password wajib untuk login lokal');return;}
@@ -210,7 +280,7 @@ function togglePerm(role,moduleId,val){
   saveAll();renderPermMatrix();toast('Hak akses diperbarui');
 }
 function openRoleModal(){openModal('m-role');document.getElementById('r-nama').value='';}
-function simpanRole(){const nama=document.getElementById('r-nama').value.trim();if(!nama){toast('Nama wajib');return;}if(roles[nama]){toast('Role sudah ada');return;}roles[nama]=[];saveAll();renderPermMatrix();closeModal('m-role');toast('Role "'+nama+'" ditambahkan');}
+function simpanRole(){const nama=document.getElementById('r-nama').value.trim();if(!nama){toast('Nama wajib');return;}if(SIGAJI_BUILTIN_ROLES.indexOf(nama)>=0){toast('Nama "'+nama+'" sudah dipakai sistem. Untuk karyawan absen APK: buat user dengan role Karyawan lalu centang "Hanya APK Android".');return;}if(roles[nama]){toast('Role sudah ada');return;}roles[nama]=[];saveAll();renderPermMatrix();closeModal('m-role');toast('Role "'+nama+'" ditambahkan');}
 function switchUsrTab(el,tid){
   el.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
