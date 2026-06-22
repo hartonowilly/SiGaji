@@ -137,6 +137,10 @@ body {
   color: #047857;
 }
 
+/* Bar periode antara topbar & layout: jangan ikut menyusut di shell terkunci */
+#period-timeline-bar,
+#period-sticky-bar { flex-shrink: 0; }
+
 /* ── Sidebar ── */
 .sidebar {
   width: var(--sigaji-sidebar-w, 228px);
@@ -145,6 +149,31 @@ body {
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
   flex-shrink: 0;
+  /* Sidebar sendiri TIDAK scroll; hanya daftar menu (#nav-dynamic) yang scroll. */
+  overflow: hidden;
+  justify-content: flex-start;
+}
+/* Daftar menu mengambil sisa ruang & scroll halus bila menu lebih panjang dari layar */
+#nav-dynamic {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+#nav-dynamic::-webkit-scrollbar { width: 6px; }
+#nav-dynamic::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+}
+#nav-dynamic::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
+/* Tombol bawah (mis. logout/pengaturan) selalu menempel, tidak ikut ter-scroll */
+#nav-bottom {
+  flex-shrink: 0;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 .sidebar {
   color: var(--sidebar-fg-muted);
