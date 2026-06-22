@@ -247,8 +247,10 @@
       bayarEl.textContent =
         'Bayar: ' + (typeof fmtDate === 'function' ? fmtDate(p.bayar) : p.bayar || '-');
     }
-    var locked =
-      typeof isPeriodeSnapshotLocked === 'function' && isPeriodeSnapshotLocked(p.nama);
+    // Status kunci dibaca langsung dari properti periode aktif (p.snapshot_locked).
+    // Sebelumnya memanggil isPeriodeSnapshotLocked() yang tidak pernah didefinisikan,
+    // sehingga chip selalu menampilkan "Dapat diedit" meski periode terkunci.
+    var locked = !!p.snapshot_locked;
     if (lockEl) {
       lockEl.textContent = locked ? '\uD83D\uDD12 Snapshot terkunci' : '\u270E Dapat diedit';
       lockEl.className = 'period-sticky-chip ' + (locked ? 'is-lock' : 'is-edit');
