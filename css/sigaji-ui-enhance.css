@@ -1980,3 +1980,91 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 
 .master-tab-panel[hidden] { display: none !important; }
 .master-tab-panel-active { display: block !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   GLASS UI — tombol bergaya frosted/translucent (ala Instagram & WhatsApp terbaru).
+   Efek "kaca" paling terlihat di atas area berwarna (topbar, sidebar, login,
+   bar periode); di atas kartu putih tampil sebagai tombol mengilap halus.
+   Blur dimatikan untuk tombol di dalam tabel demi kemulusan scroll.
+   ════════════════════════════════════════════════════════════════ */
+.btn {
+  border-radius: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(9px) saturate(140%);
+  -webkit-backdrop-filter: blur(9px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: transform 0.14s var(--ease), box-shadow 0.22s var(--ease),
+    background 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+}
+.btn:active { transform: translateY(1px) scale(0.98); filter: brightness(0.97); }
+
+/* Tombol berwarna → kaca berwarna: gradien translucent + kilau atas + glow warna */
+.btn-p {
+  background: linear-gradient(155deg, rgba(70, 138, 235, 0.96), rgba(26, 86, 160, 0.92));
+  color: #fff;
+  box-shadow: 0 4px 16px -5px rgba(26, 86, 160, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.btn-p:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(26, 86, 160, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.btn-g {
+  background: linear-gradient(155deg, rgba(74, 160, 40, 0.96), rgba(45, 106, 10, 0.92));
+  color: #fff;
+  box-shadow: 0 4px 16px -5px rgba(45, 106, 10, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn-g:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(45, 106, 10, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+.btn-r {
+  background: linear-gradient(155deg, rgba(200, 60, 60, 0.96), rgba(155, 33, 33, 0.92));
+  color: #fff;
+  box-shadow: 0 4px 16px -5px rgba(155, 33, 33, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn-r:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(155, 33, 33, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+.btn-a {
+  background: linear-gradient(155deg, rgba(176, 108, 20, 0.96), rgba(125, 72, 0, 0.92));
+  color: #fff;
+  box-shadow: 0 4px 16px -5px rgba(125, 72, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.btn-a:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(125, 72, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.34); }
+.btn-pu {
+  background: linear-gradient(155deg, rgba(124, 58, 237, 0.96), rgba(91, 33, 182, 0.92));
+  color: #fff;
+  box-shadow: 0 4px 16px -5px rgba(91, 33, 182, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn-pu:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(91, 33, 182, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+
+/* Tombol sekunder → kaca beku (frosted) tembus pandang */
+.btn-out {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  color: var(--ink-body);
+  box-shadow: 0 2px 10px -5px rgba(15, 23, 42, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.btn-out:hover {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(26, 86, 160, 0.45);
+  color: var(--blue);
+  transform: translateY(-1px);
+}
+
+/* Performa: tombol di dalam tabel tanpa blur (di atas baris putih efeknya tak terlihat) */
+.content .table-wrap .btn,
+.sigaji-table .btn {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Dark theme: frosted gelap untuk tombol sekunder */
+[data-theme="dark"] .btn-out {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+}
+[data-theme="dark"] .btn-out:hover {
+  background: rgba(51, 65, 85, 0.65);
+  border-color: rgba(96, 165, 250, 0.5);
+  color: #93c5fd;
+}
+
+/* Hormati preferensi gerak minim */
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn:hover, .btn:active { transform: none; }
+}

@@ -608,10 +608,10 @@ function periodeSnapshotLockedUntukTanggal(tglIso){
   }
   return null;
 }
-/** Absensi/lembur per tanggal: Admin selalu boleh; role lain tidak jika tanggal di periode terkunci. */
+/** Absensi/lembur per tanggal: terkunci penuh untuk SEMUA role (termasuk Admin)
+ *  jika tanggal masuk periode dengan snapshot terkunci. Buka kunci periode dulu untuk mengubah. */
 function canEditDataPadaTanggalIso(tglIso){
   if(!CU)return false;
-  if(CU.role==='Admin')return true;
   return !periodeSnapshotLockedUntukTanggal(tglIso);
 }
 function ensureKarSnapshotPeriode(pNama,list){
