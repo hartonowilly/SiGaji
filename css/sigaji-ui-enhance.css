@@ -471,11 +471,13 @@
   top: 0;
   z-index: 45;
   flex-shrink: 0;
-  margin: 0 calc(-1 * var(--content-pad-x, 1.65rem)) 1rem;
-  padding: 0.4rem var(--content-pad-x, 1.65rem) 0;
+  /* Jarak bawah pakai PADDING (bukan margin) agar ikut tertutup background putih.
+     Margin transparan membuat baris tabel ter-scroll "tembus" di celahnya. */
+  margin: 0 calc(-1 * var(--content-pad-x, 1.65rem));
+  padding: 0.4rem var(--content-pad-x, 1.65rem) 0.85rem;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
-  box-shadow: none;
+  box-shadow: 0 6px 10px -8px rgba(15, 23, 42, 0.18);
 }
 .period-timeline-bar {
   position: static;
