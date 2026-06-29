@@ -835,12 +835,19 @@ function hitungGaji(k,pNama,opts){
       const bruto=items.reduce((s,it)=>s+it.nilai,0);
       if(bruto>0){
         if(isResign){
-          // Resign: UPH ikut PPh 21 biasa (non-final) → masuk grossPPh & take home
+          // Resign: UPH & uang pisah bukan "uang pesangon" (PP 68/2009) → ikut PPh 21
+          // progresif (non-final), masuk grossPPh & take home seperti penghasilan biasa.
           const uphOnly=(items.find(it=>it.nama==='Uang Penggantian Hak')||{}).nilai||0;
+          const pisahOnly=(items.find(it=>it.nama==='Uang pisah')||{}).nilai||0;
           if(uphOnly>0){
             tGross+=uphOnly;
             tTH+=uphOnly;
             tItems.push({nama:'Uang Penggantian Hak (Resign)',nilai:uphOnly,tipe:'tidak_tetap',eff:uphOnly,inTH:true,isHarian:false});
+          }
+          if(pisahOnly>0){
+            tGross+=pisahOnly;
+            tTH+=pisahOnly;
+            tItems.push({nama:'Uang pisah (Resign)',nilai:pisahOnly,tipe:'tidak_tetap',eff:pisahOnly,inTH:true,isHarian:false});
           }
           phkCtx={mode:'resign',tgl:tglStopIso,items:items,bruto:bruto,pphFinal:0,pphFinalBase:0};
         }else{

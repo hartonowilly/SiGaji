@@ -350,9 +350,23 @@
 .text-dash-muted { color: var(--color-slate-300); }
 
 /* ── Tunjangan variabel ── */
-.tunjvar-cell-wrap { flex-wrap: nowrap; }
-.tunjvar-val { min-width: 76px; }
-.tunjvar-inp-narrow { max-width: 100px; }
+/* Sel berisi nilai + tombol; buat nilai mengisi lebar sel & rata kanan agar
+   angka lurus ke bawah (gaya kolom uang) dan tombol Edit/Simpan sejajar. */
+.tunjvar-cell-wrap { flex-wrap: nowrap; width: 100%; }
+.tunjvar-val {
+  flex: 1 1 auto;
+  min-width: 76px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+.tunjvar-inp-narrow {
+  flex: 1 1 auto;
+  max-width: 100px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
 
 /* ── Variance laporan ── */
 .cell-delta-up { color: var(--color-success); }
