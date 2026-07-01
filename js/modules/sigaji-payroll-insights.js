@@ -292,17 +292,25 @@
         });
       }
 
-      if (g.grossPPh >= 4500000 && g.pph === 0 && k.ptkp && k.ptkp !== 'TK/0') {
+      var terPph =
+        typeof hitungPPhBln === 'function' && k.ptkp ? hitungPPhBln(g.grossPPh, k.ptkp) : 0;
+      var pphRet = (k.pph_return && k.pph_return.nilai) || 0;
+      var reconLebihBayar =
+        g.reconciliation &&
+        (g.reconciliation.lebihBayar > 0 || (g.reconciliation.pphBulanIni || 0) < 0);
+      if (g.pph === 0 && terPph > 0 && !pphRet && !reconLebihBayar) {
         out.push({
           severity: 'high',
           nik: k.nik,
           nama: nama,
           code: 'pph_zero',
-          title: 'PPh 21 nol padahal bruto tinggi',
+          title: 'PPh 21 nol padahal tarif TER > 0',
           desc:
             'Bruto ' +
             fmt(g.grossPPh) +
-            ' · PPh 0 — cek PTKP, komponen, atau PPh Return.',
+            ' · PPh 0 — seharusnya ~' +
+            fmt(terPph) +
+            ' menurut TER. Cek komponen, PPh Return, atau rekonsiliasi.',
         });
       }
 

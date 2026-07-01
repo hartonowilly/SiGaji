@@ -35,7 +35,7 @@ function renderPeriodesBody(){
   }).join('');
   updatePeriodeSimpanButtonState();
 }
-function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));var html='<div class="pb mb2"><div><div class="font-10 opacity-75">Periode Aktif</div><div class="font-17 fw-800">'+escapeHtml(p.nama)+(p.thr_aktif?' <span class="font-12 rounded-pill" style="background:rgba(255,255,255,.2); padding:2px 8px">&#127873; THR</span>':'')+'</div><div class="font-11 opacity-80">'+fmtDate(p.start)+' - '+fmtDate(p.end)+'</div></div><div class="text-right"><div class="fw-800 font-28">'+String(hP)+'</div><div class="font-10 opacity-75">hari</div></div></div>';el.innerHTML=html;}
+function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));var thrBadge=p.thr_aktif?' <span class="font-12 rounded-pill" style="background:rgba(255,255,255,.22);padding:2px 8px">&#127873; THR</span>':'';var html='<div class="pb mb2"><div><div class="dash-hero-label">Periode Aktif</div><div class="dash-hero-title">'+escapeHtml(p.nama)+thrBadge+'</div><div class="dash-hero-meta">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div></div><div class="text-right"><div class="dash-hero-count">'+String(hP)+'</div><div class="dash-hero-count-lbl">hari</div></div></div>';el.innerHTML=html;}
 function toggleOpsiLebihBayar(){
   const tipe=document.getElementById('p-tipe-periode')&&document.getElementById('p-tipe-periode').value;
   const el=document.getElementById('fg-opsi-lebih-bayar');

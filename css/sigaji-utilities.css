@@ -199,7 +199,7 @@
 .leading-relaxed { line-height: 1.7; }
 .p-md { padding: 1rem; }
 .grid-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
-.max-h-slip-table { max-height: min(420px, 55vh); }
+.max-h-slip-table { overflow-x: auto; }
 .card-thr-panel { background: var(--color-purple-bg); border: 1.5px solid var(--color-purple-border); padding: 1rem; }
 .card-cuti-purple { background: #f0f0fd; border-color: var(--color-purple-border); }
 .cuti-cb-label { padding: 8px; border: 1px solid var(--color-purple-border); }

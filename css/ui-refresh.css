@@ -376,8 +376,8 @@ body {
 /* Dashboard hero */
 .pb,
 .dash-hero {
-  background: linear-gradient(115deg, #0c2340 0%, var(--color-primary) 45%, var(--indigo) 85%, var(--color-primary-light) 100%);
-  color: var(--wh);
+  background: linear-gradient(120deg, #071525 0%, #0c2340 28%, #0d3d7a 52%, #1a56a0 78%, #2563eb 100%);
+  color: #fff;
   border-radius: var(--radius-lg);
   padding: 1.35rem 1.5rem;
   margin-bottom: 1.15rem;
@@ -997,9 +997,9 @@ html.sigaji-mobile-nav .nav-drawer-btn {
   color: #4c1d95;
 }
 .alert-amber {
-  background: linear-gradient(90deg, var(--row-pending-bg), var(--wh));
+  background: linear-gradient(90deg, #fffbeb, var(--wh));
   border-left-color: #d97706;
-  color: #92400e;
+  color: #1c1917;
 }
 .alert-green {
   background: linear-gradient(90deg, #ecfdf5, var(--wh));
@@ -1237,8 +1237,8 @@ tbody tr:hover td {
 .ab-a { background: var(--color-danger-bg); color: var(--color-danger); }
 .ab-ln { background: #fef9c3; color: #713f12; }
 .ab-grid-host {
-  max-height: min(72vh, calc(100vh - 260px));
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
   background: var(--surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);

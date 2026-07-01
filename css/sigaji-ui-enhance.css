@@ -2055,6 +2055,22 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 }
 [data-theme="dark"] .sigaji-cabang-card-head { border-bottom-color: #334155; }
 
+/* Banner periode aktif (master) — teks putih eksplisit, tidak pakai --wh (dark theme) */
+.pb,
+#pb-master > .pb {
+  background: linear-gradient(120deg, #071525 0%, #0c2340 28%, #0d3d7a 52%, #1a56a0 78%, #2563eb 100%) !important;
+  color: #fff !important;
+}
+.pb .dash-hero-label,
+.pb .dash-hero-meta,
+.pb .dash-hero-count-lbl {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+.pb .dash-hero-title,
+.pb .dash-hero-count {
+  color: #fff !important;
+}
+
 .master-tab-panel[hidden] { display: none !important; }
 .master-tab-panel-active { display: block !important; }
 

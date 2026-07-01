@@ -11,17 +11,27 @@
 }
 
 .sigaji-table thead,
-.content .table-wrap table thead {
+.content .table-wrap table thead,
+.sigaji-slip-send-scroll table thead,
+.max-h-slip-table table thead {
   position: sticky;
   top: 0;
   z-index: 2;
 }
+.sigaji-slip-send-scroll table thead th,
+.max-h-slip-table table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--table-head-bg, #f3f4f6);
+}
 
-/* Baris total — sticky bawah saat scroll tabel panjang */
+/* Tabel lebar: hanya scroll horizontal di dalam kontainer.
+   Scroll vertikal mengikuti halaman (.content) supaya tidak ada scroll bersarang.
+   Header tetap sticky relatif ke .content. */
 .pg-table-sticky .table-wrap,
 .sigaji-table-scroll .table-wrap {
-  overflow: auto;
-  max-height: min(72vh, calc(100vh - var(--sigaji-topbar-h, 58px) - 220px));
+  overflow-x: auto;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
 }
 

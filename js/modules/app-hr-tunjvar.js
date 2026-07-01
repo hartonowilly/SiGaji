@@ -10,6 +10,16 @@ function tunjVarUnlockCell(nik, colId) {
 function tunjVarCommitCell(nik, colId, rawVal) {
   setTunjVarNilai(nik, colId, rawVal);
 }
+function sigajiTunjVarCellIsEditing(nik, colId) {
+  return !!__tunjVarEditCells[tunjVarCellKey(nik, colId)];
+}
+function sigajiTunjVarIsEditingAny() {
+  return Object.keys(__tunjVarEditCells).length > 0;
+}
+if (typeof window !== 'undefined') {
+  window.sigajiTunjVarCellIsEditing = sigajiTunjVarCellIsEditing;
+  window.sigajiTunjVarIsEditingAny = sigajiTunjVarIsEditingAny;
+}
 function renderTunjVarColEditor() {
   var wrap = document.getElementById('tunjvar-col-editor');
   if (!wrap) return;

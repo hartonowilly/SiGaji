@@ -88,6 +88,73 @@
     return out;
   }
 
+  /** Saat pull: cloud = sumber kebenaran, kecuali sel sedang diedit di browser ini. */
+  function mergeTunjVarForPull(local, cloud) {
+    var out = JSON.parse(JSON.stringify(cloud || {}));
+    if (typeof window.sigajiTunjVarCellIsEditing !== 'function') return out;
+    Object.keys(local || {}).forEach(function (pn) {
+      Object.keys(local[pn] || {}).forEach(function (nik) {
+        Object.keys(local[pn][nik] || {}).forEach(function (kid) {
+          if (window.sigajiTunjVarCellIsEditing(nik, kid)) {
+            if (!out[pn]) out[pn] = {};
+            if (!out[pn][nik]) out[pn][nik] = {};
+            out[pn][nik][kid] = Math.round(Number(local[pn][nik][kid]) || 0);
+          }
+        });
+      });
+    });
+    return out;
+  }
+
+  /** Sebelum upload: jangan timpa nilai cloud non-zero dengan 0 stale dari sesi lain. */
+  function mergeTunjVarBeforeUpload(local, cloud) {
+    var out = JSON.parse(JSON.stringify(local || {}));
+    Object.keys(cloud || {}).forEach(function (pn) {
+      if (!out[pn]) out[pn] = {};
+      Object.keys(cloud[pn] || {}).forEach(function (nik) {
+        if (!out[pn][nik]) out[pn][nik] = {};
+        Object.keys(cloud[pn][nik] || {}).forEach(function (kid) {
+          var cv = Math.round(Number(cloud[pn][nik][kid]) || 0);
+          var lv = parseFloat(out[pn][nik][kid]);
+          if (isNaN(lv)) lv = 0;
+          if (cv > 0 && lv === 0) out[pn][nik][kid] = cv;
+        });
+      });
+    });
+    return out;
+  }
+
+  async function fetchTunjVarBulanFromTables(sb) {
+    var nilRes = await sb
+      .from('sigaji_tunj_var_nilai')
+      .select('periode_nama,nik,kolom_id,nilai')
+      .eq('tenant_key', TK);
+    if (nilRes.error) throw nilRes.error;
+    return buildTunjVarBulanFromRows(nilRes.data);
+  }
+
+  async function pullTunjVarIntoMemory(sb) {
+    var ok = await tablesExist(sb);
+    if (!ok) return false;
+    var cloud = await fetchTunjVarBulanFromTables(sb);
+    var merged = mergeTunjVarForPull(
+      typeof tunjVarBulan !== 'undefined' ? tunjVarBulan : {},
+      cloud
+    );
+    var before = JSON.stringify(typeof tunjVarBulan !== 'undefined' ? tunjVarBulan : {});
+    if (typeof tunjVarBulan !== 'undefined') tunjVarBulan = merged;
+    return before !== JSON.stringify(merged);
+  }
+
+  async function mergeTunjVarBeforeUploadIntoMemory(sb) {
+    var ok = await tablesExist(sb);
+    if (!ok) return;
+    var cloud = await fetchTunjVarBulanFromTables(sb);
+    if (typeof tunjVarBulan !== 'undefined') {
+      tunjVarBulan = mergeTunjVarBeforeUpload(tunjVarBulan, cloud);
+    }
+  }
+
   function flattenTunjVarBulan(tunjVarBulan) {
     var rows = [];
     var tv = tunjVarBulan || {};
@@ -612,5 +679,10 @@
     trySaveWithTables: trySaveWithTables,
     flattenTunjVarBulan: flattenTunjVarBulan,
     buildTunjVarBulanFromRows: buildTunjVarBulanFromRows,
+    mergeTunjVarForPull: mergeTunjVarForPull,
+    mergeTunjVarBeforeUpload: mergeTunjVarBeforeUpload,
+    fetchTunjVarBulanFromTables: fetchTunjVarBulanFromTables,
+    pullTunjVarIntoMemory: pullTunjVarIntoMemory,
+    mergeTunjVarBeforeUploadIntoMemory: mergeTunjVarBeforeUploadIntoMemory,
   };
 })();

@@ -746,7 +746,10 @@ function switchKompgajiTab(el,tid){
     var card=document.getElementById('tunjvar-card');
     if(card&&typeof sigajiShowEl==='function')sigajiShowEl(card);
     else if(card){card.classList.remove('u-hidden');card.removeAttribute('hidden');card.style.display='';}
-    renderTunjVariabelBulan();
+    var afterPull=function(){renderTunjVariabelBulan();};
+    if(typeof window.sigajiPullTunjVarRefresh==='function'){
+      window.sigajiPullTunjVarRefresh({force:true}).then(afterPull).catch(afterPull);
+    }else afterPull();
   }else if(tid==='kg-tab-daftar')renderKompgaji();
 }
 function renderKompgajiPage(){

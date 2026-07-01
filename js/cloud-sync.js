@@ -10,6 +10,10 @@
     ? window.SIGAJI_TENANT_KEY.trim()
     : 'main';
   var DEBOUNCE_MS = 1600;
+  var PULL_INTERVAL_MS = 35000;
+  var pullTimer = null;
+  var pullInFlight = null;
+  var lastPullAt = 0;
   /** Setelah coba pertama: 'tenant' (kolom tenant_key ada) atau 'legacy' (DB lama hanya user_id). */
   var cloudPayloadMode = null;
 
@@ -407,6 +411,7 @@
       if (typeof window.enterAppWithUser === 'function') {
         window.enterAppWithUser(cu);
       }
+      scheduleCloudPullLoop();
     } catch (e) {
       console.error('Sigaji enterFromSession:', e);
       toastSafe((e && e.message) || 'Gagal memuat data cloud');
@@ -435,6 +440,121 @@
 
     if (res.error) throw res.error;
     return res.data && res.data.payload ? res.data.payload : null;
+  }
+
+  function sigajiRefreshUiAfterCloudData() {
+    try {
+      if (typeof renderAll === 'function') renderAll();
+      else {
+        if (typeof renderKompgajiPage === 'function') renderKompgajiPage();
+        else if (typeof renderKompgaji === 'function') renderKompgaji();
+        if (typeof renderPenggajian === 'function') renderPenggajian(true);
+        if (typeof renderTunjVariabelBulan === 'function') renderTunjVariabelBulan();
+      }
+    } catch (eUi) {
+      sigajiCatchWarn('js/cloud-sync.js', eUi);
+    }
+  }
+  window.sigajiRefreshUiAfterCloudData = sigajiRefreshUiAfterCloudData;
+
+  function persistMemoryQuiet() {
+    window.sigajiApplyingCloud = true;
+    try {
+      if (typeof saveAll === 'function') saveAll();
+    } finally {
+      window.sigajiApplyingCloud = false;
+    }
+  }
+
+  async function pullTunjVarRefresh(opts) {
+    opts = opts || {};
+    if (!clientReady || !window.sigajiSupabase) return false;
+    if (window.sigajiApplyingCloud) return false;
+    if (typeof window.sigajiTunjVarIsEditingAny === 'function' && window.sigajiTunjVarIsEditingAny()) {
+      return false;
+    }
+    if (cloudTimer && !opts.force) return false;
+    var sb = window.sigajiSupabase;
+    var sess = await sb.auth.getSession();
+    if (!sess.data || !sess.data.session) return false;
+    var tablesOk = false;
+    if (window.sigajiCloudTables && typeof window.sigajiCloudTables.tablesExist === 'function') {
+      try {
+        tablesOk = await window.sigajiCloudTables.tablesExist(sb);
+      } catch (eT) {
+        tablesOk = false;
+      }
+    }
+    if (
+      tablesOk &&
+      window.sigajiCloudTables &&
+      typeof window.sigajiCloudTables.pullTunjVarIntoMemory === 'function'
+    ) {
+      try {
+        var changed = await window.sigajiCloudTables.pullTunjVarIntoMemory(sb);
+        if (changed) {
+          persistMemoryQuiet();
+          sigajiRefreshUiAfterCloudData();
+          if (typeof window.sigajiSetSyncStatus === 'function') {
+            window.sigajiSetSyncStatus('synced', new Date().toLocaleTimeString('id-ID'));
+          }
+        }
+        lastPullAt = Date.now();
+        return changed;
+      } catch (e) {
+        console.warn('Sigaji pull tunj var:', e);
+        return false;
+      }
+    }
+    try {
+      var payload = await fetchBlobPayload(sess.data.session.user.id);
+      if (!payload || !payload.tunjVarBulan || typeof tunjVarBulan === 'undefined') return false;
+      var mergeFn =
+        window.sigajiCloudTables && window.sigajiCloudTables.mergeTunjVarForPull
+          ? window.sigajiCloudTables.mergeTunjVarForPull
+          : function (_l, c) {
+              return c;
+            };
+      var mergedBlob = mergeFn(tunjVarBulan, payload.tunjVarBulan);
+      var beforeBlob = JSON.stringify(tunjVarBulan);
+      tunjVarBulan = mergedBlob;
+      var changedBlob = beforeBlob !== JSON.stringify(mergedBlob);
+      if (changedBlob) {
+        persistMemoryQuiet();
+        sigajiRefreshUiAfterCloudData();
+      }
+      lastPullAt = Date.now();
+      return changedBlob;
+    } catch (e2) {
+      console.warn('Sigaji pull tunj var (blob):', e2);
+      return false;
+    }
+  }
+
+  function scheduleCloudPullLoop() {
+    clearInterval(pullTimer);
+    if (!clientReady) return;
+    pullTimer = setInterval(function () {
+      if (document.visibilityState === 'hidden') return;
+      if (typeof window.sigajiTunjVarIsEditingAny === 'function' && window.sigajiTunjVarIsEditingAny()) {
+        return;
+      }
+      pullTunjVarRefresh();
+    }, PULL_INTERVAL_MS);
+  }
+
+  async function sigajiPullCloudRefresh(opts) {
+    if (pullInFlight) return pullInFlight;
+    pullInFlight = pullTunjVarRefresh(opts).finally(function () {
+      pullInFlight = null;
+    });
+    return pullInFlight;
+  }
+
+  function onVisibilityPull() {
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - lastPullAt < 8000) return;
+    sigajiPullCloudRefresh();
   }
 
   async function refreshTenantLicenseFromCloud() {
@@ -560,6 +680,16 @@
       return;
     }
     var uid = sess.data.session.user.id;
+    if (
+      window.sigajiCloudTables &&
+      typeof window.sigajiCloudTables.mergeTunjVarBeforeUploadIntoMemory === 'function'
+    ) {
+      try {
+        await window.sigajiCloudTables.mergeTunjVarBeforeUploadIntoMemory(sb);
+      } catch (eM) {
+        console.warn('Sigaji merge tunj var sebelum upload:', eM);
+      }
+    }
     if (typeof window.getPayloadForCloud !== 'function') return;
     var payload = window.getPayloadForCloud();
     if (typeof window.sigajiShouldSkipCloudUpload === 'function' && window.sigajiShouldSkipCloudUpload(payload)) {
@@ -631,6 +761,14 @@
     return window.sigajiSupabase.auth.updateUser({ password: newPassword });
   };
 
-  bootPromise = boot();
+  window.sigajiPullCloudRefresh = sigajiPullCloudRefresh;
+  window.sigajiPullTunjVarRefresh = pullTunjVarRefresh;
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityPull);
+  }
+
+  bootPromise = boot().then(function () {
+    scheduleCloudPullLoop();
+  });
   window.sigajiCloudBootPromise = bootPromise;
 })();
