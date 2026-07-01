@@ -831,6 +831,110 @@
       : '';
   };
 
+  /** Rentang YTD kehadiran: 1 Januari tahun periode aktif → akhir periode aktif. */
+  function sigajiAttendanceYtdRange(p) {
+    var toIso =
+      typeof toIsoDate === 'function'
+        ? toIsoDate
+        : function (v) {
+            var t = String(v || '').trim();
+            return t.length >= 10 ? t.substring(0, 10) : t;
+          };
+    var endIso = toIso(p && p.end ? p.end : '');
+    if (!endIso || endIso.length < 7) return { start: '', end: '', label: '' };
+    var yr = endIso.substring(0, 4);
+    var start = yr + '-01-01';
+    var bulan = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+    var mIdx = parseInt(endIso.substring(5, 7), 10) - 1;
+    var endBulan = bulan[mIdx >= 0 && mIdx < 12 ? mIdx : 0] || endIso.substring(5, 7);
+    var label =
+      mIdx === 0 ? 'Januari ' + yr : 'Januari–' + endBulan + ' ' + yr;
+    return { start: start, end: endIso, label: label, year: yr };
+  }
+
+  /**
+   * Rekap absensi sakit/izin/alpha per karyawan — kumulatif YTD (Jan → akhir periode aktif).
+   * Hanya karyawan yang sering: ada alpha, atau total/single-kategori melewati ambang YTD.
+   */
+  window.sigajiAttendanceWarnings = function (p) {
+    if (!p || typeof karyawanListPeriode !== 'function' || typeof absensi === 'undefined') {
+      return { range: sigajiAttendanceYtdRange(p), rows: [] };
+    }
+    var toIso =
+      typeof toIsoDate === 'function'
+        ? toIsoDate
+        : function (v) {
+            var t = String(v || '').trim();
+            return t.length >= 10 ? t.substring(0, 10) : t;
+          };
+    var range = sigajiAttendanceYtdRange(p);
+    var pStart = range.start;
+    var pEnd = range.end;
+    var list = karyawanListPeriode(p) || [];
+    var out = [];
+    list.forEach(function (k) {
+      if (!k || !k.nik) return;
+      var abNik = absensi[k.nik] || {};
+      var nSakit = 0,
+        nIzin = 0,
+        nAlpha = 0;
+      Object.keys(abNik).forEach(function (tglRaw) {
+        var tgl = toIso(tglRaw);
+        if (!tgl) return;
+        if (pStart && tgl < pStart) return;
+        if (pEnd && tgl > pEnd) return;
+        var st = abNik[tglRaw];
+        if (st === 'sakit') nSakit += 1;
+        else if (st === 'setengah_sakit') nSakit += 0.5;
+        else if (st === 'izin') nIzin += 1;
+        else if (st === 'setengah_ijin') nIzin += 0.5;
+        else if (st === 'alpha') nAlpha += 1;
+      });
+      var total = nSakit + nIzin + nAlpha;
+      if (total <= 0) return;
+      out.push({
+        nik: k.nik,
+        nama: k.nama || k.nik,
+        sakit: nSakit,
+        izin: nIzin,
+        alpha: nAlpha,
+        total: total,
+      });
+    });
+    // Ambang YTD: alpha ≥1, atau total ≥6 hari, atau satu kategori (sakit/izin) ≥5 hari.
+    out = out.filter(function (r) {
+      return (
+        r.alpha >= 1 ||
+        r.total >= 6 ||
+        r.sakit >= 5 ||
+        r.izin >= 5
+      );
+    });
+    out.sort(function (a, b) {
+      if (b.alpha !== a.alpha) return b.alpha - a.alpha;
+      return b.total - a.total;
+    });
+    return { range: range, rows: out };
+  };
+
+  function sigajiFmtHari(n) {
+    if (n === Math.floor(n)) return String(n);
+    return String(n).replace('.', ',');
+  }
+
   window.sigajiGenerateNarrativeText = function (ctx) {
     ctx = ctx || {};
     var p = ctx.p;
@@ -906,7 +1010,45 @@
     if (anom.length) {
       paras.push('<p><span class="narrative-warn">⚠ ' + anom.length + ' anomali payroll perlu dicek (NPWP/NIK, neto, PPh).</span></p>');
     }
-    paras.push('<p class="u-muted-11">Dokumen estimasi — angka final mengikuti proses penggajian &amp; snapshot periode.</p>');
+    var absPack =
+      typeof window.sigajiAttendanceWarnings === 'function'
+        ? window.sigajiAttendanceWarnings(p)
+        : { range: {}, rows: [] };
+    var absWarn = absPack.rows || [];
+    var absRangeLbl = absPack.range && absPack.range.label ? absPack.range.label : 'tahun berjalan';
+    if (absWarn.length) {
+      var items = absWarn
+        .slice(0, 8)
+        .map(function (r) {
+          var parts = [];
+          if (r.alpha > 0) parts.push('<strong>' + sigajiFmtHari(r.alpha) + '× alpha</strong>');
+          if (r.sakit > 0) parts.push(sigajiFmtHari(r.sakit) + '× sakit');
+          if (r.izin > 0) parts.push(sigajiFmtHari(r.izin) + '× izin');
+          return (
+            '<li>' +
+            escapeHtml(r.nama) +
+            ' <span class="u-muted-11">(' +
+            escapeHtml(r.nik) +
+            ')</span> — ' +
+            parts.join(', ') +
+            '</li>'
+          );
+        })
+        .join('');
+      var lebih = absWarn.length > 8 ? ' <span class="u-muted-11">(+' + (absWarn.length - 8) + ' karyawan lain)</span>' : '';
+      paras.push(
+        '<p><span class="narrative-warn">⚠ Peringatan kehadiran (kumulatif ' +
+          escapeHtml(absRangeLbl) +
+          ')</span> — ' +
+          absWarn.length +
+          ' karyawan dengan pola ketidakhadiran menonjol' +
+          lebih +
+          ':</p><ul class="narrative-abs-list">' +
+          items +
+          '</ul>'
+      );
+    }
+    paras.push('<p class="u-muted-11">Dokumen estimasi — angka final mengikuti proses penggajian &amp; snapshot periode. Peringatan kehadiran dihitung kumulatif Januari–akhir periode aktif (bukan bulan ini saja): alpha ≥1, total ≥6 hari, atau sakit/izin masing-masing ≥5 hari.</p>');
     return paras.join('');
   };
 

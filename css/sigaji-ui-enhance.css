@@ -1513,6 +1513,13 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 }
 .narrative-box { font-size: 12px; line-height: 1.65; }
 .narrative-warn { color: #b45309; font-weight: 600; }
+.narrative-abs-list {
+  margin: 0.35rem 0 0.5rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+.narrative-abs-list li { margin-bottom: 0.15rem; }
+[data-theme="dark"] .narrative-warn { color: #fbbf24; }
 .ui-pref-sel { max-width: 110px; font-size: 11px; padding: 4px 8px; }
 
 .period-timeline-bar {
