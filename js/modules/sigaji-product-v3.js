@@ -69,21 +69,70 @@
     return 'sigaji_bento_layout_' + currentRole();
   }
 
+  function normalizeBentoRole(role) {
+    var raw =
+      typeof bentoLayouts !== 'undefined' && bentoLayouts && bentoLayouts[role];
+    if (!raw) return { order: null, hidden: [] };
+    if (Array.isArray(raw)) return { order: raw, hidden: [] };
+    if (typeof raw === 'object') {
+      return {
+        order: Array.isArray(raw.order) ? raw.order : null,
+        hidden: Array.isArray(raw.hidden) ? raw.hidden : [],
+      };
+    }
+    return { order: null, hidden: [] };
+  }
+
+  function loadHidden() {
+    return normalizeBentoRole(currentRole()).hidden.filter(function (id) {
+      return WIDGET_DEFS[id];
+    });
+  }
+
+  function persistBentoRole(order, hidden) {
+    var role = currentRole();
+    if (typeof bentoLayouts === 'undefined' || !bentoLayouts || typeof bentoLayouts !== 'object') {
+      bentoLayouts = {};
+    }
+    var payload = { order: order.slice(), hidden: (hidden || []).slice() };
+    bentoLayouts[role] = payload;
+    try {
+      localStorage.setItem(layoutKey(), JSON.stringify(payload));
+    } catch (e2) {
+      sigajiCatchWarn('js/modules/sigaji-product-v3.js', e2);
+    }
+    try {
+      if (typeof saveAll === 'function') saveAll();
+    } catch (e4) {
+      sigajiCatchWarn('js/modules/sigaji-product-v3.js', e4);
+    }
+  }
+
+  function saveHidden(hidden) {
+    persistBentoRole(loadLayout(), hidden);
+  }
+
   function migrateBentoFromLocalStorage() {
     if (typeof bentoLayouts === 'undefined' || !bentoLayouts || typeof bentoLayouts !== 'object') {
       bentoLayouts = {};
     }
     var migrated = false;
     ['Admin', 'HRD', 'Guest'].forEach(function (role) {
-      if (bentoLayouts[role] && bentoLayouts[role].length) return;
+      if (Array.isArray(bentoLayouts[role]) && bentoLayouts[role].length) {
+        bentoLayouts[role] = { order: bentoLayouts[role], hidden: [] };
+        migrated = true;
+        return;
+      }
+      var existing = normalizeBentoRole(role);
+      if (existing.order && existing.order.length) return;
       try {
         var raw = localStorage.getItem('sigaji_bento_layout_' + role);
         if (!raw) return;
         var arr = JSON.parse(raw);
         if (Array.isArray(arr) && arr.length) {
-          bentoLayouts[role] = arr.filter(function (id) {
+          bentoLayouts[role] = { order: arr.filter(function (id) {
             return WIDGET_DEFS[id];
-          });
+          }), hidden: [] };
           migrated = true;
         }
       } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
@@ -97,11 +146,9 @@
 
   function loadLayout() {
     migrateBentoFromLocalStorage();
-    var role = currentRole();
-    var arr =
-      typeof bentoLayouts !== 'undefined' && bentoLayouts && bentoLayouts[role];
-    if (Array.isArray(arr) && arr.length) {
-      return arr.filter(function (id) {
+    var norm = normalizeBentoRole(currentRole());
+    if (norm.order && norm.order.length) {
+      return norm.order.filter(function (id) {
         return WIDGET_DEFS[id];
       });
     }
@@ -109,26 +156,25 @@
       var raw = localStorage.getItem(layoutKey());
       if (raw) {
         var local = JSON.parse(raw);
-        if (Array.isArray(local) && local.length) return local.filter(function (id) {
-          return WIDGET_DEFS[id];
-        });
+        if (Array.isArray(local) && local.length) {
+          return local.filter(function (id) {
+            return WIDGET_DEFS[id];
+          });
+        }
+        if (local && Array.isArray(local.order) && local.order.length) {
+          return local.order.filter(function (id) {
+            return WIDGET_DEFS[id];
+          });
+        }
       }
-    } catch(e3){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e3);}
+    } catch (e3) {
+      sigajiCatchWarn('js/modules/sigaji-product-v3.js', e3);
+    }
     return DEFAULT_ORDER.slice();
   }
 
   function saveLayout(order) {
-    var role = currentRole();
-    if (typeof bentoLayouts === 'undefined' || !bentoLayouts || typeof bentoLayouts !== 'object') {
-      bentoLayouts = {};
-    }
-    bentoLayouts[role] = order.slice();
-    try {
-      localStorage.setItem(layoutKey(), JSON.stringify(order));
-    } catch(e2){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e2);}
-    try {
-      if (typeof saveAll === 'function') saveAll();
-    } catch(e4){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e4);}
+    persistBentoRole(order, loadHidden());
   }
 
   function sparklineSvg(values, w, h) {
@@ -177,7 +223,10 @@
     ctx = ctx || {};
     var grid = document.getElementById('dash-bento-grid');
     if (!grid) return;
-    var order = loadLayout();
+    var hidden = loadHidden();
+    var order = loadLayout().filter(function (id) {
+      return hidden.indexOf(id) < 0;
+    });
     var p = ctx.p || (typeof PA === 'function' ? PA() : null);
     var series =
       typeof sigajiPayrollTrendSeries === 'function' ? sigajiPayrollTrendSeries() : [];
@@ -202,7 +251,10 @@
         def.icon +
         ' ' +
         escapeHtml(def.label) +
-        '</span></div>' +
+        '</span>' +
+        '<button type="button" class="bento-widget-hide btn btn-xs btn-out" title="Sembunyikan widget"' +
+        sigajiDataAction('bento-hide', { id: id }) +
+        '>−</button></div>' +
         '<div class="bento-widget-body">' +
         inner +
         '</div></div>'
@@ -245,7 +297,7 @@
         '</span></div>' +
         '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'bruto' }) + '><span class="bento-kpi-lbl">Gross PPh</span><span class="bento-kpi-val sigaji-money">' +
         fmt(ctx.tB || 0) +
-        '</span><span class="bento-kpi-hint">klik → waterfall</span></div>' +
+        '</span><span class="bento-kpi-hint" title="Rincian gross → potongan → neto periode">Ketuk untuk rincian</span></div>' +
         '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'pph' }) + '><span class="bento-kpi-lbl">PPh 21</span><span class="bento-kpi-val sigaji-money-warn">' +
         fmt(ctx.tP || 0) +
         '</span></div>' +
@@ -278,7 +330,7 @@
         '</div>',
 
       compliance:
-        '<p class="font-10 text-muted" style="margin:0 0 .4rem">THR, BPJS, e-Bupot, bayar gaji</p><div id="d-compliance-cal"></div>',
+        '<p class="font-10 text-muted" style="margin:0 0 .4rem">Bulan berjalan — BPJS, e-Bupot, bayar gaji (±45 hari)</p><div id="d-compliance-cal"></div>',
 
       anomalies:
         '<div id="d-payroll-anomalies"></div>',
@@ -369,10 +421,86 @@
     localStorage.removeItem(layoutKey());
     try {
       if (typeof saveAll === 'function') saveAll();
-    } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
+    } catch (e) {
+      sigajiCatchWarn('js/modules/sigaji-product-v3.js', e);
+    }
     if (typeof renderDash === 'function') renderDash();
     toast('Layout dashboard direset (tersimpan ke cloud)');
   };
+
+  window.sigajiHideBentoWidget = function (id) {
+    if (!WIDGET_DEFS[id]) return;
+    var hidden = loadHidden();
+    if (hidden.indexOf(id) >= 0) return;
+    hidden.push(id);
+    saveHidden(hidden);
+    if (typeof renderDash === 'function') renderDash();
+    toast('Widget disembunyikan — Atur widget untuk tampilkan lagi');
+  };
+
+  window.sigajiOpenBentoWidgetPicker = function () {
+    var hidden = loadHidden();
+    var rows = DEFAULT_ORDER.map(function (id) {
+      var def = WIDGET_DEFS[id];
+      if (!def) return '';
+      var on = hidden.indexOf(id) < 0;
+      return (
+        '<label class="bento-picker-row">' +
+        '<input type="checkbox" class="bento-picker-chk" data-widget-id="' +
+        escapeAttr(id) +
+        '"' +
+        (on ? ' checked' : '') +
+        '> ' +
+        '<span>' +
+        def.icon +
+        ' ' +
+        escapeHtml(def.label) +
+        '</span></label>'
+      );
+    }).join('');
+    var old = document.getElementById('m-bento-picker');
+    if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'm-bento-picker';
+    wrap.className = 'mbd show';
+    wrap.innerHTML =
+      '<div class="modal modal-sm">' +
+      '<div class="modal-head"><strong>Atur widget dashboard</strong></div>' +
+      '<p class="font-11 text-muted mt-0 mb-md">Centang widget yang ingin ditampilkan. Urutan bisa diseret (⠿) di dashboard.</p>' +
+      '<div class="bento-picker-list">' +
+      rows +
+      '</div>' +
+      '<div class="mfoot mt-lg">' +
+      '<button type="button" class="btn btn-sm btn-out" id="bento-picker-cancel">Batal</button>' +
+      '<button type="button" class="btn btn-sm btn-p" id="bento-picker-save">Simpan</button>' +
+      '</div></div>';
+    document.body.appendChild(wrap);
+    document.body.style.overflow = 'hidden';
+    wrap.addEventListener('click', function (ev) {
+      if (ev.target === wrap) sigajiCloseBentoWidgetPicker(false);
+    });
+    document.getElementById('bento-picker-cancel').addEventListener('click', function () {
+      sigajiCloseBentoWidgetPicker(false);
+    });
+    document.getElementById('bento-picker-save').addEventListener('click', function () {
+      var nextHidden = [];
+      wrap.querySelectorAll('.bento-picker-chk').forEach(function (el) {
+        var wid = el.getAttribute('data-widget-id');
+        if (!wid) return;
+        if (!el.checked) nextHidden.push(wid);
+      });
+      saveHidden(nextHidden);
+      sigajiCloseBentoWidgetPicker(true);
+      if (typeof renderDash === 'function') renderDash();
+      toast('Widget dashboard disimpan');
+    });
+  };
+
+  function sigajiCloseBentoWidgetPicker() {
+    var m = document.getElementById('m-bento-picker');
+    if (m) m.remove();
+    document.body.style.overflow = '';
+  }
 
   window.sigajiMigrateBentoLayouts = migrateBentoFromLocalStorage;
 
@@ -770,8 +898,8 @@
       paras.push('<p><span class="narrative-warn">⚠ ' + ctx.pAp + ' approval masih tertunda — selesaikan sebelum transfer.</span></p>');
     }
     var anom =
-      typeof sigajiDetectPayrollAnomalies === 'function'
-        ? sigajiDetectPayrollAnomalies(p.nama).filter(function (a) {
+      typeof sigajiPayrollAnomaliesActionable === 'function'
+        ? sigajiPayrollAnomaliesActionable(p.nama).filter(function (a) {
             return a.severity === 'high';
           })
         : [];

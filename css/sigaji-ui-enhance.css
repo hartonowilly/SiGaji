@@ -765,6 +765,47 @@ html[data-sigaji-cloud-loading='1'] #app .content {
   padding: 3px 8px;
   border-radius: 6px;
 }
+.ab-mobile-days {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.55rem 0 0.4rem;
+  margin: 0 -0.15rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.ab-mobile-day-item {
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 40px;
+}
+.ab-mobile-day-lbl {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  margin-bottom: 3px;
+  line-height: 1.2;
+}
+.ab-mobile-day,
+.ab-mobile-day-static {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: default;
+}
+button.ab-mobile-day.is-clickable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+button.ab-mobile-day.is-clickable:active {
+  transform: scale(0.96);
+}
 
 /* ── Toggle kolom penggajian ── */
 .pg-cols-toggle {
@@ -847,6 +888,10 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   }
   .ab-grid-mobile {
     display: block !important;
+  }
+  .ab-status-legend .ab-legend-hint::after {
+    content: ' Geser baris harian per karyawan →';
+    font-weight: 600;
   }
   .sigaji-skeleton-kpi {
     grid-template-columns: repeat(2, 1fr);
@@ -1380,13 +1425,45 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 .bento-widget-head {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--bento-border, var(--color-surface-muted));
   cursor: grab;
   user-select: none;
 }
-.bento-widget-title { font-size: 11px; font-weight: 700; color: var(--bento-muted, var(--color-text-muted)); }
+.bento-widget-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bento-muted, var(--color-text-muted));
+}
+.bento-widget-hide {
+  flex-shrink: 0;
+  min-width: 28px;
+  padding: 2px 6px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.bento-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+.bento-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 13px;
+  padding: 0.45rem 0.35rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.bento-picker-row:hover {
+  background: var(--color-surface-muted, #f1f5f9);
+}
 .bento-drag { color: var(--ink-subtle); font-size: 14px; }
 .bento-widget-body { padding: 0.75rem; flex: 1; overflow: auto; min-height: 0; }
 .bento-hero {

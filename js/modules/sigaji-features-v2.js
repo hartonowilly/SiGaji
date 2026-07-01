@@ -191,7 +191,7 @@
     if (typeof sigajiDetectPayrollAnomalies === 'function' && typeof PA === 'function') {
       var p = PA();
       if (p) {
-        var anom = sigajiDetectPayrollAnomalies(p.nama).filter(function (a) {
+        var anom = sigajiPayrollAnomaliesActionable(p.nama).filter(function (a) {
           return a.severity === 'high';
         });
         if (anom.length) {

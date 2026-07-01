@@ -37,6 +37,11 @@
     switch (action) {
       case 'invoke':
         return invokeFn(el);
+      case 'bento-hide': {
+        var wid = el.getAttribute('data-id');
+        if (wid && typeof sigajiHideBentoWidget === 'function') sigajiHideBentoWidget(wid);
+        return true;
+      }
       case 'nav-drawer':
         if (typeof sigajiToggleNavDrawer === 'function') return !!sigajiToggleNavDrawer(ev);
         return false;

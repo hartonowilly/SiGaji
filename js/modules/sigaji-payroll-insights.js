@@ -185,7 +185,7 @@
       });
     }
 
-    for (var m = 0; m < 4; m++) {
+    for (var m = 0; m < 2; m++) {
       var dm = new Date(y, now.getMonth() + m, 1);
       var ym = dm.getFullYear();
       var mo = dm.getMonth();
@@ -243,7 +243,15 @@
       return (a.days == null ? 9999 : a.days) - (b.days == null ? 9999 : b.days);
     });
     return items.filter(function (it) {
-      return it.days == null || it.days >= -7;
+      if (it.days == null) return true;
+      return it.days >= -3 && it.days <= 45;
+    });
+  };
+
+  /** Anomali yang perlu tindakan — bukan info NPWP+NIK OK */
+  window.sigajiPayrollAnomaliesActionable = function (pNama) {
+    return (window.sigajiDetectPayrollAnomalies(pNama) || []).filter(function (a) {
+      return a.severity !== 'info' && a.code !== 'npwp_ok_nik';
     });
   };
 
@@ -263,18 +271,7 @@
       var nama = k.nama || k.nik;
 
       var taxSt = sigajiKarTaxIdStatus(k);
-      if (taxSt === 'npwp_empty_ok_nik') {
-        out.push({
-          severity: 'info',
-          nik: k.nik,
-          nama: nama,
-          code: 'npwp_ok_nik',
-          title: 'NPWP kosong — OK jika NIK 16 digit terisi',
-          desc:
-            'No. KTP dipakai untuk e-Bupot/Coretax. Validasi padanan NIK di portal DJP sebelum unggah.',
-          ktpNik: sigajiKarKtpNik16(k),
-        });
-      } else if (taxSt === 'nik_incomplete') {
+      if (taxSt === 'nik_incomplete') {
         out.push({
           severity: 'high',
           nik: k.nik,
@@ -441,10 +438,10 @@
   window.renderDashComplianceCalendar = function () {
     var el = document.getElementById('d-compliance-cal');
     if (!el) return;
-    var items = sigajiComplianceDeadlines().slice(0, 8);
+    var items = sigajiComplianceDeadlines().slice(0, 6);
     if (!items.length) {
       el.innerHTML =
-        '<div class="text-subtle font-12" style="padding:.5rem 0">Tidak ada deadline dalam 90 hari.</div>';
+        '<div class="text-subtle font-12" style="padding:.5rem 0">Tidak ada deadline dalam 45 hari ke depan.</div>';
       return;
     }
     var catCls = {
@@ -497,7 +494,10 @@
       el.innerHTML = '';
       return;
     }
-    var list = sigajiDetectPayrollAnomalies(p.nama);
+    var list =
+      typeof sigajiPayrollAnomaliesActionable === 'function'
+        ? sigajiPayrollAnomaliesActionable(p.nama)
+        : sigajiDetectPayrollAnomalies(p.nama);
     if (!list.length) {
       el.innerHTML =
         '<div class="alert-item alert-green m-0">Tidak ada anomali terdeteksi untuk periode <strong>' +
@@ -520,10 +520,6 @@
               : a.severity === 'info'
                 ? 'alert-blue'
                 : 'alert-item';
-          var ktpArg =
-            a.ktpNik != null
-              ? String(a.ktpNik).replace(/'/g, "\\'")
-              : '';
           var djpBtn =
             a.code === 'npwp_ok_nik'
               ? '<button type="button" class="btn btn-xs btn-out mt-xs" style="margin-right:4px"' +

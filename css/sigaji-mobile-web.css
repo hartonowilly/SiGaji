@@ -383,6 +383,31 @@ html.sigaji-mobile-nav .bento-kpi-row {
   gap: 0.5rem;
 }
 
+/* ── Absensi: kartu per karyawan + baris hari (bukan tabel lebar) ── */
+html.sigaji-mobile-nav .ab-grid-host {
+  max-height: none;
+  overflow: visible;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+html.sigaji-mobile-nav .ab-mobile-card {
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+}
+html.sigaji-mobile-nav .ab-mobile-days {
+  mask-image: linear-gradient(90deg, #000 94%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 94%, transparent);
+}
+html.sigaji-mobile-nav .ab-month-nav {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface, #fff);
+  padding: 0.35rem 0;
+  margin-bottom: 0.35rem;
+}
+
 /* ── Form ── */
 html.sigaji-mobile-nav .fg input,
 html.sigaji-mobile-nav .fg select,

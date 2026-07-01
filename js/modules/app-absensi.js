@@ -174,7 +174,24 @@ function renderAbsensiBody(){
     });
     html+='<td class="text-center fw-800 ct-success num ab-total-h">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+(cA||'')+'</td></tr>';
     mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
-      +'<div class="ab-mobile-stats">'
+      +'<div class="ab-mobile-days">';
+    days.forEach(function(x){
+      var isLN2=isHL(x.date);
+      var isLK2=isHariLiburKerja(x.dow);
+      var st2=absensi[k.nik][x.date]||(isLN2?'libnas':isLK2?'libur':'hadir');
+      var lbl2=ST_LBL[st2]||'-';
+      var cc2=!isLK2&&!isLN2;
+      var canCell2=cc2&&canEditDataPadaTanggalIso(x.date);
+      var dd2=parseInt(x.date.split('-')[2],10);
+      var dowN2=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
+      var cellCls2='ab-cell ab-mobile-day ab-st-'+(st2||'libur')+(canCell2?' is-clickable':'')+(cc2&&!canCell2?' is-readonly':'');
+      mobileCards+='<div class="ab-mobile-day-item"><div class="ab-mobile-day-lbl">'+dowN2+' <span class="fw-700">'+dd2+'</span></div>'
+        +(canCell2
+          ?'<button type="button" class="'+cellCls2+'"'+sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date})+'>'+lbl2+'</button>'
+          :'<span class="'+cellCls2+' ab-mobile-day-static">'+lbl2+'</span>')
+        +'</div>';
+    });
+    mobileCards+='</div><div class="ab-mobile-stats">'
       +'<span class="ab-mobile-stat is-hadir">H '+cH+'</span>'
       +'<span class="ab-mobile-stat is-cuti">C '+cC+'</span>'
       +'<span class="ab-mobile-stat is-warn">S '+cS+'</span>'
