@@ -33,7 +33,6 @@ function renderPeriodesBody(){
       +'<td><span class="bdg '+(p.status==='aktif'?'b-ok':'b-gray')+'">'+(p.status==='aktif'?'Aktif':'Tutup')+'</span>'+lockBdg+'</td>'
       +'<td><div class="fl gap1"><button class="btn btn-sm btn-out"'+sigajiDataAction('periode-aktifkan',{id:p.id})+'>Aktifkan</button>'+lockBtn+rebuildBtn+'<button class="btn btn-sm btn-r"'+sigajiDataAction('periode-hapus',{id:p.id})+'>Hapus</button></div></td></tr>';
   }).join('');
-  renderPeriodeSnapshotGuardUi(false);
   updatePeriodeSimpanButtonState();
 }
 function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));var html='<div class="pb mb2"><div><div class="font-10 opacity-75">Periode Aktif</div><div class="font-17 fw-800">'+escapeHtml(p.nama)+(p.thr_aktif?' <span class="font-12 rounded-pill" style="background:rgba(255,255,255,.2); padding:2px 8px">&#127873; THR</span>':'')+'</div><div class="font-11 opacity-80">'+fmtDate(p.start)+' - '+fmtDate(p.end)+'</div></div><div class="text-right"><div class="fw-800 font-28">'+String(hP)+'</div><div class="font-10 opacity-75">hari</div></div></div>';el.innerHTML=html;}
@@ -63,27 +62,69 @@ function getPeriodesSnapshotTerbuka(excludeNama){
     return true;
   });
 }
+function getNamaPeriodeForm(){
+  var el=document.getElementById('p-nama');
+  return el?String(el.value||'').trim():'';
+}
+/** Peringatan snapshot hanya relevan saat form menarget periode baru (nama belum ada di daftar). */
+function shouldShowPeriodeSnapshotGuard(){
+  var nama=getNamaPeriodeForm();
+  if(nama&&!isNamaPeriodeBaru(nama))return false;
+  return getPeriodesSnapshotTerbuka().length>0;
+}
+function hidePeriodeSnapshotGuard(){
+  var el=document.getElementById('periode-guard-msg');
+  if(!el)return;
+  el.style.display='none';
+  el.innerHTML='';
+}
 function renderPeriodeSnapshotGuardUi(blocking){
   var el=document.getElementById('periode-guard-msg');
   if(!el)return;
+  if(!blocking){hidePeriodeSnapshotGuard();return;}
+  if(!shouldShowPeriodeSnapshotGuard()){hidePeriodeSnapshotGuard();return;}
   var open=getPeriodesSnapshotTerbuka();
-  if(!open.length){el.style.display='none';el.innerHTML='';return;}
+  var namaForm=getNamaPeriodeForm();
   var items=open.map(function(p){
     var aktif=p.status==='aktif'?' <span class="bdg b-ok font-9" style="vertical-align:middle">aktif</span>':'';
     return '<li style="margin:.2rem 0"><strong>'+escapeHtml(p.nama)+'</strong>'+aktif+' — snapshot terbuka</li>';
   }).join('');
   var names=open.map(function(p){return p.nama;}).join(', ');
-  var guardCls=blocking?'snap-guard-blocking':'snap-guard-warn';
-  var title=blocking?'<strong>Periode baru ditolak.</strong> ':'<strong>Perhatian:</strong> ';
-  var sub=blocking
-    ?'Kunci snapshot periode berikut (tombol <em>Kunci</em> di tabel Riwayat Periode) sebelum menambah periode baru:'
-    :'Sebelum menambah periode baru, kunci snapshot periode berikut:';
+  var sub=namaForm
+    ?'Untuk menambah <strong>'+escapeHtml(namaForm)+'</strong>, kunci dulu snapshot periode berikut (tombol <em>Kunci</em> di tabel Riwayat Periode):'
+    :'Kunci snapshot periode berikut sebelum menambah periode baru:';
+  var hint='<p class="font-10 text-muted m-0 mt-sm leading-normal">Kunci periode aktif yang masih snapshot terbuka, lalu coba Simpan lagi.</p>';
   el.style.display='block';
-  var html='<div class="rounded-md mt-lg font-12 leading-tight '+guardCls+'" style="border:1.5px solid; padding:.75rem 1rem">'
-    +title+sub+'<ul style="margin:.45rem 0 .55rem 1.15rem">'+items+'</ul>'
-    +'<button type="button" class="btn btn-sm btn-p"'+sigajiDataAction('invoke',{fn:'goToDaftarPeriode'})+'>Ke daftar periode</button></div>';
+  var html='<div class="rounded-md mt-lg font-12 leading-tight snap-guard-blocking" style="border:1.5px solid; padding:.75rem 1rem">'
+    +'<strong>Periode baru ditolak.</strong> '+sub+'<ul style="margin:.45rem 0 .55rem 1.15rem">'+items+'</ul>'
+    +hint
+    +'<div class="fl gap1 mt-md"><button type="button" class="btn btn-sm btn-p"'+sigajiDataAction('invoke',{fn:'goToDaftarPeriode'})+'>Ke daftar periode</button></div></div>';
   el.innerHTML=html;
-  if(blocking)toast('Kunci dulu: '+names+' (snapshot terbuka)');
+  toast('Kunci dulu: '+names+' (snapshot terbuka)');
+}
+function suggestNamaPeriodeBerikutnya(){
+  var bulan=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  var latest=null;
+  (periodes||[]).forEach(function(p){
+    if(!p||!p.end)return;
+    if(!latest||String(p.end)>String(latest.end))latest=p;
+  });
+  if(!latest||!latest.end){
+    var now=new Date();
+    return bulan[now.getMonth()]+' '+now.getFullYear();
+  }
+  var d=new Date(String(latest.end).substring(0,10)+'T12:00:00');
+  d.setMonth(d.getMonth()+1);
+  return bulan[d.getMonth()]+' '+d.getFullYear();
+}
+function mulaiFormPeriodeBaru(){
+  var nama=suggestNamaPeriodeBerikutnya();
+  var elN=document.getElementById('p-nama');if(elN)elN.value=nama;
+  var st=document.getElementById('p-status');if(st)st.value='aktif';
+  var thr=document.getElementById('p-thr-aktif');if(thr){thr.checked=false;toggleThrFields();}
+  updatePeriodeSimpanButtonState();
+  if(elN){try{elN.focus();}catch(e){sigajiCatchWarn('js/modules/app-master.js',e);}}
+  toast('Form periode baru — isi tanggal lalu Simpan');
 }
 function goToDaftarPeriode(){
   if(!canAccessModule('master')){toast('Tidak punya akses Master Perusahaan');return;}
@@ -98,12 +139,13 @@ function goToDaftarPeriode(){
 }
 function guardCanBuatPeriodeBaru(nama){
   if(nama!=null&&nama!==''&&!isNamaPeriodeBaru(nama)){
+    hidePeriodeSnapshotGuard();
     updatePeriodeSimpanButtonState();
     return true;
   }
   var open=getPeriodesSnapshotTerbuka();
   if(!open.length){
-    renderPeriodeSnapshotGuardUi(false);
+    hidePeriodeSnapshotGuard();
     updatePeriodeSimpanButtonState();
     return true;
   }
@@ -120,7 +162,8 @@ function updatePeriodeSimpanButtonState(){
   btn.disabled=blockBaru;
   btn.style.opacity=blockBaru?'.55':'';
   btn.style.cursor=blockBaru?'not-allowed':'';
-  btn.title=blockBaru?'Kunci semua snapshot terbuka dulu sebelum menambah periode baru':'';
+  btn.title=blockBaru?'Kunci snapshot periode aktif dulu (tombol Kunci di tabel)':'';
+  if(!blockBaru)hidePeriodeSnapshotGuard();
 }
 function simpanPeriode(){
   var nama=document.getElementById('p-nama').value.trim();var start=document.getElementById('p-start').value;var end=document.getElementById('p-end').value;var bayar=document.getElementById('p-bayar').value;var status=document.getElementById('p-status').value;
