@@ -197,7 +197,9 @@ function renderKarBody(){
     var empty=__karListMode==='resign'
       ?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan resign',desc:'Karyawan dengan tanggal berhenti akan muncul di tab ini. Putus tautan Telegram dari sini.'})
       :sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan aktif',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnAction:'openNewKar',btnActionArg:'tetap'});
-    tb.innerHTML='<tr><td colspan="'+String(karColspan)+'">'+empty+'</td></tr>';
+    var emptyKarRow='<tr><td colspan="'+String(karColspan)+'">'+empty+'</td></tr>';
+    if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,[emptyKarRow],1);
+    else tb.replaceChildren();
     return;
   }
   var rows=list.map((k,i)=>karRowHtml(k,i+1));
