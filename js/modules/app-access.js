@@ -1319,10 +1319,16 @@ function enterAppWithUser(user){
   try{document.body.classList.add('sigaji-app-active');}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
   document.getElementById('uav').textContent=ini(CU.nama);document.getElementById('uname').textContent=CU.nama;document.getElementById('urbadge').textContent=CU.role;
   document.getElementById('top-periode').textContent=PA().nama;
-  applyBranding();renderSidebar();renderAll();
-  try{sigajiUpdateCloudBackupUi();}catch(eCu){sigajiCatchWarn("js/modules/app-access.js",eCu);}
+  applyBranding();renderSidebar();
   try{if(typeof sigajiSyncViewportVars==='function')sigajiSyncViewportVars();}catch(eVp){sigajiCatchWarn("js/modules/app-access.js",eVp);}
   try{sigajiApplyMobileNavMode();initSigajiNavDrawer();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  /* Login cepat: render shell + dashboard dulu; halaman berat ditunda */
+  try{populateSelects();renderPeriodeSelects();}catch(eSel){sigajiCatchWarn("js/modules/app-access.js",eSel);}
+  try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){sigajiCatchWarn("js/modules/app-access.js",ePs);}
+  try{if(typeof sigajiApplyUiPrefs==='function')sigajiApplyUiPrefs(sigajiGetUiPrefs());}catch(eUi){sigajiCatchWarn("js/modules/app-access.js",eUi);}
+  try{renderDash();}catch(eD){sigajiCatchWarn("js/modules/app-access.js",eD);}
+  try{renderNotif();}catch(eN){sigajiCatchWarn("js/modules/app-access.js",eN);}
+  try{sigajiUpdateCloudBackupUi();}catch(eCu){sigajiCatchWarn("js/modules/app-access.js",eCu);}
   var startPg=typeof sigajiResolveStartupPg==='function'?sigajiResolveStartupPg():'dashboard';
   showPg(startPg);
   updateNotifBadge();
@@ -1330,6 +1336,10 @@ function enterAppWithUser(user){
   if((CU.role==='Admin'||CU.role==='HRD')&&typeof window.sigajiSyncUserRolesTable==='function'&&window.sigajiSupabase){
     window.sigajiSyncUserRolesTable(window.sigajiSupabase,users);
   }
+  setTimeout(function(){
+    try{if(typeof renderAllDeferred==='function')renderAllDeferred();}
+    catch(eDef){try{renderAll();}catch(eAll){sigajiCatchWarn("js/modules/app-access.js",eAll);}}
+  },40);
 }
 function sigajiSetLoginBusy(busy){
   var btn=document.getElementById('btn-login');
@@ -1655,3 +1665,26 @@ function renderSysStatus(){
 if(typeof window!=='undefined')window.renderSysStatus=renderSysStatus;
 
 function renderAll(){renderDash();renderKar();try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){sigajiCatchWarn("js/modules/app-access.js",eLq);}if(typeof renderKompgajiPage==='function')renderKompgajiPage();else renderKompgaji();renderPenggajian();renderPPH();renderLaporan();renderNotif();renderPeriodes();renderHariLibur();renderCutiRekap();renderTHR();try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}populateSelects();renderPeriodeSelects();loadPrsForm();applyBranding();renderUsers();renderPermMatrix();populatePhkAlasanSelect();renderMigrationStatus();try{sigajiUpdateCloudBackupUi();}catch(eCb){sigajiCatchWarn("js/modules/app-access.js",eCb);}try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){sigajiCatchWarn("js/modules/app-access.js",ePs);}if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(document.body);try{if(typeof sigajiMaybeShowSetupWizard==='function')sigajiMaybeShowSetupWizard();}catch(eWiz){sigajiCatchWarn("js/modules/app-access.js",eWiz);}try{if(typeof sigajiMaybeProductTour==='function')sigajiMaybeProductTour();}catch(eTour){sigajiCatchWarn("js/modules/app-access.js",eTour);}try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){sigajiCatchWarn("js/modules/app-access.js",eTl);}try{if(typeof sigajiApplyUiPrefs==='function')sigajiApplyUiPrefs(sigajiGetUiPrefs());}catch(eUi){sigajiCatchWarn("js/modules/app-access.js",eUi);}try{if(typeof sigajiUiCabangAfterRender==='function')sigajiUiCabangAfterRender();}catch(eCab){sigajiCatchWarn("js/modules/app-access.js",eCab);}}
+/** Setelah login: warm halaman non-dashboard tanpa memblokir first paint. */
+function renderAllDeferred(){
+  try{renderKar();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){sigajiCatchWarn("js/modules/app-access.js",eLq);}
+  try{if(typeof renderKompgajiPage==='function')renderKompgajiPage();else renderKompgaji();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderPenggajian();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderPPH();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderLaporan();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderPeriodes();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderHariLibur();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderCutiRekap();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderTHR();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{if(typeof renderPesangon==='function')renderPesangon();}catch(e){console.error('renderPesangon',e);}
+  try{loadPrsForm();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{renderUsers();renderPermMatrix();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{populatePhkAlasanSelect();renderMigrationStatus();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(document.body);
+  try{if(typeof sigajiMaybeShowSetupWizard==='function')sigajiMaybeShowSetupWizard();}catch(eWiz){sigajiCatchWarn("js/modules/app-access.js",eWiz);}
+  try{if(typeof sigajiMaybeProductTour==='function')sigajiMaybeProductTour();}catch(eTour){sigajiCatchWarn("js/modules/app-access.js",eTour);}
+  try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){sigajiCatchWarn("js/modules/app-access.js",eTl);}
+  try{if(typeof sigajiUiCabangAfterRender==='function')sigajiUiCabangAfterRender();}catch(eCab){sigajiCatchWarn("js/modules/app-access.js",eCab);}
+}
+if(typeof window!=='undefined')window.renderAllDeferred=renderAllDeferred;

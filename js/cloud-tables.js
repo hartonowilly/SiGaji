@@ -178,11 +178,22 @@
     return rows;
   }
 
+  var tablesExistCache = null;
+  var tablesExistCacheAt = 0;
+
   async function tablesExist(sb) {
+    var now = Date.now();
+    if (tablesExistCache != null && now - tablesExistCacheAt < 60000) {
+      return tablesExistCache;
+    }
     try {
       var r = await sb.from('sigaji_tenant_meta').select('tenant_key').eq('tenant_key', TK).limit(1);
-      return !r.error;
+      tablesExistCache = !r.error;
+      tablesExistCacheAt = now;
+      return tablesExistCache;
     } catch (e) {
+      tablesExistCache = false;
+      tablesExistCacheAt = now;
       return false;
     }
   }
@@ -198,33 +209,36 @@
   }
 
   async function assemblePayloadFromTables(sb) {
-    var meta = await sb
-      .from('sigaji_tenant_meta')
-      .select('schema_version,max_employees,plan_label,multi_branch_enabled,max_branches')
-      .eq('tenant_key', TK)
-      .maybeSingle();
+    var settled = await Promise.all([
+      sb
+        .from('sigaji_tenant_meta')
+        .select('schema_version,max_employees,plan_label,multi_branch_enabled,max_branches')
+        .eq('tenant_key', TK)
+        .maybeSingle(),
+      sb.from('sigaji_karyawan').select('nik,data').eq('tenant_key', TK),
+      sb.from('sigaji_periode').select('nama,data').eq('tenant_key', TK),
+      sb
+        .from('sigaji_tunj_var_kolom')
+        .select('id,nama,sort_order')
+        .eq('tenant_key', TK)
+        .order('sort_order', { ascending: true }),
+      sb
+        .from('sigaji_tunj_var_nilai')
+        .select('periode_nama,nik,kolom_id,nilai')
+        .eq('tenant_key', TK),
+      loadStoreChunks(sb),
+    ]);
+    var meta = settled[0];
+    var karRes = settled[1];
+    var perRes = settled[2];
+    var kolRes = settled[3];
+    var nilRes = settled[4];
+    var store = settled[5];
     if (meta.error) throw meta.error;
-
-    var karRes = await sb.from('sigaji_karyawan').select('nik,data').eq('tenant_key', TK);
     if (karRes.error) throw karRes.error;
-
-    var perRes = await sb.from('sigaji_periode').select('nama,data').eq('tenant_key', TK);
     if (perRes.error) throw perRes.error;
-
-    var kolRes = await sb
-      .from('sigaji_tunj_var_kolom')
-      .select('id,nama,sort_order')
-      .eq('tenant_key', TK)
-      .order('sort_order', { ascending: true });
     if (kolRes.error) throw kolRes.error;
-
-    var nilRes = await sb
-      .from('sigaji_tunj_var_nilai')
-      .select('periode_nama,nik,kolom_id,nilai')
-      .eq('tenant_key', TK);
     if (nilRes.error) throw nilRes.error;
-
-    var store = await loadStoreChunks(sb);
 
     var karyawan = (karRes.data || []).map(function (r) {
       var d = r.data && typeof r.data === 'object' ? r.data : {};
@@ -559,38 +573,40 @@
     var nik = roleRes.data.nik ? String(roleRes.data.nik).trim() : '';
     if (!nik) return null;
 
-    var karRes = await sb
-      .from('sigaji_karyawan')
-      .select('data')
-      .eq('tenant_key', TK)
-      .eq('nik', nik)
-      .maybeSingle();
-    if (karRes.error) throw karRes.error;
-
-    var perRes = await sb.from('sigaji_periode').select('data').eq('tenant_key', TK);
-    if (perRes.error) throw perRes.error;
-
     var storeKeys = ['perusahaan', 'masterCuti', 'hariLibur', 'notifikasi', 'roles', 'absensi'];
-    var store = {};
-    for (var si = 0; si < storeKeys.length; si++) {
-      var key = storeKeys[si];
-      var sr = await sb
-        .from('sigaji_store')
-        .select('data')
+    var parallel = await Promise.all([
+      sb.from('sigaji_karyawan').select('data').eq('tenant_key', TK).eq('nik', nik).maybeSingle(),
+      sb.from('sigaji_periode').select('data').eq('tenant_key', TK),
+      sb.from('sigaji_store').select('store_key,data').eq('tenant_key', TK).in('store_key', storeKeys),
+      sb
+        .from('sigaji_tunj_var_nilai')
+        .select('periode_nama,nik,kolom_id,nilai')
         .eq('tenant_key', TK)
-        .eq('store_key', key)
-        .maybeSingle();
-      if (!sr.error && sr.data) store[key] = sr.data.data;
-    }
-
-    var nilRes = await sb
-      .from('sigaji_tunj_var_nilai')
-      .select('periode_nama,nik,kolom_id,nilai')
-      .eq('tenant_key', TK)
-      .eq('nik', nik);
+        .eq('nik', nik),
+      sb.from('sigaji_tunj_var_kolom').select('id,nama,sort_order').eq('tenant_key', TK),
+      sb
+        .from('sigaji_tenant_meta')
+        .select('max_employees,plan_label,multi_branch_enabled,max_branches')
+        .eq('tenant_key', TK)
+        .maybeSingle(),
+    ]);
+    var karRes = parallel[0];
+    var perRes = parallel[1];
+    var storeRes = parallel[2];
+    var nilRes = parallel[3];
+    var kolRes = parallel[4];
+    var metaRes = parallel[5];
+    if (karRes.error) throw karRes.error;
+    if (perRes.error) throw perRes.error;
     if (nilRes.error) throw nilRes.error;
 
-    var kolRes = await sb.from('sigaji_tunj_var_kolom').select('id,nama,sort_order').eq('tenant_key', TK);
+    var store = {};
+    if (!storeRes.error && storeRes.data) {
+      storeRes.data.forEach(function (row) {
+        store[row.store_key] = row.data;
+      });
+    }
+
     var tunjVarColumns = [];
     if (!kolRes.error && kolRes.data) {
       tunjVarColumns = kolRes.data
@@ -604,15 +620,28 @@
     }
 
     var absensi = pickOwnAbsensiFromStore(store.absensi || {}, nik);
+    var lic = {
+      maxEmployees:
+        metaRes.data && metaRes.data.max_employees != null
+          ? parseInt(metaRes.data.max_employees, 10) || 0
+          : 0,
+      planLabel: (metaRes.data && metaRes.data.plan_label) || '',
+      multiBranchEnabled: !!(metaRes.data && metaRes.data.multi_branch_enabled),
+      maxBranches:
+        metaRes.data && metaRes.data.max_branches != null
+          ? parseInt(metaRes.data.max_branches, 10) || 1
+          : 1,
+    };
 
     return {
       schemaVersion: 10,
+      license: lic,
       karyawan: karRes.data && karRes.data.data ? [karRes.data.data] : [],
       periodes: (perRes.data || []).map(function (r) {
-        return r.data;
+        return r.data || {};
       }),
       hariLibur: store.hariLibur || [],
-      masterCuti: store.masterCuti || {},
+      masterCuti: store.masterCuti || { kuota: 12, carryover: 'no', cbPotong: true },
       absensi: absensi,
       lembur: {},
       prorata: {},
@@ -620,10 +649,10 @@
       notifikasi: store.notifikasi || [],
       perusahaan: store.perusahaan || {},
       users: [],
-      roles: store.roles || { Karyawan: ['myslip', 'mycuti', 'notifikasi'], Absen: [] },
+      roles: store.roles || {},
       thrManual: {},
       tunjVarBulan: buildTunjVarBulanFromRows(nilRes.data),
-      tunjVarLabels: store.tunjVarLabels || { v1: 'Bonus', v2: 'Uang Makan', v3: 'Lain-lain' },
+      tunjVarLabels: { v1: 'Bonus', v2: 'Uang Makan', v3: 'Lain-lain' },
       tunjVarColumns: tunjVarColumns.length
         ? tunjVarColumns
         : [

@@ -578,6 +578,7 @@
 
   async function loadCloudPayloadIntoApp(uid) {
     var sb = window.sigajiSupabase;
+    var appliedWithLicense = false;
 
     if (
       window.sigajiCloudTables &&
@@ -587,7 +588,8 @@
         var scopedEarly = await window.sigajiCloudTables.tryLoadKaryawanScoped(sb, uid);
         if (scopedEarly && typeof window.applyDbFromCloudPayload === 'function') {
           window.applyDbFromCloudPayload(scopedEarly);
-          await refreshTenantLicenseFromCloud();
+          appliedWithLicense = !!(scopedEarly.license);
+          if (!appliedWithLicense) await refreshTenantLicenseFromCloud();
           return;
         }
       } catch (eK) {
@@ -600,7 +602,8 @@
         var fromTables = await window.sigajiCloudTables.tryLoadWithTables(sb, uid, fetchBlobPayload);
         if (fromTables && typeof window.applyDbFromCloudPayload === 'function') {
           window.applyDbFromCloudPayload(fromTables);
-          await refreshTenantLicenseFromCloud();
+          appliedWithLicense = !!(fromTables.license);
+          if (!appliedWithLicense) await refreshTenantLicenseFromCloud();
           return;
         }
       } catch (e) {
