@@ -1,5 +1,6 @@
 /**
  * Deklarasi global SiGaji untuk // @ts-check di app-core.js (tanpa rewrite ke TypeScript).
+ * Juga dipakai typecheck:payroll (constants.js + ptkp.js).
  */
 declare var perusahaan: {
   hariKerja?: number;
@@ -33,9 +34,20 @@ declare var tunjVarBulan: Record<string, Record<string, Record<string, number>>>
 declare var tunjVarLabels: Record<string, string>;
 declare var approvals: Array<Record<string, unknown>>;
 
-declare function nilaiPTKP(key: string): number;
+declare var CU: { role?: string; nama?: string; nik?: string } | null | undefined;
+
+declare function PA(): { nama?: string; start?: string; end?: string; bayar?: string; status?: string } | null;
 declare function saveAll(): void;
+declare function toast(msg: string): void;
+declare function openModal(id: string): void;
+declare function closeModal(id: string): void;
+declare function escapeHtml(s: string): string;
+declare function escapeAttr(s: string): string;
+declare function karyawanSortedAll(): Array<Record<string, unknown>>;
+declare function renderKar(): void;
 declare function renderPenggajian(): void;
+declare function renderPPH(): void;
+declare function updatePTKPVal(): void;
 declare function hitungPesangon(k: Record<string, unknown>): {
   ok: boolean;
   up?: number;
@@ -46,6 +58,18 @@ declare function hitungPesangon(k: Record<string, unknown>): {
 
 interface Window {
   SIGAJI_CLOUD_ONLY_MODE?: boolean;
+  getPTKPTable?: Function;
+  nilaiPTKP?: Function;
+  fmtPTKPVal?: Function;
+  isJkPerempuan?: Function;
+  isSigajiAdminUser?: Function;
+  canEditPtkpStatus?: Function;
+  applyPtkpFieldState?: Function;
+  togglePtkpFemaleOverride?: Function;
+  onJkChange?: Function;
+  openPtkpJanuariModal?: Function;
+  simpanPtkpJanuari?: Function;
+  isNamaPeriodeJanuari?: Function;
 }
 
 /** Hasil hitungGaji — field utama untuk slip & laporan. */
@@ -53,7 +77,6 @@ interface HitungGajiResult {
   gapokEff: number;
   gapokFull: number;
   grossPPh: number;
-  grossPPhRegular: number;
   brutoTH: number;
   pph: number;
   pphTanpaThr: number;
@@ -84,6 +107,7 @@ interface HitungGajiResult {
   pphRet: number;
   totalPot: number;
   bebanPrs: number;
+  grossPPhRegular: number;
 }
 
 interface KaryawanPayroll {

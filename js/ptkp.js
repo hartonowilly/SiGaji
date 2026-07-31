@@ -1,3 +1,4 @@
+/// <reference path="./types/payroll-globals.d.ts" />
 function getPTKPTable(){var o=(perusahaan&&perusahaan.ptkp_nilai)||{};var out={};Object.keys(DEFAULT_PTKP).forEach(function(k){var v=o[k];out[k]=(v!=null&&String(v)!==''&&!isNaN(Number(v)))?Number(v):DEFAULT_PTKP[k];});return out;}
 function nilaiPTKP(key){return getPTKPTable()[key]??DEFAULT_PTKP[key]??63e6;}
 function fmtPTKPVal(n){return'Rp '+Math.round(n).toLocaleString('id-ID');}
@@ -43,10 +44,15 @@ function ptkpOptionsHtml(selected){
     return '<option value="'+k+'"'+(k===selected?' selected':'')+'>'+lab+'</option>';
   }).join('');
 }
+/** @returns {HTMLSelectElement|null} */
+function ptkpSelEl(id){
+  var el=document.getElementById(id);
+  return el instanceof HTMLSelectElement?el:null;
+}
 /** Sinkron UI select PTKP di slide panel. */
 function applyPtkpFieldState(){
-  var sel=document.getElementById('sp-ptkp-f');
-  var jkEl=document.getElementById('sp-jk-f');
+  var sel=ptkpSelEl('sp-ptkp-f');
+  var jkEl=ptkpSelEl('sp-jk-f');
   var hint=document.getElementById('sp-ptkp-hint');
   var btnOv=document.getElementById('sp-ptkp-override-btn');
   if(!sel)return;
@@ -81,16 +87,16 @@ function applyPtkpFieldState(){
   if(typeof updatePTKPVal==='function')updatePTKPVal();
 }
 function togglePtkpFemaleOverride(){
-  if(!isSigajiAdminUser()){toast('Hanya Admin');return;}
-  var sel=document.getElementById('sp-ptkp-f');
+  if(!isSigajiAdminUser()){if(typeof toast==='function')toast('Hanya Admin');return;}
+  var sel=ptkpSelEl('sp-ptkp-f');
   if(!sel)return;
   if(sel.dataset.femaleOverride==='1')delete sel.dataset.femaleOverride;
   else sel.dataset.femaleOverride='1';
   applyPtkpFieldState();
 }
 function onJkChange(){
-  var jkEl=document.getElementById('sp-jk-f');
-  var sel=document.getElementById('sp-ptkp-f');
+  var jkEl=ptkpSelEl('sp-jk-f');
+  var sel=ptkpSelEl('sp-ptkp-f');
   if(sel)delete sel.dataset.femaleOverride;
   if(jkEl&&isJkPerempuan(jkEl.value)&&sel)sel.value='TK0';
   applyPtkpFieldState();
@@ -98,41 +104,46 @@ function onJkChange(){
 
 function openPtkpJanuariModal(periodeNama){
   var modal=document.getElementById('m-ptkp-januari');
-  if(!modal){toast('Modal PTKP tidak ditemukan');return;}
+  if(!modal){if(typeof toast==='function')toast('Modal PTKP tidak ditemukan');return;}
   var tit=document.getElementById('m-ptkp-januari-tit');
   if(tit)tit.textContent='Update Status PTKP — '+(periodeNama||'Januari');
   var tb=document.getElementById('tb-ptkp-januari');
   if(!tb)return;
-  var list=(typeof karyawanSortedAll==='function'?karyawanSortedAll():(karyawan||[])).filter(function(k){
+  var listSrc=typeof karyawanSortedAll==='function'?karyawanSortedAll():(karyawan||[]);
+  var list=listSrc.filter(function(k){
     return k&&k.nik&&!String(k.tgl_berhenti||'').trim();
   });
+  var esc=typeof escapeHtml==='function'?escapeHtml:function(s){return String(s||'');};
+  var escA=typeof escapeAttr==='function'?escapeAttr:function(s){return String(s||'').replace(/"/g,'&quot;');};
   tb.innerHTML=list.map(function(k,i){
-    var female=isJkPerempuan(k.jk);
-    var cur=female?'TK0':(k.ptkp||'TK0');
+    var female=isJkPerempuan(/** @type {string} */(k.jk));
+    var cur=female?'TK0':(/** @type {string} */(k.ptkp)||'TK0');
     var dis=female?' disabled':'';
     var note=female?'<span class="font-10 text-muted">Perempuan → TK/0</span>':'';
     return '<tr><td class="text-center text-muted">'+(i+1)+'</td>'
-      +'<td><strong>'+escapeHtml(k.nama||'')+'</strong><div class="u-muted-10">'+escapeHtml(k.nik)+'</div></td>'
+      +'<td><strong>'+esc(/** @type {string} */(k.nama)||'')+'</strong><div class="u-muted-10">'+esc(/** @type {string} */(k.nik))+'</div></td>'
       +'<td>'+(female?'P':'L')+'</td>'
-      +'<td><select class="ptkp-jan-sel" data-nik="'+escapeAttr(k.nik)+'"'+dis+'>'+ptkpOptionsHtml(cur)+'</select> '+note+'</td></tr>';
+      +'<td><select class="ptkp-jan-sel" data-nik="'+escA(/** @type {string} */(k.nik))+'"'+dis+'>'+ptkpOptionsHtml(cur)+'</select> '+note+'</td></tr>';
   }).join('')||'<tr><td colspan="4" class="text-muted p-md">Tidak ada karyawan aktif.</td></tr>';
-  openModal('m-ptkp-januari');
+  if(typeof openModal==='function')openModal('m-ptkp-januari');
 }
 function simpanPtkpJanuari(){
   var n=0;
-  document.querySelectorAll('#tb-ptkp-januari .ptkp-jan-sel').forEach(function(sel){
+  document.querySelectorAll('#tb-ptkp-januari .ptkp-jan-sel').forEach(function(node){
+    if(!(node instanceof HTMLSelectElement))return;
+    var sel=node;
     var nik=sel.getAttribute('data-nik');
     var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
     if(!k)return;
-    var v=isJkPerempuan(k.jk)?'TK0':sel.value;
+    var v=isJkPerempuan(/** @type {string} */(k.jk))?'TK0':sel.value;
     if(k.ptkp!==v){k.ptkp=v;n++;}
   });
-  saveAll();
-  closeModal('m-ptkp-januari');
+  if(typeof saveAll==='function')saveAll();
+  if(typeof closeModal==='function')closeModal('m-ptkp-januari');
   if(typeof renderKar==='function')renderKar();
   if(typeof renderPenggajian==='function')renderPenggajian();
   if(typeof renderPPH==='function')renderPPH();
-  toast(n?('PTKP diperbarui untuk '+n+' karyawan'):'Tidak ada perubahan PTKP');
+  if(typeof toast==='function')toast(n?('PTKP diperbarui untuk '+n+' karyawan'):'Tidak ada perubahan PTKP');
 }
 if(typeof window!=='undefined'){
   window.getPTKPTable=getPTKPTable;
