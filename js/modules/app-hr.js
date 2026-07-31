@@ -792,24 +792,47 @@ function initLemburPage(){
   if(ls){var h=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(karyawanListPeriode(PA()),''):karyawanListPeriode(PA()).map(function(k){return'<option value="'+escapeAttr(k.nik)+'">'+escapeHtml(k.nik)+' — '+escapeHtml(k.nama)+'</option>';}).join('');ls.innerHTML=h;}
   renderLemburList();
 }
-/** Tombol "Hitung Ulang" — render ulang tabel; opsional sinkron gapok/tunjangan dari Master. */
+/** Tombol "Hitung Ulang" — hanya hitung ulang (pro-rata, absensi, lembur, tunj. var).
+ *  Tidak menimpa gapok/tunjangan snapshot periode. Untuk ambil ulang dari Master:
+ *  Master → Periode → Rebuild Snapshot (aksi terpisah, dengan konfirmasi). */
 function hitungUlangPenggajian(){
   var p=PA();
   if(!p||!p.nama){toast('Tidak ada periode aktif');return;}
   var locked=isPeriodeLocked(p.nama);
-  var synced=false;
-  if(!locked){
-    synced=confirm(
-      'Hitung ulang periode "'+p.nama+'".\n\n'+
-      'OK = perbarui gapok/tunjangan dari Master lalu hitung ulang\n'+
-      'Batal = hitung ulang saja (komponen periode tidak diubah)'
-    );
-    if(synced)refreshKarSnapshotFromMaster(p.nama,karyawanListPeriode(p));
-  }
+  /* Pastikan snapshot periode ada (karyawan baru), tanpa menimpa yang sudah diedit. */
+  try{
+    if(!locked&&typeof ensureKarSnapshotPeriode==='function'){
+      ensureKarSnapshotPeriode(p.nama,karyawanListPeriode(p));
+    }
+  }catch(eEns){sigajiCatchWarn("js/modules/app-hr.js",eEns);}
   renderPenggajian();
-  if(locked)toast('Perhitungan diperbarui (pro-rata, absensi, lembur, tunj. variabel). Periode terkunci: komponen gaji dari snapshot.');
-  else if(synced)toast('Snapshot diperbarui dari Master — perhitungan selesai.');
-  else toast('Perhitungan diperbarui (pro-rata, absensi, lembur, tunj. variabel).');
+  if(locked){
+    toast('Perhitungan diperbarui (pro-rata, absensi, lembur, tunj. variabel). Periode terkunci: komponen gaji dari snapshot.');
+  }else{
+    toast('Perhitungan diperbarui. Gapok/tunjangan periode aktif tidak diubah. (Ambil dari Master hanya lewat Rebuild Snapshot di Master → Periode.)');
+  }
+}
+/** Opsional: timpa snapshot periode aktif dari Master (aksi berbahaya — konfirmasi eksplisit). */
+function sinkronSnapshotPeriodeDariMaster(){
+  var p=PA();
+  if(!p||!p.nama){toast('Tidak ada periode aktif');return;}
+  if(isPeriodeLocked(p.nama)){toast('Periode terkunci — buka kunci dulu');return;}
+  var msg=
+    'PERINGATAN: Gapok, tunjangan, potongan, BPJS, dan PPh Return di periode "'+p.nama+
+    '" akan diganti dengan data Master Karyawan.\n\n'+
+    'Perubahan gaji yang sudah Anda isi di periode ini akan hilang.\n\nLanjutkan?';
+  var go=function(){
+    refreshKarSnapshotFromMaster(p.nama,karyawanListPeriode(p));
+    renderPenggajian();
+    toast('Snapshot '+p.nama+' diganti dari Master — perhitungan diperbarui.');
+  };
+  if(typeof sigajiConfirm==='function'){
+    sigajiConfirm({title:'Ambil ulang dari Master?',message:msg,danger:true,okText:'Ya, timpa dari Master'}).then(function(ok){if(ok)go();});
+  }else if(confirm(msg))go();
+}
+if(typeof window!=='undefined'){
+  window.hitungUlangPenggajian=hitungUlangPenggajian;
+  window.sinkronSnapshotPeriodeDariMaster=sinkronSnapshotPeriodeDariMaster;
 }
 function renderPenggajian(skipTunjVar){
   if(typeof sigajiWithSkeleton==='function'){
