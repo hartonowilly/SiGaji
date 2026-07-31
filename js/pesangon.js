@@ -189,6 +189,9 @@
     var k=karyawan.find(function(x){return x.nik===selNik;});
     if(!k)return;
     if(k.tgl_berhenti&&!k.phk||!k.phk.alasan){toast('Pilih alasan PHK sebelum menyimpan.');return;}
+    try{if(typeof syncProrataDariResign==='function')syncProrataDariResign(k);}catch(e){if(typeof sigajiCatchWarn==='function')sigajiCatchWarn('js/pesangon.js',e);}
     saveAll();toast('Data pesangon disimpan');renderPesangon();renderKar();
+    if(typeof renderPenggajian==='function')renderPenggajian();
+    if(typeof renderAbsensi==='function')renderAbsensi();
   };
 })();

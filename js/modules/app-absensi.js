@@ -103,9 +103,9 @@ function renderAbsensiBody(){
     document.getElementById('ab-rekap-wrap').innerHTML='';
     return;
   }
-  const ST_LBL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A',libur:'L',libnas:'LN'};
-  const ST_BG={hadir:'var(--ab-hadir-bg)',cuti:'var(--ab-cuti-bg)',izin:'var(--ab-izin-bg)',sakit:'var(--ab-sakit-bg)',setengah_sakit:'var(--ab-half-sakit-bg)',setengah_ijin:'var(--ab-half-ijin-bg)',alpha:'var(--ab-alpha-bg)',libur:'var(--ab-libur-bg)',libnas:'var(--ab-libnas-bg)'};
-  const ST_TX={hadir:'var(--ab-hadir-fg)',cuti:'var(--ab-cuti-fg)',izin:'var(--ab-izin-fg)',sakit:'var(--ab-sakit-fg)',setengah_sakit:'var(--ab-half-sakit-fg)',setengah_ijin:'var(--ab-half-ijin-fg)',alpha:'var(--ab-alpha-fg)',libur:'var(--ab-libur-fg)',libnas:'var(--ab-libnas-fg)'};
+  const ST_LBL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A',libur:'L',libnas:'LN',resign:'R'};
+  const ST_BG={hadir:'var(--ab-hadir-bg)',cuti:'var(--ab-cuti-bg)',izin:'var(--ab-izin-bg)',sakit:'var(--ab-sakit-bg)',setengah_sakit:'var(--ab-half-sakit-bg)',setengah_ijin:'var(--ab-half-ijin-bg)',alpha:'var(--ab-alpha-bg)',libur:'var(--ab-libur-bg)',libnas:'var(--ab-libnas-bg)',resign:'var(--ab-resign-bg)'};
+  const ST_TX={hadir:'var(--ab-hadir-fg)',cuti:'var(--ab-cuti-fg)',izin:'var(--ab-izin-fg)',sakit:'var(--ab-sakit-fg)',setengah_sakit:'var(--ab-half-sakit-fg)',setengah_ijin:'var(--ab-half-ijin-fg)',alpha:'var(--ab-alpha-fg)',libur:'var(--ab-libur-fg)',libnas:'var(--ab-libnas-fg)',resign:'var(--ab-resign-fg)'};
   const bulanSingkat=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const daysAll=absensiDaysFromPeriode(pAbs);
   if(!daysAll.length){
@@ -159,36 +159,40 @@ function renderAbsensiBody(){
   var mobileCards='';
   listKar.forEach(function(k,ki){
     var rowCls=ki%2===0?'ab-row-even':'ab-row-odd';
-    html+='<tr class="'+rowCls+'"><td class="text-center fw-800 text-subtle ab-sticky-no">'+(ki+1)+'</td><td class="fw-700 ab-sticky-name"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1 min-w-0"><div class="font-12 fw-700 ab-kar-name">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle ab-kar-nik">'+escapeHtml(k.nik)+'</div></div></div></td><td class="font-11 text-muted ab-sticky-jab">'+escapeHtml(k.jabatan||'')+'</td>';
+    var tStop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
+    html+='<tr class="'+rowCls+'"><td class="text-center fw-800 text-subtle ab-sticky-no">'+(ki+1)+'</td><td class="fw-700 ab-sticky-name"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1 min-w-0"><div class="font-12 fw-700 ab-kar-name">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle ab-kar-nik">'+escapeHtml(k.nik)+(tStop?' · resign '+fmtDate(tStop):'')+'</div></div></div></td><td class="font-11 text-muted ab-sticky-jab">'+escapeHtml(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
       var isLN=isHL(x.date);
       var isLK=isHariLiburKerja(x.dow);
-      var st=absensi[k.nik][x.date]||(isLN?'libnas':isLK?'libur':'hadir');
-      var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN;
+      var isRes=!!(tStop&&x.date>=tStop);
+      var st=isRes?'resign':(absensi[k.nik][x.date]||(isLN?'libnas':isLK?'libur':'hadir'));
+      var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN&&!isRes;
       if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
       var canCell=cc&&canEditDataPadaTanggalIso(x.date);
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
-      var cellCls='ab-cell ab-st-'+(st||'libur')+(canCell?' is-clickable':'')+(cc&&!canCell?' is-readonly':'');
-      html+='<td class="'+cellCls+'" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):cc?'title="Periode terkunci — hubungi Admin"':'')+mobTip+'>'+lbl+'</td>';
+      var cellCls='ab-cell ab-st-'+(st||'libur')+(canCell?' is-clickable':'')+(cc&&!canCell?' is-readonly':'')+(isRes?' is-resign':'');
+      html+='<td class="'+cellCls+'" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):(isRes||cc)?'title="'+(isRes?('Sudah resign sejak '+fmtDate(tStop)):'Periode terkunci — hubungi Admin')+'"':'')+mobTip+'>'+lbl+'</td>';
     });
     html+='<td class="text-center fw-800 ct-success num ab-total-h">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+(cA||'')+'</td></tr>';
-    mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+'</div>'
+    mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+(tStop?' · resign '+fmtDate(tStop):'')+'</div>'
       +'<div class="ab-mobile-days">';
     days.forEach(function(x){
       var isLN2=isHL(x.date);
       var isLK2=isHariLiburKerja(x.dow);
-      var st2=absensi[k.nik][x.date]||(isLN2?'libnas':isLK2?'libur':'hadir');
+      var isRes2=!!(tStop&&x.date>=tStop);
+      var st2=isRes2?'resign':(absensi[k.nik][x.date]||(isLN2?'libnas':isLK2?'libur':'hadir'));
       var lbl2=ST_LBL[st2]||'-';
-      var cc2=!isLK2&&!isLN2;
+      var cc2=!isLK2&&!isLN2&&!isRes2;
       var canCell2=cc2&&canEditDataPadaTanggalIso(x.date);
       var dd2=parseInt(x.date.split('-')[2],10);
       var dowN2=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
-      var cellCls2='ab-cell ab-mobile-day ab-st-'+(st2||'libur')+(canCell2?' is-clickable':'')+(cc2&&!canCell2?' is-readonly':'');
+      var cellCls2='ab-cell ab-mobile-day ab-st-'+(st2||'libur')+(canCell2?' is-clickable':'')+(cc2&&!canCell2?' is-readonly':'')+(isRes2?' is-resign':'');
       mobileCards+='<div class="ab-mobile-day-item"><div class="ab-mobile-day-lbl">'+dowN2+' <span class="fw-700">'+dd2+'</span></div>'
         +(canCell2
           ?'<button type="button" class="'+cellCls2+'"'+sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date})+'>'+lbl2+'</button>'
-          :'<span class="'+cellCls2+' ab-mobile-day-static">'+lbl2+'</span>')
+          :'<span class="'+cellCls2+' ab-mobile-day-static"'+
+            (isRes2?' title="Sudah resign sejak '+fmtDate(tStop)+'"':'')+'>'+lbl2+'</span>')
         +'</div>';
     });
     mobileCards+='</div><div class="ab-mobile-stats">'
@@ -217,10 +221,18 @@ function renderAbsensiBody(){
 }
 function toggleAb(nik,date,el){
   if(!canEditDataPadaTanggalIso(date)){toast('Tanggal ini di periode yang snapshot-nya terkunci. Hanya Admin yang dapat mengubah absensi.');return;}
+  var kar=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  var tStop=typeof toIsoDate==='function'?toIsoDate(kar&&kar.tgl_berhenti):String((kar&&kar.tgl_berhenti)||'').trim();
+  if(tStop&&date>=tStop){
+    toast('Sudah resign sejak '+fmtDate(tStop)+' — absensi tidak diubah. Ubah tgl. berhenti di profil jika perlu.');
+    return;
+  }
   if(!absensi[nik])absensi[nik]={};
   const S=['hadir','cuti','izin','sakit','setengah_sakit','setengah_ijin','alpha'];
   const SL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A'};
-  const cur=absensi[nik][date]||'hadir';const next=S[(S.indexOf(cur)+1)%S.length];
+  const cur=absensi[nik][date]||'hadir';
+  if(cur==='resign'){toast('Status resign — ubah lewat tgl. berhenti di profil karyawan');return;}
+  const next=S[(S.indexOf(cur)+1)%S.length];
   absensi[nik][date]=next;el.textContent=SL[next];
   el.className='ab-cell ab-st-'+next+(el.classList.contains('is-readonly')?' is-readonly':' is-clickable');
   saveAll();

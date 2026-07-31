@@ -468,6 +468,7 @@
 .ab-cell.ab-st-alpha { background: var(--ab-alpha-bg); color: var(--ab-alpha-fg); }
 .ab-cell.ab-st-libur { background: var(--ab-libur-bg); color: var(--ab-libur-fg); }
 .ab-cell.ab-st-libnas { background: var(--ab-libnas-bg); color: var(--ab-libnas-fg); }
+.ab-cell.ab-st-resign { background: var(--ab-resign-bg); color: var(--ab-resign-fg); opacity: 0.85; }
 .ab-cell.is-clickable { cursor: pointer; }
 .ab-cell.is-readonly { opacity: 0.88; cursor: not-allowed; }
 .ab-kar-name { line-height: 1.25; word-break: break-word; white-space: normal; }

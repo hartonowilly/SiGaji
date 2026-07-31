@@ -121,6 +121,98 @@ function toIsoDate(v){
   if(isNaN(d.getTime()))return'';
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+/** Tambah/kurang hari pada ISO YYYY-MM-DD (lokal siang, hindari geser zona). */
+function addDaysIso(iso,delta){
+  var t=toIsoDate(iso);
+  if(!t)return'';
+  var d=new Date(t+'T12:00:00');
+  if(isNaN(d.getTime()))return'';
+  d.setDate(d.getDate()+(delta||0));
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+/** Tanggal >= tgl_berhenti → sudah resign (tgl berhenti = hari pertama tidak masuk gaji). */
+function isTanggalSetelahBerhenti(k,isoDate){
+  var stop=toIsoDate(k&&k.tgl_berhenti);
+  var d=toIsoDate(isoDate);
+  return !!(stop&&d&&d>=stop);
+}
+/**
+ * Tandai absensi dari tgl berhenti s.d. akhir periode terkait sebagai 'resign'.
+ * Hari sebelum tgl berhenti tidak diubah.
+ */
+function applyAbsensiResign(nik,tglBerhenti){
+  if(!nik)return;
+  if(!absensi[nik])absensi[nik]={};
+  Object.keys(absensi[nik]).forEach(function(d){
+    if(absensi[nik][d]==='resign')delete absensi[nik][d];
+  });
+  var stop=toIsoDate(tglBerhenti);
+  if(!stop)return;
+  var endMax=stop;
+  (periodes||[]).forEach(function(p){
+    if(!p||!p.end)return;
+    var e=toIsoDate(p.end);
+    if(e&&e>=stop&&e>endMax)endMax=e;
+  });
+  var cur=new Date(stop+'T12:00:00');
+  var end=new Date(endMax+'T12:00:00');
+  if(isNaN(cur.getTime())||isNaN(end.getTime()))return;
+  while(cur<=end){
+    var iso=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+    absensi[nik][iso]='resign';
+    cur.setDate(cur.getDate()+1);
+  }
+}
+/**
+ * Aktifkan pro-rata otomatis di periode yang memuat tgl berhenti.
+ * HH = hari kerja dari awal periode s.d. sehari sebelum tgl berhenti.
+ */
+function syncProrataDariResign(k){
+  if(!k||!k.nik)return;
+  var stop=toIsoDate(k.tgl_berhenti);
+  if(!stop){
+    if(prorata[k.nik]){
+      Object.keys(prorata[k.nik]).forEach(function(pn){
+        var pr=prorata[k.nik][pn];
+        if(pr&&pr.autoResign){
+          pr.enabled=false;
+          delete pr.autoResign;
+          if(!pr.manual){pr.hh=0;}
+        }
+      });
+    }
+    applyAbsensiResign(k.nik,'');
+    return;
+  }
+  applyAbsensiResign(k.nik,stop);
+  var lastWork=addDaysIso(stop,-1);
+  (periodes||[]).forEach(function(p){
+    if(!p||!p.nama||!p.start||!p.end)return;
+    var ps=toIsoDate(p.start),pe=toIsoDate(p.end);
+    if(!ps||!pe)return;
+    if(stop<ps||stop>pe){
+      var prOut=prorata[k.nik]&&prorata[k.nik][p.nama];
+      if(prOut&&prOut.autoResign&&!prOut.manual){
+        prOut.enabled=false;
+        delete prOut.autoResign;
+      }
+      return;
+    }
+    var pr=getPR(k.nik,p.nama);
+    if(pr.resignPrOff)return;
+    var hk=hariKerjaRange(ps,pe);
+    var hh=0;
+    if(lastWork&&lastWork>=ps){
+      var hhEnd=lastWork<=pe?lastWork:pe;
+      hh=hariKerjaRange(ps,hhEnd);
+    }
+    pr.enabled=true;
+    pr.hk=hk;
+    pr.hh=hh;
+    pr.autoResign=true;
+    pr.manual=false;
+  });
+}
 // Cuti bersama mengurangi kuota (NEW v9)
 function countCutiBersama(yr){
   if(!masterCuti.cbPotong)return 0;
@@ -248,8 +340,34 @@ const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
 function hariHadirBulan(nik,yr,bln){const pfx=`${yr}-${String(bln).padStart(2,'0')}-`;return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='hadir').length;}
 function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=PA();const ed=new Date(p.end||'2026-03-24');const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirBulan(nik,ed.getFullYear(),ed.getMonth()+1);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
-function setPREnabled(nik,pN,v){getPR(nik,pN).enabled=v;saveAll();renderPenggajian();}
-function setPRField(nik,pN,f,v){const pr=getPR(nik,pN);pr[f]=v;pr.manual=true;saveAll();renderPenggajian();}
+function setPREnabled(nik,pN,v){
+  var pr=getPR(nik,pN);
+  pr.enabled=!!v;
+  if(!v)pr.resignPrOff=true;
+  else delete pr.resignPrOff;
+  saveAll();renderPenggajian();
+}
+function setPRField(nik,pN,f,v){const pr=getPR(nik,pN);pr[f]=v;pr.manual=true;delete pr.autoResign;saveAll();renderPenggajian();}
+/** Pertahankan HH/HK pro-rata resign bila tgl berhenti di dalam periode (kecuali user mematikan/manual). */
+function ensureProrataResignUntukPeriode(k,p){
+  if(!k||!p||!p.nama)return getPR(k&&k.nik,p&&p.nama);
+  var stop=toIsoDate(k.tgl_berhenti);
+  var ps=toIsoDate(p.start),pe=toIsoDate(p.end);
+  var pr=getPR(k.nik,p.nama);
+  if(!stop||!ps||!pe||stop<ps||stop>pe)return pr;
+  if(pr.resignPrOff)return pr;
+  var hk=hariKerjaRange(ps,pe);
+  var lastWork=addDaysIso(stop,-1);
+  var hh=0;
+  if(lastWork&&lastWork>=ps)hh=hariKerjaRange(ps,lastWork<=pe?lastWork:pe);
+  if(!pr.manual){
+    pr.hk=hk;
+    pr.hh=hh;
+    pr.autoResign=true;
+  }
+  pr.enabled=true;
+  return pr;
+}
 // ── BPJS ─────────────────────────────────────────
 function bpjsKompAktif(k,key){
   const ak=k.bpjs_aktif||{};
@@ -930,10 +1048,14 @@ function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   };
   const pStart=toIso((periode&&periode.start)||'2026-01-01'),pEnd=toIso((periode&&periode.end)||'2026-12-31');
+  var kar=(typeof karyawan!=='undefined'&&karyawan)?karyawan.find(function(x){return x&&x.nik===nik;}):null;
+  var tStop=toIso(kar&&kar.tgl_berhenti);
   let nIzin=0,nSakit=0,n05S=0,n05I=0,nAlpha=0,nCuti=0;
   for(const[tglRaw,st]of Object.entries(abNik)){
     const tgl=toIso(tglRaw);
     if(!tgl||tgl<pStart||tgl>pEnd)continue;
+    if(tStop&&tgl>=tStop)continue; // setelah resign tidak dihitung potongan kehadiran
+    if(st==='resign')continue;
     if(st==='izin')nIzin++;else if(st==='sakit')nSakit++;else if(st==='setengah_sakit')n05S++;else if(st==='setengah_ijin')n05I++;else if(st==='alpha')nAlpha++;else if(st==='cuti')nCuti++;
   }
   const end=new Date((periode&&periode.end?String(periode.end):'2026-12-31')+'T12:00:00');

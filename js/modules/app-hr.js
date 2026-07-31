@@ -424,8 +424,9 @@ function simpanKarPanel(){
     if(cabInp)k.cabangId=cabInp.value||'utama';
   }
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
+  try{if(typeof syncProrataDariResign==='function')syncProrataDariResign(k);}catch(eSync){sigajiCatchWarn("js/modules/app-hr.js",eSync);}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
-  renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();populateSelects();toast('Profil '+k.nama+' disimpan');
+  renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();if(typeof renderAbsensi==='function')renderAbsensi();populateSelects();toast('Profil '+k.nama+' disimpan');
 }
 function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;sigajiConfirm({title:'Hapus karyawan',message:'Apakah Anda yakin ingin menghapus karyawan "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi, lembur, dan data terkait ikut terhapus. Tindakan ini tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');});}
 function renderTunjPanel(k){
@@ -805,11 +806,20 @@ function hitungUlangPenggajian(){
       ensureKarSnapshotPeriode(p.nama,karyawanListPeriode(p));
     }
   }catch(eEns){sigajiCatchWarn("js/modules/app-hr.js",eEns);}
+  /* Sinkron ulang pro-rata + absensi resign dari tgl. berhenti (jika ada). */
+  try{
+    if(!locked&&typeof syncProrataDariResign==='function'){
+      karyawanListPeriode(p).forEach(function(k){
+        if(k&&String(k.tgl_berhenti||'').trim())syncProrataDariResign(k);
+      });
+    }
+  }catch(eRes){sigajiCatchWarn("js/modules/app-hr.js",eRes);}
   renderPenggajian();
+  if(typeof renderAbsensi==='function')renderAbsensi();
   if(locked){
     toast('Perhitungan diperbarui (pro-rata, absensi, lembur, tunj. variabel). Periode terkunci: komponen gaji dari snapshot.');
   }else{
-    toast('Perhitungan diperbarui. Gapok/tunjangan periode aktif tidak diubah. (Ambil dari Master hanya lewat Rebuild Snapshot di Master → Periode.)');
+    toast('Perhitungan diperbarui. Gapok/tunjangan periode aktif tidak diubah. Resign: pro-rata & absensi R otomatis dari tgl. berhenti.');
   }
 }
 /** Opsional: timpa snapshot periode aktif dari Master (aksi berbahaya — konfirmasi eksplisit). */
@@ -921,8 +931,17 @@ function renderPenggajianBody(skipTunjVar){
     const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
     const st=ap?ap.status:'draft';
     const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:''}[st]||'';
-    const pr=getPR(k.nik,p.nama);
-    if(!pr.manual){pr.hk=hk;const ed=new Date(p.end);pr.hh=hariHadirBulan(k.nik,ed.getFullYear(),ed.getMonth()+1);}
+    const pr=ensureProrataResignUntukPeriode(k,p);
+    if(!pr.manual){
+      var stop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
+      var ps=typeof toIsoDate==='function'?toIsoDate(p.start):p.start;
+      var pe=typeof toIsoDate==='function'?toIsoDate(p.end):p.end;
+      if(!(stop&&ps&&pe&&stop>=ps&&stop<=pe)){
+        pr.hk=hk;
+        const ed=new Date(p.end);
+        pr.hh=hariHadirBulan(k.nik,ed.getFullYear(),ed.getMonth()+1);
+      }
+    }
     if(pr.enabled)prAktif++;
     const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'"'+sigajiDataAction('pr-toggle',{nik:k.nik,periode:p.nama,enabled:!pr.enabled?'1':'0'})+'>'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
     const prInputs=pr.enabled?'<div class="pr-input-row"><span class="u-muted-10">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span class="u-muted-10">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
