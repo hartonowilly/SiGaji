@@ -607,6 +607,24 @@ async function telegramCreateLinkCode(nik){
   return res.data;
 }
 
+/** Status tautan Telegram untuk NIK. */
+async function telegramGetLinkStatus(nik){
+  const t=await getCloudAccessToken();
+  if(!t)return null;
+  var res=typeof sigajiFetchJson==='function'?await sigajiFetchJson(sigajiFunctionUrl('telegram-status'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik})}):null;
+  if(!res||!res.ok)return null;
+  return res.data;
+}
+
+/** Putus tautan Telegram untuk NIK (HRD/Admin). */
+async function telegramUnlinkNik(nik){
+  const t=await getCloudAccessToken();
+  if(!t){toast('Belum login awan / sesi tidak ada');return false;}
+  var res=typeof sigajiFetchJson==='function'?await sigajiFetchJson(sigajiFunctionUrl('telegram-unlink'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik})}):null;
+  if(!res||!res.ok){if(typeof sigajiApiToast==='function')sigajiApiToast(res);else toast((res&&res.error)||'Gagal putus tautan Telegram');return false;}
+  return true;
+}
+
 /** Kirim slip PDF (base64) ke Telegram untuk NIK (HRD/Admin). */
 async function telegramSendSlipPdf(nik,filename,caption,pdfBase64){
   const t=await getCloudAccessToken();

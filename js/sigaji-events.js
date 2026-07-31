@@ -242,6 +242,12 @@
         return;
       }
 
+      var karTab = t.closest('#pg-karyawan .tab[data-kartab]');
+      if (karTab && typeof switchKarListTab === 'function') {
+        switchKarListTab(karTab, karTab.getAttribute('data-kartab'));
+        return;
+      }
+
       var ab = t.closest('#pg-absensi .tab[data-abpanel]');
       if (ab && typeof switchAbTab === 'function') {
         switchAbTab(ab, ab.getAttribute('data-abpanel'));

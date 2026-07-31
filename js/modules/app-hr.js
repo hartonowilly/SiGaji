@@ -119,6 +119,42 @@ function renderDashBody(){
   try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){sigajiCatchWarn("js/modules/app-hr.js",eTl);}
 }
 // ── MASTER KARYAWAN ─────────────────────────────
+var __karListMode='aktif'; /* aktif | resign */
+function isKarResign(k){return !!String((k&&k.tgl_berhenti)||'').trim();}
+function listKarMasterBase(){
+  var list=typeof karyawanSortedAll==='function'?karyawanSortedAll():sortKaryawanByNik(karyawan||[]);
+  if(typeof sigajiFilterKaryawanByCabang==='function')list=sigajiFilterKaryawanByCabang(list);
+  list=list.filter(karMatchesTipeFilter);
+  if(__karListMode==='resign'){
+    return list.filter(isKarResign).sort(function(a,b){
+      return String(b.tgl_berhenti||'').localeCompare(String(a.tgl_berhenti||''));
+    });
+  }
+  return list.filter(function(k){return !isKarResign(k);});
+}
+function updateKarResignTabBadge(){
+  var n=0;
+  (karyawan||[]).forEach(function(k){if(isKarResign(k))n++;});
+  var badge=document.getElementById('kar-resign-badge');
+  if(badge){
+    badge.textContent=String(n);
+    badge.style.display=n>0?'inline-block':'none';
+  }
+  var acts=document.getElementById('kar-actions-aktif');
+  if(acts)acts.style.display=__karListMode==='resign'?'none':'';
+  var search=document.getElementById('kar-search');
+  if(search)search.placeholder=__karListMode==='resign'?'Cari resign (nama, NIK, tgl…)…':'Cari nama, NIK, dept...';
+}
+function switchKarListTab(el,mode){
+  __karListMode=mode==='resign'?'resign':'aktif';
+  document.querySelectorAll('#kar-list-tabs .tab').forEach(function(t){
+    t.classList.toggle('active',t.getAttribute('data-kartab')===__karListMode);
+  });
+  var q=(document.getElementById('kar-search')&&document.getElementById('kar-search').value)||'';
+  updateKarResignTabBadge();
+  if(q)filterKar(q);else renderKar();
+}
+if(typeof window!=='undefined')window.switchKarListTab=switchKarListTab;
 function karRowHtml(k,no){
   const yrKar=new Date().getFullYear();
   const t=cutiTerpakai(k.nik,yrKar);
@@ -133,7 +169,10 @@ function karRowHtml(k,no){
   const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span>`;
   const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out"${sigajiDataAction('telegram',{nik:k.nik})}>Telegram</button>`:'';
   var cabCol=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
-  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="font-10 text-muted font-mono">${escapeHtml(k.nik)}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
+  var stop=String(k.tgl_berhenti||'').trim();
+  var resignBadge=stop?' <span class="bdg b-err" title="Tgl. berhenti '+escapeAttr(stop)+'">Resign</span>':'';
+  var subLine=escapeHtml(k.nik)+(stop?' · berhenti '+fmtDate(stop):'');
+  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;${resignBadge}</div><div class="font-10 text-muted font-mono">${subLine}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -143,15 +182,22 @@ function renderKar(){
 }
 function renderKarBody(){
   try{if(typeof sigajiSyncKarTableHead==='function')sigajiSyncKarTableHead();}catch(eTh){sigajiCatchWarn("js/modules/app-hr.js",eTh);}
-  const p=PA();
-  const list=karyawanListPeriode(p).filter(karMatchesTipeFilter);
-  const el=document.getElementById('kar-count');if(el)el.textContent=list.length+' karyawan • Data profil SDM';
+  updateKarResignTabBadge();
+  var list=listKarMasterBase();
+  const el=document.getElementById('kar-count');
+  if(el){
+    el.textContent=__karListMode==='resign'
+      ?(list.length+' resign')
+      :(list.length+' karyawan aktif • Data profil SDM');
+  }
   try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){sigajiCatchWarn("js/modules/app-hr.js",eLq);}
   const tb=document.getElementById('tb-kar');if(!tb)return;
   if(!list.length&&typeof sigajiEmptyState==='function'){
     var karColspan=9+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
-    var html='<tr><td colspan="'+String(karColspan)+'">'+sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnAction:'openNewKar',btnActionArg:'tetap'})+'</td></tr>';
-    tb.innerHTML=html;
+    var empty=__karListMode==='resign'
+      ?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan resign',desc:'Karyawan dengan tanggal berhenti akan muncul di tab ini. Putus tautan Telegram dari sini.'})
+      :sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan aktif',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnAction:'openNewKar',btnActionArg:'tetap'});
+    tb.innerHTML='<tr><td colspan="'+String(karColspan)+'">'+empty+'</td></tr>';
     return;
   }
   var rows=list.map((k,i)=>karRowHtml(k,i+1));
@@ -159,11 +205,13 @@ function renderKarBody(){
   else tb.innerHTML=rows.join('');
 }
 function filterKar(q){
-  const p=PA();
-  const r=sortKaryawanByNik(karyawanListPeriode(p).filter(karMatchesTipeFilter).filter(function(k){
-    return (k.nama+k.nik+k.jabatan+k.dept).toLowerCase().includes(q.toLowerCase());
+  var base=listKarMasterBase();
+  var qq=String(q||'').toLowerCase();
+  const r=!qq?base:sortKaryawanByNik(base.filter(function(k){
+    return (k.nama+k.nik+k.jabatan+k.dept+(k.tgl_berhenti||'')).toLowerCase().includes(qq);
   }));
-  document.getElementById('kar-count').textContent=r.length+' ditampilkan';
+  var cnt=document.getElementById('kar-count');
+  if(cnt)cnt.textContent=r.length+' ditampilkan';
   var tb=document.getElementById('tb-kar');
   var rows=r.map((k,i)=>karRowHtml(k,i+1));
   if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
@@ -241,11 +289,16 @@ function openPanel(nik){
   populatePhkAlasanSelect();
   var spa=document.getElementById('sp-phk-alasan');if(spa)spa.value=(k.phk&&k.phk.alasan)?k.phk.alasan:'';
   toggleSpPhkWrap();
-  sv('sp-ptkp-f',k.ptkp);sv('sp-atasan-f',isNew?'':k.atasan);sv('sp-lokasi-f',isNew?'':k.lokasi);
+  sv('sp-ptkp-f',k.ptkp||'TK0');sv('sp-atasan-f',isNew?'':k.atasan);sv('sp-lokasi-f',isNew?'':k.lokasi);
   sv('sp-bank-f',k.bank||'BCA');sv('sp-norek-f',isNew?'':k.norek||'');
   sv('sp-reknam-f',k.reknam||k.nama||'');
   const re=document.getElementById('sp-reknam-f');if(re)re.dataset.manualEdit=(k.reknam&&k.reknam!==k.nama)?'1':'';
+  var ptkpSel=document.getElementById('sp-ptkp-f');if(ptkpSel)delete ptkpSel.dataset.femaleOverride;
+  if(typeof isJkPerempuan==='function'&&isJkPerempuan(k.jk)){
+    if(ptkpSel)ptkpSel.value='TK0';
+  }
   updatePTKPVal();
+  if(typeof applyPtkpFieldState==='function')applyPtkpFieldState();
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
   document.body.classList.add('sigaji-kar-panel-open');document.body.classList.remove('sigaji-payroll-panel-open');
@@ -270,8 +323,38 @@ function openTelegramModalForNik(nik){
     document.getElementById('tg-nik').value=nik;
     document.getElementById('tg-nama').value=k.nama||'';
     document.getElementById('tg-code').value='';
+    var stEl=document.getElementById('tg-link-status');
+    if(stEl)stEl.textContent='Memeriksa status tautan…';
+    var btnUn=document.getElementById('tg-btn-unlink');
+    if(btnUn)btnUn.style.display='none';
     openModal('m-tg');
+    refreshTelegramModalStatus(nik);
   }catch(e){console.error(e);toast('Gagal membuka Telegram');}
+}
+async function refreshTelegramModalStatus(nik){
+  var stEl=document.getElementById('tg-link-status');
+  var btnUn=document.getElementById('tg-btn-unlink');
+  try{
+    var st=typeof telegramGetLinkStatus==='function'?await telegramGetLinkStatus(nik):null;
+    if(!st){
+      if(stEl)stEl.innerHTML='<span class="text-muted">Status tidak bisa dicek (cloud / API).</span>';
+      if(btnUn)btnUn.style.display='none';
+      return;
+    }
+    if(st.linked){
+      var u=(st.link&&st.link.tg_username)?' @'+st.link.tg_username:'';
+      var nm=[st.link&&st.link.tg_first_name,st.link&&st.link.tg_last_name].filter(Boolean).join(' ');
+      if(stEl)stEl.innerHTML='<span class="bdg b-ok">Tertaut</span> '+escapeHtml(nm||'')+escapeHtml(u)+
+        (st.link&&st.link.linked_at?' <span class="u-muted-10">· sejak '+fmtDate(String(st.link.linked_at).substring(0,10))+'</span>':'');
+      if(btnUn)btnUn.style.display='inline-block';
+    }else{
+      if(stEl)stEl.innerHTML='<span class="bdg b-gray">Belum tertaut</span> — buat kode lalu minta karyawan /start.';
+      if(btnUn)btnUn.style.display='none';
+    }
+  }catch(e){
+    if(stEl)stEl.textContent='Gagal cek status.';
+    if(btnUn)btnUn.style.display='none';
+  }
 }
 /** Dari panel samping profil karyawan: sama dengan tombol Telegram di tabel Master. */
 function openTelegramFromKarPanel(){
@@ -287,6 +370,35 @@ async function tgBuatKode(){
   if(!r)return;
   document.getElementById('tg-code').value=r.code;
   toast('Kode dibuat (berlaku 30 menit)');
+}
+async function tgPutusTautan(){
+  const nik=(document.getElementById('tg-nik')&&document.getElementById('tg-nik').value)||'';
+  if(!nik){toast('NIK kosong');return;}
+  var nama=(document.getElementById('tg-nama')&&document.getElementById('tg-nama').value)||nik;
+  var ok=true;
+  if(typeof sigajiConfirm==='function'){
+    ok=await sigajiConfirm({
+      title:'Putus tautan Telegram?',
+      message:'Putus tautan Telegram untuk '+nama+' ('+nik+')?\n\nSlip tidak bisa dikirim ke bot sampai di-link ulang.',
+      danger:true,
+      okText:'Ya, putus tautan'
+    });
+  }else{
+    ok=confirm('Putus tautan Telegram '+nama+'?');
+  }
+  if(!ok)return;
+  var done=await telegramUnlinkNik(nik);
+  if(!done)return;
+  document.getElementById('tg-code').value='';
+  toast('Tautan Telegram diputus');
+  refreshTelegramModalStatus(nik);
+}
+if(typeof window!=='undefined'){
+  window.openTelegramModalForNik=openTelegramModalForNik;
+  window.openTelegramFromKarPanel=openTelegramFromKarPanel;
+  window.tgBuatKode=tgBuatKode;
+  window.tgPutusTautan=tgPutusTautan;
+  window.refreshTelegramModalStatus=refreshTelegramModalStatus;
 }
 function closePanel(){
   sigajiCloseNavDrawer();
@@ -394,7 +506,7 @@ function simpanPayrollPanel(){
   saveAll();
   renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();updateGajiSummary();toast('Komponen gaji '+k.nama+' disimpan');
 }
-function simpanKarPanel(){
+async function simpanKarPanel(){
   const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;
   const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
   const oldNik=k.nik,newNik=gv('sp-nik-f').trim()||k.nik;
@@ -418,7 +530,34 @@ function simpanKarPanel(){
     delete k.tgl_berhenti;
     delete k.phk;
   }
-  Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:gv('sp-ptkp-f'),atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:gv('sp-jk-f'),agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
+  var jk=gv('sp-jk-f');
+  var newPtkp=gv('sp-ptkp-f')||'TK0';
+  var ptkpSel=document.getElementById('sp-ptkp-f');
+  var femaleOv=!!(ptkpSel&&ptkpSel.dataset.femaleOverride==='1'&&typeof isSigajiAdminUser==='function'&&isSigajiAdminUser());
+  if(typeof isJkPerempuan==='function'&&isJkPerempuan(jk)&&!femaleOv)newPtkp='TK0';
+  var oldPtkp=k.ptkp||'TK0';
+  if(oldPtkp!==newPtkp&&typeof canEditPtkpStatus==='function'){
+    var gate=canEditPtkpStatus(jk,{adminFemaleOverride:femaleOv});
+    if(!gate.ok){
+      toast(gate.msg||'PTKP terkunci');
+      if(ptkpSel){ptkpSel.value=oldPtkp;if(typeof applyPtkpFieldState==='function')applyPtkpFieldState();}
+      return;
+    }
+    if(gate.needConfirm&&typeof sigajiConfirm==='function'){
+      var okOv=await sigajiConfirm({
+        title:'Override PTKP (Admin)?',
+        message:'Status PTKP biasanya hanya diubah di Januari (awal tahun pajak).\n\n'+
+          (k.nama||'')+': '+oldPtkp+' → '+newPtkp+'\n\nLanjutkan override Admin?',
+        danger:true,
+        okText:'Ya, override'
+      });
+      if(!okOv){
+        if(ptkpSel){ptkpSel.value=oldPtkp;if(typeof applyPtkpFieldState==='function')applyPtkpFieldState();}
+        return;
+      }
+    }
+  }
+  Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:newPtkp,atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:jk,agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&typeof sigajiCanAssignCabang==='function'&&sigajiCanAssignCabang()){
     var cabInp=document.getElementById('sp-cabang-f');
     if(cabInp)k.cabangId=cabInp.value||'utama';
@@ -427,6 +566,28 @@ function simpanKarPanel(){
   try{if(typeof syncProrataDariResign==='function')syncProrataDariResign(k);}catch(eSync){sigajiCatchWarn("js/modules/app-hr.js",eSync);}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
   renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();if(typeof renderAbsensi==='function')renderAbsensi();populateSelects();toast('Profil '+k.nama+' disimpan');
+  /* Resign: tawarkan putus tautan Telegram (tidak otomatis — harus konfirmasi). */
+  if(tbh&&typeof telegramGetLinkStatus==='function'&&typeof telegramUnlinkNik==='function'){
+    try{
+      var tgSt=await telegramGetLinkStatus(k.nik);
+      if(tgSt&&tgSt.linked){
+        var putus=false;
+        if(typeof sigajiConfirm==='function'){
+          putus=await sigajiConfirm({
+            title:'Putus tautan Telegram?',
+            message:k.nama+' sudah punya tanggal berhenti, tetapi Telegram masih tertaut.\n\nPutus sekarang agar bot slip tidak bisa dipakai lagi?',
+            danger:true,
+            okText:'Ya, putus tautan',
+            cancelText:'Nanti saja'
+          });
+        }
+        if(putus){
+          var okU=await telegramUnlinkNik(k.nik);
+          if(okU)toast('Tautan Telegram '+k.nama+' diputus');
+        }
+      }
+    }catch(eTg){sigajiCatchWarn("js/modules/app-hr.js",eTg);}
+  }
 }
 function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;sigajiConfirm({title:'Hapus karyawan',message:'Apakah Anda yakin ingin menghapus karyawan "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi, lembur, dan data terkait ikut terhapus. Tindakan ini tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');});}
 function renderTunjPanel(k){

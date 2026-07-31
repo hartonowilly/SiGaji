@@ -8,22 +8,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.5.73">
-<link rel="stylesheet" href="/css/styles.css?v=11.5.73">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.73">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.73">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.73">
-<link rel="stylesheet" href="/css/sigaji-table.css?v=11.5.73">
-<link rel="stylesheet" href="/css/sigaji-components.css?v=11.5.73">
-<link rel="stylesheet" href="/css/sigaji-print.css?v=11.5.73">
-<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.5.73">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.5.77">
+<link rel="stylesheet" href="/css/styles.css?v=11.5.77">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.5.77">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.5.77">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.5.77">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.5.77">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.5.77">
+<link rel="stylesheet" href="/css/sigaji-print.css?v=11.5.77">
+<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.5.77">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.5.73"></script>
+<script src="/js/modules/app-api-shim.js?v=11.5.77"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.5.73"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.5.77"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -150,13 +150,17 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-karyawan">
   <div class="ph page-header">
     <div><div class="pt">Master Karyawan</div><div class="pst">Data SDM, PTKP, dan saldo cuti</div></div>
-    <div class="page-actions fl gap1">
+    <div class="page-actions fl gap1" id="kar-actions-aktif">
   <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="openNewKar" data-arg="tetap">+ Pegawai Tetap</button>
   <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="openNewKar" data-arg="tidak_tetap">+ Pegawai Tidak Tetap</button>
   </div></div>
+  <div class="tabs tabs-spaced" id="kar-list-tabs">
+    <div class="tab active" data-kartab="aktif" data-karpanel="aktif">&#128100; Aktif</div>
+    <div class="tab" data-kartab="resign" data-karpanel="resign">&#128100; Resign <span class="nbadge" id="kar-resign-badge" style="display:none;position:static;margin-left:6px">0</span></div>
+  </div>
   <div class="card">
     <div class="flb mb2 kar-toolbar">
-      <input type="text" class="inp-search" placeholder="Cari nama, NIK, dept..." oninput="filterKar(this.value)">
+      <input type="text" class="inp-search" id="kar-search" placeholder="Cari nama, NIK, dept..." oninput="filterKar(this.value)">
       <select id="kar-filter-tipe" class="inp-filter-select" onchange="setKarFilterTipe(this.value)">
         <option value="">Semua tipe</option>
         <option value="tetap">Pegawai tetap (K…)</option>
@@ -618,16 +622,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card">
       <div class="ct">Buat / Edit Periode</div>
       <div class="fg2">
-        <div class="fg"><label>Nama Periode</label><input id="p-nama" placeholder="Maret 2026" oninput="updatePeriodeSimpanButtonState()"></div>
+        <div class="fg"><label>Nama Periode</label><input id="p-nama" placeholder="Agustus 2026" oninput="onPeriodeNamaInput()"></div>
         <div class="fg"><label>Pola</label>
           <select id="p-pola" onchange="updatePolaPeriode()">
             <option value="custom">Custom</option><option value="25-24">Tgl 25–24</option>
             <option value="21-20">Tgl 21–20</option><option value="1-akhir">Tgl 1–Akhir</option>
           </select>
         </div>
-        <div class="fg"><label>Mulai</label><input type="date" id="p-start" value="2026-02-25"></div>
-        <div class="fg"><label>Selesai</label><input type="date" id="p-end" value="2026-03-24"></div>
-        <div class="fg ff"><label>Tgl Bayar Gaji</label><input type="date" id="p-bayar" value="2026-03-25">
+        <div class="fg"><label>Mulai</label><input type="date" id="p-start"></div>
+        <div class="fg"><label>Selesai</label><input type="date" id="p-end"></div>
+        <div class="fg ff"><label>Tgl Bayar Gaji</label><input type="date" id="p-bayar">
           <div class="font-10 text-muted mt-xs leading-normal">Boleh <strong>lebih awal</strong> dari tanggal selesai (mis. transfer bank di hari kerja terakhir; periode kerja &amp; absensi tetap sampai tanggal selesai).</div>
         </div>
         <div class="fg"><label>Status</label><select id="p-status"><option value="aktif">Aktif</option><option value="tutup">Tutup</option></select></div>
@@ -989,7 +993,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           <div class="font-10 text-muted mt-xs" id="sp-nik-hint"></div>
         </div>
         <div class="fg ff"><label>Nama Lengkap</label><input id="sp-nama-f" oninput="onNamaChange()"></div>
-        <div class="fg"><label>Jenis Kelamin</label><select id="sp-jk-f"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
+        <div class="fg"><label>Jenis Kelamin</label><select id="sp-jk-f" onchange="onJkChange()"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
         <div class="fg"><label>Agama</label><select id="sp-agama-f"><option>Islam</option><option>Kristen</option><option>Katolik</option><option>Hindu</option><option>Buddha</option></select></div>
         <div class="fg"><label>No. KTP <span class="text-muted fw-500">(NIK 16 digit)</span></label><input id="sp-ktp-f" inputmode="numeric" maxlength="16" oninput="sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()">
           <div class="font-10 text-muted mt-xs" id="sp-ktp-hint"></div>
@@ -1027,6 +1031,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
             <option value="K0">K/0 — Rp 58.500.000</option><option value="K1">K/1 — Rp 63.000.000</option>
             <option value="K2">K/2 — Rp 67.500.000</option><option value="K3">K/3 — Rp 72.000.000</option>
           </select>
+          <div class="font-10 text-muted mt-xs leading-normal" id="sp-ptkp-hint">PTKP mengikuti awal tahun pajak (Januari). Di luar itu hanya Admin yang boleh override.</div>
+          <button type="button" class="btn btn-xs btn-out mt-xs u-hidden" id="sp-ptkp-override-btn" data-sigaji-action="invoke" data-fn="togglePtkpFemaleOverride">Override Admin</button>
         </div>
         <div class="fg"><label>Nilai PTKP (Tahunan)</label><input class="text-muted fw-700" id="sp-ptkp-val-f" readonly style="background:#f3f4f6"></div>
         <div class="fg"><label>Atasan Langsung</label><input id="sp-atasan-f"></div>
@@ -1285,6 +1291,25 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   </div>
 </div>
 
+<!-- MODAL UPDATE PTKP JANUARI -->
+<div class="mbd" id="m-ptkp-januari">
+  <div class="modal" style="width:min(760px,96vw);border-top:4px solid #1a56a0">
+    <button type="button" class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-ptkp-januari" aria-label="Tutup">&times;</button>
+    <div class="mtit" id="m-ptkp-januari-tit">Update Status PTKP — Januari</div>
+    <div class="info-box info-amber font-11 mb-md leading-normal">Awal tahun pajak: sesuaikan status PTKP karyawan (menikah/tanggungan). Perubahan di tengah tahun biasanya baru berlaku Januari berikutnya. Karyawan perempuan dikunci <strong>TK/0</strong>.</div>
+    <div class="table-wrap" style="max-height:min(52vh,420px);overflow:auto">
+      <table class="font-12 w-full">
+        <thead><tr><th class="text-center">No</th><th>Nama</th><th>JK</th><th>Status PTKP</th></tr></thead>
+        <tbody id="tb-ptkp-januari"></tbody>
+      </table>
+    </div>
+    <div class="mfoot fl gap1 justify-end mt-md">
+      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-ptkp-januari">Nanti saja</button>
+      <button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="simpanPtkpJanuari">&#10003; Simpan PTKP</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RESET -->
 <div class="mbd" id="m-reset">
   <div class="modal modal-sm" style="border-top:4px solid #9b2121">
@@ -1366,10 +1391,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="info-box info-blue font-11 leading-tight">
       1) HRD/Admin buat <strong>kode link</strong> untuk karyawan.<br>
       2) Karyawan chat bot lalu kirim: <code>/start KODE</code>.<br>
-      3) Setelah tertaut, slip bisa dikirim sebagai PDF.
+      3) Setelah tertaut, slip bisa dikirim sebagai PDF.<br>
+      Resign: putus tautan supaya bot tidak bisa dipakai lagi.
     </div>
     <div class="fg"><label>NIK</label><input id="tg-nik" readonly></div>
     <div class="fg"><label>Nama</label><input id="tg-nama" readonly></div>
+    <div class="fg"><label>Status tautan</label>
+      <div id="tg-link-status" class="font-12 leading-normal">—</div>
+    </div>
     <div class="fg"><label>Kode link (30 menit)</label>
       <div class="fl gap1">
         <input id="tg-code" readonly placeholder="Klik 'Buat kode'">
@@ -1377,7 +1406,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       </div>
       <div class="font-10 text-muted mt-xs">Bagikan kode ini ke karyawan (jangan umumkan di grup).</div>
     </div>
-    <div class="mfoot">
+    <div class="mfoot fl gap1" style="justify-content:space-between;flex-wrap:wrap">
+      <button type="button" class="btn btn-sm btn-r" id="tg-btn-unlink" style="display:none" data-sigaji-action="invoke" data-fn="tgPutusTautan">Putus tautan</button>
       <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-tg">Tutup</button>
     </div>
   </div>
@@ -1396,43 +1426,43 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.5.73"></script>
-<script src="/js/sigaji-icons.js?v=11.5.73"></script>
-<script src="/js/sigaji-ui.js?v=11.5.73"></script>
-<script src="/js/sigaji-dom.js?v=11.5.73"></script>
-<script src="/js/sigaji-api.js?v=11.5.73"></script>
-<script src="/js/karyawan-tipe.js?v=11.5.73"></script>
-<script src="/js/storage.js?v=11.5.73"></script>
-<script src="/js/ptkp.js?v=11.5.73"></script>
-<script src="/js/modules/app-globals.js?v=11.5.73"></script>
-<script src="/js/modules/app-core.js?v=11.5.73"></script>
-<script src="/js/modules/app-access.js?v=11.5.73"></script>
-<script src="/js/modules/app-hr.js?v=11.5.73"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.5.73"></script>
-<script src="/js/modules/app-slip.js?v=11.5.73"></script>
-<script src="/js/modules/app-reports.js?v=11.5.73"></script>
-<script src="/js/modules/ebupot-export.js?v=11.5.73"></script>
-<script src="/js/modules/app-absensi.js?v=11.5.73"></script>
-<script src="/js/modules/app-mobile.js?v=11.5.73"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.73"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.73"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.5.73"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.5.73"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.73"></script>
-<script src="/js/modules/app-master.js?v=11.5.73"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.5.73"></script>
-<script src="/js/modules/app-shell.js?v=11.5.73"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.5.73"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.5.73"></script>
-<script src="/js/pesangon.js?v=11.5.73"></script>
-<script src="/js/config.js?v=11.5.73"></script>
+<script src="/js/constants.js?v=11.5.77"></script>
+<script src="/js/sigaji-icons.js?v=11.5.77"></script>
+<script src="/js/sigaji-ui.js?v=11.5.77"></script>
+<script src="/js/sigaji-dom.js?v=11.5.77"></script>
+<script src="/js/sigaji-api.js?v=11.5.77"></script>
+<script src="/js/karyawan-tipe.js?v=11.5.77"></script>
+<script src="/js/storage.js?v=11.5.77"></script>
+<script src="/js/ptkp.js?v=11.5.77"></script>
+<script src="/js/modules/app-globals.js?v=11.5.77"></script>
+<script src="/js/modules/app-core.js?v=11.5.77"></script>
+<script src="/js/modules/app-access.js?v=11.5.77"></script>
+<script src="/js/modules/app-hr.js?v=11.5.77"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.5.77"></script>
+<script src="/js/modules/app-slip.js?v=11.5.77"></script>
+<script src="/js/modules/app-reports.js?v=11.5.77"></script>
+<script src="/js/modules/ebupot-export.js?v=11.5.77"></script>
+<script src="/js/modules/app-absensi.js?v=11.5.77"></script>
+<script src="/js/modules/app-mobile.js?v=11.5.77"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.5.77"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.5.77"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.5.77"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.5.77"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.5.77"></script>
+<script src="/js/modules/app-master.js?v=11.5.77"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.5.77"></script>
+<script src="/js/modules/app-shell.js?v=11.5.77"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.5.77"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.5.77"></script>
+<script src="/js/pesangon.js?v=11.5.77"></script>
+<script src="/js/config.js?v=11.5.77"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.5.73"></script>
-<script src="/js/cloud-roles.js?v=11.5.73"></script>
-<script src="/js/cloud-tables.js?v=11.5.73"></script>
+<script src="/js/cloud-branding.js?v=11.5.77"></script>
+<script src="/js/cloud-roles.js?v=11.5.77"></script>
+<script src="/js/cloud-tables.js?v=11.5.77"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.5.73"></script>
-<script src="/js/modules/app-boot.js?v=11.5.73"></script>
-<script src="/js/sigaji-events.js?v=11.5.73"></script>
+<script src="/js/cloud-sync.js?v=11.5.77"></script>
+<script src="/js/modules/app-boot.js?v=11.5.77"></script>
+<script src="/js/sigaji-events.js?v=11.5.77"></script>
 </body>
 </html>

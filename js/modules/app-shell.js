@@ -7,17 +7,29 @@ function sigajiIsMobileNav(){
   }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   return false;
 }
-/** Sinkronkan tinggi/lebar shell ke ukuran jendela (agar ikut resize browser). */
+/** Sinkronkan tinggi/lebar shell ke ukuran jendela (agar ikut resize browser).
+ *  Desktop: hapus override px → CSS 100dvh/svh yang ikut resize.
+ *  Mobile (keyboard/chrome): pakai visualViewport px. */
 function sigajiSyncViewportVars(){
   try{
-    var h=window.innerHeight||document.documentElement.clientHeight||0;
-    var w=window.innerWidth||document.documentElement.clientWidth||0;
-    if(window.visualViewport){
-      if(window.visualViewport.height>0)h=Math.round(window.visualViewport.height);
-      if(window.visualViewport.width>0)w=Math.round(window.visualViewport.width);
+    if(typeof window.sigajiSyncViewportHeightEarly==='function'){
+      window.sigajiSyncViewportHeightEarly();
+      return;
     }
-    if(h>0)document.documentElement.style.setProperty('--sigaji-app-height',h+'px');
-    if(w>0)document.documentElement.style.setProperty('--sigaji-vw',w+'px');
+    var ih=window.innerHeight||document.documentElement.clientHeight||0;
+    var iw=window.innerWidth||document.documentElement.clientWidth||0;
+    var vv=window.visualViewport;
+    var vvh=vv&&vv.height>0?Math.round(vv.height):0;
+    var vvw=vv&&vv.width>0?Math.round(vv.width):0;
+    if(vvh>0&&Math.abs(vvh-ih)>2){
+      document.documentElement.style.setProperty('--sigaji-app-height',vvh+'px');
+      if(vvw>0)document.documentElement.style.setProperty('--sigaji-vw',vvw+'px');
+    }else{
+      document.documentElement.style.removeProperty('--sigaji-app-height');
+      document.documentElement.style.removeProperty('--sigaji-vw');
+    }
+    if(ih>0)document.documentElement.style.setProperty('--sigaji-inner-h',ih+'px');
+    if(iw>0)document.documentElement.style.setProperty('--sigaji-inner-w',iw+'px');
   }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
 }
 function sigajiApplyPanelDockForViewport(){

@@ -122,9 +122,12 @@ function mulaiFormPeriodeBaru(){
   var elN=document.getElementById('p-nama');if(elN)elN.value=nama;
   var st=document.getElementById('p-status');if(st)st.value='aktif';
   var thr=document.getElementById('p-thr-aktif');if(thr){thr.checked=false;toggleThrFields();}
+  var pola=document.getElementById('p-pola');
+  if(pola&&(!pola.value||pola.value==='custom'))pola.value='1-akhir';
+  updatePolaPeriode();
   updatePeriodeSimpanButtonState();
   if(elN){try{elN.focus();}catch(e){sigajiCatchWarn('js/modules/app-master.js',e);}}
-  toast('Form periode baru — isi tanggal lalu Simpan');
+  toast('Form periode baru — tanggal mengikuti nama & pola');
 }
 function goToDaftarPeriode(){
   if(!canAccessModule('master')){toast('Tidak punya akses Master Perusahaan');return;}
@@ -186,6 +189,9 @@ function simpanPeriode(){
     ensureKarSnapshotPeriode(nama,list);
   }
   saveAll();renderPeriodes();document.getElementById('top-periode').textContent=PA().nama;renderKar();renderPenggajian();renderDash();renderPPH();renderLaporan();renderPeriodeSelects();populateSelects();toast('Periode disimpan'+(thrAktif?' dengan THR':''));
+  if(isNew&&typeof isNamaPeriodeJanuari==='function'&&isNamaPeriodeJanuari(nama)&&typeof openPtkpJanuariModal==='function'){
+    setTimeout(function(){openPtkpJanuariModal(nama);},350);
+  }
 }
 function aktifkanPeriode(id){periodes.forEach(function(p){p.status=sigajiSameId(p.id,id)?'aktif':'tutup';});saveAll();renderPeriodes();document.getElementById('top-periode').textContent=PA().nama;renderKar();renderPenggajian();renderDash();renderPPH();renderLaporan();renderPeriodeSelects();populateSelects();toast('Diaktifkan');}
 function toggleLockPeriode(id){
@@ -219,7 +225,64 @@ function rebuildSnapshotPeriode(id){
   toast('Snapshot '+p.nama+' berhasil di-rebuild dari Master saat ini');
 }
 function hapusPeriode(id){var p=periodesFindById(id);if(!p)return;sigajiConfirm({title:'Hapus periode',message:'Apakah Anda yakin ingin menghapus periode "'+(p.nama||String(id))+'"?',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;periodes=periodes.filter(function(x){return !sigajiSameId(x.id,id);});saveAll();renderPeriodes();toast('Periode dihapus');});}
-function updatePolaPeriode(){var pola=document.getElementById('p-pola').value;if(pola==='25-24'){document.getElementById('p-start').value='2026-02-25';document.getElementById('p-end').value='2026-03-24';document.getElementById('p-bayar').value='2026-03-25';}else if(pola==='21-20'){document.getElementById('p-start').value='2026-02-21';document.getElementById('p-end').value='2026-03-20';document.getElementById('p-bayar').value='2026-03-21';}else if(pola==='1-akhir'){document.getElementById('p-start').value='2026-03-01';document.getElementById('p-end').value='2026-03-31';document.getElementById('p-bayar').value='2026-03-31';}}
+function parseNamaPeriodeBulanTahun(nama){
+  var bulan=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
+  var m=String(nama||'').trim().match(/^([A-Za-zÀ-ÿ]+)\s+(\d{4})$/i);
+  if(!m)return null;
+  var bi=bulan.indexOf(m[1].toLowerCase());
+  if(bi<0)return null;
+  return{bulan:bi,tahun:parseInt(m[2],10)};
+}
+function resolveBulanTahunUntukPola(){
+  var parsed=parseNamaPeriodeBulanTahun(document.getElementById('p-nama')&&document.getElementById('p-nama').value);
+  if(parsed)return parsed;
+  var latest=null;
+  (periodes||[]).forEach(function(p){
+    if(!p||!p.end)return;
+    if(!latest||String(p.end)>String(latest.end))latest=p;
+  });
+  if(latest&&latest.end){
+    var d=new Date(String(latest.end).substring(0,10)+'T12:00:00');
+    d.setMonth(d.getMonth()+1);
+    return{bulan:d.getMonth(),tahun:d.getFullYear()};
+  }
+  var now=new Date();
+  return{bulan:now.getMonth(),tahun:now.getFullYear()};
+}
+function updatePolaPeriode(){
+  var polaEl=document.getElementById('p-pola');
+  var pola=polaEl?polaEl.value:'custom';
+  if(pola==='custom')return;
+  var bt=resolveBulanTahunUntukPola();
+  var y=bt.tahun,mo=bt.bulan;
+  function pad(n){return String(n).padStart(2,'0');}
+  function lastDay(yy,m0){return new Date(yy,m0+1,0).getDate();}
+  function iso(yy,m0,day){return yy+'-'+pad(m0+1)+'-'+pad(day);}
+  var start,end,bayar;
+  if(pola==='1-akhir'){
+    start=iso(y,mo,1);
+    end=iso(y,mo,lastDay(y,mo));
+    bayar=end;
+  }else if(pola==='25-24'){
+    var pMo=mo-1,pY=y;if(pMo<0){pMo=11;pY--;}
+    start=iso(pY,pMo,25);
+    end=iso(y,mo,24);
+    bayar=iso(y,mo,25);
+  }else if(pola==='21-20'){
+    var pMo2=mo-1,pY2=y;if(pMo2<0){pMo2=11;pY2--;}
+    start=iso(pY2,pMo2,21);
+    end=iso(y,mo,20);
+    bayar=iso(y,mo,21);
+  }else return;
+  var sEl=document.getElementById('p-start');if(sEl)sEl.value=start;
+  var eEl=document.getElementById('p-end');if(eEl)eEl.value=end;
+  var bEl=document.getElementById('p-bayar');if(bEl)bEl.value=bayar;
+}
+function onPeriodeNamaInput(){
+  updatePeriodeSimpanButtonState();
+  var polaEl=document.getElementById('p-pola');
+  if(polaEl&&polaEl.value!=='custom')updatePolaPeriode();
+}
 function simpanPerusahaan(){perusahaan.nama=document.getElementById('prs-nama').value;perusahaan.npwp=document.getElementById('prs-npwp').value;perusahaan.nitku=(document.getElementById('prs-nitku')&&document.getElementById('prs-nitku').value.trim())||'';perusahaan.alamat=document.getElementById('prs-alamat').value;perusahaan.telp=document.getElementById('prs-telp').value;perusahaan.email=document.getElementById('prs-email').value;perusahaan.web=document.getElementById('prs-web').value;perusahaan.a1_kota=(document.getElementById('prs-a1-kota')&&document.getElementById('prs-a1-kota').value)||'';perusahaan.a1_prefix=(document.getElementById('prs-a1-prefix')&&document.getElementById('prs-a1-prefix').value.trim())||'A1';perusahaan.a1_ttd_nama=(document.getElementById('prs-a1-ttd')&&document.getElementById('prs-a1-ttd').value)||'';perusahaan.a1_ttd_jabatan=(document.getElementById('prs-a1-jab')&&document.getElementById('prs-a1-jab').value)||'';perusahaan.jamMasuk=(document.getElementById('prs-jam-masuk')&&document.getElementById('prs-jam-masuk').value)||'08:00';var hk=document.querySelector('input[name="hk-radio"]:checked');perusahaan.hariKerja=hk?parseInt(hk.value)||6:6;saveAll();applyBranding();updateHKRadioStyle();renderPenggajian();renderDash();toast('Data perusahaan disimpan');}
 function loadPrsForm(){['nama','npwp','nitku','alamat','telp','email','web'].forEach(function(f){var e=document.getElementById('prs-'+f);if(e)e.value=perusahaan[f]||'';});try{if(typeof sigajiTogglePrsNitkuField==='function')sigajiTogglePrsNitkuField();}catch(eNt){sigajiCatchWarn("js/modules/app-master.js",eNt);}try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){sigajiCatchWarn("js/modules/app-master.js",eLq);}var a1k=document.getElementById('prs-a1-kota');if(a1k)a1k.value=perusahaan.a1_kota||'';var a1p=document.getElementById('prs-a1-prefix');if(a1p)a1p.value=perusahaan.a1_prefix!=null?perusahaan.a1_prefix:'A1';var a1t=document.getElementById('prs-a1-ttd');if(a1t)a1t.value=perusahaan.a1_ttd_nama||'';var a1j=document.getElementById('prs-a1-jab');if(a1j)a1j.value=perusahaan.a1_ttd_jabatan||'';var jm=document.getElementById('prs-jam-masuk');if(jm)jm.value=perusahaan.jamMasuk||'08:00';var hk=perusahaan.hariKerja||6;var r=document.getElementById('hk-'+hk);if(r)r.checked=true;updateHKRadioStyle();renderPTKPForm();}
 var __umkEditing=false;
