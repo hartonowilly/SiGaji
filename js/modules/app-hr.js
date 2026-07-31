@@ -406,7 +406,12 @@ function simpanKarPanel(){
   var tbh=gv('sp-berhenti-f').trim();
   var phkAl=document.getElementById('sp-phk-alasan');
   if(tbh){
-    if(!phkAl||!String(phkAl.value||'').trim()){toast('Jika tanggal berhenti diisi, wajib pilih alasan PHK (sesuai UU Cipta Kerja).');return;}
+    if(!phkAl||!String(phkAl.value||'').trim()){
+      try{if(typeof toggleSpPhkWrap==='function')toggleSpPhkWrap();}catch(eTw){sigajiCatchWarn("js/modules/app-hr.js",eTw);}
+      toast('Jika tanggal berhenti diisi, wajib pilih alasan PHK di kolom "Alasan PHK / berhenti" (langsung di bawah tanggal berhenti).');
+      try{var wPhk=document.getElementById('sp-phk-wrap');if(wPhk)wPhk.scrollIntoView({block:'center',behavior:'smooth'});}catch(eSc){sigajiCatchWarn("js/modules/app-hr.js",eSc);}
+      return;
+    }
     if(!k.phk)k.phk={};
     k.phk.alasan=phkAl.value;
   }else{

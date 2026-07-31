@@ -1511,10 +1511,22 @@ function toggleSpPhkWrap(){
   var ber=document.getElementById('sp-berhenti-f');
   var w=document.getElementById('sp-phk-wrap');
   if(!w)return;
-  var on=ber&&String(ber.value||'').trim();
-  w.style.display=on?'':'none';
-  if(on&&(!document.getElementById('sp-phk-alasan')||!document.getElementById('sp-phk-alasan').options.length))populatePhkAlasanSelect();
+  var on=!!(ber&&String(ber.value||'').trim());
+  if(typeof sigajiSetPanelVisible==='function')sigajiSetPanelVisible(w,on,'');
+  else{
+    if(on){w.classList.remove('u-hidden');w.style.removeProperty('display');}
+    else{w.classList.add('u-hidden');w.style.display='none';}
+  }
+  if(on){
+    populatePhkAlasanSelect();
+    try{
+      var spa=document.getElementById('sp-phk-alasan');
+      if(spa&&!spa.options.length)populatePhkAlasanSelect();
+      w.scrollIntoView({block:'nearest',behavior:'smooth'});
+    }catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  }
 }
+if(typeof window!=='undefined')window.toggleSpPhkWrap=toggleSpPhkWrap;
 function sigajiReadStoredSchemaVersion(){
   try{
     var key=typeof DB_KEY!=='undefined'?DB_KEY:'sigaji_db';
