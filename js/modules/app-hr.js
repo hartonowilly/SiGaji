@@ -249,7 +249,14 @@ function openPanel(nik){
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
   document.body.classList.add('sigaji-kar-panel-open');document.body.classList.remove('sigaji-payroll-panel-open');
-  try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(true);}catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
+  try{
+    if(typeof sigajiApplyPanelDockForViewport==='function')sigajiApplyPanelDockForViewport();
+    else if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(window.matchMedia('(min-width:1200px)').matches);
+  }catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
+  try{
+    var spBody=document.querySelector('#slide-panel .spb');
+    if(spBody)spBody.scrollTop=0;
+  }catch(eScr){sigajiCatchWarn("js/modules/app-hr.js",eScr);}
   try{
     var spTg=document.getElementById('sp-btn-telegram');
     if(spTg)spTg.style.display=CU&&(CU.role==='Admin'||CU.role==='HRD')?'inline-block':'none';
@@ -352,7 +359,10 @@ function openPayrollPanel(nik){
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel-payroll').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
   document.body.classList.add('sigaji-payroll-panel-open');document.body.classList.remove('sigaji-kar-panel-open');
-  try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(true);}catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
+  try{
+    if(typeof sigajiApplyPanelDockForViewport==='function')sigajiApplyPanelDockForViewport();
+    else if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(window.matchMedia('(min-width:1200px)').matches);
+  }catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
   if(!applyPayrollSlideTabsVisibility()){closePayrollPanel();return;}
   setSpPayrollView('periode');
   syncPphReturnFieldState();

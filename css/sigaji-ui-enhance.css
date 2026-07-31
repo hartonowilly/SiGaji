@@ -1094,27 +1094,73 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
     display: none !important;
   }
   body.sigaji-panel-docked #slide-panel.show {
-    width: min(640px, 46vw);
+    width: min(720px, 50vw);
     box-shadow: -2px 0 20px rgba(0, 0, 0, 0.08);
   }
   body.sigaji-panel-docked #slide-panel-payroll.show {
-    width: min(720px, 52vw);
+    width: min(780px, 54vw);
     box-shadow: -2px 0 20px rgba(0, 0, 0, 0.08);
   }
   body.sigaji-panel-docked.sigaji-kar-panel-open .content {
-    margin-right: min(640px, 46vw);
+    margin-right: min(720px, 50vw);
     transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
   body.sigaji-panel-docked.sigaji-payroll-panel-open .content {
-    margin-right: min(720px, 52vw);
+    margin-right: min(780px, 54vw);
     transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
+}
+
+/* Panel samping: tinggi viewport penuh + body scroll + footer tetap terlihat */
+#slide-panel.sp,
+#slide-panel-payroll.sp {
+  top: 0;
+  bottom: 0;
+  height: var(--sigaji-app-height, 100dvh);
+  max-height: var(--sigaji-app-height, 100dvh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#slide-panel .sph,
+#slide-panel-payroll .sph,
+#slide-panel .spf,
+#slide-panel-payroll .spf,
+#slide-panel .spt-wrap,
+#slide-panel-payroll .spt-wrap {
+  flex-shrink: 0;
+}
+#slide-panel .spb,
+#slide-panel-payroll .spb {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+#slide-panel .spb::-webkit-scrollbar,
+#slide-panel-payroll .spb::-webkit-scrollbar {
+  width: 10px;
+}
+#slide-panel .spb::-webkit-scrollbar-thumb,
+#slide-panel-payroll .spb::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 8px;
+  border: 2px solid #fff;
 }
 
 /* ── Profil karyawan: input lebih lega ── */
 #slide-panel .sp-kar-grid {
   grid-template-columns: 1fr;
   gap: 0.8rem;
+}
+/* Docked (≥720px panel) atau overlay lebar: 2 kolom agar form tidak terlalu panjang */
+@media (min-width: 1200px) {
+  body.sigaji-panel-docked #slide-panel .sp-kar-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (min-width: 1100px) {
   body:not(.sigaji-panel-docked) #slide-panel .sp-kar-grid {
@@ -1233,6 +1279,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 /* ── Panel komponen gaji: 1 baris per tunjangan (desktop) ── */
 #slide-panel-payroll .spb {
   overflow-x: hidden;
+  overflow-y: auto;
 }
 #slide-panel-payroll .spt-wrap {
   flex-wrap: wrap;
@@ -1675,6 +1722,11 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 [data-density="compact"] .content .table-wrap th { padding: 5px 8px; }
 [data-density="comfortable"] .bento-widget-body { padding: 1rem; }
 
+@media (max-width: 1200px) {
+  .bento-widget[data-col="8"],
+  .bento-widget[data-col="6"] { grid-column: span 12; }
+  .bento-widget[data-col="4"] { grid-column: span 6; }
+}
 @media (max-width: 900px) {
   .bento-widget[data-col="8"],
   .bento-widget[data-col="6"],
@@ -1682,6 +1734,10 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   .bento-kpi-row { grid-template-columns: repeat(2, 1fr); }
   .ui-pref-sel { max-width: 88px; }
   .sigaji-build-chip { display: none; }
+}
+@media (min-width: 901px) and (max-width: 1199px) {
+  :root { --sigaji-sidebar-w: 200px; }
+  .content { padding: 0.95rem 1rem; }
 }
 
 /* ══ Polish v11.5 — topbar, bento, halaman ══ */

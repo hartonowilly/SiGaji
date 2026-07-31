@@ -7,6 +7,38 @@ function sigajiIsMobileNav(){
   }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   return false;
 }
+/** Sinkronkan tinggi/lebar shell ke ukuran jendela (agar ikut resize browser). */
+function sigajiSyncViewportVars(){
+  try{
+    var h=window.innerHeight||document.documentElement.clientHeight||0;
+    var w=window.innerWidth||document.documentElement.clientWidth||0;
+    if(window.visualViewport){
+      if(window.visualViewport.height>0)h=Math.round(window.visualViewport.height);
+      if(window.visualViewport.width>0)w=Math.round(window.visualViewport.width);
+    }
+    if(h>0)document.documentElement.style.setProperty('--sigaji-app-height',h+'px');
+    if(w>0)document.documentElement.style.setProperty('--sigaji-vw',w+'px');
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+}
+function sigajiApplyPanelDockForViewport(){
+  try{
+    var wide=window.matchMedia('(min-width:1200px)').matches;
+    var karOpen=document.body.classList.contains('sigaji-kar-panel-open');
+    var payOpen=document.body.classList.contains('sigaji-payroll-panel-open');
+    var panelOpen=karOpen||payOpen;
+    if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(!!(panelOpen&&wide));
+    var ov=document.getElementById('panel-overlay');
+    if(ov&&panelOpen){
+      if(wide&&document.body.classList.contains('sigaji-panel-docked'))ov.classList.remove('show');
+      else ov.classList.add('show');
+    }
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+}
+function sigajiOnViewportResize(){
+  sigajiSyncViewportVars();
+  sigajiApplyMobileNavMode();
+  sigajiApplyPanelDockForViewport();
+}
 function sigajiApplyMobileNavMode(){
   var on=sigajiIsMobileNav();
   try{document.documentElement.classList.toggle('sigaji-mobile-nav',on);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
@@ -83,6 +115,7 @@ function sigajiToggleNavDrawer(ev){
   return false;
 }
 function initSigajiNavDrawer(){
+  sigajiSyncViewportVars();
   sigajiApplyMobileNavMode();
   var backdrop=document.getElementById('nav-backdrop');
   if(backdrop&&backdrop.dataset.sigajiNavBound!=='1'){
@@ -94,8 +127,16 @@ function initSigajiNavDrawer(){
   }
   if(!window._sigajiNavResizeBound){
     window._sigajiNavResizeBound=true;
-    window.addEventListener('resize',function(){sigajiApplyMobileNavMode();},{passive:true});
-    window.addEventListener('orientationchange',function(){setTimeout(sigajiApplyMobileNavMode,120);},{passive:true});
+    var resizeT=null;
+    function onResize(){
+      clearTimeout(resizeT);
+      resizeT=setTimeout(sigajiOnViewportResize,80);
+    }
+    window.addEventListener('resize',onResize,{passive:true});
+    window.addEventListener('orientationchange',function(){setTimeout(sigajiOnViewportResize,120);},{passive:true});
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize',onResize,{passive:true});
+    }
     document.addEventListener('keydown',function(ev){
       if(ev&&ev.key==='Escape'&&document.documentElement.classList.contains('sigaji-nav-open'))sigajiCloseNavDrawer();
     });
@@ -105,6 +146,9 @@ function initSigajiNavDrawer(){
 if(typeof window!=='undefined'){
   window.sigajiIsMobileNav=sigajiIsMobileNav;
   window.sigajiApplyMobileNavMode=sigajiApplyMobileNavMode;
+  window.sigajiSyncViewportVars=sigajiSyncViewportVars;
+  window.sigajiOnViewportResize=sigajiOnViewportResize;
+  window.sigajiApplyPanelDockForViewport=sigajiApplyPanelDockForViewport;
   window.sigajiCloseNavDrawer=sigajiCloseNavDrawer;
   window.sigajiOpenNavDrawer=sigajiOpenNavDrawer;
   window.sigajiToggleNavDrawer=sigajiToggleNavDrawer;

@@ -1321,6 +1321,7 @@ function enterAppWithUser(user){
   document.getElementById('top-periode').textContent=PA().nama;
   applyBranding();renderSidebar();renderAll();
   try{sigajiUpdateCloudBackupUi();}catch(eCu){sigajiCatchWarn("js/modules/app-access.js",eCu);}
+  try{if(typeof sigajiSyncViewportVars==='function')sigajiSyncViewportVars();}catch(eVp){sigajiCatchWarn("js/modules/app-access.js",eVp);}
   try{sigajiApplyMobileNavMode();initSigajiNavDrawer();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
   var startPg=typeof sigajiResolveStartupPg==='function'?sigajiResolveStartupPg():'dashboard';
   showPg(startPg);
