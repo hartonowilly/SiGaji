@@ -115,8 +115,8 @@
   --ab-half-sakit-fg: #b45309;
   --ab-half-ijin-bg: #e0f0ff;
   --ab-half-ijin-fg: #0369a1;
-  --ab-resign-bg: #e5e7eb;
-  --ab-resign-fg: #4b5563;
+  --ab-resign-bg: var(--color-danger-bg);
+  --ab-resign-fg: var(--color-danger);
   --ab-grid-head-bg: var(--sidebar);
   --ab-grid-head-fg: var(--wh);
   --ab-grid-head-border: var(--ink-body);

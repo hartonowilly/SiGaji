@@ -1235,7 +1235,7 @@ tbody tr:hover td {
 .ab-hs { background: var(--wh)0e0; color: #b45309; }
 .ab-hi { background: #e0f0ff; color: #0369a1; }
 .ab-a { background: var(--color-danger-bg); color: var(--color-danger); }
-.ab-r { background: var(--ab-resign-bg, #e5e7eb); color: var(--ab-resign-fg, #4b5563); }
+.ab-r { background: var(--ab-resign-bg, var(--color-danger-bg)); color: var(--ab-resign-fg, var(--color-danger)); }
 .ab-ln { background: #fef9c3; color: #713f12; }
 .ab-grid-host {
   overflow-x: auto;
