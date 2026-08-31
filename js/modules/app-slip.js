@@ -541,6 +541,7 @@ function shareMySlipEmailWithPDF(){
 function mySlipAbsenSummaryHtml(nik,p){
   if(!nik||!p||!p.start||!p.end)return '';
   var rec={hadir:0,cuti:0,izin:0,sakit:0,alpha:0,other:0};
+  var fmtHr=function(n){return typeof fmtHariAbsen==='function'?fmtHariAbsen(n,false):String(n||0);};
   var cur=p.start;
   function addDays(iso,n){var d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().substring(0,10);}
   var ab=(absensi&&absensi[nik])||{};
@@ -548,8 +549,10 @@ function mySlipAbsenSummaryHtml(nik,p){
     var st=ab[cur];
     if(st==='hadir')rec.hadir++;
     else if(st==='cuti')rec.cuti++;
-    else if(st==='izin'||st==='setengah_ijin')rec.izin++;
-    else if(st==='sakit'||st==='setengah_sakit')rec.sakit++;
+    else if(st==='izin')rec.izin++;
+    else if(st==='setengah_ijin'){rec.izin+=.5;rec.hadir+=.5;}
+    else if(st==='sakit')rec.sakit++;
+    else if(st==='setengah_sakit'){rec.sakit+=.5;rec.hadir+=.5;}
     else if(st==='alpha')rec.alpha++;
     else if(st)rec.other++;
     cur=addDays(cur,1);
@@ -557,11 +560,11 @@ function mySlipAbsenSummaryHtml(nik,p){
   return '<div class="card tabs-spaced-lg border-accent-left card-surface-neutral">'
     +'<div class="ct border-0 p-0 mb-md m-0">Ringkasan kehadiran — '+escapeHtml(p.nama)+'</div>'
     +'<div class="fl gap1 flex-wrap font-12">'
-    +'<span class="bdg b-teal">Hadir '+rec.hadir+'</span>'
-    +'<span class="bdg b-warn">Cuti '+rec.cuti+'</span>'
-    +'<span class="bdg b-info">Izin '+rec.izin+'</span>'
-    +'<span class="bdg b-warn">Sakit '+rec.sakit+'</span>'
-    +'<span class="bdg b-err">Alpha '+rec.alpha+'</span>'
+    +'<span class="bdg b-teal">Hadir '+fmtHr(rec.hadir)+'</span>'
+    +'<span class="bdg b-warn">Cuti '+fmtHr(rec.cuti)+'</span>'
+    +'<span class="bdg b-info">Izin '+fmtHr(rec.izin)+'</span>'
+    +'<span class="bdg b-warn">Sakit '+fmtHr(rec.sakit)+'</span>'
+    +'<span class="bdg b-err">Alpha '+fmtHr(rec.alpha)+'</span>'
     +'</div><p class="font-10 text-muted u-note-sm">Dari kalender absensi periode gaji (termasuk hasil absen mobile).</p></div>';
 }
 function loadMySlip(){

@@ -338,6 +338,15 @@ function cutiManualUntukTahunDanPeriode(nik,tahun,periode){
 const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr);
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
+/** Status 1/2 sakit & 1/2 izin bernilai 0,5 hari — sama seperti dasar potongan gaji. */
+function isStatusSetengahHari(st){return st==='setengah_sakit'||st==='setengah_ijin';}
+function bobotHariAbsen(st){return isStatusSetengahHari(st)?.5:1;}
+/** 0,5 → "0,5" · 2 → "2" · 0 → "" (untuk sel rekap yang dikosongkan) */
+function fmtHariAbsen(n,kosongkanNol){
+  var v=Math.round((Number(n)||0)*10)/10;
+  if(!v)return kosongkanNol===false?'0':'';
+  return Number.isInteger(v)?String(v):String(v).replace('.',',');
+}
 function hariHadirBulan(nik,yr,bln){const pfx=`${yr}-${String(bln).padStart(2,'0')}-`;return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='hadir').length;}
 function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=PA();const ed=new Date(p.end||'2026-03-24');const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirBulan(nik,ed.getFullYear(),ed.getMonth()+1);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
 function setPREnabled(nik,pN,v){
