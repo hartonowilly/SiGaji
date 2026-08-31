@@ -1226,6 +1226,12 @@ function detailGaji(nik,pNama){
   h+='</div>';
   h+='<div class="flex-1"><div class="stit">Potongan</div><div class="pr-row-info"><span>PPh 21</span><span>- '+fmt(g.pph)+'</span></div><div class="pr-row-info"><span>BPJS Kar</span><span>- '+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</span></div>';
   (k.potongan||[]).forEach(function(x){h+='<div class="pr-row-info"><span>'+x.nama+'</span><span>- '+fmt(x.nilai)+'</span></div>';});
+  var potKh=g.potKehadiran||{};
+  (potKh.details||[]).forEach(function(d){
+    h+='<div class="pr-row-info slip-pot-warn"><span>'+escapeHtml(d.label)+'</span><span>- '+fmt(d.nilai)+'</span></div>';
+  });
+  if(potKh.total>0&&potKh.gajiHarian>0)h+='<div class="font-10 text-muted">Dasar potongan: gaji harian '+fmt(potKh.gajiHarian)+' (1/2 hari = '+fmt(Math.round(potKh.gajiHarian/2))+')</div>';
+  h+='<div class="pr-row-info fw-700 gs-divider"><span>Total Potongan</span><span>- '+fmt(g.totalPot)+'</span></div>';
   if(g.pphRet>0)h+='<div class="pr-row-info ct-success"><span>Return PPh</span><span>+ '+fmt(g.pphRet)+'</span></div>';
   h+='</div></div>';
   h+='<div class="rounded-sm p-inset-sm fl justify-between fw-800 mt-lg font-14 btn-email"><span>TAKE HOME PAY</span><span>'+fmt(g.neto)+'</span></div>';

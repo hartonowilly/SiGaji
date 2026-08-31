@@ -170,4 +170,40 @@ function setup(absensiNik, aturanPotongan) {
   assertEq('potongan 1/2 izin > 0', gDengan.potKehadiran.total > 0, true);
 }
 
+// ── 10. Total potongan = jumlah komponen yang ditampilkan ──
+// Menjaga agar rincian di modal "Detail Gaji" selalu rekonsiliasi dengan THP:
+// totalPot harus tepat = PPh + BPJS karyawan + potongan tetap + potongan kehadiran.
+{
+  const kar = {
+    nik: NIK,
+    nama: 'Karyawan Uji (fiktif)',
+    gapok: 5_200_000,
+    ptkp: 'TK0',
+    dept: 'QA',
+    masuk: '2020-01-01',
+    tunjangan: [],
+    potongan: [{ nama: 'Koperasi', nilai: 50_000 }],
+    natura: [],
+    bpjs_aktif: { 'kes-kar': true, 'jht-kar': true, 'jp-kar': true },
+  };
+  const px = loadPayrollCore({
+    perusahaan: { hariKerja: 6, aturan_potongan: aturan() },
+    periodes: [PERIODE],
+    karyawan: [kar],
+    absensi: { [NIK]: { '2026-08-05': 'setengah_ijin', '2026-08-12': 'setengah_sakit' } },
+    masterCuti: { cbPotong: false, kuota: 12 },
+  });
+  const g = px.hitungGaji(kar, PERIODE.nama, { skipResolve: true });
+  const bpjsKar = g.bpjs.kes_kar + g.bpjs.jht_kar + g.bpjs.jp_kar;
+  const rincian = g.pph + bpjsKar + g.potT + g.potKehadiran.total;
+  assertEq('potongan kehadiran ikut terhitung', g.potKehadiran.total > 0, true);
+  assertEq('rincian potongan = totalPot', rincian, g.totalPot);
+  assertEq(
+    'THP = bruto TH - total potongan + return PPh',
+    g.netoRegular,
+    g.brutoTH - g.totalPot + g.pphRet
+  );
+  assertEq('rincian 1/2 hari ada 2 baris', g.potKehadiran.details.length, 2);
+}
+
 console.log('\nSetengah hari: semua tes lulus.');

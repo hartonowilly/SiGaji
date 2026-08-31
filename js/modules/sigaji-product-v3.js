@@ -512,7 +512,8 @@
       return g.grossPPh <= r[0];
     }) || [0, 0.34])[1];
     var bpjsKar = (g.bpjs.kes_kar || 0) + (g.bpjs.jht_kar || 0) + (g.bpjs.jp_kar || 0);
-    var potTotal = (g.potT || 0) + (g.potKehadiran && g.potKehadiran.total ? g.potKehadiran.total : 0);
+    var potLain = g.potT || 0;
+    var potKehadiran = (g.potKehadiran && g.potKehadiran.total) || 0;
     var steps = [
       { lbl: 'Gaji pokok' + (g.isPR ? ' (pro-rata ' + g.pr.hh + '/' + g.pr.hk + ')' : ''), val: g.gapokEff, type: 'up' },
     ];
@@ -529,7 +530,18 @@
       tip: 'PMK 168/2023 — tarif efektif rata-rata',
     });
     steps.push({ lbl: 'BPJS karyawan', val: -bpjsKar, type: 'down' });
-    if (potTotal) steps.push({ lbl: 'Potongan lain + kehadiran', val: -potTotal, type: 'down' });
+    if (potLain) steps.push({ lbl: 'Potongan tetap', val: -potLain, type: 'down' });
+    if (potKehadiran)
+      steps.push({
+        lbl: 'Potongan kehadiran',
+        val: -potKehadiran,
+        type: 'down',
+        tip: (g.potKehadiran.details || [])
+          .map(function (d) {
+            return d.label + ': ' + fmt(d.nilai);
+          })
+          .join(' · '),
+      });
     if (g.pphRet) steps.push({ lbl: 'Pengembalian PPh', val: g.pphRet, type: 'up' });
     steps.push({ lbl: 'Take Home Pay', val: g.neto, type: 'final' });
 
