@@ -329,7 +329,7 @@
     var thead =
       '<th class="pg-sticky-no">No</th><th class="pg-sticky-name">Karyawan</th>' +
       cab +
-      '<th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th>';
+      '<th>Pro-Rata</th><th>Gross PPh</th><th class="pg-col-adv">THR</th><th class="pg-col-adv">TH Bruto</th><th class="pg-col-adv">BPJS Kar</th><th>Potongan Absen</th><th>PPh 21</th><th class="pg-col-adv">PPh Return</th><th>Neto (THP)</th><th>Status</th><th>Aksi</th>';
     tables[0].innerHTML = thead;
   };
 
