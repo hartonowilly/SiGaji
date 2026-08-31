@@ -74,8 +74,10 @@ function renderDashBody(){
         var st=(absensi[k.nik]&&absensi[k.nik][iso])||(isLN?'libnas':isLK?'libur':'hadir');
         if(st==='hadir'||st==='libur'||st==='libnas'){stats.hadir++;daySt.hadir++;}
         else if(st==='cuti')stats.cuti++;
-        else if(st==='izin'||st==='setengah_ijin'){stats.izin++;daySt.izin++;}
-        else if(st==='sakit'||st==='setengah_sakit'){stats.sakit++;daySt.sakit++;}
+        else if(st==='izin'){stats.izin++;daySt.izin++;}
+        else if(st==='setengah_ijin'){stats.izin+=.5;daySt.izin+=.5;stats.hadir+=.5;daySt.hadir+=.5;}
+        else if(st==='sakit'){stats.sakit++;daySt.sakit++;}
+        else if(st==='setengah_sakit'){stats.sakit+=.5;daySt.sakit+=.5;stats.hadir+=.5;daySt.hadir+=.5;}
         else if(st==='alpha'){stats.alpha++;daySt.alpha++;}
       });
       var maxK=list.length||1;
@@ -84,23 +86,24 @@ function renderDashBody(){
     });
     var nKar=list.length;
     var nDays=bars.length;
+    var fmtHr=function(n){return typeof fmtHariAbsen==='function'?fmtHariAbsen(n,false):String(n||0);};
     var barHtml=bars.map(function(b){
-      var tip='Tgl '+b.d+' ('+b.iso+'): '+b.hadir+' dari '+nKar+' karyawan hadir';
-      if(b.izin)tip+=' · izin '+b.izin;
-      if(b.sakit)tip+=' · sakit '+b.sakit;
-      if(b.alpha)tip+=' · alpha '+b.alpha;
+      var tip='Tgl '+b.d+' ('+b.iso+'): '+fmtHr(b.hadir)+' dari '+nKar+' karyawan hadir';
+      if(b.izin)tip+=' · izin '+fmtHr(b.izin);
+      if(b.sakit)tip+=' · sakit '+fmtHr(b.sakit);
+      if(b.alpha)tip+=' · alpha '+fmtHr(b.alpha);
       return '<div class="dash-att-bar-wrap"><div class="dash-att-bar" style="height:'+b.h+'px" title="'+tip+'"></div>'
         +'<div class="dash-att-bar-lbl">'+b.d+'</div>'
-        +(nKar?'<div class="dash-att-bar-sub">'+b.hadir+'/'+nKar+'</div>':'')+'</div>';
+        +(nKar?'<div class="dash-att-bar-sub">'+fmtHr(b.hadir)+'/'+nKar+'</div>':'')+'</div>';
     }).join('');
     var avgHadir=nDays&&nKar?Math.round((stats.hadir/(nDays*nKar))*100):0;
     attHtml='<p class="dash-att-hint">Grafik harian — proporsi hadir per hari.</p>'
       +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-subtle p-md">—</div>')
       +'<div class="dash-att-legend">'
-      +'<span class="lg-hadir">Hadir: '+stats.hadir+'</span>'
-      +'<span class="lg-izin">Izin: '+stats.izin+'</span>'
-      +'<span class="lg-sakit">Sakit: '+stats.sakit+'</span>'
-      +'<span class="lg-alpha">Alpha: '+stats.alpha+'</span>'
+      +'<span class="lg-hadir">Hadir: '+fmtHr(stats.hadir)+'</span>'
+      +'<span class="lg-izin">Izin: '+fmtHr(stats.izin)+'</span>'
+      +'<span class="lg-sakit">Sakit: '+fmtHr(stats.sakit)+'</span>'
+      +'<span class="lg-alpha">Alpha: '+fmtHr(stats.alpha)+'</span>'
       +'<span class="ml-auto font-10 text-subtle">~'+avgHadir+'% kehadiran</span></div>';
   }
   var deptTableHtml=Object.entries(depts).map(function(ent){
@@ -1038,6 +1041,15 @@ function fillPgPenggajianFoot(foot,nKar,hasCab,sums){
   tr.appendChild(moneyTd(sums.thr,'pg-col-adv'));
   tr.appendChild(moneyTd(sums.thBruto,'pg-col-adv'));
   tr.appendChild(moneyTd(sums.bpjs,'pg-col-adv'));
+  var tdPotKh=document.createElement('td');
+  tdPotKh.className='num cell-money'+(sums.potKh>0?' cell-deduction':'');
+  if(sums.potKh>0){
+    var spPot=document.createElement('span');
+    spPot.className='ct-danger';
+    spPot.textContent='- '+fmt(sums.potKh);
+    tdPotKh.appendChild(spPot);
+  }else tdPotKh.textContent='\u2014';
+  tr.appendChild(tdPotKh);
   tr.appendChild(moneyTd(sums.pph));
   var tdRet=document.createElement('td');
   tdRet.className='pg-col-adv num cell-money';
@@ -1081,7 +1093,7 @@ function renderPenggajianBody(skipTunjVar){
     thrInfo.innerHTML=html;
   }
   let prAktif=0;
-  var sumGross=0,sumThr=0,sumThBruto=0,sumBpjs=0,sumPph=0,sumPphRet=0,sumNeto=0;
+  var sumGross=0,sumThr=0,sumThBruto=0,sumBpjs=0,sumPph=0,sumPphRet=0,sumNeto=0,sumPotKh=0;
   const rows=karyawanListPeriode(p).map(function(k,idx){
     const g=hitungGaji(k,p.nama);
     sumGross+=g.grossPPh||0;
@@ -1091,6 +1103,7 @@ function renderPenggajianBody(skipTunjVar){
     sumPph+=g.pph||0;
     sumPphRet+=g.pphRet||0;
     sumNeto+=g.neto||0;
+    sumPotKh+=(g.potKehadiran&&g.potKehadiran.total)||0;
     const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
     const st=ap?ap.status:'draft';
     const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:''}[st]||'';
@@ -1115,6 +1128,12 @@ function renderPenggajianBody(skipTunjVar){
     if(g.neto<0)rowCls.push('pg-row-neto-neg');
     if(st==='pending')rowCls.push('pg-row-pending');
     var cabPg=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
+    var potKh=(g.potKehadiran&&g.potKehadiran.total)||0;
+    var potKhTip=(g.potKehadiran&&g.potKehadiran.details&&g.potKehadiran.details.length)
+      ?g.potKehadiran.details.map(function(d){return d.label+': '+fmt(d.nilai);}).join(' · ')
+      :'Tidak ada potongan ketidakhadiran pada periode ini';
+    var potKhTd='<td class="num cell-money'+(potKh>0?' cell-deduction':'')+'" title="'+escapeAttr(potKhTip)+'">'
+      +(potKh>0?'<span class="ct-danger fw-700">- '+fmt(potKh)+'</span>':'&#8212;')+'</td>';
     return '<tr class="'+rowCls.join(' ')+'">'
       +'<td class="pg-sticky-no text-center fw-700 text-muted">'+(idx+1)+'</td>'
       +'<td class="pg-sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div>'
@@ -1124,6 +1143,7 @@ function renderPenggajianBody(skipTunjVar){
       +'<td class="num cell-money"><span class="sigaji-money-click"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa gross ini?">'+fmt(g.grossPPh)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td><td class="pg-col-adv num cell-money">'+thrCell+'</td>'
       +'<td class="pg-col-adv num cell-money">'+fmt(g.brutoTH)+'</td>'
       +'<td class="pg-col-adv num cell-money">'+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</td>'
+      +potKhTd
       +'<td class="num cell-money'+(g.reconciliation&&g.reconciliation.kurangBayar>0?' cell-deduction':'')+'"><span class="sigaji-money-click"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa angka ini?">'+fmt(g.pph)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+(g.reconciliation&&g.reconciliation.lebihBayar>0?'<div class="font-9 text-success fw-700">&#10003; Lebih Bayar '+fmt(g.reconciliation.lebihBayar)+'</div>':g.reconciliation&&g.reconciliation.kurangBayar>0?'<div class="font-9 ct-danger">&#9650; Kurang Bayar '+fmt(g.reconciliation.kurangBayar)+'</div>':'')+'</td>'
       +'<td class="pg-col-adv num cell-money">'+(g.pphRet>0?'<span class="ct-success fw-700">+'+fmt(g.pphRet)+'</span>':'&#8212;')+'</td>'
       +'<td class="num cell-neto"><strong class="sigaji-money-click cell-neto-strong"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Waterfall THP">'+fmt(g.neto)+'</strong>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td>'
@@ -1133,14 +1153,14 @@ function renderPenggajianBody(skipTunjVar){
   var tbPg=document.getElementById('tb-penggajian');
   var tbFoot=document.getElementById('tb-penggajian-foot');
   var hasCab=typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace());
-  var pgColspan=12+(hasCab?1:0);
+  var pgColspan=13+(hasCab?1:0);
   if(!rows.length&&typeof sigajiEmptyState==='function'){
     var emptyPgRow='<tr><td colspan="'+String(pgColspan)+'">'+sigajiEmptyState({illust:'money',title:'Belum ada karyawan di periode ini',desc:'Tambahkan karyawan atau aktifkan periode gaji yang sesuai.',btnLabel:'Buka Master Karyawan',btnAction:'showPg',btnActionArg:'karyawan'})+'</td></tr>';
     if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tbPg,[emptyPgRow],1);
     if(tbFoot)tbFoot.replaceChildren();
   }else{
     if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tbPg,rows,50);
-    if(tbFoot)fillPgPenggajianFoot(tbFoot,rows.length,hasCab,{gross:sumGross,thr:sumThr,thBruto:sumThBruto,bpjs:sumBpjs,pph:sumPph,pphRet:sumPphRet,neto:sumNeto});
+    if(tbFoot)fillPgPenggajianFoot(tbFoot,rows.length,hasCab,{gross:sumGross,thr:sumThr,thBruto:sumThBruto,bpjs:sumBpjs,potKh:sumPotKh,pph:sumPph,pphRet:sumPphRet,neto:sumNeto});
   }
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
 }

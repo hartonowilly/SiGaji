@@ -168,13 +168,20 @@ function renderAbsensiBody(){
       var isRes=!!(tStop&&x.date>=tStop);
       var st=isRes?'resign':(absensi[k.nik][x.date]||(isLN?'libnas':isLK?'libur':'hadir'));
       var lbl=ST_LBL[st]||'-';var cc=!isLK&&!isLN&&!isRes;
-      if(st==='hadir')cH++;else if(st==='cuti')cC++;else if(st==='sakit'||st==='setengah_sakit')cS++;else if(st==='izin'||st==='setengah_ijin')cI++;else if(st==='alpha')cA++;
+      if(st==='hadir')cH++;
+      else if(st==='cuti')cC++;
+      else if(st==='sakit')cS++;
+      else if(st==='setengah_sakit'){cS+=.5;cH+=.5;}
+      else if(st==='izin')cI++;
+      else if(st==='setengah_ijin'){cI+=.5;cH+=.5;}
+      else if(st==='alpha')cA++;
       var canCell=cc&&canEditDataPadaTanggalIso(x.date);
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
       var cellCls='ab-cell ab-st-'+(st||'libur')+(canCell?' is-clickable':'')+(cc&&!canCell?' is-readonly':'')+(isRes?' is-resign':'');
       html+='<td class="'+cellCls+'" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):(isRes||cc)?'title="'+(isRes?('Sudah resign sejak '+fmtDate(tStop)):'Periode terkunci — hubungi Admin')+'"':'')+mobTip+'>'+lbl+'</td>';
     });
-    html+='<td class="text-center fw-800 ct-success num ab-total-h">'+(cH||'')+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+(cC||'')+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+(cS||'')+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+(cI||'')+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+(cA||'')+'</td></tr>';
+    var fmtHr=typeof fmtHariAbsen==='function'?fmtHariAbsen:function(n,z){return n||(z===false?'0':'');};
+    html+='<td class="text-center fw-800 ct-success num ab-total-h">'+fmtHr(cH)+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+fmtHr(cC)+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+fmtHr(cS)+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+fmtHr(cI)+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+fmtHr(cA)+'</td></tr>';
     mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+(tStop?' · resign '+fmtDate(tStop):'')+'</div>'
       +'<div class="ab-mobile-days">';
     days.forEach(function(x){
@@ -196,11 +203,11 @@ function renderAbsensiBody(){
         +'</div>';
     });
     mobileCards+='</div><div class="ab-mobile-stats">'
-      +'<span class="ab-mobile-stat is-hadir">H '+cH+'</span>'
-      +'<span class="ab-mobile-stat is-cuti">C '+cC+'</span>'
-      +'<span class="ab-mobile-stat is-warn">S '+cS+'</span>'
-      +'<span class="ab-mobile-stat is-brand">I '+cI+'</span>'
-      +'<span class="ab-mobile-stat is-danger">A '+cA+'</span>'
+      +'<span class="ab-mobile-stat is-hadir">H '+fmtHr(cH,false)+'</span>'
+      +'<span class="ab-mobile-stat is-cuti">C '+fmtHr(cC,false)+'</span>'
+      +'<span class="ab-mobile-stat is-warn">S '+fmtHr(cS,false)+'</span>'
+      +'<span class="ab-mobile-stat is-brand">I '+fmtHr(cI,false)+'</span>'
+      +'<span class="ab-mobile-stat is-danger">A '+fmtHr(cA,false)+'</span>'
       +'</div></div>';
   });
   html+='</tbody></table>';
