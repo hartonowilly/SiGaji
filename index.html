@@ -348,6 +348,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="hitungUlangPenggajian" title="Hitung ulang saja (pro-rata, absensi, lembur, tunj. var) — tidak menimpa gapok/tunjangan periode">&#8635; Hitung Ulang</button>
     <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sinkronSnapshotPeriodeDariMaster" title="HATI-HATI: timpa gapok/tunjangan periode aktif dengan data Master Karyawan">&#128260; Ambil dari Master</button>
     <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelDaftarRekening" title="Format daftar transfer bank">&#128196; Excel Daftar Rekening</button>
+    <button class="btn btn-sm btn-s" data-sigaji-action="invoke" data-fn="openConverterBankModal" title="Converter EXCEL (.xlsm bermakro) untuk upload massal transfer bank">&#127974; Converter Transfer Bank</button>
     <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelBPJS" title="Rekap iuran BPJS per karyawan">&#128196; Excel BPJS</button>
     <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelKertasKerjaPPh" title="Kertas kerja PPh 21 &amp; THP per karyawan">&#128196; Excel Kertas Kerja PPh</button>
     <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelRekonResign" title="Rekonsiliasi PPh Jan s.d. bulan berhenti — karyawan dengan tgl. berhenti &amp; alasan PHK">&#128196; Excel Rekonsiliasi Resign</button>
@@ -1397,6 +1398,18 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </div>
 
 <!-- MODAL DETAIL GAJI -->
+<div class="mbd" id="m-converter">
+  <div class="modal" style="width:640px">
+    <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-converter">&times;</button>
+    <div class="mtit" id="m-converter-t">Converter EXCEL Transfer Bank</div>
+    <div id="m-converter-c"></div>
+    <div class="mfoot">
+      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-converter">Tutup</button>
+      <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="unduhConverterBank">&#11015; Unduh .xlsm</button>
+    </div>
+  </div>
+</div>
+
 <div class="mbd" id="m-gaji">
   <div class="modal" style="width:580px">
     <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-gaji">&times;</button>
@@ -1507,6 +1520,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="/js/modules/app-hr-tunjvar.js?v=11.5.79"></script>
 <script src="/js/modules/app-slip.js?v=11.5.79"></script>
 <script src="/js/modules/app-reports.js?v=11.5.79"></script>
+<script src="/js/modules/sigaji-converter-bank.js?v=11.5.79"></script>
 <script src="/js/modules/ebupot-export.js?v=11.5.79"></script>
 <script src="/js/modules/app-absensi.js?v=11.5.79"></script>
 <script src="/js/modules/app-mobile.js?v=11.5.79"></script>
