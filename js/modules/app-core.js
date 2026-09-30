@@ -974,6 +974,9 @@ function hitungGaji(k,pNama,opts){
   if(!opts.skipResolve){
     ensureKarSnapshotPeriode(pn,[k]);
     k=resolveKarForPeriode(k,pn);
+    // HH prorata resign yang tersimpan (mis. separuh bulan) jangan dipakai kalau
+    // tanggal berhenti sudah diketahui — diselaraskan dulu, baru neto dihitung.
+    ensureProrataResignUntukPeriode(k,p);
   }
   const hkP=hariKerjaRange(p.start,p.end);
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
@@ -1004,10 +1007,11 @@ function hitungGaji(k,pNama,opts){
 
   // ── PEMBAYARAN BERHENTI (UPH / PHK) ────────────
   // Sumber data: k.tgl_berhenti + k.phk + hitungPesangon() (pesangon.js)
-  const tglStopIso=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
+  const tglStopIso=toIsoDate(k.tgl_berhenti);
   // Cutoff: lihat periodeTglCutoffPhk — mendukung bayar lebih awal dari end (bank hari kerja).
-  const stopCutoff=periodeTglCutoffPhk(p);
-  const isStopInPeriode=!!(tglStopIso&&p.start&&stopCutoff&&tglStopIso>=p.start&&tglStopIso<=stopCutoff);
+  const stopCutoff=toIsoDate(periodeTglCutoffPhk(p));
+  const pStartIso=toIsoDate(p.start);
+  const isStopInPeriode=!!(tglStopIso&&pStartIso&&stopCutoff&&tglStopIso>=pStartIso&&tglStopIso<=stopCutoff);
   const alasan=(k.phk&&k.phk.alasan)?String(k.phk.alasan):'';
   const hasPhkAlasan=!!alasan.trim();
   const isResign=alasan.indexOf('resign')===0;
@@ -1073,6 +1077,9 @@ function hitungGaji(k,pNama,opts){
     pph=Math.max(0,pphBulanIni);
     const selisih=pphBulanIni; // negatif = lebih bayar
     const isStopReason=!!(tglStopIso&&isStopInPeriode);
+    // Karyawan yang berhenti tidak punya slip Januari untuk menampung carry over,
+    // jadi lebih bayar selalu dikembalikan di periode berhenti.
+    const opsiRefund=isStopReason||(p.opsi_lebih_bayar||'refund')!=='carryover';
     const tipeLabel=(p.tipe_periode==='desember')?'desember':(p.tipe_periode==='resign'||isStopReason)?'resign':p.tipe_periode;
     reconciliation={
       brutoYTD:ytd.totalBruto,pphYTD:ytd.totalPPh,
@@ -1085,13 +1092,13 @@ function hitungGaji(k,pNama,opts){
       pphBulanIni:selisih,
       lebihBayar:selisih<0?Math.abs(selisih):0,
       kurangBayar:selisih>0?selisih:0,
-      opsiLebihBayar:p.opsi_lebih_bayar||'refund', // 'refund' | 'carryover'
+      opsiLebihBayar:opsiRefund?'refund':'carryover',
       isPajakTerakhir:true,
       tipePeriode:tipeLabel,
       reason:isStopReason?'stop_in_period':(p.tipe_periode==='desember'?'desember':'other'),
       tglBerhenti:isStopReason?tglStopIso:''
     };
-    if(selisih<0&&(p.opsi_lebih_bayar||'refund')==='refund') pph=0; // lebih bayar → PPh bulan ini 0
+    if(selisih<0&&opsiRefund) pph=0; // lebih bayar → PPh bulan ini 0, selisih masuk THP lewat refundPph
   } else {
     pph=hitungPPhBln(grossPPh,k.ptkp);
   }

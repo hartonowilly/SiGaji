@@ -1095,18 +1095,6 @@ function renderPenggajianBody(skipTunjVar){
   let prAktif=0;
   var sumGross=0,sumThr=0,sumThBruto=0,sumBpjs=0,sumPph=0,sumPphRet=0,sumNeto=0,sumPotKh=0;
   const rows=karyawanListPeriode(p).map(function(k,idx){
-    const g=hitungGaji(k,p.nama);
-    sumGross+=g.grossPPh||0;
-    sumThr+=g.thrBruto||0;
-    sumThBruto+=g.brutoTH||0;
-    sumBpjs+=(g.bpjs.kes_kar||0)+(g.bpjs.jht_kar||0)+(g.bpjs.jp_kar||0);
-    sumPph+=g.pph||0;
-    sumPphRet+=g.pphRet||0;
-    sumNeto+=g.neto||0;
-    sumPotKh+=(g.potKehadiran&&g.potKehadiran.total)||0;
-    const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
-    const st=ap?ap.status:'draft';
-    const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:''}[st]||'';
     const pr=ensureProrataResignUntukPeriode(k,p);
     if(!pr.manual){
       var stop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
@@ -1119,6 +1107,19 @@ function renderPenggajianBody(skipTunjVar){
       }
     }
     if(pr.enabled)prAktif++;
+    const g=hitungGaji(k,p.nama);
+    sumGross+=g.grossPPh||0;
+    sumThr+=g.thrBruto||0;
+    sumThBruto+=g.brutoTH||0;
+    sumBpjs+=(g.bpjs.kes_kar||0)+(g.bpjs.jht_kar||0)+(g.bpjs.jp_kar||0);
+    sumPph+=g.pph||0;
+    var retShow=(g.pphRet||0)+(g.refundPph||0);
+    sumPphRet+=retShow;
+    sumNeto+=g.neto||0;
+    sumPotKh+=(g.potKehadiran&&g.potKehadiran.total)||0;
+    const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
+    const st=ap?ap.status:'draft';
+    const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:''}[st]||'';
     const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'"'+sigajiDataAction('pr-toggle',{nik:k.nik,periode:p.nama,enabled:!pr.enabled?'1':'0'})+'>'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
     const prInputs=pr.enabled?'<div class="pr-input-row"><span class="u-muted-10">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span class="u-muted-10">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
     const thrExplain=g.thrBruto>0?sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa angka THR ini?"':'';
@@ -1145,8 +1146,8 @@ function renderPenggajianBody(skipTunjVar){
       +'<td class="pg-col-adv num cell-money">'+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</td>'
       +potKhTd
       +'<td class="num cell-money'+(g.reconciliation&&g.reconciliation.kurangBayar>0?' cell-deduction':'')+'"><span class="sigaji-money-click"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa angka ini?">'+fmt(g.pph)+'</span>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+(g.reconciliation&&g.reconciliation.lebihBayar>0?'<div class="font-9 text-success fw-700">&#10003; Lebih Bayar '+fmt(g.reconciliation.lebihBayar)+'</div>':g.reconciliation&&g.reconciliation.kurangBayar>0?'<div class="font-9 ct-danger">&#9650; Kurang Bayar '+fmt(g.reconciliation.kurangBayar)+'</div>':'')+'</td>'
-      +'<td class="pg-col-adv num cell-money">'+(g.pphRet>0?'<span class="ct-success fw-700">+'+fmt(g.pphRet)+'</span>':'&#8212;')+'</td>'
-      +'<td class="num cell-neto"><strong class="sigaji-money-click cell-neto-strong"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Waterfall THP">'+fmt(g.neto)+'</strong>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td>'
+      +'<td class="pg-col-adv num cell-money">'+(retShow>0?'<span class="ct-success fw-700" title="'+(g.refundPph>0?'Termasuk lebih bayar PPh rekonsiliasi '+fmt(g.refundPph):'PPh return')+'">+'+fmt(retShow)+'</span>':'&#8212;')+'</td>'
+      +'<td class="num cell-neto"><strong class="sigaji-money-click cell-neto-strong"'+sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Waterfall THP">'+fmt(g.neto)+'</strong>'+(g.refundPph>0?'<div class="font-9 text-success fw-700">termasuk lebih bayar '+fmt(g.refundPph)+'</div>':'')+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):'')+'</td>'
       +'<td>'+stBdg+'</td>'
       +'<td><button class="btn btn-sm btn-out"'+sigajiDataAction('payroll-detail',{nik:k.nik,periode:p.nama})+'>Detail</button></td></tr>';
   });

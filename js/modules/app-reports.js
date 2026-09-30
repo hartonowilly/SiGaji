@@ -246,6 +246,7 @@ function exportExcelDaftarRekening(){
       rows.push(['NO','NAMA','NO REKENING','KET']);
       var totalNeto=0;
       list.forEach(function(k,i){
+        if(typeof ensureProrataResignUntukPeriode==='function')ensureProrataResignUntukPeriode(k,p);
         var g=hitungGaji(k,pNama);
         var net=Math.round(g.neto);
         totalNeto+=net;
