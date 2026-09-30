@@ -117,5 +117,10 @@ assertEq('Dewi Des lebih bayar', gDes.reconciliation.lebihBayar, 261_350);
 assertEq('Dewi Des kurang bayar', gDes.reconciliation.kurangBayar, 0);
 assertEq('Dewi Des bruto YTD dari Jan', gDes.reconciliation.brutoYTD, 10_454_000);
 assertEq('Dewi Des PPh YTD dari Jan', gDes.reconciliation.pphYTD, 261_350);
+assertEq('Dewi Des refund masuk THP', gDes.refundPph, 261_350);
 
-console.log('\nLapisan C: semua tes lulus (14 assert).');
+pxDes.periodes[1].opsi_lebih_bayar = 'carryover';
+const gDesCo = pxDes.hitungGaji(kDes, 'Des 2026', { skipResolve: true });
+assertEq('Dewi Des carryover: tidak masuk THP', gDesCo.refundPph, 0);
+
+console.log('\nLapisan C: semua tes lulus.');

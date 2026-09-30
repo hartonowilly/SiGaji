@@ -94,8 +94,8 @@ assertEq('Eko Mar bruto YTD sebelum Mar', gMar.reconciliation.brutoYTD, 20_908_0
 
 px.periodes[2].opsi_lebih_bayar = 'carryover';
 const gMarCo = px.hitungGaji(kResign, 'Mar 2026', { skipResolve: true });
-assertEq('Eko Mar carryover: refund tidak masuk THP', gMarCo.refundPph, 0);
-assertEq('Eko Mar carryover: neto tanpa pengembalian', gMarCo.neto, 9_640_000);
+assertEq('Eko Mar resign tetap refund meski periode carryover', gMarCo.refundPph, 522_700);
+assertEq('Eko Mar resign carryover: neto termasuk refund', gMarCo.neto, 10_162_700);
 delete px.periodes[2].opsi_lebih_bayar;
 
 // ── Routing pajak PHK vs Resign atas pesangon/UPH/uang pisah ────────────
@@ -165,5 +165,46 @@ assertEq('PHK: dasar final = bruto pesangon', gPHK.phk.pphFinalBase, 200_000_000
 assertEq('PHK: PPh final PP 68/2009', gPHK.phk.pphFinal, 17_500_000);
 // Pesangon final TIDAK masuk grossPPh progresif (tidak double-tax)
 assertEq('PHK: pesangon di luar grossPPh progresif', gPHK.grossPPh, gResignTanpa.grossPPh);
+
+// HH prorata yang tersimpan separuh bulan (13/26) memotong gaji 2,6 jt jadi 1,3 jt.
+// Resign di akhir bulan harus dihitung ulang dari hari kerja, bukan angka basi itu.
+const pxAkhir = loadPayrollCore({
+  periodes: [{
+    id: 9,
+    nama: 'Sep 2026',
+    start: '2026-09-01',
+    end: '2026-09-30',
+    bayar: '2026-09-30',
+    status: 'aktif',
+    thr_aktif: false,
+    tipe_periode: 'biasa',
+  }],
+  prorata: {
+    'SOF-AKHIR': {
+      'Sep 2026': { enabled: true, hk: 26, hh: 13, manual: false },
+    },
+  },
+});
+const kAkhir = {
+  nik: 'SOF-AKHIR',
+  nama: 'Contoh Resign Akhir Bulan (fiktif)',
+  gapok: 2_600_000,
+  ptkp: 'TK0',
+  masuk: '2024-01-01',
+  tgl_berhenti: '2026-09-30',
+  phk: { alasan: 'resign_30hr' },
+  tunjangan: [],
+  potongan: [],
+  natura: [],
+  bpjs_aktif: {},
+};
+const gStale = pxAkhir.hitungGaji(kAkhir, 'Sep 2026', { skipResolve: true });
+assertEq('tanpa selaras: HH basi 13/26 = gapok 1,3 jt', gStale.gapokEff, 1_300_000);
+assertEq('tanpa selaras: neto ikut gapok 1,3 jt', gStale.neto, 1_196_000);
+const gAkhir = pxAkhir.hitungGaji(kAkhir, 'Sep 2026');
+assertEq('resign 30 Sep: HH hari kerja s.d. 29', gAkhir.pr.hh, 25);
+assertEq('resign 30 Sep: HK', gAkhir.pr.hk, 26);
+assertEq('resign 30 Sep: gapok bukan 1,3 jt', gAkhir.gapokEff, 2_500_000);
+assertEq('resign 30 Sep: neto ikut gapok yang diselaraskan', gAkhir.neto, 2_396_000);
 
 console.log('\nResign: semua tes lulus.');
