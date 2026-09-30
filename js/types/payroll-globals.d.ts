@@ -105,9 +105,28 @@ interface HitungGajiResult {
   potKehadiran: { total: number };
   potT: number;
   pphRet: number;
+  /** Lebih bayar PPh rekonsiliasi yang dikembalikan ke THP (0 bila carryover). */
+  refundPph: number;
   totalPot: number;
   bebanPrs: number;
   grossPPhRegular: number;
+}
+
+interface RincianCutiItem {
+  tgl: string;
+  hariKerja: boolean;
+  cutiBersama: boolean;
+  namaLibur: string;
+  diAbsensi: boolean;
+  tahunLalu: boolean;
+  hitung: 'manual' | 'cuti_bersama' | 'tidak';
+}
+
+interface RincianCuti {
+  items: RincianCutiItem[];
+  manual: number;
+  cb: number;
+  total: number;
 }
 
 interface KaryawanPayroll {

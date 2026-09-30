@@ -269,14 +269,72 @@ function renderCutiRekap(){
     const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
     const sisaCls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
+    const act=sigajiDataAction('cuti-detail',{nik:k.nik,yr:yr,tracking:'1'})+' title="Klik: lihat tanggal cuti '+String(yr)+'"';
     return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+k.nama+'</div></td>'
       +'<td>'+Math.floor(mb/12)+'thn '+mb%12+'bln</td>'
-      +'<td>'+kuota+'</td><td><span class="bdg '+(manual>0?'b-warn':'b-gray')+'">'+manual+'</span></td>'
-      +'<td>'+(cb>0?'<span class="bdg b-pu">'+cb+'</span>':'<span class="text-subtle">0</span>')+'</td>'
-      +'<td><span class="bdg '+(total>kuota?'b-err':total>0?'b-warn':'b-gray')+'">'+total+'</span></td>'
-      +'<td><span class="bdg '+sisaCls+'">'+sisa+'</span></td>'
+      +'<td>'+kuota+'</td><td><span class="bdg sigaji-money-click '+(manual>0?'b-warn':'b-gray')+'"'+act+'>'+manual+'</span></td>'
+      +'<td><span class="bdg sigaji-money-click '+(cb>0?'b-pu':'b-gray')+'"'+act+'>'+cb+'</span></td>'
+      +'<td><span class="bdg sigaji-money-click '+(total>kuota?'b-err':total>0?'b-warn':'b-gray')+'"'+act+'>'+total+'</span></td>'
+      +'<td><span class="bdg sigaji-money-click '+sisaCls+'"'+act+'>'+sisa+'</span></td>'
       +'<td><div class="cuti-bar u-inline-block" style="width:120px"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
   }).join('');
+}
+/**
+ * Modal rincian tanggal cuti (dipanggil dari badge saldo cuti di Master Karyawan & Tracking Cuti).
+ * `tracking` true = basis rekap tahunan (ikut ekor periode tahun lalu), sama seperti tabel Tracking Cuti.
+ */
+function detailCuti(nik,yr,tracking){
+  var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  if(!k){toast('Karyawan tidak ditemukan');return;}
+  var tahun=parseInt(yr,10)||new Date().getFullYear();
+  var r=rincianCutiTahun(nik,tahun,{tracking:!!tracking});
+  var kuota=masterCuti.kuota||12;
+  var sisa=kuota-r.total;
+  var sisaCls=sisa<=0?'ct-danger':sisa<=3?'ct-warn':'ct-success';
+  var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  var pill=function(nilai,lbl,cls){
+    return '<div class="text-center"><div class="font-22 fw-800 '+cls+'">'+String(nilai)+'</div><div class="u-muted-10">'+lbl+'</div></div>';
+  };
+  var h='<div class="card card-surface-purple mb-md"><div class="fl-center-wrap gap2">'
+    +pill(kuota,'Kuota','ct-purple')
+    +pill(r.manual,'Cuti Manual','ct-warn')
+    +pill(r.cb,'Cuti Bersama','ct-purple')
+    +pill(r.total,'Terpakai','ct-brand')
+    +pill(sisa,'Sisa',sisaCls)
+    +'</div></div>';
+  if(r.items.length){
+    h+='<div class="table-wrap"><table class="sigaji-table"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th></tr></thead><tbody>';
+    r.items.forEach(function(it){
+      var dow=dowN[new Date(it.tgl+'T12:00:00').getDay()];
+      var jenis=it.cutiBersama
+        ?'<span class="bdg b-pu">Cuti Bersama</span>'
+        :'<span class="bdg b-warn">Cuti</span>';
+      var ket=[];
+      if(it.namaLibur)ket.push(escapeHtml(it.namaLibur));
+      if(it.hitung==='tidak'){
+        ket.push(!it.hariKerja
+          ?'tidak potong kuota (jatuh di hari libur/akhir pekan)'
+          :'tidak potong kuota (setelan cuti bersama dimatikan)');
+      }else if(it.cutiBersama&&it.diAbsensi){
+        ket.push('diabsen "C" juga — dihitung sekali');
+      }else if(it.hitung==='manual'&&it.cutiBersama){
+        ket.push('dihitung sebagai cuti manual');
+      }
+      if(it.tahunLalu)ket.push('dari periode gaji tahun lalu');
+      h+='<tr'+(it.hitung==='tidak'?' class="text-muted"':'')+'><td class="font-mono">'+fmtDate(it.tgl)
+        +' <span class="font-10 text-muted">'+dow+'</span></td><td>'+jenis+'</td>'
+        +'<td class="font-11">'+(ket.length?ket.join(' · '):'&mdash;')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }else{
+    h+='<div class="text-muted font-12 p-md">Belum ada cuti tercatat di '+String(tahun)+'.</div>';
+  }
+  if(!masterCuti.cbPotong)h+='<div class="font-10 text-muted mt-xs">Setelan: cuti bersama tidak otomatis memotong kuota (Master &rarr; Setting Cuti).</div>';
+  var tEl=document.getElementById('m-cuti-t');
+  if(tEl)tEl.textContent='Saldo Cuti '+String(tahun)+' — '+(k.nama||nik);
+  var cEl=document.getElementById('m-cuti-c');
+  if(cEl)cEl.innerHTML=h;
+  openModal('m-cuti');
 }
 function simpanMasterCuti(){
   masterCuti.kuota=parseInt(document.getElementById('cuti-kuota').value)||12;

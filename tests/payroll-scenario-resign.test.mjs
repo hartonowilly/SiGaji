@@ -85,11 +85,18 @@ assertEq('Eko Feb PPh TER', gFeb.pph, 261_350);
 assertEq('Eko Mar masa pajak terakhir', gMar.isMasaPajakTerakhir, true);
 assertEq('Eko Mar grossPPh', gMar.grossPPh, 10_408_600);
 assertEq('Eko Mar PPh (refund)', gMar.pph, 0);
-assertEq('Eko Mar neto', gMar.neto, 9_640_000);
+assertEq('Eko Mar refund masuk THP', gMar.refundPph, 522_700);
+assertEq('Eko Mar neto termasuk refund', gMar.neto, 10_162_700);
 assertEq('Eko Mar tipe rekonsiliasi', gMar.reconciliation.tipePeriode, 'resign');
 assertEq('Eko Mar lebih bayar', gMar.reconciliation.lebihBayar, 522_700);
 assertEq('Eko Mar PPh YTD sebelum Mar', gMar.reconciliation.pphYTD, 522_700);
 assertEq('Eko Mar bruto YTD sebelum Mar', gMar.reconciliation.brutoYTD, 20_908_000);
+
+px.periodes[2].opsi_lebih_bayar = 'carryover';
+const gMarCo = px.hitungGaji(kResign, 'Mar 2026', { skipResolve: true });
+assertEq('Eko Mar carryover: refund tidak masuk THP', gMarCo.refundPph, 0);
+assertEq('Eko Mar carryover: neto tanpa pengembalian', gMarCo.neto, 9_640_000);
+delete px.periodes[2].opsi_lebih_bayar;
 
 // ── Routing pajak PHK vs Resign atas pesangon/UPH/uang pisah ────────────
 // Harness dasar tidak memuat pesangon.js (hitungPesangon undefined → blok PHK
@@ -159,4 +166,4 @@ assertEq('PHK: PPh final PP 68/2009', gPHK.phk.pphFinal, 17_500_000);
 // Pesangon final TIDAK masuk grossPPh progresif (tidak double-tax)
 assertEq('PHK: pesangon di luar grossPPh progresif', gPHK.grossPPh, gResignTanpa.grossPPh);
 
-console.log('\nResign: semua tes lulus (20 assert).');
+console.log('\nResign: semua tes lulus.');

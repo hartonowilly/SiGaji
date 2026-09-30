@@ -1,7 +1,7 @@
 /* SiGaji — inti: helper, snapshot, hitung gaji, BPJS, THR calc */
 /// <reference path="../types/payroll-globals.d.ts" />
 /* exported periodesFindById, periodesSortedByStart, sortPeriodesByPayrollYm, namaHL, ini,
-   cutiManualTrackingYear, countCutiBersamaTrackingYear, cutiTerpakai,
+   cutiManualTrackingYear, countCutiBersamaTrackingYear, cutiTerpakai, rincianCutiTahun,
    setPREnabled, setPRField, hitungPPhProgresif, setPphYtdAwal, syncTunjVarLabelsFromColumns,
    karyawanSortedAll, nextNikOtomatis, clearPphReturnPanel, canEditDataPadaTanggalIso,
    refreshKarSnapshotFromMaster, setSpPayrollView, getKarSnapshotProgress */
@@ -336,6 +336,68 @@ function cutiManualUntukTahunDanPeriode(nik,tahun,periode){
   return n;
 }
 const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr);
+/**
+ * Rincian tanggal cuti satu karyawan untuk tahun kuota `yr` — isi modal "Saldo Cuti".
+ * Angkanya sengaja direkonsiliasi dengan penghitung yang dipakai kolom saldo:
+ * `opts.tracking` true memakai basis cutiManualTrackingYear + countCutiBersamaTrackingYear
+ * (ikut ekor periode gaji tahun lalu), false memakai cutiManual + countCutiBersama.
+ * @param {string} nik
+ * @param {number|string} yr
+ * @param {{ tracking?: boolean }} [opts]
+ * @returns {RincianCuti}
+ */
+function rincianCutiTahun(nik,yr,opts){
+  opts=opts||{};
+  const y=String(yr);
+  const cbPotong=!!masterCuti.cbPotong;
+  const tails=opts.tracking?getCrossYearTailRanges(yr):[];
+  const dalamLingkup=function(d){
+    if(!d)return false;
+    if(d.startsWith(y))return true;
+    if(!(d<y+'-01-01'))return false;
+    return tails.some(function(r){return d>=r.start&&d<=r.end;});
+  };
+  /** @type {Record<string, RincianCutiItem>} */
+  const byTgl={};
+  const entri=function(d){
+    if(!byTgl[d]){
+      byTgl[d]={
+        tgl:d,
+        hariKerja:!isHariLiburKerja(new Date(d+'T12:00:00').getDay()),
+        cutiBersama:false,
+        namaLibur:'',
+        diAbsensi:false,
+        tahunLalu:!d.startsWith(y),
+        hitung:'tidak',
+      };
+    }
+    return byTgl[d];
+  };
+  (hariLibur||[]).forEach(function(l){
+    if(!l||l.tipe!=='cuti-bersama')return;
+    const d=toIsoDate(l.tgl);
+    if(!dalamLingkup(d))return;
+    const it=entri(d);
+    it.cutiBersama=true;
+    it.namaLibur=l.nama||'Cuti Bersama';
+  });
+  const ab=absensi[nik]||{};
+  Object.keys(ab).forEach(function(raw){
+    if(ab[raw]!=='cuti')return;
+    const d=toIsoDate(raw);
+    if(!dalamLingkup(d))return;
+    entri(d).diAbsensi=true;
+  });
+  const items=Object.keys(byTgl).sort().map(function(d){return byTgl[d];});
+  let manual=0,cb=0;
+  items.forEach(function(it){
+    // Cuti bersama yang jatuh di hari kerja dipotong dari kuota lewat master hari libur,
+    // jadi tanggal itu tidak boleh dihitung ulang sebagai cuti manual walau diabsen "C".
+    if(it.cutiBersama&&cbPotong&&it.hariKerja){it.hitung='cuti_bersama';cb++;}
+    else if(it.diAbsensi){it.hitung='manual';manual++;}
+  });
+  return{items:items,manual:manual,cb:cb,total:manual+cb};
+}
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
 /** Status 1/2 sakit & 1/2 izin bernilai 0,5 hari — sama seperti dasar potongan gaji. */
@@ -1029,7 +1091,7 @@ function hitungGaji(k,pNama,opts){
       reason:isStopReason?'stop_in_period':(p.tipe_periode==='desember'?'desember':'other'),
       tglBerhenti:isStopReason?tglStopIso:''
     };
-    if(selisih<0&&p.opsi_lebih_bayar==='refund') pph=0; // lebih bayar → PPh bulan ini 0
+    if(selisih<0&&(p.opsi_lebih_bayar||'refund')==='refund') pph=0; // lebih bayar → PPh bulan ini 0
   } else {
     pph=hitungPPhBln(grossPPh,k.ptkp);
   }
@@ -1038,12 +1100,15 @@ function hitungGaji(k,pNama,opts){
   const potT=(k.potongan||[]).reduce((s,x)=>s+x.nilai,0);
   const potKehadiran=hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
   const pphRet=k.pph_return?.nilai||0;
+  // Lebih bayar rekonsiliasi (resign/Desember, opsi refund) dikembalikan ke THP.
+  // Carryover tidak masuk bulan ini. Default periode tanpa opsi = refund.
+  const refundPph=(reconciliation&&reconciliation.lebihBayar>0&&reconciliation.opsiLebihBayar==='refund')?reconciliation.lebihBayar:0;
   const totalPot=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+potT+pph+potKehadiran.total;
-  const netoRegular=brutoTH-totalPot+pphRet;
+  const netoRegular=brutoTH-totalPot+pphRet+refundPph;
   const phkNet=(phkCtx&&phkCtx.mode==='phk')?(phkCtx.bruto-phkCtx.pphFinal):0;
   const neto=netoRegular+phkNet;
   const bebanPrs=bpjs.kes_prs+bpjs.jht_prs+bpjs.jp_prs+bpjs.jkk_prs+bpjs.jkm_prs;
-  return{gapokEff,gapokFull:k.gapok,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,pphRet,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx};
+  return{gapokEff,gapokFull:k.gapok,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx};
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;
