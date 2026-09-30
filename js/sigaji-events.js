@@ -82,6 +82,11 @@
       case 'explain':
         if (nik && typeof sigajiOpenExplain === 'function') sigajiOpenExplain(nik, periode || '');
         return true;
+      case 'cuti-detail':
+        if (nik && typeof detailCuti === 'function') {
+          detailCuti(nik, el.getAttribute('data-yr'), el.getAttribute('data-tracking') === '1');
+        }
+        return true;
       case 'explain-summary':
         if (type && typeof sigajiOpenExplainSummary === 'function') sigajiOpenExplainSummary(type);
         return true;

@@ -472,8 +472,16 @@ function renderMyCuti(){
   var manual=cutiManual(k.nik,yr);var cb=countCutiBersama(yr);var total=manual+cb;
   var sisa=kuota-total;
   var sisaCls=sisa<=0?'cuti-sisa-danger':sisa<=3?'cuti-sisa-warn':'cuti-sisa-ok';
-  var cutiDays=Object.entries(absensi[k.nik]||{}).filter(function(e){return e[1]==='cuti'&&e[0].startsWith(String(yr));}).sort();
-  var html='<div class="card card-surface-purple"><div class="fl-between-wrap"><div><strong class="font-14 ct-purple">Saldo Cuti '+String(yr)+' - '+escapeHtml(k.nama)+'</strong></div><div class="fl gap2"><div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(kuota)+'</div><div class="u-muted-10">Kuota</div></div><div class="text-center"><div class="font-22 fw-800 ct-warn">'+String(manual)+'</div><div class="u-muted-10">Cuti Manual</div></div>'+(cb>0?'<div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(cb)+'</div><div class="u-muted-10">Cuti Bersama</div></div>':'')+'<div class="text-center"><div class="font-22 fw-800 '+sisaCls+'">'+String(sisa)+'</div><div class="u-muted-10">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+String(yr)+'</div>'+(cutiDays.length?'<table class="sigaji-table"><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>'+cutiDays.map(function(e){return '<tr><td>'+escapeHtml(e[0])+'</td><td><span class="bdg b-pu">Cuti</span></td></tr>';}).join('')+'</tbody></table>':'<div class="text-muted font-12">Belum ada cuti.</div>')+'</div>';
+  var rinci=typeof rincianCutiTahun==='function'?rincianCutiTahun(k.nik,yr):{items:[]};
+  var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  var rows=(rinci.items||[]).map(function(it){
+    var dow=dowN[new Date(it.tgl+'T12:00:00').getDay()];
+    var jenis=it.cutiBersama?'<span class="bdg b-pu">Cuti Bersama</span>':'<span class="bdg b-warn">Cuti</span>';
+    var ket=it.namaLibur?escapeHtml(it.namaLibur):(it.hitung==='manual'?'Cuti':'');
+    if(it.hitung==='tidak')ket=(ket?ket+' · ':'')+'tidak potong kuota';
+    return '<tr'+(it.hitung==='tidak'?' class="text-muted"':'')+'><td class="font-mono">'+fmtDate(it.tgl)+' <span class="font-10 text-muted">'+dow+'</span></td><td>'+jenis+'</td><td class="font-11">'+(ket||'&mdash;')+'</td></tr>';
+  }).join('');
+  var html='<div class="card card-surface-purple"><div class="fl-between-wrap"><div><strong class="font-14 ct-purple">Saldo Cuti '+String(yr)+' - '+escapeHtml(k.nama)+'</strong></div><div class="fl gap2"><div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(kuota)+'</div><div class="u-muted-10">Kuota</div></div><div class="text-center"><div class="font-22 fw-800 ct-warn">'+String(manual)+'</div><div class="u-muted-10">Cuti Manual</div></div>'+(cb>0?'<div class="text-center"><div class="font-22 fw-800 ct-purple">'+String(cb)+'</div><div class="u-muted-10">Cuti Bersama</div></div>':'')+'<div class="text-center"><div class="font-22 fw-800 '+sisaCls+'">'+String(sisa)+'</div><div class="u-muted-10">Sisa</div></div></div></div></div><div class="card"><div class="ct">Riwayat Cuti '+String(yr)+'</div>'+(rows?'<table class="sigaji-table"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Keterangan</th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="text-muted font-12">Belum ada cuti.</div>')+'</div>';
   document.getElementById('my-cuti-content').innerHTML=html;
 }
 // ── SELECTS & BACKUP ─────────────────────────────

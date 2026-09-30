@@ -169,7 +169,7 @@ function karRowHtml(k,no){
   const tipe=typeof sigajiNormalizeKarTipe==='function'?sigajiNormalizeKarTipe(k.tipe_kerja,k):'tetap';
   const tipeLbl=typeof sigajiKarTipeLabel==='function'?sigajiKarTipeLabel(tipe):(tipe==='tidak_tetap'?'Tidak Tetap':'Tetap');
   const tipeCls=tipe==='tidak_tetap'?'b-warn':'b-teal';
-  const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls}" title="Saldo cuti tahun ${yrKar}">${sLbl}</span>`;
+  const cutiCell=tipe==='tidak_tetap'?'<span class="bdg b-gray" title="Cuti tahunan biasanya tidak dipakai">—</span>':`<span class="bdg ${sCls} sigaji-money-click"${sigajiDataAction('cuti-detail',{nik:k.nik,yr:yrKar})} title="Klik: lihat tanggal cuti ${yrKar}">${sLbl}</span>`;
   const tgBtn=(CU&&(CU.role==='Admin'||CU.role==='HRD'))?`<button class="btn btn-sm btn-out"${sigajiDataAction('telegram',{nik:k.nik})}>Telegram</button>`:'';
   var cabCol=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
   var stop=String(k.tgl_berhenti||'').trim();
@@ -1233,6 +1233,7 @@ function detailGaji(nik,pNama){
   if(potKh.total>0&&potKh.gajiHarian>0)h+='<div class="font-10 text-muted">Dasar potongan: gaji harian '+fmt(potKh.gajiHarian)+' (1/2 hari = '+fmt(Math.round(potKh.gajiHarian/2))+')</div>';
   h+='<div class="pr-row-info fw-700 gs-divider"><span>Total Potongan</span><span>- '+fmt(g.totalPot)+'</span></div>';
   if(g.pphRet>0)h+='<div class="pr-row-info ct-success"><span>Return PPh</span><span>+ '+fmt(g.pphRet)+'</span></div>';
+  if(g.refundPph>0)h+='<div class="pr-row-info ct-success"><span>Lebih bayar PPh (dikembalikan)</span><span>+ '+fmt(g.refundPph)+'</span></div>';
   h+='</div></div>';
   h+='<div class="rounded-sm p-inset-sm fl justify-between fw-800 mt-lg font-14 btn-email"><span>TAKE HOME PAY</span><span>'+fmt(g.neto)+'</span></div>';
   // Tambahkan reconciliation box untuk masa pajak terakhir
@@ -1252,7 +1253,7 @@ function detailGaji(nik,pNama){
     h+='<div class="cr"><span>PPh sudah dipotong (Jan s.d. bulan lalu)</span><span>- '+fmt(r.pphYTD)+'</span></div>';
     h+='<div class="cr bold recon-panel-amount '+(isLebih?'is-refund':'is-owe')+'"><span>'+(isLebih?'&#10003; Lebih Bayar (dikembalikan)':'&#9888; Kurang Bayar (dipotong)')+' </span><span>'+( isLebih?'+ ':'')+fmt(isLebih?r.lebihBayar:r.kurangBayar)+'</span></div>';
     if(isLebih&&r.opsiLebihBayar==='carryover')h+='<div class="font-10 ct-purple mt-xs">&#8594; Lebih bayar di-carry over ke Januari tahun depan</div>';
-    if(isLebih&&r.opsiLebihBayar==='refund')h+='<div class="font-10 ct-success mt-xs">&#8594; Lebih bayar dikembalikan langsung bulan ini (PPh = Rp 0)</div>';
+    if(isLebih&&r.opsiLebihBayar==='refund')h+='<div class="font-10 ct-success mt-xs">&#8594; Lebih bayar '+fmt(r.lebihBayar)+' ditambahkan ke take home bulan ini (PPh bulan ini = Rp 0)</div>';
     h+='</div>';
   }
   document.getElementById('m-gaji-c').innerHTML=h;

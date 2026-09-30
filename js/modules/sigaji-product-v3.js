@@ -543,6 +543,7 @@
           .join(' · '),
       });
     if (g.pphRet) steps.push({ lbl: 'Pengembalian PPh', val: g.pphRet, type: 'up' });
+    if (g.refundPph) steps.push({ lbl: 'Lebih bayar PPh (dikembalikan)', val: g.refundPph, type: 'up' });
     steps.push({ lbl: 'Take Home Pay', val: g.neto, type: 'final' });
 
     var maxAbs = Math.max.apply(
