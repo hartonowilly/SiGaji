@@ -4,7 +4,7 @@
 # Sekali di GitHub repo: Settings → Secrets → Actions
 #   SIGAJI_SUPABASE_URL, SIGAJI_SUPABASE_ANON_KEY (sama seperti Cloudflare Pages)
 
-name: Supabase keepalive
+name: Penjaga Supabase (keepalive harian)
 
 on:
   schedule:
