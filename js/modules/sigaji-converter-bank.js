@@ -404,6 +404,7 @@
     var lewat = [];
     var catatan = [];
     list.forEach(function (k) {
+      if (typeof ensureProrataResignUntukPeriode === 'function') ensureProrataResignUntukPeriode(k, p);
       var g = hitungGaji(k, p.nama);
       var jumlah = Math.round(g.neto || 0);
       var rek = String(k.norek || '').replace(/[^\d]/g, '');
