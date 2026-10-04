@@ -76,6 +76,11 @@ function sigajiMobileBottomShortLabel(pgId){
   }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   return pgId;
 }
+function sigajiMobileBottomIcon(pgId){
+  try{if(typeof sigajiNavIcon==='function')return sigajiNavIcon(pgId);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+  var mod=typeof MODULES!=='undefined'?MODULES.find(function(x){return x.id===pgId;}):null;
+  return mod&&mod.icon?mod.icon:'&#9679;';
+}
 function sigajiRenderMobileBottomNav(){
   var nav=document.getElementById('sigaji-mobile-bottom-nav');
   if(!nav)return;
@@ -87,25 +92,49 @@ function sigajiRenderMobileBottomNav(){
   }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   var html='';
   slots.forEach(function(pgId){
-    var mod=typeof MODULES!=='undefined'?MODULES.find(function(x){return x.id===pgId;}):null;
-    var icon=mod&&mod.icon?mod.icon:'&#9679;';
     var lbl=sigajiMobileBottomShortLabel(pgId);
     var active=activePg===pgId?' active':'';
     html+='<button type="button" class="sigaji-mbn-item'+active+'" data-pg="'+pgId+'" data-sigaji-action="invoke" data-fn="showPg" data-arg="'+pgId+'" aria-current="'+(active?'page':'false')+'">'+
-      '<span class="sigaji-mbn-icon" aria-hidden="true">'+icon+'</span><span class="sigaji-mbn-lbl">'+lbl+'</span></button>';
+      '<span class="sigaji-mbn-icon" aria-hidden="true">'+sigajiMobileBottomIcon(pgId)+'</span><span class="sigaji-mbn-lbl">'+lbl+'</span></button>';
   });
-  html+='<button type="button" class="sigaji-mbn-item sigaji-mbn-menu" data-sigaji-action="nav-drawer" aria-label="Buka menu modul">'+
-    '<span class="sigaji-mbn-icon" aria-hidden="true">&#9776;</span><span class="sigaji-mbn-lbl">Menu</span></button>';
+  html+='<button type="button" class="sigaji-mbn-item sigaji-mbn-menu" data-sigaji-action="nav-drawer" aria-label="Modul lainnya">'+
+    '<span class="sigaji-mbn-icon" aria-hidden="true"><svg class="nav-svg sigaji-mbn-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.75" fill="currentColor" stroke="none"/></svg></span>'+
+    '<span class="sigaji-mbn-lbl">Lainnya</span></button>';
   nav.innerHTML=html;
+  if(activePg)sigajiSyncMobileBottomNavActive(activePg);
 }
 function sigajiSyncMobileBottomNavActive(pg){
   var nav=document.getElementById('sigaji-mobile-bottom-nav');
   if(!nav)return;
+  var slots=sigajiGetMobileBottomNavPgIds();
+  var inBar=slots.indexOf(pg)>=0;
+  var drawerOpen=false;
+  try{drawerOpen=document.documentElement.classList.contains('sigaji-nav-open');}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   nav.querySelectorAll('.sigaji-mbn-item[data-pg]').forEach(function(btn){
-    var on=btn.dataset.pg===pg;
+    var on=btn.dataset.pg===pg&&!drawerOpen;
     btn.classList.toggle('active',on);
     btn.setAttribute('aria-current',on?'page':'false');
   });
+  var menuBtn=nav.querySelector('.sigaji-mbn-menu');
+  if(menuBtn){
+    var menuOn=drawerOpen||(!inBar&&!!pg);
+    menuBtn.classList.toggle('active',menuOn);
+    menuBtn.setAttribute('aria-expanded',drawerOpen?'true':'false');
+  }
+}
+function sigajiRestoreBottomNavDom(){
+  var nav=document.getElementById('sigaji-mobile-bottom-nav');
+  var mc=document.querySelector('.main-column');
+  if(!nav||!mc||nav.parentNode===mc)return;
+  mc.appendChild(nav);
+}
+function sigajiMountBottomNavToBody(){
+  if(!sigajiIsMobileNav()||!document.body.classList.contains('sigaji-app-active')){
+    sigajiRestoreBottomNavDom();
+    return;
+  }
+  var nav=document.getElementById('sigaji-mobile-bottom-nav');
+  if(nav&&nav.parentNode!==document.body)document.body.appendChild(nav);
 }
 function sigajiUpdateMobileBottomNavVisibility(){
   var nav=document.getElementById('sigaji-mobile-bottom-nav');
@@ -113,13 +142,16 @@ function sigajiUpdateMobileBottomNavVisibility(){
   var show=sigajiIsMobileNav()&&document.body.classList.contains('sigaji-app-active');
   nav.hidden=!show;
   try{document.body.classList.toggle('sigaji-mobile-bottom-nav-on',show);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
-  if(show)sigajiRenderMobileBottomNav();
+  if(show){
+    sigajiMountBottomNavToBody();
+    sigajiRenderMobileBottomNav();
+  }else sigajiRestoreBottomNavDom();
 }
 function sigajiApplyMobileNavMode(){
   var on=sigajiIsMobileNav();
   try{document.documentElement.classList.toggle('sigaji-mobile-nav',on);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   if(on)sigajiMountNavToBody();
-  else{sigajiCloseNavDrawer();sigajiRestoreNavDom();}
+  else{sigajiCloseNavDrawer();sigajiRestoreNavDom();sigajiRestoreBottomNavDom();}
   sigajiUpdateMobileBottomNavVisibility();
 }
 function sigajiRestoreNavDom(){
@@ -179,6 +211,12 @@ function sigajiSetNavDrawerOpen(open){
       if(bd){bd.classList.remove('sigaji-nav-drawer-open');bd.style.display='none';}
     }
     sigajiSyncNavDrawerA11y();
+    try{
+      var curPg='';
+      var cur=document.querySelector('.pg.active');
+      if(cur&&cur.id&&cur.id.indexOf('pg-')===0)curPg=cur.id.slice(3);
+      sigajiSyncMobileBottomNavActive(curPg);
+    }catch(eMb2){sigajiCatchWarn("js/modules/app-shell.js",eMb2);}
   }catch(e){console.error('sigajiSetNavDrawerOpen',e);}
 }
 function sigajiCloseNavDrawer(){sigajiSetNavDrawerOpen(false);}
