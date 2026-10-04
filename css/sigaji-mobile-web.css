@@ -9,6 +9,9 @@ html.sigaji-mobile-nav body {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+html.sigaji-mobile-nav {
+  --sigaji-mobile-bottom-nav-h: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+}
 html.sigaji-mobile-nav #app {
   display: flex;
   flex-direction: column;
@@ -40,7 +43,7 @@ html.sigaji-mobile-nav .content {
   overscroll-behavior-y: contain;
 }
 
-/* ── Topbar: ringkas, 2 baris, tidak penuh sesak ── */
+/* ── Topbar: satu baris saat bottom nav aktif ── */
 html.sigaji-mobile-nav .topbar {
   display: flex;
   flex-direction: column;
@@ -48,6 +51,17 @@ html.sigaji-mobile-nav .topbar {
   gap: 0;
   padding-bottom: 0.35rem;
   box-shadow: 0 1px 0 var(--bd), 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: max(0.4rem, env(safe-area-inset-top));
+  min-height: 48px;
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .nav-drawer-btn {
+  display: none !important;
 }
 html.sigaji-mobile-nav .topbar > .tl:first-child {
   display: flex;
@@ -57,6 +71,11 @@ html.sigaji-mobile-nav .topbar > .tl:first-child {
   min-width: 0;
   width: 100%;
   padding-bottom: 0.35rem;
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar > .tl:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-bottom: 0;
 }
 html.sigaji-mobile-nav .topbar-theme-wrap {
   display: flex;
@@ -70,6 +89,20 @@ html.sigaji-mobile-nav .topbar-theme-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap {
+  flex: 0 0 auto;
+  width: auto;
+  border-top: none;
+  padding-top: 0;
+  gap: 0.3rem;
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on #ui-pref-density,
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on #ui-pref-theme,
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap .btn-xs,
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-logout,
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap .av + div {
+  display: none !important;
 }
 html.sigaji-mobile-nav .topbar-theme-wrap::-webkit-scrollbar {
   display: none;
@@ -261,6 +294,13 @@ html.sigaji-mobile-nav .period-chrome {
   padding-left: max(0.65rem, env(safe-area-inset-left));
   padding-right: max(0.65rem, env(safe-area-inset-right));
   top: 0;
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .period-chrome {
+  position: relative;
+  z-index: 1;
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .period-sticky-bar.is-hidden {
+  display: none !important;
 }
 html.sigaji-mobile-nav .period-timeline-bar {
   overflow-x: auto;
@@ -604,7 +644,58 @@ html.sigaji-mobile-nav .notif-title {
   }
 }
 
-/* ── Bottom navigation (modul utama) ── */
+/* ── Drawer: header tutup ── */
+html:not(.sigaji-mobile-nav) .sigaji-mobile-drawer-head {
+  display: none !important;
+}
+html.sigaji-mobile-nav .sigaji-mobile-drawer-head {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: max(0.65rem, env(safe-area-inset-top)) 1rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+html.sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open .sigaji-mobile-drawer-head {
+  display: flex;
+}
+html.sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open #nav-top,
+html.sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open .sidebar-collapse-btn-top {
+  display: none !important;
+}
+html.sigaji-mobile-nav .sigaji-mobile-drawer-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+html.sigaji-mobile-nav .sigaji-mobile-drawer-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+html.sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open {
+  padding-top: 0;
+}
+
+/* ── Bottom navigation (modul utama) — fixed di layar ── */
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .sigaji-mobile-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 100vw;
+}
 html.sigaji-mobile-nav .sigaji-mobile-bottom-nav {
   display: flex;
   flex-shrink: 0;
@@ -612,12 +703,18 @@ html.sigaji-mobile-nav .sigaji-mobile-bottom-nav {
   justify-content: space-around;
   gap: 0.15rem;
   width: 100%;
-  padding: 0.35rem max(0.5rem, env(safe-area-inset-left)) calc(0.35rem + env(safe-area-inset-bottom, 0))
-    max(0.5rem, env(safe-area-inset-right));
-  background: var(--card-bg, #fff);
+  padding: 0.4rem max(0.35rem, env(safe-area-inset-left)) calc(0.25rem + env(safe-area-inset-bottom, 0))
+    max(0.35rem, env(safe-area-inset-right));
+  background: rgba(255, 255, 255, 0.96);
   border-top: 1px solid var(--bd, #e2e8f0);
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
-  z-index: 40;
+  box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.1);
+  z-index: 860;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+html[data-sigaji-theme='dark'].sigaji-mobile-nav .sigaji-mobile-bottom-nav,
+html.sigaji-mobile-nav[data-sigaji-theme='dark'] .sigaji-mobile-bottom-nav {
+  background: rgba(15, 23, 42, 0.94);
 }
 html.sigaji-mobile-nav .sigaji-mobile-bottom-nav[hidden] {
   display: none !important;
@@ -625,32 +722,63 @@ html.sigaji-mobile-nav .sigaji-mobile-bottom-nav[hidden] {
 html.sigaji-mobile-nav .sigaji-mbn-item {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 52px;
-  max-width: 88px;
+  min-height: 56px;
+  max-width: 96px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
-  padding: 0.35rem 0.25rem;
+  gap: 0.2rem;
+  padding: 0.35rem 0.2rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   color: var(--text-muted, #64748b);
   font-family: inherit;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.15;
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+html.sigaji-mobile-nav .sigaji-mbn-item:active {
+  transform: scale(0.96);
 }
 html.sigaji-mobile-nav .sigaji-mbn-item.active {
   color: var(--color-primary, #1a56a0);
-  background: rgba(26, 86, 160, 0.08);
+  background: rgba(26, 86, 160, 0.1);
+}
+html.sigaji-mobile-nav .sigaji-mbn-item.active::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-primary, #1a56a0);
 }
 html.sigaji-mobile-nav .sigaji-mbn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   font-size: 18px;
   line-height: 1;
+}
+html.sigaji-mobile-nav .sigaji-mbn-icon .nav-svg,
+html.sigaji-mobile-nav .sigaji-mbn-icon .sigaji-mbn-svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+html.sigaji-mobile-nav .sigaji-mbn-item.active .nav-svg {
+  stroke-width: 2.1;
 }
 html.sigaji-mobile-nav .sigaji-mbn-lbl {
   max-width: 100%;
@@ -659,12 +787,12 @@ html.sigaji-mobile-nav .sigaji-mbn-lbl {
   white-space: nowrap;
 }
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .content {
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0));
+  padding-bottom: calc(var(--sigaji-mobile-bottom-nav-h) + 0.65rem) !important;
 }
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .toast9,
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on #toast,
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .sigaji-toast-stack {
-  bottom: calc(72px + env(safe-area-inset-bottom, 0));
+  bottom: calc(var(--sigaji-mobile-bottom-nav-h) + 8px);
 }
 
 /* Proses gaji: tombol pro-rata & aksi kecil ── */
