@@ -1,0 +1,40 @@
+# Menjaga proyek Supabase Free tetap aktif: permintaan DB harian
+# (bukan /auth/v1/health — itu tidak reset timer inactivity).
+#
+# Sekali di GitHub repo: Settings → Secrets → Actions
+#   SIGAJI_SUPABASE_URL, SIGAJI_SUPABASE_ANON_KEY (sama seperti Cloudflare Pages)
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping PostgREST (sigaji_tenant_meta)
+        env:
+          URL: ${{ secrets.SIGAJI_SUPABASE_URL }}
+          KEY: ${{ secrets.SIGAJI_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${URL:-}" ] || [ -z "${KEY:-}" ]; then
+            echo "::error::Secret SIGAJI_SUPABASE_URL dan SIGAJI_SUPABASE_ANON_KEY belum diisi di repo GitHub (Settings → Secrets → Actions)."
+            exit 1
+          fi
+          base="${URL%/}"
+          code=$(curl -sS -o /tmp/sigaji-keepalive-body -w "%{http_code}" \
+            "${base}/rest/v1/sigaji_tenant_meta?select=tenant_key&limit=1" \
+            -H "apikey: ${KEY}" \
+            -H "Authorization: Bearer ${KEY}" \
+            -H "Accept: application/json")
+          echo "HTTP ${code}"
+          if [ "$code" != "200" ]; then
+            echo "::error::Keepalive gagal (harus 200). Cek URL/key dan RLS tabel sigaji_tenant_meta."
+            head -c 500 /tmp/sigaji-keepalive-body || true
+            exit 1
+          fi
+          echo "OK — aktivitas database tercatat."
