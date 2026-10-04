@@ -51,11 +51,76 @@ function sigajiOnViewportResize(){
   sigajiApplyMobileNavMode();
   sigajiApplyPanelDockForViewport();
 }
+var SIGAJI_MOBILE_BOTTOM_SHORT={
+  dashboard:'Home',karyawan:'SDM',absensi:'Absen',penggajian:'Gaji',myslip:'Slip',mycuti:'Cuti',
+  laporan:'Laporan',slip:'Slip',notifikasi:'Notif',master:'Master'
+};
+function sigajiGetMobileBottomNavPgIds(){
+  var primary=['dashboard','karyawan','absensi','penggajian'];
+  var fallback=['myslip','mycuti','slip','laporan','notifikasi','master'];
+  var out=[];
+  function pushId(id){
+    if(out.indexOf(id)>=0)return;
+    if(typeof canAccessModule==='function'&&!canAccessModule(id))return;
+    out.push(id);
+  }
+  primary.forEach(pushId);
+  if(out.length<3)fallback.forEach(function(id){if(out.length<4)pushId(id);});
+  return out.slice(0,4);
+}
+function sigajiMobileBottomShortLabel(pgId){
+  if(SIGAJI_MOBILE_BOTTOM_SHORT[pgId])return SIGAJI_MOBILE_BOTTOM_SHORT[pgId];
+  try{
+    var m=typeof MODULES!=='undefined'&&MODULES.find(function(x){return x.id===pgId;});
+    if(m&&m.lbl)return m.lbl.length>10?m.lbl.slice(0,9)+'…':m.lbl;
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+  return pgId;
+}
+function sigajiRenderMobileBottomNav(){
+  var nav=document.getElementById('sigaji-mobile-bottom-nav');
+  if(!nav)return;
+  var slots=sigajiGetMobileBottomNavPgIds();
+  var activePg='';
+  try{
+    var cur=document.querySelector('.pg.active');
+    if(cur&&cur.id&&cur.id.indexOf('pg-')===0)activePg=cur.id.slice(3);
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+  var html='';
+  slots.forEach(function(pgId){
+    var mod=typeof MODULES!=='undefined'?MODULES.find(function(x){return x.id===pgId;}):null;
+    var icon=mod&&mod.icon?mod.icon:'&#9679;';
+    var lbl=sigajiMobileBottomShortLabel(pgId);
+    var active=activePg===pgId?' active':'';
+    html+='<button type="button" class="sigaji-mbn-item'+active+'" data-pg="'+pgId+'" data-sigaji-action="invoke" data-fn="showPg" data-arg="'+pgId+'" aria-current="'+(active?'page':'false')+'">'+
+      '<span class="sigaji-mbn-icon" aria-hidden="true">'+icon+'</span><span class="sigaji-mbn-lbl">'+lbl+'</span></button>';
+  });
+  html+='<button type="button" class="sigaji-mbn-item sigaji-mbn-menu" data-sigaji-action="nav-drawer" aria-label="Buka menu modul">'+
+    '<span class="sigaji-mbn-icon" aria-hidden="true">&#9776;</span><span class="sigaji-mbn-lbl">Menu</span></button>';
+  nav.innerHTML=html;
+}
+function sigajiSyncMobileBottomNavActive(pg){
+  var nav=document.getElementById('sigaji-mobile-bottom-nav');
+  if(!nav)return;
+  nav.querySelectorAll('.sigaji-mbn-item[data-pg]').forEach(function(btn){
+    var on=btn.dataset.pg===pg;
+    btn.classList.toggle('active',on);
+    btn.setAttribute('aria-current',on?'page':'false');
+  });
+}
+function sigajiUpdateMobileBottomNavVisibility(){
+  var nav=document.getElementById('sigaji-mobile-bottom-nav');
+  if(!nav)return;
+  var show=sigajiIsMobileNav()&&document.body.classList.contains('sigaji-app-active');
+  nav.hidden=!show;
+  try{document.body.classList.toggle('sigaji-mobile-bottom-nav-on',show);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+  if(show)sigajiRenderMobileBottomNav();
+}
 function sigajiApplyMobileNavMode(){
   var on=sigajiIsMobileNav();
   try{document.documentElement.classList.toggle('sigaji-mobile-nav',on);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   if(on)sigajiMountNavToBody();
   else{sigajiCloseNavDrawer();sigajiRestoreNavDom();}
+  sigajiUpdateMobileBottomNavVisibility();
 }
 function sigajiRestoreNavDom(){
   var sb=document.getElementById('sidebar-wrap');
@@ -164,6 +229,8 @@ if(typeof window!=='undefined'){
   window.sigajiCloseNavDrawer=sigajiCloseNavDrawer;
   window.sigajiOpenNavDrawer=sigajiOpenNavDrawer;
   window.sigajiToggleNavDrawer=sigajiToggleNavDrawer;
+  window.sigajiUpdateMobileBottomNavVisibility=sigajiUpdateMobileBottomNavVisibility;
+  window.sigajiRenderMobileBottomNav=sigajiRenderMobileBottomNav;
 }
 function refreshMigrasiPphSaldoPanel(){
   var mY=document.getElementById('migrasi-pph-tahun');
@@ -312,6 +379,7 @@ function showPg(pg){
   if(pg==='penggajian')setTimeout(function(){renderPenggajian();},0);
   if(pg==='simulasi')setTimeout(function(){if(typeof renderSimulasiSandbox==='function')renderSimulasiSandbox();else if(typeof renderSimulasiGaji==='function')renderSimulasiGaji();},30);
   sigajiPersistLastPg(pg);
+  try{sigajiSyncMobileBottomNavActive(pg);}catch(eMb){sigajiCatchWarn("js/modules/app-shell.js",eMb);}
 }
 function applyMasterSubtabVisibility(){
   var simple=typeof SIGAJI_UI_SIMPLE!=='undefined'&&SIGAJI_UI_SIMPLE;

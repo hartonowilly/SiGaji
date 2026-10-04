@@ -121,3 +121,14 @@ input, select, textarea {
 .notif-item-body { color: #64748b; font-size: .8rem; line-height: 1.4; }
 .notif-item-time { color: #94a3b8; font-size: .72rem; margin-top: .25rem; }
 .logo-txt { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: -.02em; }
+.pwa-install-hint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.92);
+  text-align: center;
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
