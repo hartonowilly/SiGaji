@@ -55,6 +55,7 @@ function renderSidebar(){
   document.getElementById('nav-bottom').innerHTML='';
   try{if(typeof sigajiUiPolishAfterRender==='function')sigajiUiPolishAfterRender();}catch(ePol){sigajiCatchWarn("js/modules/app-access.js",ePol);}
   try{if(typeof sigajiUiCabangAfterRender==='function')sigajiUiCabangAfterRender();}catch(eCb){sigajiCatchWarn("js/modules/app-access.js",eCb);}
+  try{if(typeof sigajiRenderMobileBottomNav==='function')sigajiRenderMobileBottomNav();}catch(eMbn){sigajiCatchWarn("js/modules/app-access.js",eMbn);}
 }
 // ── USER MANAGEMENT ──────────────────────────────
 var SIGAJI_BUILTIN_ROLES=['Admin','HRD','Karyawan','Absen'];
@@ -1514,6 +1515,7 @@ function doLogout(){
   try{if(typeof window.sigajiCloudLogout==='function')window.sigajiCloudLogout().catch(function(){});}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
   document.getElementById('login').style.display='flex';document.getElementById('app').style.display='none';
   try{document.body.classList.remove('sigaji-app-active');}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
+  try{if(typeof sigajiUpdateMobileBottomNavVisibility==='function')sigajiUpdateMobileBottomNavVisibility();}catch(eNav){sigajiCatchWarn("js/modules/app-access.js",eNav);}
   CU=null;
 }
 if(typeof window!=='undefined')window.enterAppWithUser=enterAppWithUser;
