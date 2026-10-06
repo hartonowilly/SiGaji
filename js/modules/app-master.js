@@ -206,7 +206,11 @@ function toggleLockPeriode(id){
     if(!prog.ok){toast('Snapshot belum lengkap: '+prog.done+'/'+prog.total);return;}
     if(!confirm('Kunci snapshot periode "'+p.nama+'"? Setelah dikunci, perubahan master tidak akan mengubah perhitungan periode ini.'))return;
     p.snapshot_locked=true;
-    saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci');
+    try{
+      if(typeof sigajiCaptureAbsensiPotBaseline==='function')sigajiCaptureAbsensiPotBaseline(p);
+      if(typeof sigajiRebaselinePriorLockedAbsensiPot==='function')sigajiRebaselinePriorLockedAbsensiPot(p);
+    }catch(eAbsBase){sigajiCatchWarn("js/modules/app-master.js",eAbsBase);}
+    saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci (baseline absensi tersimpan)');
   }else{
     if(!confirm('Buka kunci snapshot periode "'+p.nama+'"? Perubahan berikutnya pada periode ini bisa mengubah snapshot.'))return;
     p.snapshot_locked=false;

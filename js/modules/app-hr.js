@@ -1104,6 +1104,7 @@ function renderPenggajianBody(skipTunjVar){
     sumPphRet+=g.pphRet||0;
     sumNeto+=g.neto||0;
     sumPotKh+=(g.potKehadiran&&g.potKehadiran.total)||0;
+    sumPotKh+=(g.koreksiAbsensi&&g.koreksiAbsensi.total)||0;
     const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
     const st=ap?ap.status:'draft';
     const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:''}[st]||'';
@@ -1129,11 +1130,18 @@ function renderPenggajianBody(skipTunjVar){
     if(st==='pending')rowCls.push('pg-row-pending');
     var cabPg=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
     var potKh=(g.potKehadiran&&g.potKehadiran.total)||0;
-    var potKhTip=(g.potKehadiran&&g.potKehadiran.details&&g.potKehadiran.details.length)
-      ?g.potKehadiran.details.map(function(d){return d.label+': '+fmt(d.nilai);}).join(' · ')
-      :'Tidak ada potongan ketidakhadiran pada periode ini';
-    var potKhTd='<td class="num cell-money'+(potKh>0?' cell-deduction':'')+'" title="'+escapeAttr(potKhTip)+'">'
-      +(potKh>0?'<span class="ct-danger fw-700">- '+fmt(potKh)+'</span>':'&#8212;')+'</td>';
+    var kAbs=(g.koreksiAbsensi&&g.koreksiAbsensi.total)||0;
+    var potKhShow=potKh+kAbs;
+    var potKhTipParts=[];
+    if(g.potKehadiran&&g.potKehadiran.details&&g.potKehadiran.details.length){
+      g.potKehadiran.details.forEach(function(d){potKhTipParts.push(d.label+': '+fmt(d.nilai));});
+    }
+    if(g.koreksiAbsensi&&g.koreksiAbsensi.details&&g.koreksiAbsensi.details.length){
+      g.koreksiAbsensi.details.forEach(function(d){potKhTipParts.push(d.label+': '+fmt(d.nilai));});
+    }
+    var potKhTip=potKhTipParts.length?potKhTipParts.join(' · '):'Tidak ada potongan ketidakhadiran pada periode ini';
+    var potKhTd='<td class="num cell-money'+(potKhShow>0?' cell-deduction':'')+'" title="'+escapeAttr(potKhTip)+'">'
+      +(potKhShow>0?'<span class="ct-danger fw-700">- '+fmt(potKhShow)+'</span>'+(kAbs>0?'<div class="font-9 ct-warn">inc. koreksi bln lalu</div>':''):'&#8212;')+'</td>';
     return '<tr class="'+rowCls.join(' ')+'">'
       +'<td class="pg-sticky-no text-center fw-700 text-muted">'+(idx+1)+'</td>'
       +'<td class="pg-sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div>'
@@ -1228,6 +1236,10 @@ function detailGaji(nik,pNama){
   (k.potongan||[]).forEach(function(x){h+='<div class="pr-row-info"><span>'+x.nama+'</span><span>- '+fmt(x.nilai)+'</span></div>';});
   var potKh=g.potKehadiran||{};
   (potKh.details||[]).forEach(function(d){
+    h+='<div class="pr-row-info slip-pot-warn"><span>'+escapeHtml(d.label)+'</span><span>- '+fmt(d.nilai)+'</span></div>';
+  });
+  var kAbsM=g.koreksiAbsensi||{total:0,details:[]};
+  (kAbsM.details||[]).forEach(function(d){
     h+='<div class="pr-row-info slip-pot-warn"><span>'+escapeHtml(d.label)+'</span><span>- '+fmt(d.nilai)+'</span></div>';
   });
   if(potKh.total>0&&potKh.gajiHarian>0)h+='<div class="font-10 text-muted">Dasar potongan: gaji harian '+fmt(potKh.gajiHarian)+' (1/2 hari = '+fmt(Math.round(potKh.gajiHarian/2))+')</div>';

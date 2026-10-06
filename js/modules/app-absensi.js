@@ -135,7 +135,7 @@ function renderAbsensiBody(){
     else infoEl.style.display='block';
     infoEl.textContent=hdrSub;
   }
-  var adaSelTerkunci=CU&&CU.role!=='Admin'&&days.some(function(x){return !canEditDataPadaTanggalIso(x.date);});
+  var adaSelTerkunci=days.some(function(x){return !(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(x.date):canEditDataPadaTanggalIso(x.date));});
   var roBanner=adaSelTerkunci?'<div class="info-box info-amber font-11 mb-lg">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
   var listKar=typeof karyawanListPeriode==='function'?karyawanListPeriode(pAbs):sortKaryawanByNik(karyawan||[]);
   listKar.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
@@ -175,7 +175,7 @@ function renderAbsensiBody(){
       else if(st==='izin')cI++;
       else if(st==='setengah_ijin'){cI+=.5;cH+=.5;}
       else if(st==='alpha')cA++;
-      var canCell=cc&&canEditDataPadaTanggalIso(x.date);
+      var canCell=cc&&(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(x.date):canEditDataPadaTanggalIso(x.date));
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
       var cellCls='ab-cell ab-st-'+(st||'libur')+(canCell?' is-clickable':'')+(cc&&!canCell?' is-readonly':'')+(isRes?' is-resign':'');
       html+='<td class="'+cellCls+'" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):(isRes||cc)?'title="'+(isRes?('Sudah resign sejak '+fmtDate(tStop)):'Periode terkunci — hubungi Admin')+'"':'')+mobTip+'>'+lbl+'</td>';
@@ -191,7 +191,7 @@ function renderAbsensiBody(){
       var st2=isRes2?'resign':(absensi[k.nik][x.date]||(isLN2?'libnas':isLK2?'libur':'hadir'));
       var lbl2=ST_LBL[st2]||'-';
       var cc2=!isLK2&&!isLN2&&!isRes2;
-      var canCell2=cc2&&canEditDataPadaTanggalIso(x.date);
+      var canCell2=cc2&&(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(x.date):canEditDataPadaTanggalIso(x.date));
       var dd2=parseInt(x.date.split('-')[2],10);
       var dowN2=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
       var cellCls2='ab-cell ab-mobile-day ab-st-'+(st2||'libur')+(canCell2?' is-clickable':'')+(cc2&&!canCell2?' is-readonly':'')+(isRes2?' is-resign':'');
@@ -227,7 +227,7 @@ function renderAbsensiBody(){
   absensiPrefetchMobileLogs(pAbs.start,pAbs.end);
 }
 function toggleAb(nik,date,el){
-  if(!canEditDataPadaTanggalIso(date)){toast('Tanggal ini di periode yang snapshot-nya terkunci. Hanya Admin yang dapat mengubah absensi.');return;}
+  if(!(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(date):canEditDataPadaTanggalIso(date))){toast('Tanggal ini di periode yang snapshot-nya terkunci. Hanya Admin yang dapat mengubah absensi.');return;}
   var kar=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
   var tStop=typeof toIsoDate==='function'?toIsoDate(kar&&kar.tgl_berhenti):String((kar&&kar.tgl_berhenti)||'').trim();
   if(tStop&&date>=tStop){
