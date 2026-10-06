@@ -24,7 +24,8 @@ function renderPeriodesBody(){
       if(document.getElementById('p-thr-hariraya'))document.getElementById('p-thr-hariraya').value=p.thr_hariraya||'';
     }
   }
-  document.getElementById('tb-periode').innerHTML=periodes.map(function(p){
+  var periodeRows=typeof sortPeriodesByPayrollYm==='function'?sortPeriodesByPayrollYm(periodes||[],false):(typeof periodesSortedByStart==='function'?periodesSortedByStart(periodes):periodes||[]);
+  document.getElementById('tb-periode').innerHTML=periodeRows.map(function(p){
     var lockBdg=p.snapshot_locked?'<span class="bdg b-err" style="margin-left:6px">Snapshot Terkunci</span>':'<span class="bdg b-gray" style="margin-left:6px">Snapshot Terbuka</span>';
     var lockBtn='<button class="btn btn-sm '+(p.snapshot_locked?'btn-out':'btn-r')+'"'+sigajiDataAction('periode-lock',{id:p.id})+'>'+(p.snapshot_locked?'Buka Kunci':'Kunci')+'</button>';
     var rebuildBtn='<button class="btn btn-sm btn-out"'+sigajiDataAction('periode-rebuild',{id:p.id})+'>Rebuild Snapshot</button>';
@@ -84,6 +85,7 @@ function renderPeriodeSnapshotGuardUi(blocking){
   if(!blocking){hidePeriodeSnapshotGuard();return;}
   if(!shouldShowPeriodeSnapshotGuard()){hidePeriodeSnapshotGuard();return;}
   var open=getPeriodesSnapshotTerbuka();
+  if(typeof sortPeriodesByPayrollYm==='function')open=sortPeriodesByPayrollYm(open,false);
   var namaForm=getNamaPeriodeForm();
   var items=open.map(function(p){
     var aktif=p.status==='aktif'?' <span class="bdg b-ok font-9" style="vertical-align:middle">aktif</span>':'';
