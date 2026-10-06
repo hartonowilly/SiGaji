@@ -803,6 +803,87 @@ function canEditDataPadaTanggalIso(tglIso){
   if(!CU)return false;
   return !periodeSnapshotLockedUntukTanggal(tglIso);
 }
+/** Admin boleh koreksi absensi di periode snapshot terkunci (untuk koreksi slip bulan berikutnya). */
+function canEditAbsensiPadaTanggalIso(tglIso){
+  if(!CU)return false;
+  if(CU.role==='Admin'&&periodeSnapshotLockedUntukTanggal(tglIso))return true;
+  return !periodeSnapshotLockedUntukTanggal(tglIso);
+}
+function sigajiPotKehadiranUntukPeriodeNik(nik,p){
+  if(!nik||!p||!p.nama)return{total:0,details:[]};
+  var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  if(!k)return{total:0,details:[]};
+  ensureKarSnapshotPeriode(p.nama,[k]);
+  k=resolveKarForPeriode(k,p.nama);
+  var hkP=hariKerjaRange(p.start,p.end);
+  var pr=prorata[nik]&&prorata[nik][p.nama];
+  var isPR=pr&&pr.enabled&&pr.hk>0;
+  var prF=isPR?pr.hh/pr.hk:1;
+  var gapokEff=Math.round((k.gapok||0)*prF);
+  return hitungPotonganKehadiran(nik,p,hkP,gapokEff);
+}
+function sigajiCaptureAbsensiPotBaseline(p){
+  if(!p)return;
+  if(!p.absensi_pot_baseline)p.absensi_pot_baseline={};
+  var list=karyawanListPeriode(p);
+  list.forEach(function(k){
+    if(!k||!k.nik)return;
+    if(p.absensi_pot_baseline[k.nik]!==undefined)return;
+    var pot=sigajiPotKehadiranUntukPeriodeNik(k.nik,p);
+    p.absensi_pot_baseline[k.nik]={
+      total:pot.total||0,
+      details:(pot.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};}),
+      capturedAt:new Date().toISOString(),
+    };
+  });
+}
+/** Setelah periode dikunci, samakan baseline periode lama = potongan absensi terkini (koreksi sudah masuk slip). */
+function sigajiRebaselinePriorLockedAbsensiPot(periodeBaruDikunci){
+  if(!periodeBaruDikunci||typeof sortPeriodesByPayrollYm!=='function')return;
+  var ymActive=sigajiPeriodePayrollMeta(periodeBaruDikunci).ym;
+  if(!ymActive)return;
+  sortPeriodesByPayrollYm(periodes||[],false).forEach(function(p){
+    if(!p||!p.snapshot_locked||!p.absensi_pot_baseline||p.nama===periodeBaruDikunci.nama)return;
+    var ym=sigajiPeriodePayrollMeta(p).ym;
+    if(!ym||ym>=ymActive)return;
+    karyawanListPeriode(p).forEach(function(k){
+      if(!k||!k.nik)return;
+      var pot=sigajiPotKehadiranUntukPeriodeNik(k.nik,p);
+      var prev=p.absensi_pot_baseline[k.nik]||{};
+      p.absensi_pot_baseline[k.nik]={
+        total:pot.total||0,
+        details:(pot.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};}),
+        capturedAt:prev.capturedAt||null,
+        settledIn:periodeBaruDikunci.nama,
+        settledAt:new Date().toISOString(),
+      };
+    });
+  });
+}
+/** Selisih potongan absensi vs baseline saat periode lama dikunci — dipotong / dikembalikan di slip bulan ini. */
+function hitungKoreksiAbsensiBulanSebelumnya(nik,periodeAktifNama){
+  var out={total:0,details:[]};
+  if(!nik||!periodeAktifNama)return out;
+  if(perusahaan&&perusahaan.koreksi_absensi_otomatis===false)return out;
+  var pCur=periodes.find(function(x){return x.nama===periodeAktifNama;})||PA();
+  if(!pCur)return out;
+  var ymCur=sigajiPeriodePayrollMeta(pCur).ym;
+  if(!ymCur||typeof sortPeriodesByPayrollYm!=='function')return out;
+  sortPeriodesByPayrollYm(periodes||[],false).forEach(function(p){
+    if(!p||!p.snapshot_locked||!p.absensi_pot_baseline)return;
+    var ym=sigajiPeriodePayrollMeta(p).ym;
+    if(!ym||ym>=ymCur)return;
+    var base=p.absensi_pot_baseline[nik];
+    if(!base||base.total===undefined)return;
+    var now=sigajiPotKehadiranUntukPeriodeNik(nik,p);
+    var delta=Math.round((now.total||0)-(base.total||0));
+    if(!delta)return;
+    out.total+=delta;
+    var lbl='Koreksi absensi '+p.nama+(delta>0?' (tambahan potongan)':' (pengembalian)');
+    out.details.push({label:lbl,nilai:delta,sourcePeriode:p.nama});
+  });
+  return out;
+}
 function ensureKarSnapshotPeriode(pNama,list){
   if(!pNama)return;
   if(!karSnapshot)karSnapshot={};
@@ -1099,16 +1180,17 @@ function hitungGaji(k,pNama,opts){
   const pphAtasThr=pph-pphTanpaThr;
   const potT=(k.potongan||[]).reduce((s,x)=>s+x.nilai,0);
   const potKehadiran=hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
+  const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn):{total:0,details:[]};
   const pphRet=k.pph_return?.nilai||0;
   // Lebih bayar rekonsiliasi (resign/Desember, opsi refund) dikembalikan ke THP.
   // Carryover tidak masuk bulan ini. Default periode tanpa opsi = refund.
   const refundPph=(reconciliation&&reconciliation.lebihBayar>0&&reconciliation.opsiLebihBayar==='refund')?reconciliation.lebihBayar:0;
-  const totalPot=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+potT+pph+potKehadiran.total;
+  const totalPot=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+potT+pph+potKehadiran.total+(koreksiAbsensi.total||0);
   const netoRegular=brutoTH-totalPot+pphRet+refundPph;
   const phkNet=(phkCtx&&phkCtx.mode==='phk')?(phkCtx.bruto-phkCtx.pphFinal):0;
   const neto=netoRegular+phkNet;
   const bebanPrs=bpjs.kes_prs+bpjs.jht_prs+bpjs.jp_prs+bpjs.jkk_prs+bpjs.jkm_prs;
-  return{gapokEff,gapokFull:k.gapok,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx};
+  return{gapokEff,gapokFull:k.gapok,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx};
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;

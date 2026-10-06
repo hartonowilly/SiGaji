@@ -55,6 +55,7 @@ function makeSlip(k,pNama){
   h+='<div class="sr"><span>BPJS JP Karyawan (1%)</span><span>- '+fmt(g.bpjs.jp_kar)+'</span></div>';
   (k.potongan||[]).forEach(function(pt){h+='<div class="sr indent"><span>'+pt.nama+'</span><span>- '+fmt(pt.nilai)+'</span></div>';});
   if(g.potKehadiran&&g.potKehadiran.details){g.potKehadiran.details.forEach(function(d){h+='<div class="sr indent slip-pot-warn"><span>'+d.label+'</span><span>- '+fmt(d.nilai)+'</span></div>';});}
+  if(g.koreksiAbsensi&&g.koreksiAbsensi.details){g.koreksiAbsensi.details.forEach(function(d){h+='<div class="sr indent slip-pot-warn"><span>'+d.label+'</span><span>- '+fmt(d.nilai)+'</span></div>';});}
   h+='<div class="sr bold"><span>Total Potongan</span><span>- '+fmt(g.totalPot)+'</span></div>';
   if(g.natNKP>0){h+='<div class="ssec">Natura Tidak KP</div>';(k.natura||[]).filter(function(n){return !n.kp;}).forEach(function(n){h+='<div class="sr"><span>'+n.nama+'</span><span>+ '+fmt(n.nilai)+'</span></div>';});}
   if(g.pphRet>0)h+='<div class="ssec ct-success">Pengembalian PPh</div><div class="sr pph-return"><span>&#9312; '+((k.pph_return&&k.pph_return.ket)||'PPh Return')+'</span><span>+ '+fmt(g.pphRet)+'</span></div>';

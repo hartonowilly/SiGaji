@@ -19,6 +19,7 @@ const suites = [
   'payroll-scenario-resign.test.mjs',
   'payroll-slip-fixture.test.mjs',
   'absensi-setengah-hari.test.mjs',
+  'koreksi-absensi.test.mjs',
   'cuti-rincian.test.mjs',
 ];
 let failed = 0;
