@@ -372,6 +372,7 @@ function sigajiReadLastPg(){
 function sigajiResolveStartupPg(){
   var firstPg=MODULES.map(function(m){return m.id;}).find(function(id){return canAccessModule(id);})||'notifikasi';
   var saved=sigajiReadLastPg();
+  if(CU&&CU.role==='Kasir'&&canAccessModule('kasir'))return 'kasir';
   if(saved&&canAccess(saved))return saved;
   if(CU&&CU.role==='Karyawan'&&canAccessModule('myslip'))return 'myslip';
   return canAccessModule('dashboard')?'dashboard':firstPg;
@@ -416,6 +417,9 @@ function showPg(pg){
   if(pg==='lembur')setTimeout(function(){initLemburPage();},30);
   if(pg==='penggajian')setTimeout(function(){renderPenggajian();},0);
   if(pg==='simulasi')setTimeout(function(){if(typeof renderSimulasiSandbox==='function')renderSimulasiSandbox();else if(typeof renderSimulasiGaji==='function')renderSimulasiGaji();},30);
+  if(pg==='langganan')setTimeout(function(){if(typeof sigajiRenderLanggananPage==='function')sigajiRenderLanggananPage();},0);
+  if(pg==='kasir')setTimeout(function(){if(typeof sigajiRenderKasirPage==='function')sigajiRenderKasirPage();},0);
+  if(pg==='erp')setTimeout(function(){if(typeof sigajiRenderErpPage==='function')sigajiRenderErpPage();},0);
   sigajiPersistLastPg(pg);
   try{sigajiSyncMobileBottomNavActive(pg);}catch(eMb){sigajiCatchWarn("js/modules/app-shell.js",eMb);}
 }

@@ -21,6 +21,7 @@ const suites = [
   'absensi-setengah-hari.test.mjs',
   'koreksi-absensi.test.mjs',
   'cuti-rincian.test.mjs',
+  'app-products.test.mjs',
 ];
 let failed = 0;
 

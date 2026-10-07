@@ -1,0 +1,21 @@
+.sigaji-product-shortcuts{margin:0 0 1rem;padding:0 .25rem}
+.sigaji-product-shortcuts-head{font-size:.75rem;font-weight:700;color:var(--text-muted,#64748b);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.04em}
+.sigaji-product-shortcuts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem}
+.sigaji-product-card{border:1px solid var(--border,#e2e8f0);border-radius:12px;padding:1rem;background:var(--surface,#fff);display:flex;flex-direction:column;gap:.5rem;min-height:120px}
+.sigaji-product-card-on{border-color:var(--ok,#16a34a);box-shadow:0 0 0 1px rgba(22,163,74,.15)}
+.sigaji-product-card-off{opacity:.92}
+.sigaji-product-card-muted{background:var(--surface-2,#f8fafc)}
+.sigaji-product-card-title{font-weight:700;font-size:.95rem}
+.sigaji-product-card-desc{font-size:.78rem;color:var(--text-muted,#64748b);margin:0;flex:1}
+.sigaji-lic-sku-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem}
+.sigaji-lic-sku{display:flex;align-items:center;gap:.5rem;font-size:.875rem;padding:.35rem 0}
+.sigaji-kasir-mock{border:1px dashed var(--border,#cbd5e1);border-radius:12px;padding:1rem;background:var(--surface-2,#f8fafc)}
+.sigaji-kasir-mock-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
+.sigaji-kasir-mock-grid{display:grid;grid-template-columns:1fr minmax(200px,280px);gap:1rem}
+@media(max-width:768px){.sigaji-kasir-mock-grid{grid-template-columns:1fr}}
+.sigaji-kasir-panel{background:var(--surface,#fff);border-radius:10px;padding:1rem;border:1px solid var(--border,#e2e8f0);min-height:200px}
+.sigaji-kasir-panel-title{font-weight:700;margin-bottom:.5rem}
+.sigaji-kasir-empty{font-size:.85rem;color:var(--text-muted,#64748b)}
+.sigaji-kasir-total{font-size:1.5rem;font-weight:800;margin-bottom:.75rem}
+body.sigaji-role-kasir #period-chrome{display:none!important}
+body.sigaji-role-kasir .periode-pill{display:none!important}

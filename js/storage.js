@@ -240,6 +240,16 @@ function migrateStorage(db){
     });
     v=20;
   }
+  if(v<21){
+    db.license=db.license||{};
+    if(!Array.isArray(db.license.enabledModules)||!db.license.enabledModules.length){
+      db.license.enabledModules=['payroll'];
+    }
+    if(db.license.maxPosUsers===undefined)db.license.maxPosUsers=5;
+    db.roles=db.roles||{};
+    if(!db.roles.Kasir)db.roles.Kasir=['kasir','notifikasi'];
+    v=21;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
@@ -340,8 +350,9 @@ let approvals=LS('approvals',[]);
 let notifikasi=LS('notifikasi',[]);
 let perusahaan=LS('perusahaan',{nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,ptkp_nilai:{},umk:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}});
 let users=LS('users',[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}]);
-let roles=LS('roles',{Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','absensi.lokasi','absensi.pengajuan','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','simulasi','slip','laporan','laporan.rekap','laporan.variance','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi'],Absen:[]});
+let roles=LS('roles',{Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','absensi.lokasi','absensi.pengajuan','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','simulasi','slip','laporan','laporan.rekap','laporan.variance','laporan.pph'],Kasir:['kasir','notifikasi'],Karyawan:['myslip','mycuti','notifikasi'],Absen:[]});
 if(!roles.Absen)roles.Absen=[];
+if(!roles.Kasir)roles.Kasir=['kasir','notifikasi'];
 let thrManual=LS('thrManual',{});
 let tunjVarBulan=LS('tunjVarBulan',{});
 let tunjVarLabels=LS('tunjVarLabels',{v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'});
@@ -356,12 +367,15 @@ let bentoLayouts=LS('bentoLayouts',{});
 if(!bentoLayouts||typeof bentoLayouts!=='object')bentoLayouts={};
 let cabang=LS('cabang',[]);
 if(!Array.isArray(cabang))cabang=[];
-let tenantLicense=LS('license',{maxEmployees:0,planLabel:'',multiBranchEnabled:false,maxBranches:1});
-if(!tenantLicense||typeof tenantLicense!=='object')tenantLicense={maxEmployees:0,planLabel:'',multiBranchEnabled:false,maxBranches:1};
+let tenantLicense=LS('license',{maxEmployees:0,planLabel:'',multiBranchEnabled:false,maxBranches:1,enabledModules:['payroll'],maxPosUsers:5});
+if(!tenantLicense||typeof tenantLicense!=='object')tenantLicense={maxEmployees:0,planLabel:'',multiBranchEnabled:false,maxBranches:1,enabledModules:['payroll'],maxPosUsers:5};
 tenantLicense.maxEmployees=parseInt(tenantLicense.maxEmployees,10)>0?parseInt(tenantLicense.maxEmployees,10):0;
 tenantLicense.planLabel=String(tenantLicense.planLabel||'').trim();
 tenantLicense.multiBranchEnabled=!!tenantLicense.multiBranchEnabled;
 tenantLicense.maxBranches=parseInt(tenantLicense.maxBranches,10)>0?parseInt(tenantLicense.maxBranches,10):1;
+if(typeof window.sigajiNormalizeEnabledModules==='function')tenantLicense.enabledModules=window.sigajiNormalizeEnabledModules(tenantLicense.enabledModules);
+else if(!Array.isArray(tenantLicense.enabledModules)||!tenantLicense.enabledModules.length)tenantLicense.enabledModules=['payroll'];
+tenantLicense.maxPosUsers=parseInt(tenantLicense.maxPosUsers,10)>0?parseInt(tenantLicense.maxPosUsers,10):5;
 let CU=null,cpNik=null;
 const bmState={};
 function currentPayloadLite(){
@@ -455,6 +469,12 @@ function applyDbFromCloudPayload(payload){
       tenantLicense.planLabel=String(o.license.planLabel||'').trim();
       tenantLicense.multiBranchEnabled=!!o.license.multiBranchEnabled;
       tenantLicense.maxBranches=parseInt(o.license.maxBranches,10)>0?parseInt(o.license.maxBranches,10):1;
+      if(typeof window.sigajiNormalizeEnabledModules==='function'){
+        tenantLicense.enabledModules=window.sigajiNormalizeEnabledModules(o.license.enabledModules);
+      }else if(Array.isArray(o.license.enabledModules)&&o.license.enabledModules.length){
+        tenantLicense.enabledModules=o.license.enabledModules.slice();
+      }
+      tenantLicense.maxPosUsers=parseInt(o.license.maxPosUsers,10)>0?parseInt(o.license.maxPosUsers,10):5;
       try{if(typeof window.sigajiApplyLicenseFromObject==='function')window.sigajiApplyLicenseFromObject(tenantLicense);}catch(eL){sigajiCatchWarn("js/storage.js",eL);}
       try{if(typeof window.sigajiApplyBranchPolicyFromObject==='function')window.sigajiApplyBranchPolicyFromObject(o.license);}catch(eBr){sigajiCatchWarn("js/storage.js",eBr);}
     }
