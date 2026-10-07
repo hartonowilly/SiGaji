@@ -18,6 +18,7 @@ function canAccessModule(mid){
   if(mid==='pph')return canAccessModule('laporan');
   if(mid==='sysstatus')return canAccessModule('backup');
   if(mid==='backup')return CU.role==='Admin';
+  if(typeof sigajiIsModuleLicensed==='function'&&!sigajiIsModuleLicensed(mid))return false;
   if(CU.role==='Admin')return true;
   const p=roles[CU.role]||[];
   const subs=SUBTABS[mid];
@@ -58,10 +59,11 @@ function renderSidebar(){
   try{if(typeof sigajiRenderMobileBottomNav==='function')sigajiRenderMobileBottomNav();}catch(eMbn){sigajiCatchWarn("js/modules/app-access.js",eMbn);}
 }
 // ── USER MANAGEMENT ──────────────────────────────
-var SIGAJI_BUILTIN_ROLES=['Admin','HRD','Karyawan','Absen'];
+var SIGAJI_BUILTIN_ROLES=['Admin','HRD','Kasir','Karyawan','Absen'];
 var SIGAJI_USER_ROLE_LABELS={
   Admin:'Admin — akses penuh',
   HRD:'HRD — penggajian & HR',
+  Kasir:'Kasir — layar POS (web)',
   Karyawan:'Karyawan — slip/cuti (web, browser HP, APK)',
   Absen:'Hanya APK Android — absen saja'
 };
@@ -69,18 +71,20 @@ function sigajiEnsureBuiltinRoles(){
   if(typeof roles!=='object'||!roles)roles={};
   if(!roles.Admin)roles.Admin=typeof MODULES!=='undefined'?MODULES.map(function(m){return m.id;}):[];
   if(!roles.HRD)roles.HRD=['dashboard','notifikasi'];
+  if(!roles.Kasir)roles.Kasir=['kasir','notifikasi'];
   if(!roles.Karyawan)roles.Karyawan=['myslip','mycuti','notifikasi'];
   if(!roles.Absen)roles.Absen=[];
 }
 function sigajiUserRoleDisplay(role){
   if(role==='Absen')return 'APK Android (absen saja)';
+  if(role==='Kasir')return 'Kasir (POS web)';
   return role||'';
 }
 function sigajiBuildUserRoleOptions(selectedRole){
   sigajiEnsureBuiltinRoles();
   var pick=selectedRole==='Absen'?'Karyawan':(selectedRole||'HRD');
   var seen={};
-  var order=['Admin','HRD','Karyawan'];
+  var order=['Admin','HRD','Kasir','Karyawan'];
   var html='';
   order.forEach(function(r){
     if(!roles[r])return;
@@ -232,6 +236,7 @@ function renderPermMatrix(){
   roleKeys.forEach(r=>h+=`<div class="perm-hdr-cell">${r}</div>`);h+=`</div>`;
   MODULES.forEach(m=>{
     if(m.adminOnly)return;
+    if(typeof sigajiIsModuleLicensed==='function'&&!sigajiIsModuleLicensed(m.id))return;
     const subs=SUBTABS[m.id];
     if(subs&&subs.length){
       h+=`<div class="perm-row perm-mod-head"><div class="perm-cell fw-700 flex-col items-start" style="min-width:200px; flex:2">${m.icon} ${m.lbl}<span class="font-10 fw-600 text-muted mt-xs">Centang per sub-tab di bawah (atau semua sekaligus)</span></div>`;
@@ -1339,6 +1344,7 @@ function enterAppWithUser(user){
   document.getElementById('uav').textContent=ini(CU.nama);document.getElementById('uname').textContent=CU.nama;document.getElementById('urbadge').textContent=CU.role;
   document.getElementById('top-periode').textContent=PA().nama;
   applyBranding();renderSidebar();
+  try{if(typeof sigajiApplyRoleChrome==='function')sigajiApplyRoleChrome();}catch(eRc){sigajiCatchWarn("js/modules/app-access.js",eRc);}
   try{if(typeof sigajiSyncViewportVars==='function')sigajiSyncViewportVars();}catch(eVp){sigajiCatchWarn("js/modules/app-access.js",eVp);}
   try{sigajiApplyMobileNavMode();initSigajiNavDrawer();}catch(e){sigajiCatchWarn("js/modules/app-access.js",e);}
   /* Login cepat: render shell + dashboard dulu; halaman berat ditunda */

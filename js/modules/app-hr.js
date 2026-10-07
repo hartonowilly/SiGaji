@@ -42,6 +42,7 @@ function renderDash(){
   renderDashBody();
 }
 function renderDashBody(){
+  try{if(typeof sigajiRenderDashboardProductShortcuts==='function')sigajiRenderDashboardProductShortcuts();}catch(ePs){sigajiCatchWarn("js/modules/app-hr.js",ePs);}
   try{if(typeof sigajiRenderBranchWorkspaceBanner==='function')sigajiRenderBranchWorkspaceBanner();}catch(eWs){sigajiCatchWarn("js/modules/app-hr.js",eWs);}
   const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
   const thrTag=p.thr_aktif?'<span class="bdg b-pu dash-thr-badge">&#127873; THR '+(p.thr_nama||'')+'</span>':'';

@@ -98,6 +98,7 @@ function envInt(name, fallback) {
 const tenant = envStr('SIGAJI_TENANT_KEY', '');
 const maxEmp = envInt('SIGAJI_MAX_EMPLOYEES', 0);
 const bootstrap = envStr('SIGAJI_BOOTSTRAP_ADMIN_EMAIL', '');
+const platformOwners = envStr('SIGAJI_PLATFORM_OWNER_EMAILS', '');
 const storage = envStr('SIGAJI_STORAGE_MODE', 'dual');
 // Default true bila Supabase dikonfigurasi — agar F5 tidak selalu kembali ke login
 const resume = envBool('SIGAJI_RESUME_SESSION_ON_LOAD', !!(url && anon));
@@ -111,6 +112,7 @@ const content = [
   `window.SIGAJI_TENANT_KEY = ${esc(tenant)};`,
   `window.SIGAJI_MAX_EMPLOYEES = ${maxEmp};`,
   `window.SIGAJI_BOOTSTRAP_ADMIN_EMAIL = ${esc(bootstrap)};`,
+  `window.SIGAJI_PLATFORM_OWNER_EMAILS = ${esc(platformOwners)};`,
   `window.SIGAJI_STORAGE_MODE = ${esc(storage)};`,
   `window.SIGAJI_RESUME_SESSION_ON_LOAD = ${resume};`,
   `window.SIGAJI_IDLE_LOGOUT_MINUTES = ${idleMin};`,

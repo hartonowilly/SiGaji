@@ -98,6 +98,7 @@ const SUBTABS={
   master:['prs','periode','umk','libur','potongan','ter','saldo-pph'],
   laporan:['rekap','variance','pph'],
   approval:['pend','hist'],
+  erp:['barang','stok','beli'],
 };
 const SUBTAB_LBL={
   'karyawan.info':'Info & Jabatan',
@@ -110,6 +111,22 @@ const SUBTAB_LBL={
   'master.saldo-pph':'Saldo PPh (migrasi onboarding)',
   'laporan.rekap':'Rekap Penggajian','laporan.variance':'Variance Bulanan','laporan.pph':'PPh 21 & Bukti Potong',
   'approval.pend':'Menunggu','approval.hist':'Riwayat',
+  'erp.barang':'Master Barang','erp.stok':'Stok Cabang','erp.beli':'Pembelian',
+};
+/** Paket produk modular (lisensi tenant — centang di Modul & Langganan). */
+const SIGAJI_PRODUCT_SKUS=[
+  {id:'payroll',lbl:'Payroll & SDM',desc:'Penggajian, absensi, PPh, slip gaji'},
+  {id:'erp',lbl:'ERP Toko',desc:'Master barang, stok, pembelian'},
+  {id:'pos_web',lbl:'Kasir Web',desc:'Penjualan di browser (PC/tablet toko)'},
+  {id:'pos_android',lbl:'Kasir Android',desc:'App POS + cetak USB / Bluetooth'},
+  {id:'akuntansi',lbl:'Akuntansi lite',desc:'Jurnal otomatis & laporan sederhana'},
+];
+/** Pemetaan id menu → SKU produk (`core` = selalu tampil jika role mengizinkan). */
+const SIGAJI_MODULE_PRODUCT_SKU={
+  dashboard:'payroll',notifikasi:'core',karyawan:'payroll',absensi:'payroll',kompgaji:'payroll',
+  lembur:'payroll',thr:'payroll',pesangon:'payroll',penggajian:'payroll',simulasi:'payroll',slip:'payroll',
+  laporan:'payroll',master:'payroll',backup:'payroll',users:'payroll',myslip:'payroll',mycuti:'payroll',
+  langganan:'core',kasir:'pos_web',erp:'erp',akuntansi:'akuntansi',
 };
 /** UI ringkas UKM: tab payroll/master jarang dipakai disembunyikan (bisa dibuka). */
 const SIGAJI_UI_SIMPLE=true;
@@ -129,6 +146,10 @@ const MODULES=[
   {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter','saldo-pph']},
   {id:'backup',lbl:'Backup & Sistem',icon:'&#128190;',sec:'Pengaturan',adminOnly:true},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
+  {id:'langganan',lbl:'Modul & Langganan',icon:'&#128230;',sec:'Pengaturan',adminOnly:true},
+  {id:'kasir',lbl:'Kasir (POS)',icon:'&#128722;',sec:'Penjualan'},
+  {id:'erp',lbl:'ERP Toko',icon:'&#128230;',sec:'Penjualan',subtabs:['barang','stok','beli']},
+  {id:'akuntansi',lbl:'Akuntansi',icon:'&#128209;',sec:'Keuangan'},
   {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
   {id:'mycuti',lbl:'Cuti Saya',icon:'&#127774;',sec:'Saya'},
 ];
@@ -169,10 +190,10 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=20;
+const SCHEMA_VERSION=21;
 /** Hanya login Supabase + data cloud; tidak ada login username admin/hrd lokal. */
 window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.5.88';
+const SIGAJI_MODULES_CACHE='11.5.89';
