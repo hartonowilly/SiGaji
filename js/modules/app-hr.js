@@ -1,5 +1,6 @@
 /* SiGaji — dashboard, karyawan, komponen gaji, proses gaji */
 var karFilterTipe = '';
+var karFilterSiklus = '';
 
 function karMatchesTipeFilter(k) {
   if (!karFilterTipe) return true;
@@ -8,10 +9,27 @@ function karMatchesTipeFilter(k) {
   return t === karFilterTipe;
 }
 
+function karMatchesSiklusFilter(k) {
+  if (!karFilterSiklus) return true;
+  return karSiklusGajiOf(k) === karFilterSiklus;
+}
+
+function karRefreshMasterList() {
+  var q = (document.getElementById('kar-search') && document.getElementById('kar-search').value) || '';
+  if (q) filterKar(q);
+  else renderKar();
+}
+
 function setKarFilterTipe(v) {
   karFilterTipe = v || '';
-  renderKar();
+  karRefreshMasterList();
 }
+
+function setKarFilterSiklus(v) {
+  karFilterSiklus = v === 'harian' || v === 'mingguan' || v === 'bulanan' ? v : '';
+  karRefreshMasterList();
+}
+if (typeof window !== 'undefined') window.setKarFilterSiklus = setKarFilterSiklus;
 
 function onSpTipeKerjaChange() {
   var sel = document.getElementById('sp-tipe-kerja-f');
@@ -32,6 +50,37 @@ function onSpTipeKerjaChange() {
     var spNik = document.getElementById('sp-nik');
     if (spNik) spNik.textContent = k.nik;
   }
+}
+
+function karSiklusGajiOf(k){
+  var v=k&&k.siklus_gaji;
+  return typeof sigajiNormalizeSiklusGaji==='function'?sigajiNormalizeSiklusGaji(v):(typeof normalizeSiklusGaji==='function'?normalizeSiklusGaji(v):'bulanan');
+}
+function syncSiklusGajiLabels(k){
+  var sel=document.getElementById('sp-siklus-gaji-f');
+  var siklus=k?karSiklusGajiOf(k):(sel?karSiklusGajiOf({siklus_gaji:sel.value}):'bulanan');
+  if(sel&&k)sel.value=siklus;
+  var suf=typeof sigajiSiklusGajiRateSuffix==='function'?sigajiSiklusGajiRateSuffix(siklus):(siklus==='harian'?'per Hari':siklus==='mingguan'?'per Minggu':'per Bulan');
+  var lbl=document.getElementById('sp-gapok-lbl');
+  if(lbl)lbl.textContent='Gaji Pokok '+suf+' (Rp)';
+  var hint=document.getElementById('sp-gapok-siklus-hint');
+  if(hint){
+    hint.textContent=siklus==='bulanan'
+      ?'PPh 21 & BPJS dihitung dari total penghasilan sebulan.'
+      :siklus==='harian'
+        ?'Upah = tarif × hari hadir. BPJS = tarif × 25 (atau × 21 jika 5 hari/minggu). PPh dari total sebulan. Tiap hari ada cadangan potongan, true-up di hari terakhir.'
+        :'PPh dari jumlah transfer di masa pajak (contoh Oktober Jumat × 5). BPJS tetap upah sehari × 25, bukan × jumlah Jumat.';
+  }
+  var rowHg=document.getElementById('sp-hari-gaji-row');
+  if(rowHg)rowHg.style.display=siklus==='mingguan'?'':'none';
+}
+function onSpSiklusGajiChange(){
+  var sel=document.getElementById('sp-siklus-gaji-f');
+  syncSiklusGajiLabels(sel?{siklus_gaji:sel.value}:null);
+}
+if(typeof window!=='undefined'){
+  window.onSpSiklusGajiChange=onSpSiklusGajiChange;
+  window.syncSiklusGajiLabels=syncSiklusGajiLabels;
 }
 
 // ── DASHBOARD ───────────────────────────────────
@@ -127,13 +176,21 @@ function isKarResign(k){return !!String((k&&k.tgl_berhenti)||'').trim();}
 function listKarMasterBase(){
   var list=typeof karyawanSortedAll==='function'?karyawanSortedAll():sortKaryawanByNik(karyawan||[]);
   if(typeof sigajiFilterKaryawanByCabang==='function')list=sigajiFilterKaryawanByCabang(list);
-  list=list.filter(karMatchesTipeFilter);
+  list=list.filter(karMatchesTipeFilter).filter(karMatchesSiklusFilter);
   if(__karListMode==='resign'){
     return list.filter(isKarResign).sort(function(a,b){
-      return String(b.tgl_berhenti||'').localeCompare(String(a.tgl_berhenti||''));
+      var d=String(b.tgl_berhenti||'').localeCompare(String(a.tgl_berhenti||''));
+      if(d)return d;
+      return karSiklusThenNikCmp(a,b);
     });
   }
-  return list.filter(function(k){return !isKarResign(k);});
+  return list.filter(function(k){return !isKarResign(k);}).sort(karSiklusThenNikCmp);
+}
+function karSiklusThenNikCmp(a,b){
+  var ra=typeof sigajiSiklusGajiSortRank==='function'?sigajiSiklusGajiSortRank(karSiklusGajiOf(a)):(karSiklusGajiOf(a)==='harian'?2:karSiklusGajiOf(a)==='mingguan'?1:0);
+  var rb=typeof sigajiSiklusGajiSortRank==='function'?sigajiSiklusGajiSortRank(karSiklusGajiOf(b)):(karSiklusGajiOf(b)==='harian'?2:karSiklusGajiOf(b)==='mingguan'?1:0);
+  if(ra!==rb)return ra-rb;
+  return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
 }
 function updateKarResignTabBadge(){
   var n=0;
@@ -153,9 +210,8 @@ function switchKarListTab(el,mode){
   document.querySelectorAll('#kar-list-tabs .tab').forEach(function(t){
     t.classList.toggle('active',t.getAttribute('data-kartab')===__karListMode);
   });
-  var q=(document.getElementById('kar-search')&&document.getElementById('kar-search').value)||'';
   updateKarResignTabBadge();
-  if(q)filterKar(q);else renderKar();
+  karRefreshMasterList();
 }
 if(typeof window!=='undefined')window.switchKarListTab=switchKarListTab;
 function karRowHtml(k,no){
@@ -174,12 +230,15 @@ function karRowHtml(k,no){
   var cabCol=typeof sigajiCabangColTd==='function'?sigajiCabangColTd(k):'';
   var stop=String(k.tgl_berhenti||'').trim();
   var resignBadge=stop?' <span class="bdg b-err" title="Tgl. berhenti '+escapeAttr(stop)+'">Resign</span>':'';
+  var siklus=karSiklusGajiOf(k);
+  var siklusLbl=typeof sigajiSiklusGajiLabel==='function'?sigajiSiklusGajiLabel(siklus):(siklus==='harian'?'Harian':siklus==='mingguan'?'Mingguan':'Bulanan');
+  var siklusCls=siklus==='harian'?'b-teal':siklus==='mingguan'?'b-warn':'b-info';
   var subLine=escapeHtml(k.nik)+(stop?' · berhenti '+fmtDate(stop):'');
-  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;${resignBadge}</div><div class="font-10 text-muted font-mono">${subLine}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
+  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;${resignBadge}</div><div class="font-10 text-muted font-mono">${subLine}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td><td><span class="bdg ${siklusCls}">${escapeHtml(siklusLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
 }
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
-    return sigajiWithSkeleton('tb-kar',9,renderKarBody);
+    return sigajiWithSkeleton('tb-kar',10,renderKarBody);
   }
   renderKarBody();
 }
@@ -196,10 +255,13 @@ function renderKarBody(){
   try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){sigajiCatchWarn("js/modules/app-hr.js",eLq);}
   const tb=document.getElementById('tb-kar');if(!tb)return;
   if(!list.length&&typeof sigajiEmptyState==='function'){
-    var karColspan=9+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
+    var karColspan=10+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
+    var filtered=!!(karFilterTipe||karFilterSiklus);
     var empty=__karListMode==='resign'
-      ?sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan resign',desc:'Karyawan dengan tanggal berhenti akan muncul di tab ini. Putus tautan Telegram dari sini.'})
-      :sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan aktif',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnAction:'openNewKar',btnActionArg:'tetap'});
+      ?sigajiEmptyState({icon:'&#128101;',title:filtered?'Tidak ada resign yang cocok':'Belum ada karyawan resign',desc:filtered?'Ubah filter tipe pegawai atau tipe gaji.':'Karyawan dengan tanggal berhenti akan muncul di tab ini. Putus tautan Telegram dari sini.'})
+      :filtered
+        ?sigajiEmptyState({icon:'&#128101;',title:'Tidak ada karyawan yang cocok',desc:'Ubah filter tipe pegawai atau tipe gaji.'})
+        :sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan aktif',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnAction:'openNewKar',btnActionArg:'tetap'});
     var emptyKarRow='<tr><td colspan="'+String(karColspan)+'">'+empty+'</td></tr>';
     if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,[emptyKarRow],1);
     else tb.replaceChildren();
@@ -212,9 +274,11 @@ function renderKarBody(){
 function filterKar(q){
   var base=listKarMasterBase();
   var qq=String(q||'').toLowerCase();
-  const r=!qq?base:sortKaryawanByNik(base.filter(function(k){
-    return (k.nama+k.nik+k.jabatan+k.dept+(k.tgl_berhenti||'')).toLowerCase().includes(qq);
-  }));
+  const r=!qq?base:base.filter(function(k){
+    var sik=karSiklusGajiOf(k);
+    var sikLbl=typeof sigajiSiklusGajiLabel==='function'?sigajiSiklusGajiLabel(sik):sik;
+    return (k.nama+k.nik+k.jabatan+k.dept+sikLbl+(k.tgl_berhenti||'')).toLowerCase().includes(qq);
+  });
   var cnt=document.getElementById('kar-count');
   if(cnt)cnt.textContent=r.length+' ditampilkan';
   var tb=document.getElementById('tb-kar');
@@ -232,7 +296,9 @@ function kompgajiRowHtml(k,no){
   const nTunj=(kPer.tunjangan||[]).length;
   const nNat=(kPer.natura||[]).length;
   const showGapok=CU&&(CU.role==='Admin'||canAccessPayrollSub('gaji'));
-  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-payroll',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="u-muted-10">${escapeHtml(k.nik)}</div></div></div></td><td>${escapeHtml(k.dept)}</td>${showGapok?`<td class="num cell-money">${fmt(kPer.gapok||0)}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${escapeHtml(bpjsLbl)}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p"${sigajiDataAction('open-payroll',{nik:k.nik})}>Edit Komponen</button></td></tr>`;
+  const siklusKg=karSiklusGajiOf(kPer.siklus_gaji?kPer:k);
+  const sufKg=siklusKg==='harian'?' /hari':siklusKg==='mingguan'?' /mg':'';
+  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-payroll',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;</div><div class="u-muted-10">${escapeHtml(k.nik)}</div></div></div></td><td>${escapeHtml(k.dept)}</td>${showGapok?`<td class="num cell-money">${fmt(kPer.gapok||0)}${sufKg?`<div class="u-muted-10">${sufKg.trim()}</div>`:''}</td>`:'<td>—</td>'}<td><span class="bdg ${bst}">${escapeHtml(bpjsLbl)}</span></td><td>${nTunj} item</td><td>${nNat} item</td><td><button class="btn btn-sm btn-p"${sigajiDataAction('open-payroll',{nik:k.nik})}>Edit Komponen</button></td></tr>`;
 }
 function renderKompgaji(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -284,8 +350,12 @@ function openPanel(nik){
   var tipe=typeof sigajiNormalizeKarTipe==='function'?sigajiNormalizeKarTipe(k.tipe_kerja,k):'tetap';
   k.tipe_kerja=tipe;
   var tipeEl=document.getElementById('sp-tipe-kerja-f');if(tipeEl)tipeEl.value=tipe;
+  k.siklus_gaji=karSiklusGajiOf(k);
+  k.hari_gaji=typeof normalizeHariGaji==='function'?normalizeHariGaji(k.hari_gaji):5;
+  var hgEl=document.getElementById('sp-hari-gaji-f');if(hgEl)hgEl.value=String(k.hari_gaji);
   sv('sp-nik-f',k.nik);sv('sp-nama-f',isNew?'':k.nama);sv('sp-jk-f',k.jk);sv('sp-agama-f',k.agama);
   onSpTipeKerjaChange();
+  syncSiklusGajiLabels(k);
   sv('sp-ktp-f',isNew?'':k.ktp);sv('sp-npwp-f',isNew?'':k.npwp);sv('sp-hp-f',isNew?'':k.hp);sv('sp-email-f',isNew?'':k.email);sv('sp-alamat-f',isNew?'':k.alamat);
   try{if(typeof sigajiRefreshSpTaxIdHint==='function')sigajiRefreshSpTaxIdHint();}catch(eTax){sigajiCatchWarn("js/modules/app-hr.js",eTax);}
   sv('sp-dept-f',k.dept);sv('sp-jabatan-f',isNew?'':k.jabatan);sv('sp-status-f',k.status);sv('sp-masuk-f',isNew?'':k.masuk);sv('sp-berhenti-f',k.tgl_berhenti||'');
@@ -461,6 +531,7 @@ function openPayrollPanel(nik){
   var kp=getPayrollTargetByNik(k.nik,true,'periode')||k;
   if(canAccessPayrollSub('gaji'))syncGapokRpInput(document.getElementById('sp-gapok-f'),kp.gapok||0);
   else syncGapokRpInput(document.getElementById('sp-gapok-f'),0);
+  syncSiklusGajiLabels({siklus_gaji:(kp&&kp.siklus_gaji)||k.siklus_gaji});
   if(canAccessPayrollSub('pphret')){
     syncPphRetRpInput(document.getElementById('sp-pphret-val'),kp.pph_return?.nilai||0);
     sv('sp-pphret-ket',kp.pph_return?.ket||'');
@@ -516,6 +587,8 @@ async function simpanKarPanel(){
   const gv=id=>{const e=document.getElementById(id);return e?e.value:'';};
   const oldNik=k.nik,newNik=gv('sp-nik-f').trim()||k.nik;
   var tipeKerja=gv('sp-tipe-kerja-f')||'tetap';
+  var siklusGaji=karSiklusGajiOf({siklus_gaji:gv('sp-siklus-gaji-f')});
+  var hariGaji=typeof normalizeHariGaji==='function'?normalizeHariGaji(gv('sp-hari-gaji-f')):5;
   if(typeof sigajiValidateKarNik==='function'){
     var vNik=sigajiValidateKarNik(newNik,tipeKerja,oldNik);
     if(!vNik.ok){toast(vNik.msg);return;}
@@ -562,11 +635,18 @@ async function simpanKarPanel(){
       }
     }
   }
-  Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:newPtkp,atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:jk,agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
+  Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,siklus_gaji:siklusGaji,hari_gaji:hariGaji,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:newPtkp,atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:jk,agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&typeof sigajiCanAssignCabang==='function'&&sigajiCanAssignCabang()){
     var cabInp=document.getElementById('sp-cabang-f');
     if(cabInp)k.cabangId=cabInp.value||'utama';
   }
+  try{
+    var pAktif=typeof PA==='function'?PA():null;
+    if(pAktif&&pAktif.nama&&typeof isPeriodeLocked==='function'&&!isPeriodeLocked(pAktif.nama)&&typeof karSnapshot!=='undefined'&&karSnapshot[pAktif.nama]&&karSnapshot[pAktif.nama][k.nik]){
+      karSnapshot[pAktif.nama][k.nik].siklus_gaji=siklusGaji;
+      karSnapshot[pAktif.nama][k.nik].hari_gaji=hariGaji;
+    }
+  }catch(eSk){sigajiCatchWarn("js/modules/app-hr.js",eSk);}
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
   try{if(typeof syncProrataDariResign==='function')syncProrataDariResign(k);}catch(eSync){sigajiCatchWarn("js/modules/app-hr.js",eSync);}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
@@ -878,7 +958,13 @@ function updateGajiSummary(){
     k.pph_return={nilai:prv,ket:document.getElementById('sp-pphret-ket')?.value||''};
   }
   renderPPhRetPanel(k);const g=hitungGaji(km,PA().nama);const el=document.getElementById('gaji-summary-panel');if(!el)return;
-  var h='<div class="gs"><div class="stit" style="margin-top:0">Gross Income (Dasar PPh 21)</div><div class="gs-row"><span>Gaji Pokok</span><span>'+fmt(k.gapok)+'</span></div>';
+  var siklusSm=karSiklusGajiOf(km.siklus_gaji?km:k);
+  var h='<div class="gs"><div class="stit" style="margin-top:0">Gross Income (Dasar PPh 21)</div>';
+  if(siklusSm!=='bulanan'){
+    var sufSm=typeof sigajiSiklusGajiRateSuffix==='function'?sigajiSiklusGajiRateSuffix(siklusSm):siklusSm;
+    h+='<div class="gs-row"><span>Tarif '+escapeHtml(sufSm)+'</span><span>'+fmt(k.gapok)+'</span></div>';
+  }
+  h+='<div class="gs-row"><span>'+(siklusSm==='bulanan'?'Gaji Pokok':'Gaji Pokok sebulan')+'</span><span>'+fmt(g.gapokEff)+'</span></div>';
   g.tItems.forEach(function(t){h+='<div class="gs-row"><span>'+escapeHtml(t.nama)+(t.isHarian?' [Lump Sum]':'')+'</span><span>'+fmt(t.eff)+'</span></div>';});
   if(g.natKP>0)h+='<div class="gs-row"><span>Natura Kena Pajak</span><span>'+fmt(g.natKP)+'</span></div>';
   if(g.lb>0)h+='<div class="gs-row"><span>Uang Lembur</span><span>'+fmt(g.lb)+'</span></div>';
@@ -895,6 +981,13 @@ function updateGajiSummary(){
   (k.potongan||[]).forEach(function(pot){h+='<div class="gs-row"><span>'+escapeHtml(pot.nama)+'</span><span>&#8212; '+fmt(pot.nilai)+'</span></div>';});
   if(prv>0)h+='<div class="gs-row ct-success"><span>&#9312; Pengembalian PPh</span><span>+ '+fmt(prv)+'</span></div>';
   h+='<div class="gs-total"><span>TAKE HOME PAY (akhir bulan)</span><span>'+fmt(g.neto)+'</span></div>';
+  if(g.jadwalBayar&&g.jadwalBayar.items&&g.jadwalBayar.items.length){
+    h+='<div class="stit">Jadwal transfer (cadangan PPh+BPJS, tidak minus)</div>';
+    g.jadwalBayar.items.forEach(function(it){
+      h+='<div class="gs-row"><span>'+escapeHtml(fmtDate(it.tgl))+(it.parsial?' parsial':'')+' · upah '+fmt(it.upah)+'</span><span>'+fmt(it.dibayar)+'</span></div>';
+    });
+    if(g.jadwalBayar.sisaPotongan>0)h+='<div class="gs-row ct-danger"><span>Sisa potongan (utang)</span><span>'+fmt(g.jadwalBayar.sisaPotongan)+'</span></div>';
+  }
   if(g.thrBruto>0){var thrBayarLbl=PA()&&PA().thr_bayar?PA().thr_bayar:'H-7 lebaran';h+='<div class="thr-callout-lg">&#127873; THR '+fmt(g.thrBruto)+' dibayar full netto terpisah pada '+escapeHtml(thrBayarLbl)+'</div>';}
   h+='<div class="stit">Beban Perusahaan</div><div class="gs-row"><span>BPJS Kes Prs</span><span>'+fmt(g.bpjs.kes_prs)+'</span></div>';
   h+='<div class="gs-row"><span>BPJS JHT+JP Prs</span><span>'+fmt(g.bpjs.jht_prs+g.bpjs.jp_prs)+'</span></div>';
@@ -1215,7 +1308,11 @@ function detailGaji(nik,pNama){
   let h='';
   if(g.thrBruto>0)h+='<div class="card-surface-purple p-inset-sm tabs-spaced-lg font-12"><strong>&#127873; THR:</strong> '+fmt(g.thrBruto)+' dibayar full netto. PPh THR: <strong>'+fmt(g.pphAtasThr)+'</strong> dipotong dari gaji ini.</div>';
   h+='<div class="gross-sec"><div class="gross-tit">GROSS INCOME (dasar PPh 21)</div>';
-  h+='<div class="cr"><span>Gaji Pokok'+(g.isPR?' (Pro-Rata '+g.pr.hh+'/'+g.pr.hk+')':'')+'</span><span>'+fmt(g.gapokEff)+'</span></div>';
+  var gpDet='Gaji Pokok';
+  if(g.siklusGaji==='harian')gpDet='Gaji Pokok sebulan ('+fmt(g.gapokRate)+' × '+g.siklusUnits+' hari)';
+  else if(g.siklusGaji==='mingguan')gpDet='Gaji Pokok sebulan ('+fmt(g.gapokRate)+' × '+g.siklusUnits+' minggu)';
+  else if(g.isPR)gpDet='Gaji Pokok (Pro-Rata '+g.pr.hh+'/'+g.pr.hk+')';
+  h+='<div class="cr"><span>'+gpDet+'</span><span>'+fmt(g.gapokEff)+'</span></div>';
   g.tItems.forEach(function(t){h+='<div class="cr"><span>'+t.nama+(t.isHarian?' [masuk PPh, tidak TH]':(t.inTH===false?' [tidak TH]':''))+'</span><span>'+fmt(t.eff)+'</span></div>';});
   if(g.natKP>0)h+='<div class="cr"><span>Natura KP</span><span>'+fmt(g.natKP)+'</span></div>';
   if(g.lb>0)h+='<div class="cr"><span>Lembur</span><span>'+fmt(g.lb)+'</span></div>';

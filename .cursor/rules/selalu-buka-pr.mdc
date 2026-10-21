@@ -1,0 +1,15 @@
+---
+description: Setelah fitur siap, selalu buka PR GitHub dan kirim link merge.
+alwaysApply: true
+---
+
+# Selalu kirim link PR
+
+Jika kerjaan siap dipakai di SiGaji (bukan hanya diskusi):
+
+1. Commit di branch fitur. Jangan commit/push langsung ke `master`.
+2. Push branch ke `origin` dan buka pull request ke `master`.
+3. Di balasan ke user, **selalu sertakan URL PR** (`https://github.com/hartonowilly/SiGaji/pull/N`) supaya bisa merge di web.
+4. Jangan merge sendiri kecuali user minta.
+
+Bandingkan saja (`/compare/...`) tidak cukup — user butuh PR yang sudah dibuat, dengan tombol Merge.

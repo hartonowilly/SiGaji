@@ -22,6 +22,8 @@ const suites = [
   'koreksi-absensi.test.mjs',
   'cuti-rincian.test.mjs',
   'mutasi-cabang.test.mjs',
+  'siklus-gaji.test.mjs',
+  'siklus-bayar-dummy.test.mjs',
 ];
 let failed = 0;
 

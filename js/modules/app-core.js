@@ -410,6 +410,89 @@ function fmtHariAbsen(n,kosongkanNol){
   return Number.isInteger(v)?String(v):String(v).replace('.',',');
 }
 function hariHadirBulan(nik,yr,bln){const pfx=`${yr}-${String(bln).padStart(2,'0')}-`;return Object.entries(absensi[nik]||{}).filter(([d,s])=>d.startsWith(pfx)&&s==='hadir').length;}
+/** Frekuensi bayar (harian/mingguan/bulanan). Default karyawan lama: bulanan. */
+function normalizeSiklusGaji(v){
+  if(typeof sigajiNormalizeSiklusGaji==='function')return sigajiNormalizeSiklusGaji(v);
+  var s=String(v==null?'':v).toLowerCase().replace(/[\s-]+/g,'_');
+  if(s==='harian'||s==='daily'||s==='hari')return'harian';
+  if(s==='mingguan'||s==='weekly'||s==='minggu'||s==='dua_mingguan'||s==='2_mingguan'||s==='biweekly'||s==='dua_minggu'||s==='2mingguan')return'mingguan';
+  return'bulanan';
+}
+function siklusHariKalender(s,e){
+  var a=String(s||'').slice(0,10);
+  var b=String(e||'').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(a)||!/^\d{4}-\d{2}-\d{2}$/.test(b))return 30;
+  var sd=new Date(a+'T12:00:00');
+  var ed=new Date(b+'T12:00:00');
+  if(isNaN(sd.getTime())||isNaN(ed.getTime())||ed<sd)return 30;
+  return Math.round((ed-sd)/86400000)+1;
+}
+function siklusUnitPeriode(siklus,p){
+  var days=siklusHariKalender(p&&p.start,p&&p.end);
+  if(siklus==='mingguan')return Math.max(1,Math.round(days/7));
+  return 1;
+}
+/** Hari kerja berstatus hadir (default kosong = hadir, sama seperti grid absensi). */
+function hariHadirUntukUpahHarian(nik,s,e,k){
+  var abs=(typeof absensi!=='undefined'&&absensi&&absensi[nik])||{};
+  var n=0;
+  var sd=new Date(s),ed=new Date(e);
+  var masuk=k&&k.masuk?String(k.masuk).slice(0,10):'';
+  var stop=k&&k.tgl_berhenti?String(k.tgl_berhenti).slice(0,10):'';
+  for(var d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){
+    var dow=d.getDay();
+    var ds=d.toISOString().split('T')[0];
+    if(isHariLiburKerja(dow)||isHL(ds))continue;
+    if(masuk&&ds<masuk)continue;
+    if(stop&&ds>=stop)continue;
+    var st=abs[ds]||'hadir';
+    if(st==='libur'||st==='libnas'||st==='resign')continue;
+    if(st==='hadir')n+=1;
+    else if(isStatusSetengahHari(st))n+=0.5;
+  }
+  return n;
+}
+function gapokKontrakSebulan(k,p,siklus){
+  siklus=siklus||normalizeSiklusGaji(k&&k.siklus_gaji);
+  var rate=Math.round(Number(k&&k.gapok)||0);
+  var hk=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
+  if(typeof siklusBpjsUpahSebulan==='function')return siklusBpjsUpahSebulan(siklus,rate,hk);
+  if(siklus==='harian')return Math.round(rate*(hk===5?21:25));
+  if(siklus==='mingguan')return Math.round((rate/(hk===5?5:6))*(hk===5?21:25));
+  return rate;
+}
+/** Tarif × unit dalam periode gaji (satu masa pajak). Harian tidak dikali prorata lagi. */
+function gapokEffDariSiklus(k,p,prF){
+  var siklus=normalizeSiklusGaji(k&&k.siklus_gaji);
+  var rate=Math.round(Number(k&&k.gapok)||0);
+  var pf=prF==null?1:prF;
+  if(typeof siklusBuildPays==='function'&&(siklus==='harian'||siklus==='mingguan')){
+    var hk=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
+    var libur=typeof liburSetFrom==='function'?liburSetFrom(typeof hariLibur!=='undefined'?hariLibur:[]):{};
+    var abs=(typeof absensi!=='undefined'&&k&&k.nik&&absensi[k.nik])||{};
+    var pays=siklusBuildPays(k,p,hk,libur,abs);
+    var tot=pays.reduce(function(s,x){return s+Math.round(x.upah||0);},0);
+    if(siklus!=='harian')tot=Math.round(tot*pf);
+    return{gapokEff:tot,siklus:siklus,units:pays.length,pays:pays};
+  }
+  if(siklus==='harian'){
+    var hh=hariHadirUntukUpahHarian(k&&k.nik,p&&p.start,p&&p.end,k);
+    return{gapokEff:Math.round(rate*hh),siklus:siklus,units:hh,pays:[]};
+  }
+  if(siklus==='mingguan'){
+    var units=siklusUnitPeriode(siklus,p);
+    return{gapokEff:Math.round(rate*units*pf),siklus:siklus,units:units,pays:[]};
+  }
+  return{gapokEff:Math.round(rate*pf),siklus:siklus,units:1,pays:[]};
+}
+function upahPerJamDariSiklus(k){
+  var siklus=normalizeSiklusGaji(k&&k.siklus_gaji);
+  var rate=Number(k&&k.gapok)||0;
+  var hkMinggu=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
+  if(siklus==='harian')return rate/8;
+  if(siklus==='mingguan')return rate/(hkMinggu*8);
+  return rate/173;
+}
 function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=PA();const ed=new Date(p.end||'2026-03-24');const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirBulan(nik,ed.getFullYear(),ed.getMonth()+1);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
 function setPREnabled(nik,pN,v){
   var pr=getPR(nik,pN);
@@ -750,6 +833,8 @@ function snapshotKarCabangId(k,fallback){
 function snapshotKarFromMaster(k){
   return{
     gapok:Math.round(k.gapok||0),
+    siklus_gaji:normalizeSiklusGaji(k&&k.siklus_gaji),
+    hari_gaji:typeof normalizeHariGaji==='function'?normalizeHariGaji(k&&k.hari_gaji):5,
     tunjangan:deepCloneLite(k.tunjangan||[]),
     potongan:deepCloneLite(k.potongan||[]),
     natura:deepCloneLite(k.natura||[]),
@@ -771,6 +856,8 @@ function snapshotKarForPeriodeEntry(k,pNama){
   if(prevSnap){
     return{
       gapok:prevSnap.gapok!==undefined?Math.round(prevSnap.gapok):Math.round(k.gapok||0),
+      siklus_gaji:normalizeSiklusGaji(prevSnap.siklus_gaji||k.siklus_gaji),
+      hari_gaji:typeof normalizeHariGaji==='function'?normalizeHariGaji(prevSnap.hari_gaji!=null?prevSnap.hari_gaji:k.hari_gaji):5,
       tunjangan:deepCloneLite(prevSnap.tunjangan||[]),
       potongan:deepCloneLite(prevSnap.potongan||[]),
       natura:deepCloneLite(prevSnap.natura||[]),
@@ -923,6 +1010,8 @@ function resolveKarForPeriode(k,pNama){
   if(snap.bpjs_manual!==undefined)out.bpjs_manual=deepCloneLite(snap.bpjs_manual);
   if(snap.pph_return!==undefined)out.pph_return=deepCloneLite(snap.pph_return);
   if(snap.cabangId!==undefined)out.cabangId=snap.cabangId;
+  if(snap.siklus_gaji!==undefined)out.siklus_gaji=normalizeSiklusGaji(snap.siklus_gaji);
+  if(snap.hari_gaji!==undefined)out.hari_gaji=typeof normalizeHariGaji==='function'?normalizeHariGaji(snap.hari_gaji):snap.hari_gaji;
   return out;
 }
 function upsertKarSnapshotForPeriode(nik,pNama){
@@ -1071,7 +1160,11 @@ function hitungGaji(k,pNama,opts){
   }
   const hkP=hariKerjaRange(p.start,p.end);
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
-  const prF=isPR?pr.hh/pr.hk:1;const gapokEff=Math.round(k.gapok*prF);
+  const prF=isPR?pr.hh/pr.hk:1;
+  const siklusHit=gapokEffDariSiklus(k,p,prF);
+  const gapokEff=siklusHit.gapokEff;
+  const siklusGaji=siklusHit.siklus;
+  const siklusUnits=siklusHit.units;
   let tBPJS=0,tGross=0,tTH=0;const tItems=[];
   var tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
   for(const t of tunjGabungan){
@@ -1089,7 +1182,7 @@ function hitungGaji(k,pNama,opts){
   }
   const natKP=(k.natura||[]).filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);
   const natNKP=(k.natura||[]).filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);
-  const upj=k.gapok/173;
+  const upj=upahPerJamDariSiklus(k);
   const lb=(lembur[k.nik]||[]).reduce((s,r)=>{const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);return s+Math.round(h);},0);
   // THR: jika periode aktif ada THR, gabung ke gross PPh
   const periodeAdaTHR=!!p.thr_aktif;
@@ -1144,7 +1237,9 @@ function hitungGaji(k,pNama,opts){
   // BPJS pada bulan resign/berhenti: basis hanya GAPOK FULL (tanpa tunjangan),
   // walaupun take home prorata.
   const isBpjsFullMonth=!!(tglStopIso&&isStopInPeriode&&hasPhkAlasan);
-  const gapokBpjs=isBpjsFullMonth?Math.round(k.gapok||0):gapokEff;
+  const gapokBpjs=siklusGaji==='bulanan'
+    ?(isBpjsFullMonth?Math.round(k.gapok||0):gapokEff)
+    :gapokKontrakSebulan(k,p,siklusGaji);
   const tunjBpjs=isBpjsFullMonth?0:tBPJS;
   const bpjs=calcBPJS(k,gapokBpjs,tunjBpjs);
   // BPJS Perusahaan (JKK+JKM+Kes) = natura kena pajak per PMK 168/2023
@@ -1192,7 +1287,10 @@ function hitungGaji(k,pNama,opts){
   const pphTanpaThr=hitungPPhBln(grossPPhRegular,k.ptkp);
   const pphAtasThr=pph-pphTanpaThr;
   const potT=(k.potongan||[]).reduce((s,x)=>s+x.nilai,0);
-  const potKehadiran=hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
+  const skipPotHadir=siklusGaji==='harian'||siklusGaji==='mingguan';
+  const potKehadiran=skipPotHadir
+    ?{total:0,details:[],gajiHarian:Math.round(k.gapok||0),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
+    :hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
   const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn):{total:0,details:[]};
   const pphRet=k.pph_return?.nilai||0;
   // Lebih bayar rekonsiliasi (resign/Desember, opsi refund) dikembalikan ke THP.
@@ -1203,7 +1301,13 @@ function hitungGaji(k,pNama,opts){
   const phkNet=(phkCtx&&phkCtx.mode==='phk')?(phkCtx.bruto-phkCtx.pphFinal):0;
   const neto=netoRegular+phkNet;
   const bebanPrs=bpjs.kes_prs+bpjs.jht_prs+bpjs.jp_prs+bpjs.jkk_prs+bpjs.jkm_prs;
-  return{gapokEff,gapokFull:k.gapok,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx};
+  var jadwalBayar=null;
+  if(siklusGaji!=='bulanan'&&typeof pecahPotonganCadangan==='function'){
+    var paysJadwal=(siklusHit&&siklusHit.pays)||[];
+    var potJadwal=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+pph+potT;
+    jadwalBayar=pecahPotonganCadangan(paysJadwal,potJadwal);
+  }
+  return{gapokEff,gapokFull:k.gapok,gapokRate:Math.round(k.gapok||0),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs};
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;

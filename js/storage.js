@@ -240,6 +240,53 @@ function migrateStorage(db){
     });
     v=20;
   }
+  if(v<21){
+    var normSik=typeof sigajiNormalizeSiklusGaji==='function'?sigajiNormalizeSiklusGaji:function(x){
+      var s=String(x==null?'':x).toLowerCase().replace(/[\s-]+/g,'_');
+      if(s==='harian'||s==='mingguan'||s==='dua_mingguan')return s;
+      return 'bulanan';
+    };
+    if(typeof sigajiMigrateKaryawanSiklusGaji==='function')sigajiMigrateKaryawanSiklusGaji(db.karyawan);
+    else (Array.isArray(db.karyawan)?db.karyawan:[]).forEach(function(k){
+      if(!k||typeof k!=='object')return;
+      k.siklus_gaji=normSik(k.siklus_gaji);
+    });
+    var snaps21=db.karSnapshot&&typeof db.karSnapshot==='object'?db.karSnapshot:{};
+    Object.keys(snaps21).forEach(function(pn){
+      var per=snaps21[pn];
+      if(!per||typeof per!=='object')return;
+      Object.keys(per).forEach(function(nik){
+        var snap=per[nik];
+        if(!snap||typeof snap!=='object')return;
+        snap.siklus_gaji=normSik(snap.siklus_gaji);
+      });
+    });
+    v=21;
+  }
+  if(v<22){
+    var remapSik=typeof sigajiNormalizeSiklusGaji==='function'?sigajiNormalizeSiklusGaji:function(x){
+      var s=String(x==null?'':x).toLowerCase().replace(/[\s-]+/g,'_');
+      if(s==='harian')return 'harian';
+      if(s==='mingguan'||s==='dua_mingguan'||s==='2_mingguan'||s==='biweekly')return 'mingguan';
+      return 'bulanan';
+    };
+    if(typeof sigajiMigrateKaryawanSiklusGaji==='function')sigajiMigrateKaryawanSiklusGaji(db.karyawan);
+    else (Array.isArray(db.karyawan)?db.karyawan:[]).forEach(function(k){
+      if(!k||typeof k!=='object')return;
+      k.siklus_gaji=remapSik(k.siklus_gaji);
+    });
+    var snaps22=db.karSnapshot&&typeof db.karSnapshot==='object'?db.karSnapshot:{};
+    Object.keys(snaps22).forEach(function(pn){
+      var per=snaps22[pn];
+      if(!per||typeof per!=='object')return;
+      Object.keys(per).forEach(function(nik){
+        var snap=per[nik];
+        if(!snap||typeof snap!=='object')return;
+        snap.siklus_gaji=remapSik(snap.siklus_gaji);
+      });
+    });
+    v=22;
+  }
   db.schemaVersion=v;
   // Idempotent: backup import / schema sudah 4 bisa kehilangan entri pesangon di HRD
   if(db.roles&&db.roles.HRD&&Array.isArray(db.roles.HRD)&&db.roles.HRD.indexOf('pesangon')<0)db.roles.HRD.push('pesangon');
