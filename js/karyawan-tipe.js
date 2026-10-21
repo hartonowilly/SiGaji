@@ -134,6 +134,63 @@
     return tipe === 'tidak_tetap' ? 'Pegawai Tidak Tetap' : 'Pegawai Tetap';
   }
 
+  /** Frekuensi bayar ≠ masa pajak: PPh 21 & BPJS tetap dihitung dari total sebulan. */
+  var SIKLUS_GAJI = {
+    bulanan: 'Bulanan',
+    harian: 'Harian',
+    mingguan: 'Mingguan',
+  };
+  var SIKLUS_GAJI_SUFFIX = {
+    bulanan: 'per Bulan',
+    harian: 'per Hari',
+    mingguan: 'per Minggu',
+  };
+
+  function normalizeSiklusGaji(v) {
+    var s = String(v == null ? '' : v)
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_');
+    if (s === 'harian' || s === 'daily' || s === 'hari') return 'harian';
+    if (
+      s === 'mingguan' ||
+      s === 'weekly' ||
+      s === 'minggu' ||
+      s === 'dua_mingguan' ||
+      s === '2_mingguan' ||
+      s === 'biweekly' ||
+      s === 'dua_minggu' ||
+      s === '2mingguan'
+    )
+      return 'mingguan';
+    return 'bulanan';
+  }
+
+  /** Urutan daftar: bulanan, lalu mingguan, lalu harian (baru NIK). */
+  function siklusGajiSortRank(v) {
+    var s = normalizeSiklusGaji(v);
+    if (s === 'mingguan') return 1;
+    if (s === 'harian') return 2;
+    return 0;
+  }
+
+  function labelSiklusGaji(v) {
+    var s = normalizeSiklusGaji(v);
+    return SIKLUS_GAJI[s] || SIKLUS_GAJI.bulanan;
+  }
+
+  function suffixSiklusGaji(v) {
+    var s = normalizeSiklusGaji(v);
+    return SIKLUS_GAJI_SUFFIX[s] || SIKLUS_GAJI_SUFFIX.bulanan;
+  }
+
+  function migrateKaryawanSiklusGaji(list) {
+    if (!Array.isArray(list)) return;
+    list.forEach(function (k) {
+      if (!k || typeof k !== 'object') return;
+      k.siklus_gaji = normalizeSiklusGaji(k.siklus_gaji);
+    });
+  }
+
   function defaultBpjsAktif(tipe) {
     var on = normalizeTipe(tipe) === 'tetap';
     return {
@@ -174,6 +231,8 @@
       bank: 'BCA',
       norek: '',
       reknam: '',
+      siklus_gaji: 'bulanan',
+      hari_gaji: 5,
       gapok: tipe === 'tidak_tetap' ? 0 : 5000000,
       tunjangan:
         tipe === 'tidak_tetap'
@@ -211,8 +270,13 @@
   window.sigajiNextNik = nextNik;
   window.sigajiValidateKarNik = validateNik;
   window.sigajiKarTipeLabel = labelTipe;
+  window.sigajiNormalizeSiklusGaji = normalizeSiklusGaji;
+  window.sigajiSiklusGajiLabel = labelSiklusGaji;
+  window.sigajiSiklusGajiRateSuffix = suffixSiklusGaji;
+  window.sigajiSiklusGajiSortRank = siklusGajiSortRank;
   window.sigajiNewKaryawanSkeleton = newKaryawanSkeleton;
   window.sigajiMigrateKaryawanTipeKerja = migrateKaryawanTipeKerja;
+  window.sigajiMigrateKaryawanSiklusGaji = migrateKaryawanSiklusGaji;
 
   /** Urutan daftar karyawan: NIK (K0001, K0002, NT0001, …), bukan abjad nama. */
   function sortKaryawanByNik(list) {

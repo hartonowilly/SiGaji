@@ -72,6 +72,8 @@ export function loadPayrollCore(overrides = {}) {
   };
   run('js/constants.js');
   run('js/ptkp.js');
+  run('js/karyawan-tipe.js');
+  run('js/siklus-bayar.js');
   run('js/modules/app-core.js');
   return sandbox;
 }

@@ -340,7 +340,7 @@
     var row = document.getElementById('kar-thead-row');
     if (!row) return;
     var thead =
-      '<th>No</th><th>Karyawan</th><th>Tipe</th>' +
+      '<th>No</th><th>Karyawan</th><th>Tipe</th><th>Tipe gaji</th>' +
       (sigajiMultiBranchEnabled() && !sigajiInBranchWorkspace() ? '<th>Lokasi</th>' : '') +
       '<th>Dept</th><th>Jabatan</th><th>Status</th><th>PTKP</th><th>Saldo Cuti</th><th>Aksi</th>';
     row.innerHTML = thead;
@@ -809,6 +809,42 @@
         ? parseRpInput(umkEl && umkEl.value)
         : Math.round(Number((umkEl && umkEl.value) || 0) || 0);
     if (!k) return;
+    var note = document.getElementById('mutasi-note');
+    var siklusMut =
+      typeof sigajiNormalizeSiklusGaji === 'function'
+        ? sigajiNormalizeSiklusGaji(k.siklus_gaji)
+        : 'bulanan';
+    if (siklusMut !== 'bulanan') {
+      var lblMut =
+        typeof sigajiSiklusGajiLabel === 'function'
+          ? sigajiSiklusGajiLabel(siklusMut)
+          : siklusMut;
+      mutasiSetText('mutasi-gapok-lama', mutasiFmt(k.gapok));
+      mutasiSetText('mutasi-gapok-baru', mutasiFmt(k.gapok));
+      mutasiSetText('mutasi-tunj-lama', mutasiFmt(tunjTetapSum(k.tunjangan)));
+      mutasiSetText('mutasi-tunj-baru', mutasiFmt(tunjTetapSum(k.tunjangan)));
+      mutasiSetText(
+        'mutasi-total-lama',
+        mutasiFmt(Math.round(k.gapok || 0) + tunjTetapSum(k.tunjangan))
+      );
+      mutasiSetText(
+        'mutasi-total-baru',
+        mutasiFmt(Math.round(k.gapok || 0) + tunjTetapSum(k.tunjangan))
+      );
+      if (!note) return;
+      note.className = 'info-box font-11 leading-normal mb-0';
+      if (!ke) {
+        note.classList.add('info-amber');
+        note.textContent = 'Pilih cabang tujuan.';
+        return;
+      }
+      note.classList.add('info-blue');
+      note.textContent =
+        'Tipe gaji ' +
+        lblMut +
+        ': mutasi hanya pindah lokasi. Tarif tidak diubah ke UMK (UMK untuk gaji bulanan). PPh 21 & BPJS tetap sebulan.';
+      return;
+    }
     var h = sigajiHitungMutasiKomponen(k, umk);
     mutasiSetText('mutasi-gapok-lama', mutasiFmt(h.gapokLama));
     mutasiSetText('mutasi-gapok-baru', mutasiFmt(h.gapokBaru));
@@ -816,7 +852,6 @@
     mutasiSetText('mutasi-tunj-baru', mutasiFmt(h.tunjBaru));
     mutasiSetText('mutasi-total-lama', mutasiFmt(h.totalLama));
     mutasiSetText('mutasi-total-baru', mutasiFmt(h.totalBaru));
-    var note = document.getElementById('mutasi-note');
     if (!note) return;
     note.className = 'info-box font-11 leading-normal mb-0';
     if (!ke) {
@@ -983,7 +1018,12 @@
       typeof parseRpInput === 'function'
         ? parseRpInput(umkEl && umkEl.value)
         : Math.round(Number((umkEl && umkEl.value) || 0) || 0);
-    if (umk <= 0) {
+    var siklusApp =
+      typeof sigajiNormalizeSiklusGaji === 'function'
+        ? sigajiNormalizeSiklusGaji(k.siklus_gaji)
+        : 'bulanan';
+    var skipPay = siklusApp !== 'bulanan';
+    if (!skipPay && umk <= 0) {
       toast('Isi UMK cabang tujuan');
       return;
     }
@@ -998,8 +1038,10 @@
     }
     var oldCab = dari;
     k.cabangId = ke;
-    k.gapok = h.gapokBaru;
-    k.tunjangan = sigajiApplyTunjTetapTotal(k.tunjangan || [], h.tunjBaru);
+    if (!skipPay) {
+      k.gapok = h.gapokBaru;
+      k.tunjangan = sigajiApplyTunjTetapTotal(k.tunjangan || [], h.tunjBaru);
+    }
     k.mutasi_payroll_efektif = tgl;
     if (!Array.isArray(k.mutasi_riwayat)) k.mutasi_riwayat = [];
     k.mutasi_riwayat.unshift({
@@ -1014,6 +1056,8 @@
       total: h.totalBaru,
       umk: umk,
       floorUmk: !!h.floorUmk,
+      skip_umk_pay: skipPay,
+      siklus_gaji: siklusApp,
       by:
         typeof CU !== 'undefined' && CU
           ? CU.nama || CU.role || ''
@@ -1069,14 +1113,19 @@
       sigajiCatchWarn('js/modules/sigaji-cabang.js', eRen);
     }
     if (typeof closeModal === 'function') closeModal('m-mutasi-cabang');
-    var msg =
-      'Mutasi tersimpan. Gapok ' +
-      mutasiFmt(h.gapokBaru) +
-      ', tunj. tetap ' +
-      mutasiFmt(h.tunjBaru) +
-      ' (total ' +
-      mutasiFmt(h.totalBaru) +
-      ').';
+    var msg = skipPay
+      ? 'Mutasi lokasi tersimpan. Tarif ' +
+        (typeof sigajiSiklusGajiLabel === 'function'
+          ? sigajiSiklusGajiLabel(siklusApp)
+          : siklusApp) +
+        ' tidak diubah ke UMK.'
+      : 'Mutasi tersimpan. Gapok ' +
+        mutasiFmt(h.gapokBaru) +
+        ', tunj. tetap ' +
+        mutasiFmt(h.tunjBaru) +
+        ' (total ' +
+        mutasiFmt(h.totalBaru) +
+        ').';
     if (!applyThis) {
       msg +=
         ' Periode aktif tidak diubah — berlaku dari ' +

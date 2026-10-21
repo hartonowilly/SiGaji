@@ -37,6 +37,25 @@ declare var approvals: Array<Record<string, unknown>>;
 declare var CU: { role?: string; nama?: string; nik?: string } | null | undefined;
 
 declare function PA(): { nama?: string; start?: string; end?: string; bayar?: string; status?: string } | null;
+declare function sigajiNormalizeSiklusGaji(v?: string): string;
+declare function sigajiSiklusGajiSortRank(v?: string): number;
+declare function normalizeHariGaji(v?: string | number): number;
+declare function siklusBpjsUpahSebulan(siklus: string, rate: number, hariKerja?: number): number;
+declare function siklusBuildPays(
+  k: KaryawanPayroll,
+  p: { start?: string; end?: string; bayar?: string },
+  hariKerja: number,
+  libur: Record<string, boolean>,
+  absensi?: Record<string, string>
+): Array<{ tgl: string; upah: number; parsial?: boolean }>;
+declare function pecahPotonganCadangan(
+  pays: Array<{ tgl: string; upah: number }>,
+  totalPot: number
+): {
+  items: Array<{ tgl: string; upah: number; potongan: number; dibayar: number }>;
+  sisaPotongan: number;
+};
+declare function liburSetFrom(list: unknown): Record<string, boolean>;
 declare function saveAll(): void;
 declare function toast(msg: string): void;
 declare function openModal(id: string): void;
@@ -76,6 +95,14 @@ interface Window {
 interface HitungGajiResult {
   gapokEff: number;
   gapokFull: number;
+  gapokRate?: number;
+  siklusGaji?: string;
+  siklusUnits?: number;
+  gapokBpjs?: number;
+  jadwalBayar?: {
+    items: Array<{ tgl: string; upah: number; potongan: number; dibayar: number }>;
+    sisaPotongan: number;
+  } | null;
   grossPPh: number;
   brutoTH: number;
   pph: number;
@@ -133,6 +160,8 @@ interface KaryawanPayroll {
   nik: string;
   nama?: string;
   gapok: number;
+  siklus_gaji?: 'bulanan' | 'harian' | 'mingguan' | string;
+  hari_gaji?: number;
   ptkp: string;
   masuk?: string;
   tgl_berhenti?: string;

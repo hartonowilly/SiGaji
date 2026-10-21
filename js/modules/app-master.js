@@ -485,6 +485,10 @@ function toggleUmkEdit(){
   delete inp.dataset.rpBound;
   try{inp.focus();inp.select();}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}
 }
+function karSiklusBukanBulanan(k){
+  var s=typeof sigajiNormalizeSiklusGaji==='function'?sigajiNormalizeSiklusGaji(k&&k.siklus_gaji):String((k&&k.siklus_gaji)||'bulanan');
+  return s!=='bulanan';
+}
 function applyUmkToAllGapok(){
   if(!canAccessSubTab('master','umk')){toast('Tidak punya akses tab UMK');return;}
   ensurePerusahaanUmk();
@@ -496,16 +500,16 @@ function applyUmkToAllGapok(){
   if(multi){
     var missing=0;
     (karyawan||[]).forEach(function(k){
-      if(!k||!k.nik)return;
+      if(!k||!k.nik||karSiklusBukanBulanan(k))return;
       var cid=typeof sigajiKarCabangId==='function'?sigajiKarCabangId(k):'utama';
       var u=typeof sigajiCabangUmk==='function'?sigajiCabangUmk(cid,y):0;
       if(u<=0)missing++;
     });
     if(missing){toast('Ada karyawan yang cabangnya belum punya UMK. Isi tabel UMK per cabang lalu Simpan.');return;}
-    if(!confirm('Terapkan UMK cabang masing-masing ke gaji pokok karyawan?\n\nSnapshot periode terkunci tidak diubah.'))return;
+    if(!confirm('Terapkan UMK cabang masing-masing ke gaji pokok karyawan bulanan?\n\nKaryawan harian/mingguan tidak diubah. Snapshot periode terkunci tidak diubah.'))return;
     var cntM=0;
     (karyawan||[]).forEach(function(k){
-      if(!k||!k.nik)return;
+      if(!k||!k.nik||karSiklusBukanBulanan(k))return;
       var cid=typeof sigajiKarCabangId==='function'?sigajiKarCabangId(k):'utama';
       var u=typeof sigajiCabangUmk==='function'?sigajiCabangUmk(cid,y):0;
       if(u>0){k.gapok=u;cntM++;}
@@ -517,6 +521,7 @@ function applyUmkToAllGapok(){
       ensureKarSnapshotPeriode(pM.nama,listM);
       listM.forEach(function(k){
         if(!karSnapshot[pM.nama]||!karSnapshot[pM.nama][k.nik])return;
+        if(karSiklusBukanBulanan(k))return;
         var cid=typeof sigajiKarCabangId==='function'?sigajiKarCabangId(k):'utama';
         var u=typeof sigajiCabangUmk==='function'?sigajiCabangUmk(cid,y):0;
         if(u>0){karSnapshot[pM.nama][k.nik].gapok=u;snapM++;}
@@ -530,15 +535,16 @@ function applyUmkToAllGapok(){
     return;
   }
   if(n<=0){toast('UMK tahun '+y+' belum diisi. Tab UMK → Edit → Simpan & Kunci.');return;}
-  if(!confirm('Terapkan UMK '+y+' ('+fmt(n)+') ke gaji pokok SEMUA karyawan (master)?\n\nSnapshot periode terkunci tidak diubah. Periode aktif yang tidak terkunci ikut diperbarui.'))return;
+  if(!confirm('Terapkan UMK '+y+' ('+fmt(n)+') ke gaji pokok karyawan bulanan (master)?\n\nKaryawan harian/mingguan tidak diubah. Snapshot periode terkunci tidak diubah. Periode aktif yang tidak terkunci ikut diperbarui.'))return;
   var cnt=0;
-  (karyawan||[]).forEach(function(k){if(!k||!k.nik)return;k.gapok=n;cnt++;});
+  (karyawan||[]).forEach(function(k){if(!k||!k.nik||karSiklusBukanBulanan(k))return;k.gapok=n;cnt++;});
   var p=PA();
   var snapN=0;
   if(p&&p.nama&&!isPeriodeLocked(p.nama)){
     var list=karyawanListPeriode(p);
     ensureKarSnapshotPeriode(p.nama,list);
     list.forEach(function(k){
+      if(karSiklusBukanBulanan(k))return;
       if(karSnapshot[p.nama]&&karSnapshot[p.nama][k.nik]){karSnapshot[p.nama][k.nik].gapok=n;snapN++;}
     });
   }
