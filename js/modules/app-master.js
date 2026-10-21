@@ -336,9 +336,105 @@ function renderUmkYearSelect(){
   if(prev&&list.indexOf(parseInt(prev,10))>=0)sel.value=prev;
   else if(list.indexOf(yr)>=0)sel.value=String(yr);
 }
+function renderUmkLokasiHint(){
+  var hint=document.getElementById('umk-lokasi-hint');
+  var lbl=document.getElementById('umk-lokasi-lbl');
+  var wrap=document.getElementById('umk-cabang-wrap');
+  var rowPrs=document.getElementById('umk-perusahaan-row');
+  var rowMulti=document.getElementById('umk-multi-actions');
+  var multi=typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled();
+  var list=(multi&&typeof sigajiGetCabangList==='function')?sigajiGetCabangList()||[]:[];
+  if(lbl)lbl.textContent='1 lokasi / seluruh karyawan';
+  if(hint){
+    hint.textContent=multi
+      ?'Multi-cabang aktif: isi UMK terpisah per cabang di tabel bawah (dipakai Mutasi). Tombol Set gaji pokok memakai UMK cabang masing-masing karyawan.'
+      :'Paket 1 lokasi: isi satu UMK di sini. Berlaku untuk seluruh karyawan di lokasi perusahaan. Nama cabang tidak ditampilkan karena multi-cabang belum aktif. Mutasi A↔B (UMP berbeda) membutuhkan lisensi multi-cabang + minimal 2 cabang.';
+  }
+  if(rowPrs)rowPrs.classList.toggle('u-hidden',!!(multi&&list.length));
+  if(rowMulti)rowMulti.classList.toggle('u-hidden',!(multi&&list.length));
+  if(!wrap)return;
+  if(!multi||!list.length){
+    wrap.classList.add('u-hidden');
+    wrap.replaceChildren();
+    return;
+  }
+  wrap.classList.remove('u-hidden');
+  wrap.replaceChildren();
+  var tit=document.createElement('div');
+  tit.className='font-11 fw-700 text-muted mb-sm';
+  tit.textContent='UMK per cabang ('+list.length+' lokasi)';
+  wrap.appendChild(tit);
+  var tbl=document.createElement('table');
+  tbl.className='font-12 select-inline';
+  tbl.style.minWidth='380px';
+  tbl.style.borderCollapse='collapse';
+  var thead=document.createElement('thead');
+  var hr=document.createElement('tr');
+  hr.className='bg-surface-2';
+  ['Cabang','UMK / UMP lokasi (Rp)'].forEach(function(h,i){
+    var th=document.createElement('th');
+    th.textContent=h;
+    th.style.padding='6px 10px';
+    th.style.border='1px solid var(--bd)';
+    th.style.textAlign=i?'right':'left';
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  tbl.appendChild(thead);
+  var tb=document.createElement('tbody');
+  list.forEach(function(c){
+    var id=String((c&&c.id)||'');
+    var umk=typeof sigajiCabangUmkRaw==='function'?sigajiCabangUmkRaw(c):Math.round(Number((c&&c.umk)||0)||0);
+    var tr=document.createElement('tr');
+    var tdN=document.createElement('td');
+    tdN.style.padding='6px 10px';
+    tdN.style.border='1px solid var(--bd)';
+    tdN.className='fw-700';
+    tdN.textContent=(c&&(c.nama||id))||'Cabang';
+    var tdU=document.createElement('td');
+    tdU.style.padding='6px 10px';
+    tdU.style.border='1px solid var(--bd)';
+    var inp=document.createElement('input');
+    inp.type='text';
+    inp.className='inp-rp umk-cabang-nilai';
+    inp.setAttribute('data-cabang-id',id);
+    inp.value=umk>0&&typeof formatRpInputNum==='function'?formatRpInputNum(umk):(umk?String(umk):'');
+    inp.style.width='100%';
+    inp.style.maxWidth='220px';
+    inp.style.marginLeft='auto';
+    inp.style.display='block';
+    tdU.appendChild(inp);
+    tr.appendChild(tdN);
+    tr.appendChild(tdU);
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+  wrap.appendChild(tbl);
+}
+function simpanUmkSemuaCabang(){
+  if(!canAccessSubTab('master','umk')){toast('Tidak punya akses tab UMK');return;}
+  if(typeof sigajiMultiBranchEnabled!=='function'||!sigajiMultiBranchEnabled()){
+    toast('Multi-cabang belum aktif');
+    return;
+  }
+  var n=0;
+  document.querySelectorAll('.umk-cabang-nilai').forEach(function(inp){
+    var id=inp.getAttribute('data-cabang-id');
+    var c=typeof sigajiCabangById==='function'?sigajiCabangById(id):null;
+    if(!c)return;
+    var v=typeof parseRpInput==='function'?parseRpInput(inp.value):Math.round(Number(inp.value)||0);
+    c.umk=v>0?v:0;
+    n++;
+  });
+  if(typeof saveAll==='function')saveAll();
+  if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();
+  renderUmkPanel();
+  toast(n?'UMK '+n+' cabang disimpan':'Tidak ada cabang');
+}
 function renderUmkPanel(){
   ensurePerusahaanUmk();
   renderUmkYearSelect();
+  renderUmkLokasiHint();
   var sel=document.getElementById('umk-year-sel');
   var inp=document.getElementById('umk-nilai');
   var btn=document.getElementById('umk-btn-edit');
@@ -394,8 +490,45 @@ function applyUmkToAllGapok(){
   ensurePerusahaanUmk();
   var sel=document.getElementById('umk-year-sel');
   var y=sel&&sel.value?String(sel.value):String(new Date().getFullYear());
+  var multi=typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled();
   var umk=perusahaan.umk[y];
   var n=umk!=null?Math.round(Number(umk)||0):0;
+  if(multi){
+    var missing=0;
+    (karyawan||[]).forEach(function(k){
+      if(!k||!k.nik)return;
+      var cid=typeof sigajiKarCabangId==='function'?sigajiKarCabangId(k):'utama';
+      var u=typeof sigajiCabangUmk==='function'?sigajiCabangUmk(cid,y):0;
+      if(u<=0)missing++;
+    });
+    if(missing){toast('Ada karyawan yang cabangnya belum punya UMK. Isi tabel UMK per cabang lalu Simpan.');return;}
+    if(!confirm('Terapkan UMK cabang masing-masing ke gaji pokok karyawan?\n\nSnapshot periode terkunci tidak diubah.'))return;
+    var cntM=0;
+    (karyawan||[]).forEach(function(k){
+      if(!k||!k.nik)return;
+      var cid=typeof sigajiKarCabangId==='function'?sigajiKarCabangId(k):'utama';
+      var u=typeof sigajiCabangUmk==='function'?sigajiCabangUmk(cid,y):0;
+      if(u>0){k.gapok=u;cntM++;}
+    });
+    var pM=PA();
+    var snapM=0;
+    if(pM&&pM.nama&&!isPeriodeLocked(pM.nama)){
+      var listM=karyawanListPeriode(pM);
+      ensureKarSnapshotPeriode(pM.nama,listM);
+      listM.forEach(function(k){
+        if(!karSnapshot[pM.nama]||!karSnapshot[pM.nama][k.nik])return;
+        var cid=typeof sigajiKarCabangId==='function'?sigajiKarCabangId(k):'utama';
+        var u=typeof sigajiCabangUmk==='function'?sigajiCabangUmk(cid,y):0;
+        if(u>0){karSnapshot[pM.nama][k.nik].gapok=u;snapM++;}
+      });
+    }
+    saveAll();
+    renderKompgaji();
+    renderPenggajian();
+    try{renderDash();}catch(eM){sigajiCatchWarn("js/modules/app-master.js",eM);}
+    toast(cntM+' karyawan: gaji pokok = UMK cabangnya'+(snapM?' ('+snapM+' snapshot periode aktif)':''));
+    return;
+  }
   if(n<=0){toast('UMK tahun '+y+' belum diisi. Tab UMK → Edit → Simpan & Kunci.');return;}
   if(!confirm('Terapkan UMK '+y+' ('+fmt(n)+') ke gaji pokok SEMUA karyawan (master)?\n\nSnapshot periode terkunci tidak diubah. Periode aktif yang tidak terkunci ikut diperbarui.'))return;
   var cnt=0;
