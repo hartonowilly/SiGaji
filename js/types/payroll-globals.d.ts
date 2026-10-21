@@ -136,6 +136,8 @@ interface KaryawanPayroll {
   ptkp: string;
   masuk?: string;
   tgl_berhenti?: string;
+  cabangId?: string;
+  mutasi_payroll_efektif?: string;
   phk?: { alasan?: string };
   tunjangan?: Array<{
     nama: string;
