@@ -172,9 +172,13 @@ function ebupotBuildRows(periode) {
 
   list.forEach(function (k, idx) {
     if (!k || !k.nik) return;
+    var kPay =
+      typeof resolveKarForPeriode === 'function'
+        ? resolveKarForPeriode(k, periode.nama)
+        : k;
     var pm =
       typeof sigajiKarCabangPemotongMeta === 'function'
-        ? sigajiKarCabangPemotongMeta(k)
+        ? sigajiKarCabangPemotongMeta(kPay)
         : null;
     var npwpPemotong = pm ? pm.npwp : npwpPusat;
     var nitku = pm ? pm.nitku : nitkuPusat;

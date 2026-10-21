@@ -742,6 +742,11 @@ function clearPphReturnPanel(){
 }
 
 // Snapshot master karyawan per periode agar revisi bulan lain tidak mengubah periode yang sudah dikerjakan.
+function snapshotKarCabangId(k,fallback){
+  if(fallback!==undefined&&fallback!==null&&fallback!=='')return fallback;
+  if(typeof sigajiKarCabangId==='function')return sigajiKarCabangId(k);
+  return (k&&(k.cabangId||k.cabang))||'utama';
+}
 function snapshotKarFromMaster(k){
   return{
     gapok:Math.round(k.gapok||0),
@@ -751,10 +756,16 @@ function snapshotKarFromMaster(k){
     bpjs_aktif:deepCloneLite(k.bpjs_aktif||{}),
     bpjs_manual:deepCloneLite(k.bpjs_manual||{}),
     pph_return:{nilai:0,ket:''},
+    cabangId:snapshotKarCabangId(k),
   };
 }
 /** Snapshot periode baru: salin dari periode sebelumnya jika ada (tunjangan/gapok tidak kembali ke master global). */
 function snapshotKarForPeriodeEntry(k,pNama){
+  var p=getPeriodeByNama(pNama);
+  var efektif=k&&k.mutasi_payroll_efektif?String(k.mutasi_payroll_efektif).trim():'';
+  if(efektif&&p&&p.start&&String(p.start)>=efektif){
+    return snapshotKarFromMaster(k);
+  }
   var prev=prevPeriodeChrono(pNama);
   var prevSnap=prev&&karSnapshot&&karSnapshot[prev]&&karSnapshot[prev][k.nik];
   if(prevSnap){
@@ -766,6 +777,7 @@ function snapshotKarForPeriodeEntry(k,pNama){
       bpjs_aktif:deepCloneLite(prevSnap.bpjs_aktif||k.bpjs_aktif||{}),
       bpjs_manual:deepCloneLite(prevSnap.bpjs_manual||{}),
       pph_return:deepCloneLite(prevSnap.pph_return||{nilai:0,ket:''}),
+      cabangId:snapshotKarCabangId(k,prevSnap.cabangId),
     };
   }
   return snapshotKarFromMaster(k);
@@ -910,6 +922,7 @@ function resolveKarForPeriode(k,pNama){
   if(snap.bpjs_aktif!==undefined)out.bpjs_aktif=deepCloneLite(snap.bpjs_aktif);
   if(snap.bpjs_manual!==undefined)out.bpjs_manual=deepCloneLite(snap.bpjs_manual);
   if(snap.pph_return!==undefined)out.pph_return=deepCloneLite(snap.pph_return);
+  if(snap.cabangId!==undefined)out.cabangId=snap.cabangId;
   return out;
 }
 function upsertKarSnapshotForPeriode(nik,pNama){

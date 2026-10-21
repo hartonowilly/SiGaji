@@ -89,6 +89,31 @@
     );
   };
 
+  function sigajiCabangUmkRaw(c) {
+    if (!c) return 0;
+    if (typeof c.umk === 'number') return Math.round(c.umk) || 0;
+    if (c.umk && typeof c.umk === 'object') {
+      var y = String(new Date().getFullYear());
+      var n = Math.round(Number(c.umk[y]) || 0);
+      if (n > 0) return n;
+    }
+    return 0;
+  }
+
+  /** UMK/UMP lokasi: nilai cabang, fallback UMK perusahaan tahun berjalan. */
+  window.sigajiCabangUmk = function (cabangId, year) {
+    var c = sigajiCabangById(cabangId);
+    var own = sigajiCabangUmkRaw(c);
+    if (own > 0) return own;
+    var y = String(year || new Date().getFullYear());
+    if (typeof perusahaan !== 'undefined' && perusahaan && perusahaan.umk) {
+      var g = perusahaan.umk[y];
+      if (g != null && g !== '') return Math.round(Number(g) || 0);
+    }
+    return 0;
+  };
+  window.sigajiCabangUmkRaw = sigajiCabangUmkRaw;
+
   window.sigajiKarCabangId = function (k) {
     if (!k) return 'utama';
     var id = String(k.cabangId || k.cabang || '').trim();
@@ -393,6 +418,13 @@
       '"' +
       dis +
       '></div>' +
+      '<div class="fg"><label>UMK / UMP lokasi (Rp)</label><input class="cabang-inp-umk inp-rp" data-idx="' +
+      i +
+      '" value="' +
+      escapeHtml(String(sigajiCabangUmkRaw(c) || '')) +
+      '" placeholder="Wajib untuk mutasi THP tetap"' +
+      dis +
+      '></div>' +
       '<div class="fg"><label>Nama pemotong (di bukti potong)</label><input class="cabang-inp-namapem" data-idx="' +
       i +
       '" value="' +
@@ -471,7 +503,8 @@
       '<div class="ct ct-brand">&#127970; Master Cabang &amp; Identitas Pemotong</div>' +
       '<div class="info-box info-blue font-11 tabs-spaced-lg leading-tight">' +
       '<strong>Aturan pajak:</strong> Satu badan hukum = NPWP sama, <strong>NITKU (6 digit) beda per cabang</strong>. ' +
-      'e-Bupot &amp; XML Coretax memakai TKU cabang karyawan. NPWP benar-benar beda (PT terpisah) → gunakan <code>tenant_key</code> terpisah, bukan cabang.' +
+      'e-Bupot &amp; XML Coretax memakai TKU cabang karyawan. NPWP benar-benar beda (PT terpisah) → gunakan <code>tenant_key</code> terpisah, bukan cabang. ' +
+      '<strong>UMK/UMP isi per cabang</strong> — dipakai tombol Mutasi di profil karyawan agar total gapok + tunjangan tetap (THP) tidak berubah.' +
       '</div>' +
       '<p class="font-12 text-body" style="margin:0 0 .65rem">Maks <strong>' +
       String(max) +
@@ -488,6 +521,7 @@
       '<button type="button" class="btn btn-sm btn-out"' + sigajiDataAction('invoke', { fn: 'sigajiCabangSimpan' }) + '>Simpan</button>' +
       '</div></div>';
     panel.innerHTML = h;
+    if (typeof sigajiBindRpInputs === 'function') sigajiBindRpInputs(panel);
   };
 
   function readCabangInputs(list) {
@@ -498,6 +532,15 @@
     document.querySelectorAll('.cabang-inp-kode').forEach(function (inp) {
       var i = parseInt(inp.getAttribute('data-idx'), 10);
       if (list[i]) list[i].kode = inp.value.trim();
+    });
+    document.querySelectorAll('.cabang-inp-umk').forEach(function (inp) {
+      var i = parseInt(inp.getAttribute('data-idx'), 10);
+      if (!list[i]) return;
+      var n =
+        typeof parseRpInput === 'function'
+          ? parseRpInput(inp.value)
+          : Math.round(Number(String(inp.value || '').replace(/\D/g, '')) || 0);
+      list[i].umk = n > 0 ? n : 0;
     });
     document.querySelectorAll('.cabang-inp-namapem').forEach(function (inp) {
       var i = parseInt(inp.getAttribute('data-idx'), 10);
@@ -588,6 +631,7 @@
       nama: 'Cabang ' + n,
       kode: 'C' + n,
       nitku: pad + '0000',
+      umk: 0,
       aktif: true,
     });
     cabang = list;
@@ -647,5 +691,398 @@
     sigajiRenderCabangMasterTab();
     sigajiPopulateKarCabangSelect();
     sigajiTogglePrsNitkuField();
+  };
+
+  function tunjTetapSum(list) {
+    var s = 0;
+    (list || []).forEach(function (t) {
+      if (t && t.tipe === 'tetap') s += Math.round(t.nilai || 0);
+    });
+    return s;
+  }
+
+  /** Gapok mengikuti UMK baru; tunjangan tetap (ikut BPJS) menyesuaikan agar total sama. */
+  window.sigajiHitungMutasiKomponen = function (k, umkBaru) {
+    var gapokLama = Math.round((k && k.gapok) || 0);
+    var tunjLama = tunjTetapSum(k && k.tunjangan);
+    var totalLama = gapokLama + tunjLama;
+    var gapokBaru = Math.max(0, Math.round(umkBaru || 0));
+    var tunjBaru = totalLama - gapokBaru;
+    var floorUmk = false;
+    if (tunjBaru < 0) {
+      tunjBaru = 0;
+      floorUmk = true;
+    }
+    return {
+      gapokLama: gapokLama,
+      tunjLama: tunjLama,
+      totalLama: totalLama,
+      gapokBaru: gapokBaru,
+      tunjBaru: tunjBaru,
+      totalBaru: gapokBaru + tunjBaru,
+      floorUmk: floorUmk,
+      selisihGapok: gapokBaru - gapokLama,
+      selisihTunj: tunjBaru - tunjLama,
+    };
+  };
+
+  window.sigajiApplyTunjTetapTotal = function (tunjangan, target) {
+    target = Math.max(0, Math.round(target || 0));
+    var list = (tunjangan || []).map(function (t) {
+      return Object.assign({}, t);
+    });
+    var idxs = [];
+    list.forEach(function (t, i) {
+      if (t && t.tipe === 'tetap') idxs.push(i);
+    });
+    if (!idxs.length) {
+      if (target > 0) {
+        list.push({
+          nama: 'Tunjangan Tetap',
+          nilai: target,
+          tipe: 'tetap',
+          thr_ikut: true,
+          prorata_ikut: true,
+        });
+      }
+      return list;
+    }
+    var oldSum = 0;
+    idxs.forEach(function (i) {
+      oldSum += Math.round(list[i].nilai || 0);
+    });
+    if (oldSum <= 0) {
+      list[idxs[0]].nilai = target;
+      for (var z = 1; z < idxs.length; z++) list[idxs[z]].nilai = 0;
+      return list;
+    }
+    var allocated = 0;
+    for (var j = 0; j < idxs.length; j++) {
+      if (j === idxs.length - 1) {
+        list[idxs[j]].nilai = target - allocated;
+      } else {
+        var v = Math.round(
+          (Math.round(list[idxs[j]].nilai || 0) / oldSum) * target
+        );
+        list[idxs[j]].nilai = v;
+        allocated += v;
+      }
+    }
+    return list;
+  };
+
+  function mutasiDefaultTgl() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    if (d.getDate() === 1) {
+      return y + '-' + String(m).padStart(2, '0') + '-01';
+    }
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    return y + '-' + String(m).padStart(2, '0') + '-01';
+  }
+
+  function mutasiSetText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text == null ? '' : String(text);
+  }
+
+  function mutasiFmt(n) {
+    return typeof fmt === 'function' ? fmt(n) : String(Math.round(n || 0));
+  }
+
+  window.sigajiRefreshMutasiPreview = function () {
+    var nikEl = document.getElementById('mutasi-nik');
+    var nik = nikEl ? String(nikEl.value || '').trim() : '';
+    var k = (karyawan || []).find(function (x) {
+      return x && x.nik === nik;
+    });
+    var keEl = document.getElementById('mutasi-ke');
+    var umkEl = document.getElementById('mutasi-umk');
+    var ke = keEl ? keEl.value : '';
+    var umk =
+      typeof parseRpInput === 'function'
+        ? parseRpInput(umkEl && umkEl.value)
+        : Math.round(Number((umkEl && umkEl.value) || 0) || 0);
+    if (!k) return;
+    var h = sigajiHitungMutasiKomponen(k, umk);
+    mutasiSetText('mutasi-gapok-lama', mutasiFmt(h.gapokLama));
+    mutasiSetText('mutasi-gapok-baru', mutasiFmt(h.gapokBaru));
+    mutasiSetText('mutasi-tunj-lama', mutasiFmt(h.tunjLama));
+    mutasiSetText('mutasi-tunj-baru', mutasiFmt(h.tunjBaru));
+    mutasiSetText('mutasi-total-lama', mutasiFmt(h.totalLama));
+    mutasiSetText('mutasi-total-baru', mutasiFmt(h.totalBaru));
+    var note = document.getElementById('mutasi-note');
+    if (!note) return;
+    note.className = 'info-box font-11 leading-normal mb-0';
+    if (!ke) {
+      note.classList.add('info-amber');
+      note.textContent = 'Pilih cabang tujuan.';
+      return;
+    }
+    if (umk <= 0) {
+      note.classList.add('info-amber');
+      note.textContent =
+        'Isi UMK cabang tujuan. Bisa disimpan ke Master Cabang lewat centang di bawah.';
+      return;
+    }
+    if (h.floorUmk) {
+      note.classList.add('info-amber');
+      note.textContent =
+        'Tunjangan tetap tidak cukup menyerap selisih UMK. Gaji pokok = UMK lokasi baru, tunjangan Rp 0, total naik ' +
+        mutasiFmt(h.totalBaru - h.totalLama) +
+        '.';
+      return;
+    }
+    if (h.selisihTunj > 0) {
+      note.classList.add('info-blue');
+      note.textContent =
+        'UMK tujuan lebih rendah — tunjangan tetap naik ' +
+        mutasiFmt(h.selisihTunj) +
+        ' agar total komponen tetap sama.';
+      return;
+    }
+    if (h.selisihTunj < 0) {
+      note.classList.add('info-blue');
+      note.textContent =
+        'UMK tujuan lebih tinggi — tunjangan tetap dipotong ' +
+        mutasiFmt(Math.abs(h.selisihTunj)) +
+        ' agar total komponen tetap (THP) sama.';
+      return;
+    }
+    note.classList.add('info-blue');
+    note.textContent =
+      'UMK sama dengan gaji pokok sekarang — hanya pindah lokasi, komponen gaji tidak berubah.';
+  };
+
+  window.sigajiMutasiOnCabangChange = function () {
+    var keEl = document.getElementById('mutasi-ke');
+    var umkEl = document.getElementById('mutasi-umk');
+    if (!keEl || !umkEl) return;
+    var umk = sigajiCabangUmk(keEl.value);
+    umkEl.value = umk > 0 ? String(umk) : '';
+    if (typeof sigajiBindRpInputs === 'function') {
+      delete umkEl.dataset.rpBound;
+      delete umkEl.dataset.rpEditing;
+      sigajiBindRpInputs(document.getElementById('m-mutasi-cabang'));
+    } else if (umk > 0 && typeof formatRpInputNum === 'function') {
+      umkEl.value = formatRpInputNum(umk);
+    }
+    var saveUmk = document.getElementById('mutasi-save-umk');
+    if (saveUmk) saveUmk.checked = umk <= 0;
+    sigajiRefreshMutasiPreview();
+  };
+
+  window.openMutasiCabangModal = function () {
+    if (!sigajiMultiBranchEnabled()) {
+      toast('Multi-cabang belum aktif');
+      return;
+    }
+    if (!sigajiCanAssignCabang()) {
+      toast('Hanya Admin/HRD yang boleh mutasi cabang');
+      return;
+    }
+    var nik =
+      (typeof cpNik !== 'undefined' && cpNik) ||
+      (document.getElementById('sp-nik-f') &&
+        document.getElementById('sp-nik-f').value) ||
+      '';
+    var k = (karyawan || []).find(function (x) {
+      return x && x.nik === nik;
+    });
+    if (!k) {
+      toast('Buka profil karyawan dulu');
+      return;
+    }
+    var list = sigajiGetCabangList();
+    if (list.length < 2) {
+      toast('Minimal 2 cabang. Tambah di Master → Daftar Cabang.');
+      return;
+    }
+    var dariId = sigajiKarCabangId(k);
+    var dari = sigajiCabangById(dariId);
+    document.getElementById('mutasi-nik').value = k.nik;
+    mutasiSetText('mutasi-nama-lbl', (k.nama || k.nik) + ' · ' + k.nik);
+    mutasiSetText(
+      'mutasi-dari-lbl',
+      (dari ? dari.nama || dariId : dariId) +
+        ' · UMK ' +
+        mutasiFmt(sigajiCabangUmk(dariId) || k.gapok || 0)
+    );
+    var keEl = document.getElementById('mutasi-ke');
+    keEl.innerHTML = list
+      .map(function (c) {
+        return (
+          '<option value="' +
+          escapeHtml(c.id) +
+          '"' +
+          (c.id === dariId ? ' disabled' : '') +
+          '>' +
+          escapeHtml(c.nama || c.id) +
+          (sigajiCabangUmk(c.id)
+            ? ' · ' + mutasiFmt(sigajiCabangUmk(c.id))
+            : ' · UMK belum diisi') +
+          '</option>'
+        );
+      })
+      .join('');
+    var first = list.find(function (c) {
+      return c.id !== dariId;
+    });
+    keEl.value = first ? first.id : '';
+    var tglEl = document.getElementById('mutasi-tgl');
+    if (tglEl) tglEl.value = mutasiDefaultTgl();
+    var applyPer = document.getElementById('mutasi-apply-periode');
+    if (applyPer) applyPer.checked = false;
+    sigajiMutasiOnCabangChange();
+    if (typeof openModal === 'function') openModal('m-mutasi-cabang');
+  };
+
+  function stampCabangSnapshotLalu(nik, oldCab, tgl) {
+    if (!karSnapshot) return;
+    (periodes || []).forEach(function (p) {
+      if (!p || !p.nama || !karSnapshot[p.nama] || !karSnapshot[p.nama][nik])
+        return;
+      var snap = karSnapshot[p.nama][nik];
+      var endedBefore = p.end && tgl && String(p.end) < tgl;
+      var locked =
+        typeof isPeriodeLocked === 'function' && isPeriodeLocked(p.nama);
+      if (endedBefore || locked) {
+        if (snap.cabangId == null) snap.cabangId = oldCab;
+      }
+    });
+  }
+
+  window.sigajiTerapkanMutasiCabang = function () {
+    if (!sigajiCanAssignCabang()) {
+      toast('Hanya Admin/HRD yang boleh mutasi cabang');
+      return;
+    }
+    var nik = String(
+      (document.getElementById('mutasi-nik') || {}).value || ''
+    ).trim();
+    var k = (karyawan || []).find(function (x) {
+      return x && x.nik === nik;
+    });
+    if (!k) {
+      toast('Karyawan tidak ditemukan');
+      return;
+    }
+    var ke = (document.getElementById('mutasi-ke') || {}).value;
+    var dari = sigajiKarCabangId(k);
+    if (!ke || ke === dari) {
+      toast('Pilih cabang tujuan yang berbeda');
+      return;
+    }
+    var umkEl = document.getElementById('mutasi-umk');
+    var umk =
+      typeof parseRpInput === 'function'
+        ? parseRpInput(umkEl && umkEl.value)
+        : Math.round(Number((umkEl && umkEl.value) || 0) || 0);
+    if (umk <= 0) {
+      toast('Isi UMK cabang tujuan');
+      return;
+    }
+    var tgl = String(
+      (document.getElementById('mutasi-tgl') || {}).value || ''
+    ).trim() || mutasiDefaultTgl();
+    var h = sigajiHitungMutasiKomponen(k, umk);
+    var saveUmk = document.getElementById('mutasi-save-umk');
+    if (saveUmk && saveUmk.checked) {
+      var cab = sigajiCabangById(ke);
+      if (cab) cab.umk = umk;
+    }
+    var oldCab = dari;
+    k.cabangId = ke;
+    k.gapok = h.gapokBaru;
+    k.tunjangan = sigajiApplyTunjTetapTotal(k.tunjangan || [], h.tunjBaru);
+    k.mutasi_payroll_efektif = tgl;
+    if (!Array.isArray(k.mutasi_riwayat)) k.mutasi_riwayat = [];
+    k.mutasi_riwayat.unshift({
+      ts: new Date().toISOString(),
+      tgl: tgl,
+      dari: oldCab,
+      ke: ke,
+      gapok_lama: h.gapokLama,
+      gapok_baru: h.gapokBaru,
+      tunj_lama: h.tunjLama,
+      tunj_baru: h.tunjBaru,
+      total: h.totalBaru,
+      umk: umk,
+      floorUmk: !!h.floorUmk,
+      by:
+        typeof CU !== 'undefined' && CU
+          ? CU.nama || CU.role || ''
+          : '',
+    });
+    if (k.mutasi_riwayat.length > 40) k.mutasi_riwayat = k.mutasi_riwayat.slice(0, 40);
+    stampCabangSnapshotLalu(nik, oldCab, tgl);
+    var applyThis = !!(
+      document.getElementById('mutasi-apply-periode') &&
+      document.getElementById('mutasi-apply-periode').checked
+    );
+    (periodes || []).forEach(function (p) {
+      if (!p || !p.nama) return;
+      if (typeof isPeriodeLocked === 'function' && isPeriodeLocked(p.nama))
+        return;
+      var start = String(p.start || '');
+      var end = String(p.end || '');
+      var after = start && start >= tgl;
+      var inPer = start && end && tgl >= start && tgl <= end;
+      if (after || (inPer && applyThis)) {
+        if (typeof upsertKarSnapshotForPeriode === 'function')
+          upsertKarSnapshotForPeriode(nik, p.nama);
+      }
+    });
+    if (typeof logPayrollAudit === 'function') {
+      logPayrollAudit(
+        nik,
+        'Mutasi cabang',
+        (sigajiKarCabangLabel({ cabangId: oldCab }) || oldCab) +
+          ' → ' +
+          (sigajiKarCabangLabel(k) || ke) +
+          ' | gapok ' +
+          h.gapokLama +
+          '→' +
+          h.gapokBaru +
+          ' tunj ' +
+          h.tunjLama +
+          '→' +
+          h.tunjBaru +
+          ' efektif ' +
+          tgl
+      );
+    }
+    if (typeof saveAll === 'function') saveAll();
+    var cabEl = document.getElementById('sp-cabang-f');
+    if (cabEl) cabEl.value = ke;
+    try {
+      if (typeof renderKar === 'function') renderKar();
+      if (typeof renderKompgaji === 'function') renderKompgaji();
+      if (typeof renderPenggajian === 'function') renderPenggajian();
+      if (typeof renderDash === 'function') renderDash();
+    } catch (eRen) {
+      sigajiCatchWarn('js/modules/sigaji-cabang.js', eRen);
+    }
+    if (typeof closeModal === 'function') closeModal('m-mutasi-cabang');
+    var msg =
+      'Mutasi tersimpan. Gapok ' +
+      mutasiFmt(h.gapokBaru) +
+      ', tunj. tetap ' +
+      mutasiFmt(h.tunjBaru) +
+      ' (total ' +
+      mutasiFmt(h.totalBaru) +
+      ').';
+    if (!applyThis) {
+      msg +=
+        ' Periode aktif tidak diubah — berlaku dari ' +
+        tgl +
+        ' (periode baru / yang belum dikunci setelah tanggal itu).';
+    }
+    toast(msg);
   };
 })();

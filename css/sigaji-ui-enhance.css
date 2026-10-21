@@ -2112,6 +2112,11 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
   border-bottom: 1px solid var(--color-border-light);
 }
 .sigaji-cabang-card .fg2 { gap: 0.5rem; }
+#m-mutasi-cabang .tbl { width: 100%; }
+#m-mutasi-cabang select,
+#m-mutasi-cabang input[type="date"] { width: 100%; }
+#sp-cabang-row .fl { width: 100%; }
+#sp-cabang-row select { min-width: 0; }
 [data-theme="dark"] .sigaji-cabang-card {
   background: #1e293b;
   border-color: #334155;
