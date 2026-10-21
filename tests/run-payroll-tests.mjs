@@ -24,6 +24,7 @@ const suites = [
   'mutasi-cabang.test.mjs',
   'siklus-gaji.test.mjs',
   'siklus-bayar-dummy.test.mjs',
+  'karyawan-in-periode.test.mjs',
 ];
 let failed = 0;
 

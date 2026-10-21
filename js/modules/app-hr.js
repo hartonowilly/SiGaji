@@ -176,6 +176,10 @@ function isKarResign(k){return !!String((k&&k.tgl_berhenti)||'').trim();}
 function listKarMasterBase(){
   var list=typeof karyawanSortedAll==='function'?karyawanSortedAll():sortKaryawanByNik(karyawan||[]);
   if(typeof sigajiFilterKaryawanByCabang==='function')list=sigajiFilterKaryawanByCabang(list);
+  var p=typeof PA==='function'?PA():null;
+  if(p&&typeof karyawanInPeriode==='function'){
+    list=list.filter(function(k){return karyawanInPeriode(k,p);});
+  }
   list=list.filter(karMatchesTipeFilter).filter(karMatchesSiklusFilter);
   if(__karListMode==='resign'){
     return list.filter(isKarResign).sort(function(a,b){
@@ -248,9 +252,11 @@ function renderKarBody(){
   var list=listKarMasterBase();
   const el=document.getElementById('kar-count');
   if(el){
+    var pNama=(typeof PA==='function'&&PA()&&PA().nama)?PA().nama:'';
+    var pSuf=pNama?' • '+pNama:'';
     el.textContent=__karListMode==='resign'
-      ?(list.length+' resign')
-      :(list.length+' karyawan aktif • Data profil SDM');
+      ?(list.length+' resign'+pSuf)
+      :(list.length+' karyawan aktif'+pSuf);
   }
   try{if(typeof sigajiRenderLicenseQuotaUi==='function')sigajiRenderLicenseQuotaUi();}catch(eLq){sigajiCatchWarn("js/modules/app-hr.js",eLq);}
   const tb=document.getElementById('tb-kar');if(!tb)return;
