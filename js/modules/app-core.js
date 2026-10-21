@@ -704,14 +704,19 @@ function prevPeriodeChrono(pnama){
   return sorted[i-1].nama;
 }
 
-// Karyawan tampil di periode jika masih aktif pada awal periode,
-// atau resign/PHK terjadi di dalam periode tsb (untuk gaji terakhir).
+// Karyawan tampil di periode jika masa kerjanya menyinggung rentang periode:
+// sudah masuk pada/sebelum tgl akhir, dan belum resign sebelum tgl awal
+// (resign di dalam periode tetap tampil untuk gaji terakhir).
 function karyawanInPeriode(k,p){
-  var t=String((k&&k.tgl_berhenti)||'').trim();
-  if(!t)return true;
+  if(!k)return false;
   if(!p||!p.start)return true;
-  // ISO date string compare aman untuk format YYYY-MM-DD
-  return t>=String(p.start);
+  var start=String(p.start||'').slice(0,10);
+  var end=String(p.end||p.bayar||p.start||'').slice(0,10);
+  var masuk=String((k.masuk)||'').trim().slice(0,10);
+  if(masuk&&end&&masuk>end)return false;
+  var t=String((k.tgl_berhenti)||'').trim().slice(0,10);
+  if(!t)return true;
+  return t>=start;
 }
 function sortKaryawanByNik(list){
   if(typeof sigajiSortKaryawanByNik==='function')return sigajiSortKaryawanByNik(list);
