@@ -634,7 +634,7 @@ function renderMyCuti(){
   if(!CU||!CU.nik)return;var k=karyawan.find(function(x){return x.nik===CU.nik;});if(!k)return;
   var yr=new Date().getFullYear();
   var kuota=masterCuti.kuota||12;
-  var manual=cutiManual(k.nik,yr);var cb=countCutiBersama(yr);var total=manual+cb;
+  var manual=cutiManual(k.nik,yr);var cb=countCutiBersama(yr,k.nik);var total=manual+cb;
   var sisa=kuota-total;
   var sisaCls=sisa<=0?'cuti-sisa-danger':sisa<=3?'cuti-sisa-warn':'cuti-sisa-ok';
   var rinci=typeof rincianCutiTahun==='function'?rincianCutiTahun(k.nik,yr):{items:[]};
