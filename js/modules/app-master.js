@@ -215,7 +215,7 @@ function simpanPeriode(){
     setTimeout(function(){openPtkpJanuariModal(nama);},350);
   }
 }
-function aktifkanPeriode(id){periodes.forEach(function(p){p.status=sigajiSameId(p.id,id)?'aktif':'tutup';});saveAll();renderPeriodes();document.getElementById('top-periode').textContent=PA().nama;renderKar();renderPenggajian();renderDash();renderPPH();renderLaporan();renderPeriodeSelects();populateSelects();toast('Diaktifkan');}
+function aktifkanPeriode(id){periodes.forEach(function(p){p.status=sigajiSameId(p.id,id)?'aktif':'tutup';});try{var pAkt=typeof periodesFindById==='function'?periodesFindById(id):null;var yAkt=pAkt&&typeof sigajiPeriodePayrollMeta==='function'?sigajiPeriodePayrollMeta(pAkt).year:0;if(yAkt)window.__sigajiTimelineYear=yAkt;}catch(eAkt){sigajiCatchWarn('js/modules/app-master.js',eAkt);}saveAll();renderPeriodes();document.getElementById('top-periode').textContent=PA().nama;renderKar();renderPenggajian();renderDash();renderPPH();renderLaporan();renderPeriodeSelects();populateSelects();toast('Diaktifkan');}
 function toggleLockPeriode(id){
   var p=periodesFindById(id);
   if(!p)return;

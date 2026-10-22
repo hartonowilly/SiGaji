@@ -25,6 +25,7 @@ const suites = [
   'siklus-gaji.test.mjs',
   'siklus-bayar-dummy.test.mjs',
   'karyawan-in-periode.test.mjs',
+  'timeline-tahun.test.mjs',
 ];
 let failed = 0;
 
