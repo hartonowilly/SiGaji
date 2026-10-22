@@ -313,6 +313,16 @@ html.sigaji-mobile-nav .period-timeline-bar {
 html.sigaji-mobile-nav .period-timeline-bar::-webkit-scrollbar {
   display: none;
 }
+html.sigaji-mobile-nav .ptl-year {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: inherit;
+}
+html.sigaji-mobile-nav .ptl-year-sel {
+  font-size: 11px;
+  padding: 4px 8px;
+}
 html.sigaji-mobile-nav .period-sticky-bar {
   flex-direction: column;
   align-items: flex-start;

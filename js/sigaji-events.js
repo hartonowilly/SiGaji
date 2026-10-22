@@ -176,6 +176,12 @@
       case 'periode-timeline':
         if (id && typeof sigajiSwitchPeriodeTimeline === 'function') sigajiSwitchPeriodeTimeline(id);
         return true;
+      case 'periode-timeline-year': {
+        var yearRaw = el.getAttribute('data-year') || el.value;
+        var year = parseInt(yearRaw, 10);
+        if (year && typeof sigajiSetTimelineYear === 'function') sigajiSetTimelineYear(year);
+        return true;
+      }
       case 'djp-nik-validasi': {
         var ktp = el.getAttribute('data-ktp');
         if (!ktp) {
@@ -219,6 +225,8 @@
       var actEl = t.closest('[data-sigaji-action]');
       if (actEl) {
         var action = actEl.getAttribute('data-sigaji-action');
+        var tag = actEl.tagName;
+        if (tag === 'SELECT' || tag === 'OPTION') return;
         if (action && runSigajiAction(action, actEl, ev)) {
           ev.preventDefault();
         }
@@ -313,6 +321,14 @@
       if (bk && typeof switchBackupTab === 'function') {
         switchBackupTab(bk, bk.getAttribute('data-bktab'));
       }
+    });
+
+    document.addEventListener('change', function (ev) {
+      var t = ev.target;
+      if (!t || !t.getAttribute) return;
+      if (t.tagName !== 'SELECT') return;
+      var action = t.getAttribute('data-sigaji-action');
+      if (action) runSigajiAction(action, t, ev);
     });
   }
 

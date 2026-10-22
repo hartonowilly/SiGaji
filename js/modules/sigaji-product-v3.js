@@ -30,7 +30,7 @@
     {
       sel: '#period-timeline-bar',
       title: 'Timeline periode',
-      body: 'Fokus per bulan — klik bulan untuk mengubah seluruh aplikasi (gaji, absensi, slip, PPh).',
+      body: 'Pilih tahun, lalu klik bulan — seluruh aplikasi (gaji, absensi, slip, PPh) mengikuti.',
     },
     {
       sel: '#dash-bento-grid [data-widget="hero"]',
@@ -674,24 +674,41 @@
   };
 
   /* ── Period timeline ── */
-  window.sigajiRenderPeriodTimeline = function () {
-    var bar = document.getElementById('period-timeline-bar');
-    if (!bar || typeof sigajiPeriodePayrollMeta !== 'function') return;
-    var yr = new Date().getFullYear();
+  function timelineMetaYear(p) {
+    if (!p || typeof sigajiPeriodePayrollMeta !== 'function') return 0;
+    var y = sigajiPeriodePayrollMeta(p).year;
+    return y >= 2000 && y < 2100 ? y : 0;
+  }
+
+  window.sigajiCollectTimelineYears = function (list, nowYear) {
+    var set = {};
+    (list || []).forEach(function (p) {
+      var y = timelineMetaYear(p);
+      if (y) set[y] = 1;
+    });
+    var ny = parseInt(nowYear, 10) || new Date().getFullYear();
+    if (ny >= 2000 && ny < 2100) set[ny] = 1;
+    return Object.keys(set)
+      .map(function (k) {
+        return parseInt(k, 10);
+      })
+      .sort(function (a, b) {
+        return a - b;
+      });
+  };
+
+  window.sigajiTimelineItemsForYear = function (list, year) {
     var sorted =
       typeof sortPeriodesByPayrollYm === 'function'
-        ? sortPeriodesByPayrollYm(periodes || [], false)
-        : periodes || [];
+        ? sortPeriodesByPayrollYm(list || [], false)
+        : (list || []).slice();
+    var yr = parseInt(year, 10) || 0;
     var filtered = sorted.filter(function (p) {
-      var meta = sigajiPeriodePayrollMeta(p);
-      return meta.year === yr;
+      return timelineMetaYear(p) === yr;
     });
-    if (filtered.length < 3) {
-      filtered = sorted.slice(-12);
-    }
     var byYm = {};
     filtered.forEach(function (p) {
-      var meta = sigajiPeriodePayrollMeta(p);
+      var meta = typeof sigajiPeriodePayrollMeta === 'function' ? sigajiPeriodePayrollMeta(p) : {};
       if (!meta.ym) return;
       var prev = byYm[meta.ym];
       if (
@@ -702,48 +719,132 @@
         byYm[meta.ym] = p;
       }
     });
-    var items = Object.keys(byYm)
+    return Object.keys(byYm)
       .sort()
       .map(function (k) {
         return byYm[k];
       });
-    if (!items.length) items = sorted.slice(-12);
+  };
+
+  window.sigajiSetTimelineYear = function (year) {
+    var y = parseInt(year, 10);
+    if (!y) return;
+    window.__sigajiTimelineYear = y;
+    if (typeof sigajiRenderPeriodTimeline === 'function') sigajiRenderPeriodTimeline();
+  };
+
+  window.sigajiRenderPeriodTimeline = function () {
+    var bar = document.getElementById('period-timeline-bar');
+    if (!bar || typeof sigajiPeriodePayrollMeta !== 'function') return;
+    var nowY = new Date().getFullYear();
     var active = typeof PA === 'function' ? PA() : null;
-    bar.innerHTML =
-      '<div class="ptl-scroll">' +
-      items
-        .map(function (p) {
-          var meta = sigajiPeriodePayrollMeta(p);
-          var lbl = meta.label || p.nama || '-';
-          var tip = (p.nama || '-') + ' · ' + (typeof fmtDate === 'function' ? fmtDate(p.start) : p.start) + ' – ' + (typeof fmtDate === 'function' ? fmtDate(p.end) : p.end);
-          if (meta.crossesPriorMonth && meta.priorDays > 0) {
-            tip += ' (termasuk ' + meta.priorDays + ' hari bulan sebelumnya)';
-          }
-          var cls = 'ptl-item';
-          if (active && (active.id === p.id || active.nama === p.nama)) cls += ' active';
-          if (p.snapshot_locked) cls += ' locked';
-          if (meta.crossesPriorMonth) cls += ' ptl-cross';
-          return (
-            '<button type="button" class="' +
-            cls +
-            '"' + sigajiDataAction('periode-timeline', { id: p.id }) + ' title="' +
-            escapeHtml(tip) +
-            '">' +
-            escapeHtml(lbl) +
-            '</button>'
-          );
-        })
-        .join('') +
-      '</div>';
+    var years = sigajiCollectTimelineYears(periodes || [], nowY);
+    var yr = parseInt(window.__sigajiTimelineYear, 10) || 0;
+    if (!yr) {
+      yr = timelineMetaYear(active) || nowY;
+      window.__sigajiTimelineYear = yr;
+    }
+    if (years.indexOf(yr) < 0) {
+      years.push(yr);
+      years.sort(function (a, b) {
+        return a - b;
+      });
+    }
+    var items = sigajiTimelineItemsForYear(periodes || [], yr);
+    var yi = years.indexOf(yr);
+    var prevY = yi > 0 ? years[yi - 1] : 0;
+    var nextY = yi >= 0 && yi < years.length - 1 ? years[yi + 1] : 0;
+    var yearOpts = years
+      .map(function (y) {
+        var ys = escapeHtml(String(y));
+        return (
+          '<option value="' +
+          ys +
+          '"' +
+          (y === yr ? ' selected' : '') +
+          '>' +
+          ys +
+          '</option>'
+        );
+      })
+      .join('');
+    var parts = [];
+    parts.push('<div class="ptl-year">');
+    parts.push('<button type="button" class="ptl-year-btn"');
+    if (prevY) {
+      parts.push(sigajiDataAction('periode-timeline-year', { year: prevY }));
+      parts.push(' aria-label="Tahun sebelumnya" title="' + escapeHtml(String(prevY)) + '">');
+    } else {
+      parts.push(' disabled aria-label="Tahun sebelumnya">');
+    }
+    parts.push('&lsaquo;</button><select class="ptl-year-sel" id="ptl-year-sel" aria-label="Tahun periode gaji"');
+    parts.push(sigajiDataAction('periode-timeline-year'));
+    parts.push('>');
+    parts.push(yearOpts);
+    parts.push('</select><button type="button" class="ptl-year-btn"');
+    if (nextY) {
+      parts.push(sigajiDataAction('periode-timeline-year', { year: nextY }));
+      parts.push(' aria-label="Tahun berikutnya" title="' + escapeHtml(String(nextY)) + '">');
+    } else {
+      parts.push(' disabled aria-label="Tahun berikutnya">');
+    }
+    parts.push('&rsaquo;</button></div><div class="ptl-scroll">');
+    if (!items.length) {
+      parts.push(
+        '<div class="ptl-empty">Belum ada periode ' +
+          escapeHtml(String(yr)) +
+          '. Buat di Master \u2192 Periode.</div>'
+      );
+    } else {
+      parts.push(
+        items
+          .map(function (p) {
+            var meta = sigajiPeriodePayrollMeta(p);
+            var lbl = meta.label || p.nama || '-';
+            var tip =
+              (p.nama || '-') +
+              ' · ' +
+              (typeof fmtDate === 'function' ? fmtDate(p.start) : p.start) +
+              ' – ' +
+              (typeof fmtDate === 'function' ? fmtDate(p.end) : p.end);
+            if (meta.crossesPriorMonth && meta.priorDays > 0) {
+              tip += ' (termasuk ' + meta.priorDays + ' hari bulan sebelumnya)';
+            }
+            var cls = 'ptl-item';
+            if (active && (active.id === p.id || active.nama === p.nama)) cls += ' active';
+            if (p.snapshot_locked) cls += ' locked';
+            if (meta.crossesPriorMonth) cls += ' ptl-cross';
+            return (
+              '<button type="button" class="' +
+              cls +
+              '"' +
+              sigajiDataAction('periode-timeline', { id: p.id }) +
+              ' title="' +
+              escapeHtml(tip) +
+              '">' +
+              escapeHtml(lbl) +
+              '</button>'
+            );
+          })
+          .join('')
+      );
+    }
+    parts.push('</div>');
+    bar.innerHTML = parts.join('');
   };
 
   window.sigajiSwitchPeriodeTimeline = function (id) {
     window.__sigajiAbMonth = '';
+    var p = typeof periodesFindById === 'function' ? periodesFindById(id) : null;
+    var y = timelineMetaYear(p);
+    if (y) window.__sigajiTimelineYear = y;
     if (typeof aktifkanPeriode === 'function') aktifkanPeriode(id);
     sigajiRenderPeriodTimeline();
     try {
       if (typeof sigajiUpdatePeriodStickyBar === 'function') sigajiUpdatePeriodStickyBar();
-    } catch(e){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e);}
+    } catch (e) {
+      sigajiCatchWarn('js/modules/sigaji-product-v3.js', e);
+    }
   };
 
   /* ── Theme & density ── */
