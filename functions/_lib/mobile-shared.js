@@ -476,31 +476,47 @@ function cutiManualTrackingYear(payload, nik, yr) {
   return n;
 }
 
-function countCutiBersamaYear(payload, yr) {
+function tglMasukFromPayload(payload, nik) {
+  if (!nik) return '';
+  const list = (payload && payload.karyawan) || [];
+  const k = list.find((x) => x && String(x.nik) === String(nik));
+  return parseDateOnly(k && k.masuk) || '';
+}
+
+function cutiBersamaSetelahMasuk(tgl, masuk) {
+  if (!tgl || !masuk) return true;
+  return tgl >= masuk;
+}
+
+function countCutiBersamaYear(payload, yr, nik) {
   const masterCuti = payload.masterCuti || {};
   if (masterCuti.cbPotong === false) return 0;
   const y = String(yr);
   const hk = (payload.perusahaan && payload.perusahaan.hariKerja) || 6;
+  const masuk = tglMasukFromPayload(payload, nik);
   return (payload.hariLibur || []).filter((l) => {
     if (!l || l.tipe !== 'cuti-bersama') return false;
     const t = parseDateOnly(l.tgl);
     if (!t || !t.startsWith(y)) return false;
+    if (!cutiBersamaSetelahMasuk(t, masuk)) return false;
     return !isHariLiburKerjaDow(new Date(t + 'T12:00:00').getDay(), hk);
   }).length;
 }
 
-function countCutiBersamaTrackingYear(payload, yr) {
-  let n = countCutiBersamaYear(payload, yr);
+function countCutiBersamaTrackingYear(payload, yr, nik) {
+  let n = countCutiBersamaYear(payload, yr, nik);
   const tails = getCrossYearTailRanges(payload, yr);
   if (!tails.length) return n;
   const masterCuti = payload.masterCuti || {};
   if (masterCuti.cbPotong === false) return n;
   const y = String(yr);
   const hk = (payload.perusahaan && payload.perusahaan.hariKerja) || 6;
+  const masuk = tglMasukFromPayload(payload, nik);
   const extra = (payload.hariLibur || []).filter((l) => {
     if (!l || l.tipe !== 'cuti-bersama') return false;
     const d = parseDateOnly(l.tgl);
     if (!d || d >= y + '-01-01') return false;
+    if (!cutiBersamaSetelahMasuk(d, masuk)) return false;
     if (isHariLiburKerjaDow(new Date(d + 'T12:00:00').getDay(), hk)) return false;
     return tails.some((r) => d >= r.start && d <= r.end);
   }).length;
@@ -530,7 +546,7 @@ function yearsInRange(dateFrom, dateTo) {
 export function computeCutiBalanceForYear(payload, nik, yr, extraPendingDays) {
   const kuota = (payload.masterCuti && payload.masterCuti.kuota) || 12;
   const manual = cutiManualTrackingYear(payload, nik, yr);
-  const cb = countCutiBersamaTrackingYear(payload, yr);
+  const cb = countCutiBersamaTrackingYear(payload, yr, nik);
   const pending = extraPendingDays || 0;
   const terpakai = manual + cb + pending;
   const sisa = kuota - terpakai;

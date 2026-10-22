@@ -213,20 +213,36 @@ function syncProrataDariResign(k){
     pr.manual=false;
   });
 }
-// Cuti bersama mengurangi kuota (NEW v9)
-function countCutiBersama(yr){
+/** Tanggal masuk karyawan (ISO). Kosong = data lama, cuti bersama tetap dihitung semua. */
+function tglMasukKarIso(nik){
+  if(!nik)return '';
+  var list=typeof karyawan!=='undefined'&&karyawan?karyawan:[];
+  var k=list.find(function(x){return x&&String(x.nik)===String(nik);});
+  return toIsoDate(k&&k.masuk);
+}
+/** Cuti bersama sebelum tanggal masuk tidak memotong kuota. */
+function cutiBersamaSetelahMasuk(tglIso,nik){
+  if(!nik)return true;
+  var d=toIsoDate(tglIso);
+  var masuk=tglMasukKarIso(nik);
+  if(!d||!masuk)return true;
+  return d>=masuk;
+}
+// Cuti bersama mengurangi kuota (NEW v9). `nik` opsional: skip hari sebelum tgl masuk.
+function countCutiBersama(yr,nik){
   if(!masterCuti.cbPotong)return 0;
   const y=String(yr);
   return hariLibur.filter(function(l){
     if(l.tipe!=='cuti-bersama')return false;
     const t=toIsoDate(l.tgl);
     if(!t||!t.startsWith(y))return false;
+    if(!cutiBersamaSetelahMasuk(t,nik))return false;
     return !isHariLiburKerja(new Date(t+'T12:00:00').getDay());
   }).length;
 }
 /** Cuti bersama di tahun `yr` plus hari libur cuti-bersama di tahun sebelumnya yang jatuh dalam periode gaji (penyilang tahun). */
-function countCutiBersamaUntukTahunDanPeriode(yr,periode){
-  var n=countCutiBersama(yr);
+function countCutiBersamaUntukTahunDanPeriode(yr,periode,nik){
+  var n=countCutiBersama(yr,nik);
   if(!periode||!periode.start||!periode.end||!masterCuti.cbPotong)return n;
   var y=String(yr);
   var s=toIsoDate(periode.start),e=toIsoDate(periode.end);
@@ -237,6 +253,7 @@ function countCutiBersamaUntukTahunDanPeriode(yr,periode){
     if(!t||t<s||t>e)return false;
     if(t.startsWith(y))return false;
     if(!(t<y+'-01-01'))return false;
+    if(!cutiBersamaSetelahMasuk(t,nik))return false;
     return !isHariLiburKerja(new Date(t+'T12:00:00').getDay());
   }).length;
   return n+extra;
@@ -298,8 +315,8 @@ function cutiManualTrackingYear(nik,yr){
   return n;
 }
 /** Cuti bersama untuk Tracking tahun `yr`: CB tahun `yr` + CB di ekor tahun lalu yang masuk periode silang tahun `yr`. */
-function countCutiBersamaTrackingYear(yr){
-  let n=countCutiBersama(yr);
+function countCutiBersamaTrackingYear(yr,nik){
+  let n=countCutiBersama(yr,nik);
   const tails=getCrossYearTailRanges(yr);
   if(!tails.length||!masterCuti.cbPotong)return n;
   const y=String(yr);
@@ -307,6 +324,7 @@ function countCutiBersamaTrackingYear(yr){
     if(l.tipe!=='cuti-bersama')return false;
     const d=toIsoDate(l.tgl);
     if(!d||d>=y+'-01-01')return false;
+    if(!cutiBersamaSetelahMasuk(d,nik))return false;
     if(isHariLiburKerja(new Date(d+'T12:00:00').getDay()))return false;
     return tails.some(function(r){return d>=r.start&&d<=r.end;});
   }).length;
@@ -335,7 +353,7 @@ function cutiManualUntukTahunDanPeriode(nik,tahun,periode){
   }
   return n;
 }
-const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr);
+const cutiTerpakai=(nik,yr)=>cutiManual(nik,yr)+countCutiBersama(yr,nik);
 /**
  * Rincian tanggal cuti satu karyawan untuk tahun kuota `yr` — isi modal "Saldo Cuti".
  * Angkanya sengaja direkonsiliasi dengan penghitung yang dipakai kolom saldo:
@@ -377,6 +395,7 @@ function rincianCutiTahun(nik,yr,opts){
     if(!l||l.tipe!=='cuti-bersama')return;
     const d=toIsoDate(l.tgl);
     if(!dalamLingkup(d))return;
+    if(!cutiBersamaSetelahMasuk(d,nik))return;
     const it=entri(d);
     it.cutiBersama=true;
     it.namaLibur=l.nama||'Cuti Bersama';
@@ -1338,7 +1357,7 @@ function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   }
   const end=new Date((periode&&periode.end?String(periode.end):'2026-12-31')+'T12:00:00');
   const yr=end.getFullYear();const kuota=masterCuti.kuota||12;
-  const cb=(typeof countCutiBersamaUntukTahunDanPeriode==='function')?countCutiBersamaUntukTahunDanPeriode(yr,periode):countCutiBersama(yr);
+  const cb=(typeof countCutiBersamaUntukTahunDanPeriode==='function')?countCutiBersamaUntukTahunDanPeriode(yr,periode,nik):countCutiBersama(yr,nik);
   const totalSudahCuti=cutiManualUntukTahunDanPeriode(nik,yr,periode)+cb;
   const cutiDalamKuota=Math.min(nCuti,Math.max(0,kuota-(totalSudahCuti-nCuti)));const cutiLuarKuota=nCuti-cutiDalamKuota;
   function pot(mode,nilai,hari){if(hari<=0)return 0;switch(mode){case'tidak_dipotong':return 0;case'prorata':return Math.round(gajiHarian*hari);case'prorata_setengah':return Math.round(gajiHarian*hari*.5);case'nominal':return Math.round((nilai||0)*hari);case'persen':return Math.round(gajiHarian*(nilai||0)/100*hari);default:return 0;}}

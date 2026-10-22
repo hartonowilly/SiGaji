@@ -252,7 +252,6 @@ function renderCutiRekap(){
   const coEl=document.getElementById('cuti-carryover');if(coEl)coEl.value=masterCuti.carryover;
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
   const tb=document.getElementById('tb-cuti-rekap');if(!tb)return;
-  const cb=countCutiBersamaTrackingYear(yr);
   // Tracking cuti = rekap tahunan (tidak terpengaruh periode gaji). Filter: karyawan aktif / belum berhenti sebelum tahun tsb.
   const yearStart=String(yr)+'-01-01';
   var list=sortKaryawanByNik((karyawan||[]).filter(function(k){
@@ -264,7 +263,7 @@ function renderCutiRekap(){
     return;
   }
   tb.innerHTML=list.map(function(k,idx){
-    const mb=masaKerjaBulan(k);const manual=cutiManualTrackingYear(k.nik,yr);const total=manual+cb;
+    const mb=masaKerjaBulan(k);const manual=cutiManualTrackingYear(k.nik,yr);const cb=countCutiBersamaTrackingYear(yr,k.nik);const total=manual+cb;
     const kuota=masterCuti.kuota||12;
     const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
