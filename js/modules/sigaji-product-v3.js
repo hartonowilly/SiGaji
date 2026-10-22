@@ -768,66 +768,69 @@
         );
       })
       .join('');
-    var yearHtml =
-      '<div class="ptl-year">' +
-      '<button type="button" class="ptl-year-btn"' +
-      (prevY
-        ? sigajiDataAction('periode-timeline-year', { year: prevY })
-        : ' disabled') +
-      ' aria-label="Tahun sebelumnya"' +
-      (prevY ? ' title="' + prevY + '"' : '') +
-      '>&lsaquo;</button>' +
-      '<select class="ptl-year-sel" id="ptl-year-sel" aria-label="Tahun periode gaji"' +
-      sigajiDataAction('periode-timeline-year') +
-      '>' +
-      yearOpts +
-      '</select>' +
-      '<button type="button" class="ptl-year-btn"' +
-      (nextY
-        ? sigajiDataAction('periode-timeline-year', { year: nextY })
-        : ' disabled') +
-      ' aria-label="Tahun berikutnya"' +
-      (nextY ? ' title="' + nextY + '"' : '') +
-      '>&rsaquo;</button></div>';
-    var monthsHtml;
-    if (!items.length) {
-      monthsHtml =
-        '<div class="ptl-empty">Belum ada periode ' +
-        escapeHtml(String(yr)) +
-        '. Buat di Master \u2192 Periode.</div>';
+    var parts = [];
+    parts.push('<div class="ptl-year">');
+    parts.push('<button type="button" class="ptl-year-btn"');
+    if (prevY) {
+      parts.push(sigajiDataAction('periode-timeline-year', { year: prevY }));
+      parts.push(' aria-label="Tahun sebelumnya" title="' + escapeHtml(String(prevY)) + '">');
     } else {
-      monthsHtml = items
-        .map(function (p) {
-          var meta = sigajiPeriodePayrollMeta(p);
-          var lbl = meta.label || p.nama || '-';
-          var tip =
-            (p.nama || '-') +
-            ' · ' +
-            (typeof fmtDate === 'function' ? fmtDate(p.start) : p.start) +
-            ' – ' +
-            (typeof fmtDate === 'function' ? fmtDate(p.end) : p.end);
-          if (meta.crossesPriorMonth && meta.priorDays > 0) {
-            tip += ' (termasuk ' + meta.priorDays + ' hari bulan sebelumnya)';
-          }
-          var cls = 'ptl-item';
-          if (active && (active.id === p.id || active.nama === p.nama)) cls += ' active';
-          if (p.snapshot_locked) cls += ' locked';
-          if (meta.crossesPriorMonth) cls += ' ptl-cross';
-          return (
-            '<button type="button" class="' +
-            cls +
-            '"' +
-            sigajiDataAction('periode-timeline', { id: p.id }) +
-            ' title="' +
-            escapeHtml(tip) +
-            '">' +
-            escapeHtml(lbl) +
-            '</button>'
-          );
-        })
-        .join('');
+      parts.push(' disabled aria-label="Tahun sebelumnya">');
     }
-    bar.innerHTML = yearHtml + '<div class="ptl-scroll">' + monthsHtml + '</div>';
+    parts.push('&lsaquo;</button><select class="ptl-year-sel" id="ptl-year-sel" aria-label="Tahun periode gaji"');
+    parts.push(sigajiDataAction('periode-timeline-year'));
+    parts.push('>');
+    parts.push(yearOpts);
+    parts.push('</select><button type="button" class="ptl-year-btn"');
+    if (nextY) {
+      parts.push(sigajiDataAction('periode-timeline-year', { year: nextY }));
+      parts.push(' aria-label="Tahun berikutnya" title="' + escapeHtml(String(nextY)) + '">');
+    } else {
+      parts.push(' disabled aria-label="Tahun berikutnya">');
+    }
+    parts.push('&rsaquo;</button></div><div class="ptl-scroll">');
+    if (!items.length) {
+      parts.push(
+        '<div class="ptl-empty">Belum ada periode ' +
+          escapeHtml(String(yr)) +
+          '. Buat di Master \u2192 Periode.</div>'
+      );
+    } else {
+      parts.push(
+        items
+          .map(function (p) {
+            var meta = sigajiPeriodePayrollMeta(p);
+            var lbl = meta.label || p.nama || '-';
+            var tip =
+              (p.nama || '-') +
+              ' · ' +
+              (typeof fmtDate === 'function' ? fmtDate(p.start) : p.start) +
+              ' – ' +
+              (typeof fmtDate === 'function' ? fmtDate(p.end) : p.end);
+            if (meta.crossesPriorMonth && meta.priorDays > 0) {
+              tip += ' (termasuk ' + meta.priorDays + ' hari bulan sebelumnya)';
+            }
+            var cls = 'ptl-item';
+            if (active && (active.id === p.id || active.nama === p.nama)) cls += ' active';
+            if (p.snapshot_locked) cls += ' locked';
+            if (meta.crossesPriorMonth) cls += ' ptl-cross';
+            return (
+              '<button type="button" class="' +
+              cls +
+              '"' +
+              sigajiDataAction('periode-timeline', { id: p.id }) +
+              ' title="' +
+              escapeHtml(tip) +
+              '">' +
+              escapeHtml(lbl) +
+              '</button>'
+            );
+          })
+          .join('')
+      );
+    }
+    parts.push('</div>');
+    bar.innerHTML = parts.join('');
   };
 
   window.sigajiSwitchPeriodeTimeline = function (id) {
