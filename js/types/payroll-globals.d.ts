@@ -75,8 +75,16 @@ declare function hitungPesangon(k: Record<string, unknown>): {
   pisah?: number;
 };
 
+interface SigajiIdbStore {
+  available(): boolean;
+  get(key: string): Promise<any>;
+  put(key: string, value: unknown): Promise<unknown>;
+  del(key: string): Promise<unknown>;
+}
+
 interface Window {
   SIGAJI_CLOUD_ONLY_MODE?: boolean;
+  sigajiIdb?: SigajiIdbStore;
   getPTKPTable?: Function;
   nilaiPTKP?: Function;
   fmtPTKPVal?: Function;

@@ -297,7 +297,28 @@ function migrateStorage(db){
   return db;
 }
 const DB_KEY='sigaji_db';
-/** Pulihkan sigaji_db dari salinan sigaji_universal (backup ringan tiap simpan). */
+/** Salinan penuh di localStorage hanya di bawah batas ini; kuota browser ±5 jt karakter dibagi dengan sesi login. */
+const LS_FULL_MAX_CHARS=2000000;
+/** Field besar yang dibuang dari salinan ringkas localStorage — isi lengkapnya di IndexedDB. */
+const LS_SLIM_OMIT=['absensi','lembur','prorata','karSnapshot','auditLog','approvals','notifikasi','tunjVarBulan','thrManual'];
+const IDB_KEY_DB='db',IDB_KEY_PREV='db_prev',IDB_KEY_RECOVERY='recovery_last';
+const LEGACY_LS_COPY_KEYS=['sigaji_universal','sigaji_universal_prev'];
+const LEGACY_LS_BACKUP_KEYS=[['sigaji_recovery_last',IDB_KEY_RECOVERY],['sigaji_db_prev',IDB_KEY_PREV],['sigaji_autobackup','autobackup']];
+/** hydrating=true: memori belum lengkap (salinan ringkas) — jangan tulis lokal/awan agar data lengkap tidak tertimpa. */
+var sigajiLocalState={lsSlim:false,hydrating:false,cloudApplied:false,prevSaved:false,idbTimer:null,idbFailed:false,warned:false};
+function sigajiIsQuotaError(e){
+  return !!e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22||e.code===1014);
+}
+function sigajiIdbUsable(){
+  return !sigajiLocalState.idbFailed&&!!window.sigajiIdb&&window.sigajiIdb.available();
+}
+function slimPayload(p){
+  var o=Object.assign({},p);
+  LS_SLIM_OMIT.forEach(function(k){delete o[k];});
+  o._partial=true;
+  return o;
+}
+/** Pulihkan sigaji_db dari salinan sigaji_universal (format lama, sebelum v11.5.98). */
 function recoverDbFromUniversal(){
   try{
     if(localStorage.getItem(DB_KEY))return false;
@@ -333,7 +354,12 @@ function recoverDbFromUniversal(){
     return true;
   }catch(e){console.error('recoverDbFromUniversal',e);return false;}
 }
+let dbLoadCache;
 function dbLoad(){
+  if(dbLoadCache===undefined)dbLoadCache=dbLoadFromLocalStorage();
+  return dbLoadCache;
+}
+function dbLoadFromLocalStorage(){
   try{
     if(!localStorage.getItem(DB_KEY))recoverDbFromUniversal();
     const raw=localStorage.getItem(DB_KEY);
@@ -360,19 +386,97 @@ function dbLoad(){
     return null;
   }
 }
-function dbSave(o){
-  try{
+/** Satu salinan di localStorage: penuh jika muat, ringkas (tanpa field besar) jika IndexedDB memegang salinan lengkap. */
+function writeLocalStorageCopy(payload){
+  var idbOk=sigajiIdbUsable();
+  if(!sigajiLocalState.lsSlim||!idbOk){
     try{
-      var prevRaw=localStorage.getItem(DB_KEY);
-      if(prevRaw)localStorage.setItem('sigaji_db_prev',prevRaw);
-    }catch(e0){sigajiCatchWarn("js/storage.js",e0);}
+      var raw=JSON.stringify(payload);
+      if(raw.length<=LS_FULL_MAX_CHARS||!idbOk){
+        localStorage.setItem(DB_KEY,raw);
+        sigajiLocalState.lsSlim=false;
+        return true;
+      }
+    }catch(e){
+      if(!idbOk){sigajiCatchWarn("js/storage.js",e);return false;}
+      if(!sigajiIsQuotaError(e))sigajiCatchWarn("js/storage.js",e);
+    }
+    sigajiLocalState.lsSlim=true;
+  }
+  try{
+    localStorage.setItem(DB_KEY,JSON.stringify(slimPayload(payload)));
+  }catch(e2){
+    try{localStorage.removeItem(DB_KEY);}catch(x){sigajiCatchWarn("js/storage.js",x);}
+    sigajiCatchWarn("js/storage.js",e2);
+  }
+  return true;
+}
+function buildLocalPayload(){
+  var p=Object.assign({schemaVersion:SCHEMA_VERSION},currentPayloadLite());
+  if(typeof window.sigajiPayloadForLocalSave==='function')p=window.sigajiPayloadForLocalSave(p);
+  p._savedAt=Date.now();
+  return p;
+}
+function queueIdbWrite(){
+  if(!sigajiIdbUsable())return;
+  clearTimeout(sigajiLocalState.idbTimer);
+  sigajiLocalState.idbTimer=setTimeout(flushIdbWrite,300);
+}
+/** Tulis memori ke IndexedDB. Salinan sesi sebelumnya disimpan sekali sebagai db_prev. */
+function flushIdbWrite(){
+  clearTimeout(sigajiLocalState.idbTimer);
+  sigajiLocalState.idbTimer=null;
+  if(!sigajiIdbUsable()||sigajiLocalState.hydrating)return Promise.resolve(false);
+  var idb=window.sigajiIdb;
+  var keepPrev=!sigajiLocalState.prevSaved;
+  sigajiLocalState.prevSaved=true;
+  var chain=keepPrev
+    ?idb.get(IDB_KEY_DB).then(function(old){if(old)return idb.put(IDB_KEY_PREV,old);}).catch(function(e){sigajiCatchWarn("js/storage.js",e);})
+    :Promise.resolve();
+  return chain.then(function(){
+    var p=buildLocalPayload();
+    return idb.put(IDB_KEY_DB,p).then(function(){return true;});
+  }).catch(function(e){
+    sigajiLocalState.idbFailed=true;
+    var lsWasSlim=sigajiLocalState.lsSlim;
+    sigajiLocalState.lsSlim=false;
+    var lsOk=writeLocalStorageCopy(buildLocalPayload());
+    if(lsWasSlim||!lsOk)sigajiWarnLocalSaveFailed(e);
+    return false;
+  });
+}
+function sigajiWarnLocalSaveFailed(err){
+  console.error('Sigaji: simpan lokal gagal',err);
+  try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('error');}catch(e){sigajiCatchWarn("js/storage.js",e);}
+  if(sigajiLocalState.warned)return;
+  sigajiLocalState.warned=true;
+  var cloudOn=typeof window.sigajiQueueCloudSave==='function';
+  var msg=cloudOn
+    ?'Penyimpanan di perangkat ini penuh — perubahan tetap dikirim ke awan. Jangan tutup halaman sebelum muncul "Cloud tersimpan".'
+    :'Penyimpanan di perangkat ini penuh — perubahan bisa hilang saat halaman ditutup. Unduh Backup JSON sekarang.';
+  try{if(typeof toast==='function')toast(msg);}catch(e){sigajiCatchWarn("js/storage.js",e);}
+}
+/** @returns {boolean} false jika tidak ada salinan lokal yang berhasil disimpan. */
+function dbSave(o){
+  if(sigajiLocalState.hydrating)return true;
+  try{
     var payload=Object.assign({schemaVersion:SCHEMA_VERSION},o);
     if(typeof window.sigajiPayloadForLocalSave==='function'){
       payload=window.sigajiPayloadForLocalSave(payload);
     }
-    localStorage.setItem(DB_KEY,JSON.stringify(payload));
+    payload._savedAt=Date.now();
+    var lsOk=writeLocalStorageCopy(payload);
+    queueIdbWrite();
+    if(!lsOk&&!sigajiIdbUsable()){
+      sigajiWarnLocalSaveFailed(new Error('localStorage penuh dan IndexedDB tidak tersedia'));
+      return false;
+    }
     showSI();
-  }catch(e){sigajiCatchWarn("js/storage.js",e);}
+    return true;
+  }catch(e){
+    sigajiWarnLocalSaveFailed(e);
+    return false;
+  }
 }
 function LS(k,d){const db=dbLoad();return db&&db[k]!==undefined?db[k]:d;}
 let karyawan=LS('karyawan',[]);
@@ -414,12 +518,14 @@ const bmState={};
 function currentPayloadLite(){
   return {karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense};
 }
+/** Salinan memori sebelum ditimpa data awan — disimpan di IndexedDB (bukan localStorage, agar kuota tidak habis). */
 function markRecoveryBackup(tag){
   try{
-    if(window.sigajiKaryawanRestricted)return;
+    if(window.sigajiKaryawanRestricted||sigajiLocalState.hydrating||!sigajiIdbUsable())return;
     var p=Object.assign({_tag:tag||'manual',_ts:new Date().toISOString(),schemaVersion:SCHEMA_VERSION},currentPayloadLite());
     if(typeof window.sigajiPayloadForLocalSave==='function')p=window.sigajiPayloadForLocalSave(p);
-    localStorage.setItem('sigaji_recovery_last',JSON.stringify(p));
+    var snap=typeof structuredClone==='function'?structuredClone(p):JSON.parse(JSON.stringify(p));
+    window.sigajiIdb.put(IDB_KEY_RECOVERY,snap).catch(function(e){sigajiCatchWarn("js/storage.js",e);});
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
 function saveAll(){
@@ -439,14 +545,8 @@ function saveAll(){
     try{if(typeof sigajiSaveFeedback==='function')sigajiSaveFeedback('error');}catch(eSf2){sigajiCatchWarn("js/storage.js",eSf2);}
   }
   try{
-    try{
-      var prevUni=localStorage.getItem('sigaji_universal');
-      if(prevUni)localStorage.setItem('sigaji_universal_prev',prevUni);
-    }catch(e0){sigajiCatchWarn("js/storage.js",e0);}
-    localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:karyawan.length},karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense}));
-  }catch(e){sigajiCatchWarn("js/storage.js",e);}
-  try{
     if(window.sigajiApplyingCloud)return;
+    if(sigajiLocalState.hydrating)return;
     if(typeof window.sigajiCanUploadCloudPayload==='function'&&!window.sigajiCanUploadCloudPayload())return;
     if(typeof window.sigajiQueueCloudSave==='function')window.sigajiQueueCloudSave();
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
@@ -461,59 +561,64 @@ function cloudPayloadWouldWipeMeaningfulLocal(o){
   if(Array.isArray(o.users)&&o.users.length===0&&locU>0)return true;
   return false;
 }
-/** Terapkan JSON dari kolom payload Supabase ke variabel memori + localStorage (tanpa memicu sync balik). */
-function applyDbFromCloudPayload(payload){
+/** Salin field payload (sudah dimigrasi) ke variabel memori. */
+function assignDbToMemory(o){
+  if(Array.isArray(o.karyawan)){
+    karyawan=typeof sigajiSortKaryawanByNik==='function'?sigajiSortKaryawanByNik(o.karyawan):o.karyawan;
+  }
+  if(Array.isArray(o.periodes))periodes=o.periodes;
+  if(Array.isArray(o.hariLibur))hariLibur=o.hariLibur;
+  if(o.masterCuti&&typeof o.masterCuti==='object')masterCuti=o.masterCuti;
+  if(o.absensi&&typeof o.absensi==='object')absensi=o.absensi;
+  if(o.lembur&&typeof o.lembur==='object')lembur=o.lembur;
+  if(o.prorata&&typeof o.prorata==='object')prorata=o.prorata;
+  if(Array.isArray(o.approvals))approvals=o.approvals;
+  if(Array.isArray(o.notifikasi))notifikasi=o.notifikasi;
+  if(o.perusahaan&&typeof o.perusahaan==='object')perusahaan=o.perusahaan;
+  if(Array.isArray(o.users))users=o.users;
+  if(o.roles&&typeof o.roles==='object')roles=o.roles;
+  if(!roles.Absen)roles.Absen=[];
+  if(o.thrManual&&typeof o.thrManual==='object')thrManual=o.thrManual;
+  if(o.tunjVarBulan&&typeof o.tunjVarBulan==='object')tunjVarBulan=o.tunjVarBulan;
+  if(o.tunjVarLabels&&typeof o.tunjVarLabels==='object')tunjVarLabels=o.tunjVarLabels;
+  if(Array.isArray(o.tunjVarColumns))tunjVarColumns=o.tunjVarColumns;
+  if(o.karSnapshot&&typeof o.karSnapshot==='object')karSnapshot=o.karSnapshot;
+  if(Array.isArray(o.auditLog))auditLog=o.auditLog;
+  if(o.bentoLayouts&&typeof o.bentoLayouts==='object')bentoLayouts=o.bentoLayouts;
+  if(Array.isArray(o.cabang))cabang=o.cabang;
+  if(o.license&&typeof o.license==='object'){
+    tenantLicense.maxEmployees=parseInt(o.license.maxEmployees,10)>0?parseInt(o.license.maxEmployees,10):0;
+    tenantLicense.planLabel=String(o.license.planLabel||'').trim();
+    tenantLicense.multiBranchEnabled=!!o.license.multiBranchEnabled;
+    tenantLicense.maxBranches=parseInt(o.license.maxBranches,10)>0?parseInt(o.license.maxBranches,10):1;
+    try{if(typeof window.sigajiApplyLicenseFromObject==='function')window.sigajiApplyLicenseFromObject(tenantLicense);}catch(eL){sigajiCatchWarn("js/storage.js",eL);}
+    try{if(typeof window.sigajiApplyBranchPolicyFromObject==='function')window.sigajiApplyBranchPolicyFromObject(o.license);}catch(eBr){sigajiCatchWarn("js/storage.js",eBr);}
+  }
+}
+/**
+ * Terapkan JSON dari kolom payload Supabase ke variabel memori + penyimpanan lokal (tanpa memicu sync balik).
+ * @param {object} payload
+ * @param {{skipRecovery?: boolean}} [opts] skipRecovery: jangan timpa salinan pemulihan (dipakai saat memulihkan salinan itu sendiri).
+ */
+function applyDbFromCloudPayload(payload,opts){
   if(!payload||typeof payload!=='object')return;
-  markRecoveryBackup('before_cloud_apply');
+  opts=opts||{};
+  if(!opts.skipRecovery)markRecoveryBackup('before_cloud_apply');
   var o=migrateStorage(Object.assign({schemaVersion:SCHEMA_VERSION},payload));
   if(cloudPayloadWouldWipeMeaningfulLocal(o)){
-    var msg='Sinkron awan ditolak: data di cloud tampak kosong (0 karyawan/periode/user) sementara di perangkat ini masih ada data. Lokal tidak ditimpa. Periksa baris di Supabase atau unggah cadangan. Cadangan ringan: localStorage key sigaji_universal / sigaji_db.';
+    var msg='Sinkron awan ditolak: data di cloud tampak kosong (0 karyawan/periode/user) sementara di perangkat ini masih ada data. Lokal tidak ditimpa. Periksa baris di Supabase atau unggah cadangan (Master → Backup).';
     try{if(typeof toast==='function')toast(msg);}catch(e){sigajiCatchWarn("js/storage.js",e);}
     console.warn('Sigaji:',msg);
     return;
   }
+  sigajiLocalState.cloudApplied=true;
+  sigajiLocalState.hydrating=false;
   window.sigajiApplyingCloud=true;
   try{
-    if(Array.isArray(o.karyawan)){
-      karyawan=typeof sigajiSortKaryawanByNik==='function'?sigajiSortKaryawanByNik(o.karyawan):o.karyawan;
-    }
-    if(Array.isArray(o.periodes))periodes=o.periodes;
-    if(Array.isArray(o.hariLibur))hariLibur=o.hariLibur;
-    if(o.masterCuti&&typeof o.masterCuti==='object')masterCuti=o.masterCuti;
-    if(o.absensi&&typeof o.absensi==='object')absensi=o.absensi;
-    if(o.lembur&&typeof o.lembur==='object')lembur=o.lembur;
-    if(o.prorata&&typeof o.prorata==='object')prorata=o.prorata;
-    if(Array.isArray(o.approvals))approvals=o.approvals;
-    if(Array.isArray(o.notifikasi))notifikasi=o.notifikasi;
-    if(o.perusahaan&&typeof o.perusahaan==='object')perusahaan=o.perusahaan;
-    if(Array.isArray(o.users))users=o.users;
-    if(o.roles&&typeof o.roles==='object')roles=o.roles;
-    if(!roles.Absen)roles.Absen=[];
-    if(o.thrManual&&typeof o.thrManual==='object')thrManual=o.thrManual;
-    if(o.tunjVarBulan&&typeof o.tunjVarBulan==='object')tunjVarBulan=o.tunjVarBulan;
-    if(o.tunjVarLabels&&typeof o.tunjVarLabels==='object')tunjVarLabels=o.tunjVarLabels;
-    if(Array.isArray(o.tunjVarColumns))tunjVarColumns=o.tunjVarColumns;
-    if(o.karSnapshot&&typeof o.karSnapshot==='object')karSnapshot=o.karSnapshot;
-    if(Array.isArray(o.auditLog))auditLog=o.auditLog;
-    if(o.bentoLayouts&&typeof o.bentoLayouts==='object')bentoLayouts=o.bentoLayouts;
-    if(Array.isArray(o.cabang))cabang=o.cabang;
-    if(o.license&&typeof o.license==='object'){
-      tenantLicense.maxEmployees=parseInt(o.license.maxEmployees,10)>0?parseInt(o.license.maxEmployees,10):0;
-      tenantLicense.planLabel=String(o.license.planLabel||'').trim();
-      tenantLicense.multiBranchEnabled=!!o.license.multiBranchEnabled;
-      tenantLicense.maxBranches=parseInt(o.license.maxBranches,10)>0?parseInt(o.license.maxBranches,10):1;
-      try{if(typeof window.sigajiApplyLicenseFromObject==='function')window.sigajiApplyLicenseFromObject(tenantLicense);}catch(eL){sigajiCatchWarn("js/storage.js",eL);}
-      try{if(typeof window.sigajiApplyBranchPolicyFromObject==='function')window.sigajiApplyBranchPolicyFromObject(o.license);}catch(eBr){sigajiCatchWarn("js/storage.js",eBr);}
-    }
+    assignDbToMemory(o);
     var lite={karyawan,periodes,hariLibur,masterCuti,absensi,lembur,prorata,approvals,notifikasi,perusahaan,users,roles,thrManual,tunjVarBulan,tunjVarLabels,tunjVarColumns,karSnapshot,auditLog,bentoLayouts,cabang,license:tenantLicense};
     if(typeof window.sigajiPayloadForLocalSave==='function')lite=window.sigajiPayloadForLocalSave(lite);
     dbSave(lite);
-    try{
-      if(!window.sigajiKaryawanRestricted){
-        localStorage.setItem('sigaji_universal',JSON.stringify({_meta:{versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',tanggal:new Date().toISOString(),totalKaryawan:(lite.karyawan||[]).length},karyawan:lite.karyawan,periodes:lite.periodes,hariLibur:lite.hariLibur,masterCuti:lite.masterCuti,absensi:lite.absensi,lembur:lite.lembur,prorata:lite.prorata,approvals:lite.approvals,notifikasi:lite.notifikasi,perusahaan:lite.perusahaan,users:lite.users,roles:lite.roles,thrManual:lite.thrManual,tunjVarBulan:lite.tunjVarBulan,tunjVarLabels:lite.tunjVarLabels,tunjVarColumns:lite.tunjVarColumns,karSnapshot:lite.karSnapshot,auditLog:lite.auditLog,bentoLayouts:lite.bentoLayouts,cabang:lite.cabang,license:lite.license}));
-      }
-    }catch(e2){sigajiCatchWarn("js/storage.js",e2);}
-    showSI();
     try{if(typeof applyBranding==='function')applyBranding();}catch(eB){sigajiCatchWarn("js/storage.js",eB);}
     try{if(o.perusahaan&&typeof o.perusahaan==='object')window.sigajiLoginBranding={nama:o.perusahaan.nama||'',logo:o.perusahaan.logo||''};}catch(eC){sigajiCatchWarn("js/storage.js",eC);}
     try{if(typeof window.sigajiRenderLicenseQuotaUi==='function')window.sigajiRenderLicenseQuotaUi();}catch(eR){sigajiCatchWarn("js/storage.js",eR);}
@@ -562,12 +667,23 @@ if(typeof window!=='undefined'){
   window.getPayloadForCloud=getPayloadForCloud;
   window.cloudPayloadWouldWipeMeaningfulLocal=cloudPayloadWouldWipeMeaningfulLocal;
   window.sigajiShouldSkipCloudUpload=shouldSkipCloudUpload;
-  window.sigajiRestoreEmergencyLocalBackup=function(){
+  window.sigajiLocalDataIncomplete=function(){return sigajiLocalState.hydrating;};
+  window.sigajiFlushLocalSave=flushIdbWrite;
+  /** Pulihkan salinan sebelum sinkron awan terakhir (atau salinan awal sesi sebelumnya). @returns {Promise<boolean>} */
+  window.sigajiRestoreEmergencyLocalBackup=async function(){
     try{
-      var raw=localStorage.getItem('sigaji_recovery_last')||localStorage.getItem('sigaji_db_prev');
-      if(!raw)return false;
-      var o=JSON.parse(raw);
-      applyDbFromCloudPayload(o);
+      var o=null;
+      if(sigajiIdbUsable()){
+        o=(await window.sigajiIdb.get(IDB_KEY_RECOVERY))||(await window.sigajiIdb.get(IDB_KEY_PREV))||null;
+      }
+      if(!o){
+        var raw=localStorage.getItem('sigaji_recovery_last')||localStorage.getItem('sigaji_db_prev');
+        if(raw)o=JSON.parse(raw);
+      }
+      if(!o)return false;
+      o=Object.assign({},o);
+      delete o._tag;delete o._ts;delete o._savedAt;delete o._partial;
+      applyDbFromCloudPayload(o,{skipRecovery:true});
       if(typeof renderAll==='function')renderAll();
       if(typeof toast==='function')toast('Backup lokal darurat dipulihkan');
       return true;
@@ -576,6 +692,86 @@ if(typeof window!=='undefined'){
       return false;
     }
   };
+}
+/** Salinan ringkas tanpa salinan lengkap: simpan ditahan sampai data awan termuat (login). */
+function sigajiWarnPartialLocal(){
+  var msg='Data lengkap di perangkat ini tidak ditemukan — menunggu data dari awan. Perubahan belum disimpan sampai login berhasil.';
+  console.warn('Sigaji:',msg);
+  setTimeout(function(){
+    if(!sigajiLocalState.hydrating)return;
+    try{if(typeof toast==='function')toast(msg);}catch(e){sigajiCatchWarn("js/storage.js",e);}
+  },0);
+}
+/** Pindahkan cadangan lama dari localStorage ke IndexedDB, lalu hapus salinan dobel agar kuota lega. */
+function migrateLegacyLocalCopies(){
+  if(dbLoadCache){
+    LEGACY_LS_COPY_KEYS.forEach(function(k){try{localStorage.removeItem(k);}catch(e){sigajiCatchWarn("js/storage.js",e);}});
+  }
+  if(!sigajiIdbUsable())return Promise.resolve();
+  var idb=window.sigajiIdb;
+  return LEGACY_LS_BACKUP_KEYS.reduce(function(chain,pair){
+    return chain.then(function(){
+      var raw=localStorage.getItem(pair[0]);
+      if(!raw)return;
+      var o=null;
+      try{o=JSON.parse(raw);}catch(e){o=null;}
+      return idb.get(pair[1]).then(function(cur){
+        if(!cur&&o)return idb.put(pair[1],o);
+      }).then(function(){localStorage.removeItem(pair[0]);});
+    });
+  },Promise.resolve()).catch(function(e){sigajiCatchWarn("js/storage.js",e);});
+}
+/**
+ * Saat dibuka: jika localStorage hanya punya salinan ringkas / lebih lama, muat salinan lengkap dari IndexedDB.
+ * Data awan (login) selalu menang; selama menunggu, simpan lokal & unggah awan ditahan.
+ */
+function sigajiHydrateLocalAtBoot(){
+  var local=dbLoadCache;
+  var partial=!!(local&&local._partial);
+  if(!sigajiIdbUsable()){
+    if(partial){
+      sigajiLocalState.hydrating=true;
+      sigajiWarnPartialLocal();
+    }
+    return Promise.resolve(false);
+  }
+  if(local&&!partial){
+    return migrateLegacyLocalCopies().then(function(){return false;});
+  }
+  sigajiLocalState.hydrating=true;
+  return window.sigajiIdb.get(IDB_KEY_DB).then(function(full){
+    if(sigajiLocalState.cloudApplied)return false;
+    if(!full||typeof full!=='object'){
+      if(partial)sigajiWarnPartialLocal();
+      else sigajiLocalState.hydrating=false;
+      return false;
+    }
+    var merged=Object.assign({},full);
+    if(partial&&(local._savedAt||0)>(full._savedAt||0)){
+      Object.keys(local).forEach(function(k){if(LS_SLIM_OMIT.indexOf(k)<0)merged[k]=local[k];});
+    }
+    delete merged._partial;
+    assignDbToMemory(migrateStorage(merged));
+    sigajiLocalState.hydrating=false;
+    try{
+      if(typeof CU!=='undefined'&&CU&&typeof renderAll==='function')renderAll();
+    }catch(eR){sigajiCatchWarn("js/storage.js",eR);}
+    return true;
+  }).catch(function(e){
+    sigajiCatchWarn("js/storage.js",e);
+    if(partial)sigajiWarnPartialLocal();
+    else sigajiLocalState.hydrating=false;
+    return false;
+  }).then(function(applied){
+    return migrateLegacyLocalCopies().then(function(){return applied;});
+  });
+}
+if(typeof window!=='undefined'){
+  window.sigajiLocalReady=sigajiHydrateLocalAtBoot();
+  window.addEventListener('pagehide',function(){if(sigajiLocalState.idbTimer)flushIdbWrite();});
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='hidden'&&sigajiLocalState.idbTimer)flushIdbWrite();
+  });
 }
 let siT;
 function showSI(){
