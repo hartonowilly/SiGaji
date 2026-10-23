@@ -134,14 +134,14 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  /* Table */
-  --table-head-bg: #f1f5f9;
-  --table-head-color: #475569;
-  --table-head-border: #e2e8f0;
-  --table-cell-border: #f1f5f9;
+  /* Table — tema Kantor (payroll): header tegas, zebra lembut, angka mudah dipindai */
+  --table-head-bg: #e8eef5;
+  --table-head-color: #1e293b;
+  --table-head-border: #c5d0de;
+  --table-cell-border: #e8edf3;
   --table-sticky-bg: var(--color-surface);
   --table-sticky-head-bg: var(--color-surface-elevated);
-  --table-zebra: #fafbfc;
+  --table-zebra: #f7f9fc;
   --table-row-hover: var(--row-hover);
   --table-sticky-shadow: rgba(0, 0, 0, 0.04);
 
@@ -150,10 +150,10 @@
   --row-neto-neg-bg: #fef2f2;
   --row-pending-bg: #fffbeb;
 
-  /* Money cells */
-  --cell-money-color: var(--color-text);
-  --cell-deduction-color: var(--color-danger);
-  --cell-neto-color: var(--color-success);
+  /* Money cells — hijau/merah cukup gelap di kertas putih */
+  --cell-money-color: #0f172a;
+  --cell-deduction-color: #991b1b;
+  --cell-neto-color: #166534;
 }
 
 /* ── Dark theme: remap tokens, bukan patch per-komponen ── */
@@ -221,6 +221,13 @@
   --topbar-accent: #60a5fa;
   --color-text: #e2e8f0;
   --on-primary: #ffffff;
+
+  /* Angka gaji di malam hari: jangan abu-abu — neto/potongan harus langsung kebaca */
+  --cell-money-color: #f1f5f9;
+  --cell-neto-color: #4ade80;
+  --cell-deduction-color: #f87171;
+  --color-success: #4ade80;
+  --color-danger: #f87171;
 }
 
 [data-theme='dark'] body,
@@ -312,13 +319,17 @@
   --color-text: #1e2330;
   --color-primary-subtle: color-mix(in srgb, var(--ux-accent) 14%, white);
   --bll: color-mix(in srgb, var(--ux-accent) 14%, white);
-  --bg: color-mix(in srgb, var(--ux-accent) 8%, #f4f5f8);
-  --content-bg: color-mix(in srgb, var(--ux-accent) 9%, #eef1f6);
+  /* Isi penggajian tetap kertas putih — aksen PT hanya di kop/sidebar, jangan semprot tabel */
+  --bg: #f4f5f8;
+  --content-bg: #eef1f6;
   --color-bg: var(--bg);
   --color-bg-content: var(--content-bg);
   --sidebar: color-mix(in srgb, var(--ux-accent-dark) 78%, #0b1220);
   --color-primary-border: color-mix(in srgb, var(--ux-accent) 35%, white);
   --topbar-fg: #1e2330;
+  --cell-money-color: #0f172a;
+  --cell-neto-color: #166534;
+  --cell-deduction-color: #991b1b;
 }
 
 [data-theme='brand'] body,
