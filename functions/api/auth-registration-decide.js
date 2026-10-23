@@ -6,6 +6,7 @@ import {
   handleOptions,
   assertCallerIsHrdOrAdmin,
 } from '../_lib/cf-shared.js';
+import { updateUsersList } from '../_lib/tenant-data.js';
 
 function sanitizeNama(nama, fallbackEmail) {
   const t = String(nama || '').trim();
@@ -64,28 +65,26 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse(200, { ok: true, status: 'rejected' }, request);
     }
 
-    const payload = caller.payload || {};
-    const users = Array.isArray(payload.users) ? payload.users : [];
     const emailLower = String(req.email || '').toLowerCase();
-    const exists = users.some(
-      (u) => u && u.email && String(u.email).toLowerCase() === emailLower
-    );
-    if (!exists) {
-      users.push({
-        username: emailLower.split('@')[0],
-        password: '',
-        nama: sanitizeNama(req.nama, req.email),
-        role: 'Karyawan',
-        nik: req.nik || null,
-        aktif: true,
-        email: req.email,
+    try {
+      await updateUsersList(sb, tenant, (users) => {
+        const exists = users.some(
+          (u) => u && u.email && String(u.email).toLowerCase() === emailLower
+        );
+        if (exists) return false;
+        users.push({
+          username: emailLower.split('@')[0],
+          password: '',
+          nama: sanitizeNama(req.nama, req.email),
+          role: 'Karyawan',
+          nik: req.nik || null,
+          aktif: true,
+          email: req.email,
+        });
+        return true;
       });
-      payload.users = users;
-      const { error: perr } = await sb
-        .from('sigaji_cloud')
-        .update({ payload })
-        .eq('tenant_key', tenant);
-      if (perr) return jsonResponse(500, { ok: false, error: perr.message }, request);
+    } catch (perr) {
+      return jsonResponse(500, { ok: false, error: perr.message || String(perr) }, request);
     }
 
     let inviteOk = false;
@@ -138,21 +137,16 @@ export async function onRequestPost({ request, env }) {
 
     if (inviteAuthUserId) {
       try {
-        const usersArr = Array.isArray(payload.users) ? payload.users.slice() : [];
-        const idx = usersArr.findIndex(
-          (u) => u && u.email && String(u.email).toLowerCase() === emailLower
-        );
-        if (idx >= 0) {
-          usersArr[idx] = Object.assign({}, usersArr[idx], { auth_uid: inviteAuthUserId });
-          payload.users = usersArr;
-          const { error: puidErr } = await sb
-            .from('sigaji_cloud')
-            .update({ payload })
-            .eq('tenant_key', tenant);
-          if (puidErr) inviteMsg = `${inviteMsg}; auth_uid save: ${puidErr.message}`;
-        }
+        await updateUsersList(sb, tenant, (users) => {
+          const idx = users.findIndex(
+            (u) => u && u.email && String(u.email).toLowerCase() === emailLower
+          );
+          if (idx < 0 || users[idx].auth_uid === inviteAuthUserId) return false;
+          users[idx] = Object.assign({}, users[idx], { auth_uid: inviteAuthUserId });
+          return true;
+        });
       } catch (e) {
-        inviteMsg = `${inviteMsg}; auth_uid save error`;
+        inviteMsg = `${inviteMsg}; auth_uid save: ${e.message || e}`;
       }
     }
 

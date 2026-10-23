@@ -283,6 +283,9 @@
     window.sigajiCloudLogout = function () {
       try { localStorage.removeItem('sigaji_resume_hint'); } catch(e){sigajiCatchWarn("js/cloud-sync.js",e);}
       try { localStorage.removeItem('sigaji_last_pg'); } catch(e){sigajiCatchWarn("js/cloud-sync.js",e);}
+      if (window.sigajiCloudTables && typeof window.sigajiCloudTables.forgetBase === 'function') {
+        window.sigajiCloudTables.forgetBase();
+      }
       if (!window.sigajiSupabase) return Promise.resolve();
       return window.sigajiSupabase.auth.signOut();
     };
@@ -435,6 +438,7 @@
       if (typeof window.enterAppWithUser === 'function') {
         window.enterAppWithUser(cu);
       }
+      if (cloudDirtySeq > cloudSyncedSeq) cloudUpsert();
       scheduleCloudPullLoop();
     } catch (e) {
       console.error('Sigaji enterFromSession:', e);
@@ -611,6 +615,7 @@
       try {
         var scopedEarly = await window.sigajiCloudTables.tryLoadKaryawanScoped(sb, uid);
         if (scopedEarly && typeof window.applyDbFromCloudPayload === 'function') {
+          if (typeof window.sigajiCloudTables.resetBase === 'function') window.sigajiCloudTables.resetBase();
           window.applyDbFromCloudPayload(scopedEarly);
           appliedWithLicense = !!(scopedEarly.license);
           if (!appliedWithLicense) await refreshTenantLicenseFromCloud();
@@ -622,21 +627,32 @@
     }
 
     if (window.sigajiCloudTables && typeof window.sigajiCloudTables.tryLoadWithTables === 'function') {
+      var fromTables;
       try {
-        var fromTables = await window.sigajiCloudTables.tryLoadWithTables(sb, uid, fetchBlobPayload);
-        if (fromTables && typeof window.applyDbFromCloudPayload === 'function') {
-          window.applyDbFromCloudPayload(fromTables);
-          appliedWithLicense = !!(fromTables.license);
-          if (!appliedWithLicense) await refreshTenantLicenseFromCloud();
-          return;
-        }
+        fromTables = await window.sigajiCloudTables.tryLoadWithTables(sb, uid, fetchBlobPayload);
       } catch (e) {
-        console.warn('Sigaji: load tabel gagal, coba blob', e);
+        // Jangan jatuh ke blob: blob bukan salinan terbaru, dan simpan berikutnya bisa menimpa tabel dengan data lama.
+        console.warn('Sigaji: load tabel gagal', e);
+        throw new Error(
+          'Gagal memuat data dari awan (' +
+            ((e && (e.message || e.code)) || 'koneksi terputus') +
+            '). Periksa jaringan lalu muat ulang halaman.'
+        );
+      }
+      if (fromTables && typeof window.applyDbFromCloudPayload === 'function') {
+        window.applyDbFromCloudPayload(fromTables);
+        window.sigajiCloudTables.commitLoadedBase();
+        appliedWithLicense = !!(fromTables.license);
+        if (!appliedWithLicense) await refreshTenantLicenseFromCloud();
+        return;
       }
     }
 
     try {
       var payload = await fetchBlobPayload(uid);
+      if (window.sigajiCloudTables && typeof window.sigajiCloudTables.resetBase === 'function') {
+        window.sigajiCloudTables.resetBase();
+      }
       if (payload && typeof window.applyDbFromCloudPayload === 'function') {
         window.applyDbFromCloudPayload(payload);
       }
@@ -694,7 +710,79 @@
     }
   }
 
+  /** Blob sigaji_cloud: salinan cadangan + sumber daftar user untuk aplikasi mobile. */
+  var BLOB_BACKUP_MS = 6 * 60 * 60 * 1000;
+  var BLOB_KEYS_FOR_MOBILE = ['users', 'roles'];
+  var BLOB_WRITTEN_KEY = 'sigaji_blob_written_at';
+
+  function blobWrittenAt() {
+    try {
+      return parseInt(localStorage.getItem(BLOB_WRITTEN_KEY), 10) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function markBlobWritten() {
+    try {
+      localStorage.setItem(BLOB_WRITTEN_KEY, String(Date.now()));
+    } catch(e){sigajiCatchWarn("js/cloud-sync.js",e);}
+  }
+
+  /** @param {{upserts:number,deletes:number,storeKeys:string[]}|null} res null = tabel tak tersedia/gagal */
+  function shouldWriteBlob(res) {
+    if (!res) return true;
+    if (!res.upserts && !res.deletes) return false;
+    for (var i = 0; i < res.storeKeys.length; i++) {
+      if (BLOB_KEYS_FOR_MOBILE.indexOf(res.storeKeys[i]) !== -1) return true;
+    }
+    return Date.now() - blobWrittenAt() > BLOB_BACKUP_MS;
+  }
+
+  /** Hasil gabung dengan perubahan pengguna lain: simpan lokal, gambar ulang, beri tahu bila ada bentrok. */
+  function reportMergeResult(res) {
+    if (res.memoryChanged) {
+      persistMemoryQuiet();
+      sigajiRefreshUiAfterCloudData();
+    }
+    var msgs = [];
+    if (res.conflicts && res.conflicts.length) {
+      msgs.push(
+        'Diubah bersamaan oleh pengguna lain — nilai Anda yang dipakai untuk: ' +
+          res.conflicts.slice(0, 3).join('; ') +
+          (res.conflicts.length > 3 ? ' (+' + (res.conflicts.length - 3) + ' lainnya)' : '')
+      );
+    }
+    if (res.kept && res.kept.length) {
+      msgs.push(
+        'Tidak jadi dihapus karena baru diubah pengguna lain: ' +
+          res.kept.slice(0, 3).join(', ') +
+          (res.kept.length > 3 ? ' (+' + (res.kept.length - 3) + ' lainnya)' : '')
+      );
+    }
+    if (msgs.length) toastSafe(msgs.join(' — '));
+    else if (res.memoryChanged) toastSafe('Perubahan dari pengguna lain sudah digabung dengan perubahan Anda.');
+  }
+
+  var upsertInFlight = null;
+  var upsertAgain = false;
+
   async function cloudUpsert() {
+    if (upsertInFlight) {
+      upsertAgain = true;
+      return upsertInFlight;
+    }
+    upsertInFlight = cloudUpsertOnce().finally(function () {
+      upsertInFlight = null;
+      if (upsertAgain) {
+        upsertAgain = false;
+        if (cloudDirtySeq > cloudSyncedSeq) cloudUpsert();
+      }
+    });
+    return upsertInFlight;
+  }
+
+  async function cloudUpsertOnce() {
     if (window.sigajiApplyingCloud) return;
     var seq = cloudDirtySeq;
     if (typeof window.sigajiLocalDataIncomplete === 'function' && window.sigajiLocalDataIncomplete()) return;
@@ -714,13 +802,12 @@
     var uid = sess.data.session.user.id;
     if (
       window.sigajiCloudTables &&
-      typeof window.sigajiCloudTables.mergeTunjVarBeforeUploadIntoMemory === 'function'
+      typeof window.sigajiCloudTables.isBaseReady === 'function' &&
+      !window.sigajiCloudTables.isBaseReady() &&
+      window.sigajiCloudTables.storageMode() !== 'blob'
     ) {
-      try {
-        await window.sigajiCloudTables.mergeTunjVarBeforeUploadIntoMemory(sb);
-      } catch (eM) {
-        console.warn('Sigaji merge tunj var sebelum upload:', eM);
-      }
+      // Data awan sesi ini belum termuat: tahan (tetap "belum sinkron") — dijadwalkan ulang setelah muat.
+      return;
     }
     if (typeof window.getPayloadForCloud !== 'function') return;
     var payload = window.getPayloadForCloud();
@@ -733,9 +820,11 @@
 
     try {
       if (window.sigajiCloudTables && typeof window.sigajiCloudTables.trySaveWithTables === 'function') {
-        await window.sigajiCloudTables.trySaveWithTables(sb, payload, function () {
-          return upsertBlobOnly(uid, payload);
+        var saved = await window.sigajiCloudTables.trySaveWithTables(sb, payload, function (res) {
+          if (!shouldWriteBlob(res)) return;
+          return upsertBlobOnly(uid, payload).then(markBlobWritten);
         });
+        if (saved) reportMergeResult(saved);
       } else {
         await upsertBlobOnly(uid, payload);
       }
@@ -749,6 +838,29 @@
       console.error('Sigaji cloud upsert:', err);
     }
   }
+
+  /** Muat ulang seluruh data dari awan (setelah proses di server, mis. sinkron alpha / impor libur). */
+  async function reloadCloudData() {
+    var sb = window.sigajiSupabase;
+    if (!clientReady || !sb) return false;
+    var sess = await sb.auth.getSession();
+    if (!sess.data || !sess.data.session) return false;
+    if (cloudTimer) {
+      clearTimeout(cloudTimer);
+      cloudTimer = null;
+    }
+    await cloudUpsert();
+    await withCloudTimeout(
+      loadCloudPayloadIntoApp(sess.data.session.user.id),
+      'Timeout memuat data cloud — periksa koneksi atau coba refresh'
+    );
+    if (typeof CU !== 'undefined' && CU && typeof window.sigajiApplyKaryawanDataRestriction === 'function') {
+      window.sigajiApplyKaryawanDataRestriction(CU);
+    }
+    sigajiRefreshUiAfterCloudData();
+    return true;
+  }
+  window.loadCloudData = reloadCloudData;
 
   window.sigajiTryCloudLogin = tryCloudLoginWhenReady;
   window.sigajiRetryCloudSync = function () {

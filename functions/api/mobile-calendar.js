@@ -59,14 +59,15 @@ export async function onRequestPost({ request, env }) {
     const action = String(body.action || '').trim();
 
     if (action === 'work_dates') {
-      const ctx = await assertCallerAuthenticated(sb, jwt, tenant);
+      await assertCallerAuthenticated(sb, jwt, tenant);
       const dateFrom = parseDateOnly(body.date_from);
       const dateTo = parseDateOnly(body.date_to);
       if (!dateFrom || !dateTo || dateTo < dateFrom) {
         return jsonResponse(400, { ok: false, error: 'date_from / date_to invalid' }, request);
       }
       const worksSaturday = body.works_saturday !== false;
-      const dates = enumerateWorkDates(ctx.payload, dateFrom, dateTo, worksSaturday);
+      const payload = await loadCloudPayload(sb, tenant);
+      const dates = enumerateWorkDates(payload, dateFrom, dateTo, worksSaturday);
       return jsonResponse(200, { ok: true, dates, count: dates.length }, request);
     }
 

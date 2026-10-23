@@ -29,6 +29,9 @@ const suites = [
   'angka-teks.test.mjs',
   'penyimpanan-lokal.test.mjs',
   'migrasi-pph-import.test.mjs',
+  'sinkron-delta.test.mjs',
+  'cloud-tables-delta.test.mjs',
+  'server-tenant-data.test.mjs',
 ];
 let failed = 0;
 
