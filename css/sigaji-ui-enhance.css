@@ -1567,7 +1567,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 }
 .narrative-abs-list li { margin-bottom: 0.15rem; }
 [data-theme="dark"] .narrative-warn { color: #fbbf24; }
-.ui-pref-sel { max-width: 110px; font-size: 11px; padding: 4px 8px; }
+.ui-pref-sel { max-width: 118px; font-size: 11px; padding: 4px 8px; }
 
 .period-timeline-bar {
   display: flex;
@@ -1772,13 +1772,44 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 /* Brand theme — topbar di sigaji-tokens.css */
 [data-theme="brand"] .ptl-item.active { background: var(--ux-accent, var(--blue)); }
 
-/* Density */
-[data-density="compact"] { font-size: 12px; }
-[data-density="compact"] .bento-widget-body { padding: 0.5rem; }
-[data-density="compact"] .bento-kpi-val { font-size: 1rem; }
-[data-density="compact"] .content .table-wrap td,
-[data-density="compact"] .content .table-wrap th { padding: 5px 8px; }
-[data-density="comfortable"] .bento-widget-body { padding: 1rem; }
+/* Density: Longgar (comfortable) vs Rapat (compact) — beda padding/font, bukan warna */
+[data-density='comfortable'] {
+  --sigaji-topbar-h: 58px;
+  --content-pad-x: 1.65rem;
+  --content-pad-y: 1.5rem;
+}
+[data-density='compact'] {
+  --sigaji-topbar-h: 46px;
+  --content-pad-x: 0.85rem;
+  --content-pad-y: 0.7rem;
+  --sigaji-sidebar-w: 196px;
+}
+[data-density='compact'] body { font-size: 12px; }
+[data-density='compact'] .content { padding: 0.65rem 0.8rem; }
+[data-density='compact'] .card { padding: 0.6rem; margin-bottom: 0.45rem; border-radius: 8px; }
+[data-density='compact'] .ct { margin-bottom: 0.45rem; font-size: 12px; }
+[data-density='compact'] .btn { padding: 4px 10px; font-size: 11px; }
+[data-density='compact'] .btn-sm { padding: 3px 8px; font-size: 10px; }
+[data-density='compact'] th { padding: 4px 6px; }
+[data-density='compact'] td { padding: 4px 6px; }
+[data-density='compact'] .content .table-wrap td,
+[data-density='compact'] .content .table-wrap th { padding: 4px 6px; }
+[data-density='compact'] .ni { padding: 5px 0.75rem; font-size: 11px; }
+[data-density='compact'] .nsec { padding: 0.4rem 0.75rem 0.15rem; }
+[data-density='compact'] .fg { margin-bottom: 0.5rem; }
+[data-density='compact'] .fg input,
+[data-density='compact'] .fg select,
+[data-density='compact'] .fg textarea { padding: 6px 8px; font-size: 12px; }
+[data-density='compact'] .sg4 { gap: 6px; margin-bottom: 0.5rem; }
+[data-density='compact'] .sc { padding: 0.55rem; }
+[data-density='compact'] .sv { font-size: 16px; }
+[data-density='compact'] .alogo { font-size: 15px; }
+[data-density='compact'] .topbar { padding: 0 0.85rem; }
+[data-density='compact'] .topbar-logo-img { max-height: 26px; }
+[data-density='compact'] .av { width: 24px; height: 24px; font-size: 10px; }
+[data-density='compact'] .bento-widget-body { padding: 0.45rem; }
+[data-density='compact'] .bento-kpi-val { font-size: 1rem; }
+[data-density='comfortable'] .bento-widget-body { padding: 1rem; }
 
 @media (max-width: 1200px) {
   .bento-widget[data-col="8"],
@@ -1790,7 +1821,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   .bento-widget[data-col="6"],
   .bento-widget[data-col="4"] { grid-column: span 12; }
   .bento-kpi-row { grid-template-columns: repeat(2, 1fr); }
-  .ui-pref-sel { max-width: 88px; }
+  .ui-pref-sel { max-width: 108px; }
   .sigaji-build-chip { display: none; }
 }
 @media (min-width: 901px) and (max-width: 1199px) {
@@ -2220,11 +2251,18 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 
 /* Tombol berwarna → kaca berwarna: gradien translucent + kilau atas + glow warna */
 .btn-p {
-  background: linear-gradient(155deg, rgba(70, 138, 235, 0.96), rgba(26, 86, 160, 0.92));
-  color: #fff;
-  box-shadow: 0 4px 16px -5px rgba(26, 86, 160, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--blue) 78%, white), var(--blue));
+  color: var(--on-primary, #fff);
+  box-shadow: 0 4px 16px -5px color-mix(in srgb, var(--blue) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
-.btn-p:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(26, 86, 160, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.btn-p:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px color-mix(in srgb, var(--blue) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+[data-theme='brand'] .btn-p {
+  background: var(--ux-accent, var(--blue));
+  color: var(--on-primary, #fff);
+}
+[data-theme='dark'] .btn-p {
+  color: #fff;
+}
 .btn-g {
   background: linear-gradient(155deg, rgba(74, 160, 40, 0.96), rgba(45, 106, 10, 0.92));
   color: #fff;

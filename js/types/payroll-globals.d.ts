@@ -11,6 +11,8 @@ declare var perusahaan: {
   telp?: string;
   email?: string;
   logo?: string;
+  /** Warna aksen tema "Warna PT" (hex). */
+  brand_color?: string;
   web?: string;
   jamMasuk?: string;
   jamPulang?: string;

@@ -47,6 +47,11 @@
   --bg: #f4f5f8;
   --surface: var(--wh);
   --surface-2: #f8fafc;
+  /* Teks di atas warna primer (tombol, avatar) — jangan pakai --wh: di dark --wh = permukaan */
+  --on-primary: #ffffff;
+  --ux-accent: var(--blue);
+  --ux-accent-ink: #1e2330;
+  --ux-accent-dark: var(--blue-dark);
 
   /* Semantic color (alias ke legacy) */
   --color-primary: var(--blue);
@@ -215,6 +220,7 @@
   --topbar-fg: #e2e8f0;
   --topbar-accent: #60a5fa;
   --color-text: #e2e8f0;
+  --on-primary: #ffffff;
 }
 
 [data-theme='dark'] body,
@@ -289,18 +295,41 @@
   color: #93c5fd;
 }
 
-/* ── Brand PT: aksen warna PT, topbar tetap terang (nama PT selalu terbaca) ── */
+/* ── Brand PT: chrome diwarnai aksen PT; teks selalu kontras (tidak tertutup background) ── */
 [data-theme='brand'] {
   --ux-accent: #1a56a0;
+  --ux-accent-ink: #1e2330;
+  --ux-accent-dark: #0d3d7a;
+  --on-primary: #ffffff;
   --color-primary: var(--ux-accent);
   --blue: var(--ux-accent);
-  --color-primary-subtle: color-mix(in srgb, var(--ux-accent) 12%, white);
-  --bll: color-mix(in srgb, var(--ux-accent) 12%, white);
+  --blue-dark: var(--ux-accent-dark);
+  --wh: #ffffff;
+  --surface: #ffffff;
+  --tx: #1e2330;
+  --ink: #1e2330;
+  --ink-body: #374151;
+  --color-text: #1e2330;
+  --color-primary-subtle: color-mix(in srgb, var(--ux-accent) 14%, white);
+  --bll: color-mix(in srgb, var(--ux-accent) 14%, white);
+  --bg: color-mix(in srgb, var(--ux-accent) 8%, #f4f5f8);
+  --content-bg: color-mix(in srgb, var(--ux-accent) 9%, #eef1f6);
+  --color-bg: var(--bg);
+  --color-bg-content: var(--content-bg);
+  --sidebar: color-mix(in srgb, var(--ux-accent-dark) 78%, #0b1220);
+  --color-primary-border: color-mix(in srgb, var(--ux-accent) 35%, white);
+  --topbar-fg: #1e2330;
+}
+
+[data-theme='brand'] body,
+[data-theme='brand'] .content {
+  background: var(--content-bg) !important;
+  color: var(--tx);
 }
 
 [data-theme='brand'] .topbar,
 .topbar.topbar--brand-accent {
-  background: rgba(255, 255, 255, 0.97) !important;
+  background: color-mix(in srgb, var(--ux-accent) 12%, white) !important;
   border-bottom: 3px solid var(--ux-accent, #1a56a0) !important;
   color: var(--tx, #1e2330) !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
@@ -308,17 +337,49 @@
 
 [data-theme='brand'] .topbar .alogo,
 .topbar.topbar--brand-accent .alogo {
-  color: var(--ux-accent, #1a56a0) !important;
+  color: var(--ux-accent-dark, #0d3d7a) !important;
 }
 
 [data-theme='brand'] .topbar .uname,
-.topbar.topbar--brand-accent .uname {
+.topbar.topbar--brand-accent .uname,
+[data-theme='brand'] .topbar .sync-status,
+[data-theme='brand'] .topbar .save-ind {
   color: var(--tx, #1e2330) !important;
 }
 
 [data-theme='brand'] .topbar .rbadge,
 .topbar.topbar--brand-accent .rbadge {
-  color: var(--ux-accent, #1a56a0);
-  background: var(--color-primary-subtle, #e8f0fb);
+  color: var(--ux-accent-dark, #0d3d7a);
+  background: #fff;
   border: 1px solid var(--color-primary-border, #c5d9f5);
+}
+
+[data-theme='brand'] .topbar .toolbar-select,
+[data-theme='brand'] .topbar .ui-pref-sel {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--ux-accent) 28%, #dde1e9);
+  color: var(--tx);
+}
+
+[data-theme='brand'] .btn-p,
+[data-theme='brand'] .av {
+  background: var(--ux-accent);
+  color: var(--on-primary, #fff);
+}
+
+[data-theme='brand'] .btn-p:hover {
+  background: var(--ux-accent-dark);
+  color: var(--on-primary, #fff);
+}
+
+[data-theme='brand'] .ni.active {
+  background: color-mix(in srgb, var(--ux-accent) 32%, transparent);
+  color: #f8fafc;
+  border-left-color: color-mix(in srgb, var(--ux-accent) 55%, white);
+}
+
+[data-theme='brand'] .periode-pill {
+  background: #fff;
+  color: var(--ux-accent-dark);
+  border-color: var(--color-primary-border);
 }
