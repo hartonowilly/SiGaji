@@ -33,6 +33,9 @@ const url = (process.env.SIGAJI_SUPABASE_URL || '').trim();
 const anon = (process.env.SIGAJI_SUPABASE_ANON_KEY || '').trim();
 const isCfPages =
   /^1|true$/i.test(String(process.env.CF_PAGES || '')) || !!process.env.CF_PAGES_URL;
+const cfBranch = String(process.env.CF_PAGES_BRANCH || '').trim();
+/** Preview PR tidak mewarisi env Production. Build pratinjau boleh lanjut; master tetap gagal bila kunci kosong. */
+const isCfPreview = isCfPages && cfBranch && cfBranch !== 'master' && cfBranch !== 'main';
 
 function writeStubConfig(reason) {
   const stub = [
@@ -54,6 +57,17 @@ function writeStubConfig(reason) {
 }
 
 if (!url || !anon) {
+  if (isCfPreview) {
+    console.warn(
+      'generate-config: pratinjau branch "' +
+        cfBranch +
+        '" tanpa SIGAJI_SUPABASE_URL / SIGAJI_SUPABASE_ANON_KEY. Build dilanjutkan. ' +
+        'Env Production tidak ikut ke Preview — salin variabel yang sama ke Preview bila URL pratinjau harus bisa login.'
+    );
+    writeStubConfig('Preview tanpa env Supabase — login di URL pratinjau tidak aktif');
+    copySupabaseVendor();
+    process.exit(0);
+  }
   if (isCfPages) {
     console.error(
       'generate-config: Cloudflare Pages — wajib set SIGAJI_SUPABASE_URL dan SIGAJI_SUPABASE_ANON_KEY di Settings → Environment variables (Production).'
