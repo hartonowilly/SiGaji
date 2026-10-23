@@ -99,7 +99,7 @@ function makeSlipTHR(k,p){
   h+='<div class="semp"><div><span class="text-muted font-9">NIK</span><br><strong>'+k.nik+'</strong></div><div><span class="text-muted font-9">Nama</span><br><strong>'+k.nama+'</strong></div><div><span class="text-muted font-9">Jabatan</span><br>'+k.jabatan+'</div><div><span class="text-muted font-9">Dept</span><br>'+k.dept+'</div><div><span class="text-muted font-9">Masa Kerja</span><br>'+mb+'</div><div><span class="text-muted font-9">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
   h+='<div class="rounded-sm tabs-spaced-lg p-md slip-thr-box">';
   h+='<div class="font-10 fw-800 mb-md slip-thr-heading">&#127873; Perhitungan THR - '+namaHR+'</div>';
-  h+='<div class="cr"><span>Gaji Pokok</span><span>'+fmt(k.gapok)+'</span></div>';
+  h+='<div class="cr"><span>Gaji Pokok</span><span>'+fmt(sigajiRp(k.gapok))+'</span></div>';
   (k.tunjangan||[]).filter(function(t){return t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';}).forEach(function(t){h+='<div class="cr"><span>'+t.nama+' (Tunjangan Tetap)</span><span>'+fmt(t.nilai)+'</span></div>';});
   h+='<div class="cr bold mt-xs slip-thr-divider"><span>Dasar THR</span><span>'+fmt(thr.dasar)+'</span></div>';
   h+='<div class="cr"><span>Proporsi</span><span>'+thr.pl+'</span></div>';
@@ -440,7 +440,7 @@ function buildTHRSlipPDF(k,p){
   var sec=function(t){doc.setFont(undefined,'bold');doc.setFontSize(9);doc.setTextColor(76,29,149);doc.text(t,14,y);y+=4;doc.setDrawColor(91,33,182);doc.line(14,y,pw-14,y);y+=5;doc.setFont(undefined,'normal');doc.setFontSize(8.5);doc.setTextColor(0,0,0);};
   var row=function(l,v,b){doc.setFont(undefined,b?'bold':'normal');doc.text(l,14,y);doc.text(v,pw-14,y,{align:'right'});y+=5;doc.setFont(undefined,'normal');};
   sec('Perhitungan THR - '+namaHR);
-  row('Gaji Pokok',fmt(k.gapok));
+  row('Gaji Pokok',fmt(sigajiRp(k.gapok)));
   (k.tunjangan||[]).filter(function(t){return t.tipe==='tetap'||t.tipe==='tetap_no_bpjs';}).forEach(function(t){row(t.nama+' (Tunjangan Tetap)',fmt(t.nilai));});
   doc.setFont(undefined,'bold');row('Dasar THR',fmt(thr.dasar));doc.setFont(undefined,'normal');
   row('Proporsi',thr.pl);
@@ -645,7 +645,7 @@ function aggregatePajakTahun(k,tahun){
   var bruto=0,pph=0,thrBruto=0,pphThr=0,pphRet=0;
   var bulan=[];
   var tStop=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
-  var sorted=(periodes||[]).slice().sort(function(a,b){return new Date(a.bayar||a.start||0)-new Date(b.bayar||b.start||0);});
+  var sorted=(periodes||[]).slice().sort(function(a,b){return new Date(a.bayar||a.start||0).getTime()-new Date(b.bayar||b.start||0).getTime();});
   var lastBayarIso=null;
   sorted.forEach(function(per){
     if(new Date(per.bayar||per.end||per.start).getFullYear()!==tahun)return;

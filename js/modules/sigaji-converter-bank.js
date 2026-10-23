@@ -320,6 +320,7 @@
     if (!templateBytes || !templateBytes.length) throw new Error('Template kosong');
     if (!rows || !rows.length) throw new Error('Tidak ada baris transfer');
     var entries = zipRead(templateBytes);
+    /** @type {{ name: string, method: number, data: Uint8Array } | null} */
     var sheet = null;
     entries.forEach(function (e) {
       if (e.name === SHEET_PART) sheet = e;
@@ -337,7 +338,8 @@
    * membacanya sekali, inflate-nya memakai DecompressionStream bila ada.
    * Bila tidak tersedia, template harus disimpan tanpa kompresi.
    */
-  function inflateRaw() {
+  /** @param {Uint8Array} _data @returns {string} */
+  function inflateRaw(_data) {
     throw new Error('Template harus menyimpan ' + SHEET_PART + ' tanpa kompresi (stored)');
   }
 
