@@ -76,6 +76,11 @@ assertEq('tunjangan variabel "1.500.000" = 1,5 juta (bukan 1,5)', tv.length && t
 px.thrManual['Maret 2026'] = { 'TES-TEKS': { aktif: true, nilai: '2.000.000' } };
 assertEq('THR manual teks = angka', px.hitungTHRBruto(karyawan(true), 'Maret 2026').nilai, 2000000);
 
+const fmt = vm.runInContext('fmt', px);
+assertEq('slip: fmt gapok teks "8.000.000"', fmt('8.000.000'), 'Rp 8.000.000');
+assertEq('slip: fmt angka tetap', fmt(1500000.4), 'Rp 1.500.000');
+assertEq('slip: fmt negatif teks', fmt('-150.000'), '-Rp 150.000');
+
 /** Bulat setengah ke atas dengan aritmetika bilangan bulat (tanpa float): acuan "benar" untuk rupiah. */
 const exactRound = (bruto, bp) => Math.floor((bruto * bp * 2 + 10000) / 20000);
 

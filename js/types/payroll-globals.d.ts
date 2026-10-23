@@ -4,6 +4,21 @@
  */
 declare var perusahaan: {
   nama?: string;
+  npwp?: string;
+  /** NITKU 6 digit TKU (e-Bupot). */
+  nitku?: string;
+  alamat?: string;
+  telp?: string;
+  email?: string;
+  logo?: string;
+  /** Penomoran & penandatangan 1721-A1. */
+  /** Nomor urut terakhir per tahun pajak, mis. { "2026": 12 }. */
+  a1_seq?: Record<string, number>;
+  a1_prefix?: string;
+  a1_kota?: string;
+  a1_ttd_nama?: string;
+  a1_ttd_jabatan?: string;
+  converter_bank?: Record<string, unknown>;
   hariKerja?: number;
   ter_custom?: Record<string, number[]>;
   ptkp_nilai?: Record<string, number>;
@@ -20,9 +35,25 @@ interface Periode {
   bayar: string;
   status: string;
   thr_aktif?: boolean;
+  thr_nama?: string;
+  thr_bayar?: string;
   tipe_periode?: string;
   opsi_lebih_bayar?: string;
   snapshot_locked?: boolean;
+}
+
+/** SheetJS (CDN) — tanpa tipe resmi di proyek ini. */
+declare var XLSX: any;
+
+/**
+ * Modul lama membaca getElementById(...).value / .checked langsung.
+ * Dilonggarkan di sini; modul payroll inti tetap cast ke HTMLInputElement.
+ */
+interface HTMLElement {
+  value?: any;
+  checked?: boolean;
+  readOnly?: boolean;
+  disabled?: boolean;
 }
 
 /** Nilai rupiah: number di memori; data impor/backup lama bisa berupa teks — selalu lewat sigajiRp(). */
@@ -88,6 +119,33 @@ declare function loadBPJSPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function renderNaturaPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function renderPPhRetPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function updateGajiSummary(): void;
+declare function sigajiMultiBranchEnabled(): boolean;
+declare function sigajiKarCabangPemotongMeta(k: KaryawanPayroll): {
+  nama?: string;
+  npwp?: string;
+  nitku?: string;
+  alamat?: string;
+  cabangNama?: string;
+  cabangId?: string;
+  npwpRaw?: string;
+  /** ID TKU 22 digit (NPWP16 + NITKU). */
+  idTku22?: string;
+  a1_kota?: string;
+  a1_ttd_nama?: string;
+  a1_ttd_jabatan?: string;
+};
+declare function sigajiSetPanelVisible(el: Element | string, on: boolean, display?: string): void;
+declare function sigajiSetTbodyRows(tbody: Element | string, rows: string | string[], chunkSize?: number): void;
+declare function sigajiWithSkeleton(target: Element | string, colspan: number, run: () => unknown): unknown;
+declare function sigajiNormalizeKarTipe(v?: string, k?: KaryawanPayroll): string;
+declare function renderSlipSendBatchChecklist(): void;
+/** @returns posisi Y setelah sampul */
+declare function sigajiPdfMagazineCover(doc: any, opts?: Record<string, unknown>): number;
+declare function sigajiPdfMagazineFooter(doc: any, pageNum: number): void;
+declare function sigajiKarOptionsHtml(list: KaryawanPayroll[], emptyLabel?: string): string;
+declare function sigajiDataAction(action: string, data?: Record<string, unknown>): string;
+declare function sigajiEmptyState(opts: Record<string, unknown> | string): string;
+declare function populateSelects(): void;
 declare function sigajiNormalizeSiklusGaji(v?: string): string;
 declare function sigajiSiklusGajiSortRank(v?: string): number;
 declare function normalizeHariGaji(v?: string | number): number;
@@ -134,6 +192,8 @@ interface SigajiIdbStore {
 }
 
 interface Window {
+  /** Fungsi diekspor ke window untuk onclick / modul lain (script tag tanpa bundler). */
+  [key: string]: any;
   SIGAJI_CLOUD_ONLY_MODE?: boolean;
   sigajiIdb?: SigajiIdbStore;
   getPTKPTable?: Function;
@@ -203,7 +263,7 @@ interface HitungGajiResult {
   /** Lembur (rupiah). */
   lb: number;
   bpjsPrsNatKP: number;
-  koreksiAbsensi: { total: number; details: unknown[] };
+  koreksiAbsensi: { total: number; details: Array<{ label: string; nilai: number }> };
   pr?: ProrataEntry;
   thrObj?: Record<string, unknown> | null;
   phk?: {
@@ -215,7 +275,7 @@ interface HitungGajiResult {
     pphFinal: number;
     pphFinalBase: number;
   } | null;
-  potKehadiran: { total: number };
+  potKehadiran: { total: number; details: Array<{ label: string; nilai: number }> };
   potT: number;
   pphRet: number;
   /** Lebih bayar PPh rekonsiliasi yang dikembalikan ke THP (0 bila carryover). */
@@ -246,6 +306,11 @@ interface KaryawanPayroll {
   nik: string;
   nama?: string;
   jk?: string;
+  hp?: string;
+  email?: string;
+  npwp?: string;
+  ktp?: string;
+  aktif?: boolean;
   gapok: Rupiah;
   siklus_gaji?: 'bulanan' | 'harian' | 'mingguan' | string;
   hari_gaji?: number;

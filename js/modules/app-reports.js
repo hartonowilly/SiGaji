@@ -203,7 +203,7 @@ function renderLaporanBody(){
 function exportCSV(){
   const rows=[['No','Nama','Dept','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','PPh Return','Neto']];
   var list=karyawanListPeriode(PA());
-  list.forEach(function(k,i){const g=hitungGaji(k);rows.push([i+1,k.nama,k.dept,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,g.pphRet,Math.round(g.neto)]);});
+  list.forEach(function(k,i){const g=hitungGaji(k);rows.push([i+1,k.nama,k.dept,sigajiRp(k.gapok),Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,g.pphRet,Math.round(g.neto)]);});
   const csv=rows.map(function(r){return r.map(function(v){return '"'+v+'"';}).join(',');}).join('\n');
   const b=new Blob(['\uFEFF'+csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Rekap_SiGaji9.csv';a.click();toast('CSV diunduh');
 }
@@ -420,7 +420,9 @@ function exportExcelRekonResign(){
         rows.push(['Dicetak: '+new Date().toISOString().split('T')[0]]);
         rows.push([]);
         rows.push(['No','Periode','Tgl mulai','Tgl selesai','Tgl bayar','Bruto PPh 21','Metode PPh','PPh dipotong','Bruto kumulatif','PPh kumulatif','Lebih bayar','Kurang bayar']);
-        var cumB=0,cumP=0,lastG=null;
+        var cumB=0,cumP=0;
+        /** @type {HitungGajiResult|null} */
+        var lastG=null;
         pers.forEach(function(p,i){
           var g=hitungGaji(k,p.nama);
           lastG=g;
@@ -563,7 +565,7 @@ function exportExcelKertasKerjaPPh(){
         r[j++]=Math.round(g.potT);
         potCols.forEach(function(nm){
           var t=(k.potongan||[]).find(function(x){return x.nama===nm;});
-          r[j++]=t?Math.round(t.nilai):0;
+          r[j++]=t?Math.round(sigajiRp(t.nilai)):0;
         });
         r[j++]=pk.dk;r[j++]=pk.lk;r[j++]=pk.izin;r[j++]=pk.sakit;r[j++]=pk.s05;r[j++]=pk.i05;r[j++]=pk.alpha;
         r[j++]=Math.round(g.potKehadiran.total||0);
@@ -664,7 +666,7 @@ function renderTHRBody(){
         +(isManual?'&#9998; Manual':'&#9711; Otomatis')+'</button>';
       if(isManual){
         manCell+='<input type="text" class="thr-manual-inp" id="thr-inp-'+k.nik+'" '
-          +'value="'+(manData.nilai>0?manData.nilai.toLocaleString('id-ID'):'')+'" '
+          +'value="'+(sigajiRp(manData.nilai)>0?sigajiRp(manData.nilai).toLocaleString('id-ID'):'')+'" '
           +'placeholder="Nominal Rp" '
           +'data-nik="'+k.nik+'" data-pnama="'+pNama+'" '
           +'onchange="simpanTHRManualEl(this)" '

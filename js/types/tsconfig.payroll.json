@@ -10,5 +10,5 @@
     "module": "None",
     "skipLibCheck": true
   },
-  "include": ["payroll-globals.d.ts", "../constants.js", "../ptkp.js", "../storage-idb.js", "../modules/app-core.js"]
+  "include": ["payroll-globals.d.ts", "../constants.js", "../ptkp.js", "../storage-idb.js", "../modules/app-core.js", "../modules/app-slip.js", "../modules/app-reports.js", "../modules/ebupot-export.js", "../modules/sigaji-converter-bank.js"]
 }

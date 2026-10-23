@@ -1,5 +1,6 @@
 const fmtDate=d=>{if(!d||d==='-')return'-';const p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;};
-const fmt=n=>{const v=Math.round(n);if(isNaN(v))return'Rp 0';const abs=Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(v<0?'-Rp ':'Rp ')+abs;};
+/** Format rupiah; teks seperti "8.000.000" dibaca lewat sigajiRp. @param {number|string} n */
+const fmt=n=>{const v=Math.round(typeof n==='string'?sigajiRp(n):n);if(isNaN(v))return'Rp 0';const abs=Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');return(v<0?'-Rp ':'Rp ')+abs;};
 /** Parse teks input rupiah (1.500.000 atau 1500000) → angka bulat. */
 function parseRpInput(val){
   if(val==null||val==='')return 0;
@@ -190,4 +191,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.5.99';
+const SIGAJI_MODULES_CACHE='11.5.100';
