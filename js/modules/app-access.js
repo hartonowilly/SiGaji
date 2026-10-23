@@ -446,6 +446,7 @@ function applyBranding(){
   }
   const lp=document.getElementById('logo-preview');
   if(lp){if(logo){lp.src=logo;lp.style.display='block';}else lp.style.display='none';}
+  try{if(typeof sigajiApplyUiPrefs==='function')sigajiApplyUiPrefs();}catch(eBr){sigajiCatchWarn('js/modules/app-access.js',eBr);}
 }
 // ── LOGIN ────────────────────────────────────────
 function sigajiIsCloudOnlyMode(){

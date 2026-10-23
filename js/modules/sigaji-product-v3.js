@@ -57,7 +57,7 @@
     {
       sel: '.topbar-theme-wrap',
       title: 'Tema & kepadatan',
-      body: 'Comfortable, compact, dark mode, atau warna brand PT.',
+      body: 'Longgar vs Rapat (jarak baris). Terang, Gelap, atau Warna PT (aksen perusahaan).',
     },
   ];
 
@@ -860,23 +860,57 @@
     return { theme: 'light', density: 'comfortable' };
   };
 
-  function brandAccentLuminance(hex) {
+  function parseHexRgb(hex) {
     var h = String(hex || '').replace('#', '').trim();
     if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-    if (!/^[0-9a-f]{6}$/i.test(h)) return 0;
-    var r = parseInt(h.slice(0, 2), 16) / 255;
-    var g = parseInt(h.slice(2, 4), 16) / 255;
-    var b = parseInt(h.slice(4, 6), 16) / 255;
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    if (h.length === 8) h = h.slice(0, 6);
+    if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
   }
 
-  function brandAccent() {
-    var c = perusahaan && perusahaan.brand_color;
-    if (c && String(c).trim()) {
-      c = String(c).trim();
-      if (/^#[0-9a-f]{3,8}$/i.test(c) && brandAccentLuminance(c) > 0.72) return '#1a56a0';
-      return c;
+  function relLum(rgb) {
+    function f(x) {
+      x = x / 255;
+      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
     }
+    return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]);
+  }
+
+  function toHex(rgb) {
+    function p(n) {
+      var s = Math.max(0, Math.min(255, Math.round(n))).toString(16);
+      return s.length === 1 ? '0' + s : s;
+    }
+    return '#' + p(rgb[0]) + p(rgb[1]) + p(rgb[2]);
+  }
+
+  function mixRgb(a, b, t) {
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  }
+
+  /** Warna aksen yang aman: teks di atasnya tidak tertutup background. */
+  function brandPalette(hex) {
+    var rgb = parseHexRgb(hex) || parseHexRgb('#1a56a0');
+    var btn = rgb.slice();
+    var i = 0;
+    while (relLum(btn) > 0.45 && i < 10) {
+      btn = mixRgb(btn, [0, 0, 0], 0.16);
+      i++;
+    }
+    var dark = mixRgb(btn, [0, 0, 0], 0.28);
+    var onBtn = relLum(btn) > 0.55 ? '#1e2330' : '#ffffff';
+    return {
+      accent: toHex(rgb),
+      btn: toHex(btn),
+      dark: toHex(dark),
+      onPrimary: onBtn,
+      ink: relLum(rgb) > 0.55 ? '#1e2330' : toHex(dark),
+    };
+  }
+
+  function brandAccentRaw() {
+    var c = perusahaan && perusahaan.brand_color;
+    if (c && String(c).trim() && parseHexRgb(c)) return String(c).trim();
     return '#1a56a0';
   }
 
@@ -887,6 +921,12 @@
     else tb.classList.remove('topbar--brand-accent');
   }
 
+  function clearBrandVars(root) {
+    ['--ux-accent', '--ux-accent-dark', '--ux-accent-ink', '--on-primary', '--blue', '--blue-dark', '--color-primary'].forEach(function (k) {
+      root.style.removeProperty(k);
+    });
+  }
+
   window.sigajiApplyUiPrefs = function (prefs) {
     prefs = prefs || sigajiGetUiPrefs();
     var root = document.documentElement;
@@ -895,29 +935,44 @@
     root.setAttribute('data-density', prefs.density || 'comfortable');
     paintBrandTopbar(theme);
     if (theme === 'brand') {
-      var accent = brandAccent();
-      root.style.setProperty('--ux-accent', accent);
-      root.style.setProperty('--blue', accent);
-      root.style.setProperty('--color-primary', accent);
+      var pal = brandPalette(brandAccentRaw());
+      root.style.setProperty('--ux-accent', pal.btn);
+      root.style.setProperty('--ux-accent-dark', pal.dark);
+      root.style.setProperty('--ux-accent-ink', pal.ink);
+      root.style.setProperty('--on-primary', pal.onPrimary);
+      root.style.setProperty('--blue', pal.btn);
+      root.style.setProperty('--blue-dark', pal.dark);
+      root.style.setProperty('--color-primary', pal.btn);
+    } else if (theme === 'dark') {
+      clearBrandVars(root);
+      root.style.setProperty('--on-primary', '#ffffff');
     } else {
-      root.style.removeProperty('--ux-accent');
-      root.style.removeProperty('--blue');
-      root.style.removeProperty('--color-primary');
+      clearBrandVars(root);
     }
     try {
       localStorage.setItem(prefsKey(), JSON.stringify(prefs));
-    } catch(e2){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e2);}
+    } catch (e2) {
+      sigajiCatchWarn('js/modules/sigaji-product-v3.js', e2);
+    }
     var densEl = document.getElementById('ui-pref-density');
     var themeEl = document.getElementById('ui-pref-theme');
     if (densEl) densEl.value = prefs.density || 'comfortable';
     if (themeEl) themeEl.value = prefs.theme || 'light';
   };
 
+  var UI_PREF_LABEL = {
+    comfortable: 'Longgar',
+    compact: 'Rapat',
+    light: 'Terang',
+    dark: 'Gelap',
+    brand: 'Warna PT',
+  };
+
   window.sigajiSetUiPref = function (key, val) {
     var p = sigajiGetUiPrefs();
     p[key] = val;
     sigajiApplyUiPrefs(p);
-    toast('Tampilan: ' + (key === 'theme' ? val : val));
+    toast('Tampilan: ' + (UI_PREF_LABEL[val] || val));
   };
 
   /* ── Narrative report ── */

@@ -36,7 +36,7 @@ body{font-family:var(--font,'Segoe UI',system-ui,sans-serif);background:var(--bg
 .fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bd);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;outline:none;background:var(--wh);transition:border .15s}
 .fg input:focus,.fg select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,160,.12)}
 .btn{padding:8px 16px;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
-.btn-p{background:var(--blue);color:var(--wh)}.btn-p:hover{background:var(--blue-dark)}
+.btn-p{background:var(--blue);color:var(--on-primary,#fff)}.btn-p:hover{background:var(--blue-dark);color:var(--on-primary,#fff)}
 .btn-g{background:var(--gr);color:var(--wh)}.btn-g:hover{background:#1e4a07}
 .btn-r{background:var(--rd);color:var(--wh)}.btn-r:hover{background:#7a1a1a}
 .btn-a{background:var(--am);color:var(--wh)}.btn-a:hover{background:#5a3400}
@@ -55,7 +55,7 @@ body{font-family:var(--font,'Segoe UI',system-ui,sans-serif);background:var(--bg
 .save-ind{font-size:10px;color:var(--gr);font-weight:700}
 .notif-btn{position:relative;background:none;border:none;cursor:pointer;font-size:17px;padding:5px;border-radius:8px}.notif-btn:hover{background:var(--color-surface-muted)}
 .ndot{position:absolute;top:3px;right:3px;width:7px;height:7px;background:#e24b4a;border-radius:50%;display:none}.ndot.on{display:block}
-.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--wh);background:var(--blue);flex-shrink:0}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--on-primary,#fff);background:var(--blue);flex-shrink:0}
 .uname{font-size:12px;font-weight:700}
 .rbadge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;background:var(--bll);color:var(--blue)}
 .layout{display:flex;flex:1;min-height:0;min-width:0;width:100%}
