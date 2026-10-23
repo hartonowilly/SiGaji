@@ -59,6 +59,11 @@ const gTxt = hitungGaji(karyawan(true), 'Maret 2026', { skipResolve: true });
 for (const f of ['potT', 'natKP', 'natNKP', 'tGross', 'grossPPh', 'pph', 'pphRet', 'totalPot', 'neto', 'bebanPrs']) {
   assertEq('hitungGaji teks = angka: ' + f, gTxt[f], gNum[f]);
 }
+const kGapokTeks = Object.assign(karyawan(true), { gapok: '8.000.000' });
+const gGapok = hitungGaji(kGapokTeks, 'Maret 2026', { skipResolve: true });
+for (const f of ['gapokEff', 'gapokRate', 'gapokFull', 'grossPPh', 'neto']) {
+  assertEq('gapok "8.000.000" = 8 juta: ' + f, gGapok[f], gNum[f]);
+}
 assertEq('potongan bertipe angka', typeof gTxt.potT, 'number');
 assertEq('BPJS manual bertipe angka', typeof gTxt.bpjs.jkk_prs, 'number');
 assertEq('neto bertipe angka', typeof gTxt.neto, 'number');

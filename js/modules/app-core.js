@@ -6,6 +6,7 @@
    karyawanSortedAll, nextNikOtomatis, clearPphReturnPanel, canEditDataPadaTanggalIso,
    refreshKarSnapshotFromMaster, setSpPayrollView, getKarSnapshotProgress */
 // ── HELPERS ─────────────────────────────────────
+/** @returns {Periode} */
 const PA=()=>{
   const aktif=periodes.find(p=>p.status==='aktif');
   if(aktif)return aktif;
@@ -417,7 +418,7 @@ function rincianCutiTahun(nik,yr,opts){
   });
   return{items:items,manual:manual,cb:cb,total:manual+cb};
 }
-const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01'))/(86400000*30.44));
+const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01').getTime())/(86400000*30.44));
 function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
 /** Status 1/2 sakit & 1/2 izin bernilai 0,5 hari — sama seperti dasar potongan gaji. */
 function isStatusSetengahHari(st){return st==='setengah_sakit'||st==='setengah_ijin';}
@@ -444,7 +445,7 @@ function siklusHariKalender(s,e){
   var sd=new Date(a+'T12:00:00');
   var ed=new Date(b+'T12:00:00');
   if(isNaN(sd.getTime())||isNaN(ed.getTime())||ed<sd)return 30;
-  return Math.round((ed-sd)/86400000)+1;
+  return Math.round((ed.getTime()-sd.getTime())/86400000)+1;
 }
 function siklusUnitPeriode(siklus,p){
   var days=siklusHariKalender(p&&p.start,p&&p.end);
@@ -473,7 +474,7 @@ function hariHadirUntukUpahHarian(nik,s,e,k){
 }
 function gapokKontrakSebulan(k,p,siklus){
   siklus=siklus||normalizeSiklusGaji(k&&k.siklus_gaji);
-  var rate=Math.round(Number(k&&k.gapok)||0);
+  var rate=Math.round(sigajiRp(k&&k.gapok));
   var hk=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
   if(typeof siklusBpjsUpahSebulan==='function')return siklusBpjsUpahSebulan(siklus,rate,hk);
   if(siklus==='harian')return Math.round(rate*(hk===5?21:25));
@@ -483,7 +484,7 @@ function gapokKontrakSebulan(k,p,siklus){
 /** Tarif × unit dalam periode gaji (satu masa pajak). Harian tidak dikali prorata lagi. */
 function gapokEffDariSiklus(k,p,prF){
   var siklus=normalizeSiklusGaji(k&&k.siklus_gaji);
-  var rate=Math.round(Number(k&&k.gapok)||0);
+  var rate=Math.round(sigajiRp(k&&k.gapok));
   var pf=prF==null?1:prF;
   if(typeof siklusBuildPays==='function'&&(siklus==='harian'||siklus==='mingguan')){
     var hk=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
@@ -506,7 +507,7 @@ function gapokEffDariSiklus(k,p,prF){
 }
 function upahPerJamDariSiklus(k){
   var siklus=normalizeSiklusGaji(k&&k.siklus_gaji);
-  var rate=Number(k&&k.gapok)||0;
+  var rate=sigajiRp(k&&k.gapok);
   var hkMinggu=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
   if(siklus==='harian')return rate/8;
   if(siklus==='mingguan')return rate/(hkMinggu*8);
@@ -717,7 +718,7 @@ function getTunjVariabelForHitung(nik,pNama){
 }
 function prevPeriodeChrono(pnama){
   if(!periodes||!periodes.length)return null;
-  var sorted=periodes.slice().sort(function(a,b){return new Date(a.start||0)-new Date(b.start||0);});
+  var sorted=periodes.slice().sort(function(a,b){return new Date(a.start||0).getTime()-new Date(b.start||0).getTime();});
   var i=sorted.findIndex(function(p){return p.nama===pnama;});
   if(i<=0)return null;
   return sorted[i-1].nama;
@@ -800,8 +801,8 @@ function logPayrollAudit(nik,action,detail){
 function syncPphReturnFieldState(){
   var p=PA();
   var ro=isPayrollSnapshotMode()&&p&&isPeriodeLocked(p.nama);
-  var rv=document.getElementById('sp-pphret-val');
-  var rk=document.getElementById('sp-pphret-ket');
+  var rv=/** @type {HTMLInputElement|null} */(document.getElementById('sp-pphret-val'));
+  var rk=/** @type {HTMLInputElement|null} */(document.getElementById('sp-pphret-ket'));
   if(rv)rv.readOnly=!!ro;
   if(rk)rk.readOnly=!!ro;
   var hint=document.getElementById('sp-pphret-mode-hint');
@@ -818,10 +819,9 @@ function syncPphReturnFieldState(){
 function onPPhRetChange(){
   if(!cpNik)return;
   if(!guardPayrollEditUnlocked())return;
-  var vEl=document.getElementById('sp-pphret-val');
-  var kEl=document.getElementById('sp-pphret-ket');
-  var val=parseFloat((vEl&&vEl.value)||'')||0;
-  if(val<0)val=0;
+  var vEl=/** @type {HTMLInputElement|null} */(document.getElementById('sp-pphret-val'));
+  var kEl=/** @type {HTMLInputElement|null} */(document.getElementById('sp-pphret-ket'));
+  var val=parseRpInput(vEl&&vEl.value);
   var ket=(kEl&&kEl.value)||'';
   var k;
   if(isPayrollSnapshotMode()){
@@ -840,8 +840,8 @@ function onPPhRetChange(){
 function clearPphReturnPanel(){
   if(!cpNik)return;
   if(!guardPayrollEditUnlocked())return;
-  var vEl=document.getElementById('sp-pphret-val');
-  var kEl=document.getElementById('sp-pphret-ket');
+  var vEl=/** @type {HTMLInputElement|null} */(document.getElementById('sp-pphret-val'));
+  var kEl=/** @type {HTMLInputElement|null} */(document.getElementById('sp-pphret-ket'));
   if(vEl)vEl.value='0';
   if(kEl)kEl.value='';
   onPPhRetChange();
@@ -856,7 +856,7 @@ function snapshotKarCabangId(k,fallback){
 }
 function snapshotKarFromMaster(k){
   return{
-    gapok:Math.round(k.gapok||0),
+    gapok:Math.round(sigajiRp(k.gapok)),
     siklus_gaji:normalizeSiklusGaji(k&&k.siklus_gaji),
     hari_gaji:typeof normalizeHariGaji==='function'?normalizeHariGaji(k&&k.hari_gaji):5,
     tunjangan:deepCloneLite(k.tunjangan||[]),
@@ -879,7 +879,7 @@ function snapshotKarForPeriodeEntry(k,pNama){
   var prevSnap=prev&&karSnapshot&&karSnapshot[prev]&&karSnapshot[prev][k.nik];
   if(prevSnap){
     return{
-      gapok:prevSnap.gapok!==undefined?Math.round(prevSnap.gapok):Math.round(k.gapok||0),
+      gapok:prevSnap.gapok!==undefined?Math.round(sigajiRp(prevSnap.gapok)):Math.round(sigajiRp(k.gapok)),
       siklus_gaji:normalizeSiklusGaji(prevSnap.siklus_gaji||k.siklus_gaji),
       hari_gaji:typeof normalizeHariGaji==='function'?normalizeHariGaji(prevSnap.hari_gaji!=null?prevSnap.hari_gaji:k.hari_gaji):5,
       tunjangan:deepCloneLite(prevSnap.tunjangan||[]),
@@ -942,7 +942,7 @@ function sigajiPotKehadiranUntukPeriodeNik(nik,p){
   var pr=prorata[nik]&&prorata[nik][p.nama];
   var isPR=pr&&pr.enabled&&pr.hk>0;
   var prF=isPR?pr.hh/pr.hk:1;
-  var gapokEff=Math.round((k.gapok||0)*prF);
+  var gapokEff=Math.round(sigajiRp(k.gapok)*prF);
   return hitungPotonganKehadiran(nik,p,hkP,gapokEff);
 }
 function sigajiCaptureAbsensiPotBaseline(p){
@@ -1078,7 +1078,7 @@ function getPayrollTargetByNik(nik,createIfMissing,sourceMode){
   if(tgt.bpjs_aktif===undefined)tgt.bpjs_aktif=deepCloneLite(k.bpjs_aktif||{});
   if(tgt.bpjs_manual===undefined)tgt.bpjs_manual=deepCloneLite(k.bpjs_manual||{});
   if(tgt.pph_return===undefined)tgt.pph_return={nilai:0,ket:''};
-  if(tgt.gapok===undefined)tgt.gapok=Math.round(k.gapok||0);
+  if(tgt.gapok===undefined)tgt.gapok=Math.round(sigajiRp(k.gapok));
   // Penting: kembalikan REFERENCE snapshot asli (bukan copy),
   // agar perubahan (mis. pph_return=0) benar-benar tersimpan ke karSnapshot.
   tgt.nik=k.nik;
@@ -1128,9 +1128,9 @@ function setSpPayrollView(mode){
   var src=getPayrollTargetByNik(cpNik,true,spPayrollView);
   if(!src)return;
   syncGapokRpInput(document.getElementById('sp-gapok-f'),src.gapok||0);
-  var gap=document.getElementById('sp-gapok-f');if(gap)gap.readOnly=!isPayrollSnapshotMode();
+  var gap=/** @type {HTMLInputElement|null} */(document.getElementById('sp-gapok-f'));if(gap)gap.readOnly=!isPayrollSnapshotMode();
   syncPphRetRpInput(document.getElementById('sp-pphret-val'),(src.pph_return&&src.pph_return.nilai)||0);
-  var rk=document.getElementById('sp-pphret-ket');if(rk)rk.value=(src.pph_return&&src.pph_return.ket)||'';
+  var rk=/** @type {HTMLInputElement|null} */(document.getElementById('sp-pphret-ket'));if(rk)rk.value=(src.pph_return&&src.pph_return.ket)||'';
   syncPphReturnFieldState();
   function spTabOpen(id){
     var el=document.getElementById(id);
@@ -1207,7 +1207,7 @@ function hitungGaji(k,pNama,opts){
   const natKP=(k.natura||[]).filter(n=>n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);
   const natNKP=(k.natura||[]).filter(n=>!n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);
   const upj=upahPerJamDariSiklus(k);
-  const lb=(lembur[k.nik]||[]).reduce((s,r)=>{const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);return s+Math.round(h);},0);
+  const lb=(lembur[k.nik]||[]).reduce((s,r)=>{const j=parseFloat(String(r.jam))||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);return s+Math.round(h);},0);
   // THR: jika periode aktif ada THR, gabung ke gross PPh
   const periodeAdaTHR=!!p.thr_aktif;
   const thrObj=periodeAdaTHR?hitungTHRBruto(k,pNama):null;
@@ -1262,7 +1262,7 @@ function hitungGaji(k,pNama,opts){
   // walaupun take home prorata.
   const isBpjsFullMonth=!!(tglStopIso&&isStopInPeriode&&hasPhkAlasan);
   const gapokBpjs=siklusGaji==='bulanan'
-    ?(isBpjsFullMonth?Math.round(k.gapok||0):gapokEff)
+    ?(isBpjsFullMonth?Math.round(sigajiRp(k.gapok)):gapokEff)
     :gapokKontrakSebulan(k,p,siklusGaji);
   const tunjBpjs=isBpjsFullMonth?0:tBPJS;
   const bpjs=calcBPJS(k,gapokBpjs,tunjBpjs);
@@ -1313,7 +1313,7 @@ function hitungGaji(k,pNama,opts){
   const potT=(k.potongan||[]).reduce((s,x)=>s+sigajiRp(x.nilai),0);
   const skipPotHadir=siklusGaji==='harian'||siklusGaji==='mingguan';
   const potKehadiran=skipPotHadir
-    ?{total:0,details:[],gajiHarian:Math.round(k.gapok||0),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
+    ?{total:0,details:[],gajiHarian:Math.round(sigajiRp(k.gapok)),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
     :hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
   const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn):{total:0,details:[]};
   const pphRet=sigajiRp(k.pph_return?.nilai);
@@ -1331,7 +1331,7 @@ function hitungGaji(k,pNama,opts){
     var potJadwal=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+pph+potT;
     jadwalBayar=pecahPotonganCadangan(paysJadwal,potJadwal);
   }
-  return{gapokEff,gapokFull:k.gapok,gapokRate:Math.round(k.gapok||0),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs};
+  return{gapokEff,gapokFull:sigajiRp(k.gapok),gapokRate:Math.round(sigajiRp(k.gapok)),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs};
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;

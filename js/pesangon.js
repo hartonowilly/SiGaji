@@ -7,8 +7,8 @@
     if(!k)return 0;
     var t=(k.tunjangan||[]).filter(function(x){
       return (x.tipe==='tetap'||x.tipe==='tetap_no_bpjs')&&x.thr_ikut!==false;
-    }).reduce(function(s,x){return s+(parseFloat(x.nilai)||0);},0);
-    return Math.round((parseFloat(k.gapok)||0)+t);
+    }).reduce(function(s,x){return s+sigajiRp(x.nilai);},0);
+    return Math.round(sigajiRp(k.gapok)+t);
   }
   function sisaCutiOtomatis(nik,tglBerhenti){
     if(!nik||!tglBerhenti)return 0;
