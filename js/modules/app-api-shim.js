@@ -11,7 +11,7 @@ window.sigajiParseFunctionJson = async function (r) {
   }
   return r.json().catch(function () { return null; });
 };
-window.SIGAJI_BUILD = '11.6.7';
+window.SIGAJI_BUILD = '11.6.8';
 function sigajiPaintBuildChip() {
   var el = document.getElementById('sigaji-build-chip');
   if (el && window.SIGAJI_BUILD) el.textContent = 'v' + window.SIGAJI_BUILD;
@@ -96,4 +96,71 @@ if (document.readyState === 'loading') {
     sigajiCatchWarn('js/modules/app-api-shim.js', e2);
   }
   window.sigajiSyncViewportHeightEarly = syncViewportHeight;
+})();
+
+/** Versi di file server (bukan database). Tab yang tertinggal membandingkan SIGAJI_BUILD. */
+function sigajiParseBuildTag(src) {
+  var m = String(src || '').match(/window\.SIGAJI_BUILD\s*=\s*'([^']+)'/);
+  return m ? String(m[1]).trim() : '';
+}
+window.sigajiParseBuildTag = sigajiParseBuildTag;
+
+(function () {
+  var CHECK_MS = 3 * 60 * 1000;
+  var shown = false;
+  var lastAt = 0;
+  var busy = false;
+
+  function mine() {
+    return String(window.SIGAJI_BUILD || '').trim();
+  }
+
+  function showBanner(remote) {
+    if (shown || document.getElementById('sigaji-build-banner')) return;
+    shown = true;
+    var bar = document.createElement('div');
+    bar.id = 'sigaji-build-banner';
+    bar.setAttribute('role', 'status');
+    bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:4000;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 16px;background:#0c2340;color:#fff;font:600 13px/1.45 sans-serif;box-shadow:0 -4px 16px rgba(0,0,0,.22)';
+    var text = document.createElement('div');
+    text.textContent = 'Versi baru sudah terpasang (v' + remote + '). Muat ulang agar layar ini sama dengan server. Tab ini masih v' + mine() + '.';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Muat ulang';
+    btn.style.cssText = 'border:0;border-radius:6px;background:#fff;color:#0c2340;font:700 13px sans-serif;padding:7px 12px;cursor:pointer';
+    btn.addEventListener('click', function () { window.location.reload(); });
+    bar.appendChild(text);
+    bar.appendChild(btn);
+    document.body.appendChild(bar);
+  }
+
+  function check() {
+    var local = mine();
+    if (!local || shown || busy || document.visibilityState === 'hidden') return;
+    var now = Date.now();
+    if (lastAt && now - lastAt < CHECK_MS) return;
+    lastAt = now;
+    busy = true;
+    fetch('/js/modules/app-api-shim.js?sigaji_build=' + now, { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (txt) {
+        var remote = sigajiParseBuildTag(txt);
+        if (remote && remote !== local) showBanner(remote);
+      })
+      .catch(function () { return null; })
+      .then(function () { busy = false; });
+  }
+
+  function arm() {
+    check();
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible') return;
+      lastAt = 0;
+      check();
+    });
+    setInterval(check, CHECK_MS);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm);
+  else arm();
 })();
