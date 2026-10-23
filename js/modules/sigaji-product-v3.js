@@ -57,7 +57,7 @@
     {
       sel: '.topbar-theme-wrap',
       title: 'Tema & kepadatan',
-      body: 'Longgar vs Rapat (jarak baris). Terang, Gelap, atau Warna PT (aksen perusahaan).',
+      body: 'Longgar/Rapat mengatur jarak baris. Terang = kantor (paling enak baca gaji), Gelap = malam, Warna PT = kop perusahaan — tabel penggajian tetap kertas putih.',
     },
   ];
 
