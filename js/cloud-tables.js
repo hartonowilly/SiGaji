@@ -339,8 +339,16 @@
     add('C', ch.tunj_kolom);
     add('T', ch.tunj_nilai);
     var gone = (ch.deleted || []).map(tombstoneId).filter(Boolean);
-    if (!incoming.length && !gone.length) return false;
+    return applyIncoming(incoming, gone);
+  }
 
+  /**
+   * Terapkan baris awan ke memori + base: yang tidak sedang diedit diganti, yang sedang diedit digabung 3 arah.
+   * @param {{e:object,v:number|null}[]} incoming
+   * @param {string[]} gone id entitas yang dihapus di awan
+   */
+  function applyIncoming(incoming, gone) {
+    if (!incoming.length && !gone.length) return false;
     var mem = liveMemory();
     if (!mem) return false;
     var src = typeof window.getPayloadForCloud === 'function' ? window.getPayloadForCloud() : mem;
@@ -385,6 +393,7 @@
       var lj = loc ? D.stableStringify(loc.data) : null;
       var dirty = b ? lj !== b.j : lj != null;
       if (e.t === 'T' && editingCell && editingCell(e.key.nik, e.key.kolom_id)) dirty = true;
+      if (!b && isSnapshotEntity(e)) dirty = false;
       base.put(e, x.v, sj);
       if (!dirty) {
         D.applyEntityToMemory(mem, e, e.data);
@@ -465,6 +474,345 @@
     return res.data || [];
   }
 
+  /* ── Arsip: periode terkunci yang sudah lama tidak dimuat saat boot (dimuat saat dibutuhkan) ── */
+  /** Absensi 12 bulan ke depan (periode yang baru dibuka) ikut dimuat. */
+  var ARCHIVE_MONTHS_AHEAD = 12;
+  /** Jarak aman antara jam baseline koreksi (browser) dan updated_at server. */
+  var ARCHIVE_CHANGE_MARGIN_MS = 24 * 60 * 60 * 1000;
+  var PERIOD_ITEM_KINDS = ['karSnapshot', 'thrManual'];
+  var ITEM_SELECT = 'kind,item_key,nik,data,version';
+  /** Nama periode yang aman dipakai di filter or() PostgREST tanpa tanda kutip. */
+  var OR_SAFE_NAME = /^[^,().:"\\]*$/;
+  /** null = semua data dimuat. */
+  var archive = null;
+  var pendingArchive = null;
+  var archiveLoading = null;
+
+  function pad2(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  function monthsBetween(fromYm, toYm) {
+    var out = [];
+    if (!/^\d{4}-\d{2}$/.test(fromYm) || !/^\d{4}-\d{2}$/.test(toYm)) return out;
+    var y = +fromYm.slice(0, 4);
+    var m = +fromYm.slice(5, 7);
+    for (var g = 0; g < 1200; g++) {
+      var ym = y + '-' + pad2(m);
+      if (ym > toYm) break;
+      out.push(ym);
+      if (++m > 12) {
+        m = 1;
+        y++;
+      }
+    }
+    return out;
+  }
+
+  function periodeMonths(p) {
+    return monthsBetween(String(p.start || '').slice(0, 7), String(p.end || p.start || '').slice(0, 7));
+  }
+
+  /**
+   * Awal jendela boot: Januari tahun lalu (cuti, PPh, THR 12 bulan),
+   * atau 12 bulan sebelum bulan ini jika itu lebih awal (awal tahun kalender).
+   */
+  function hotCutoffYm(now) {
+    var y = now.getFullYear();
+    var m = now.getMonth() + 1;
+    var ry = y;
+    var rm = m - 12;
+    if (rm <= 0) {
+      rm += 12;
+      ry--;
+    }
+    var rolling = ry + '-' + pad2(rm);
+    var prevJan = y - 1 + '-01';
+    return rolling < prevJan ? rolling : prevJan;
+  }
+
+  /**
+   * Waktu baseline koreksi absensi tertua di periode arsip. '' = tidak diketahui (muat semua),
+   * null = tidak ada baseline (koreksi tidak berlaku untuk arsip).
+   */
+  function koreksiSince(coldList) {
+    var t = null;
+    for (var i = 0; i < coldList.length; i++) {
+      var bl = coldList[i].absensi_pot_baseline;
+      if (!bl) continue;
+      for (var nik in bl) {
+        var b = bl[nik];
+        if (!b) continue;
+        var ms = new Date(b.settledAt || b.capturedAt || '').getTime();
+        if (isNaN(ms)) return '';
+        if (t === null || ms < t) t = ms;
+      }
+    }
+    return t === null ? null : new Date(t - ARCHIVE_CHANGE_MARGIN_MS).toISOString();
+  }
+
+  /** Periode terkunci yang berakhir sebelum jendela boot = arsip. null = tidak ada arsip. */
+  function archivePlan(periodes, now) {
+    var cutoff = hotCutoffYm(now);
+    var cutoffDate = cutoff + '-01';
+    var cold = Object.create(null);
+    var coldList = [];
+    var hot = [];
+    (periodes || []).forEach(function (p) {
+      if (!p || !p.nama) return;
+      var end = String(p.end || p.bayar || p.start || '');
+      if (p.snapshot_locked && p.status !== 'aktif' && end && end < cutoffDate) {
+        cold[p.nama] = true;
+        coldList.push(p);
+      } else hot.push(p);
+    });
+    if (!coldList.length) return null;
+    var since = koreksiSince(coldList);
+    if (since === '') return null;
+    hot.forEach(function (p) {
+      var s = String(p.start || '').slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(s) && s < cutoff) cutoff = s;
+    });
+    var ahead = new Date(now.getFullYear(), now.getMonth() + ARCHIVE_MONTHS_AHEAD, 1);
+    return {
+      cold: cold,
+      coldList: coldList,
+      hot: hot.map(function (p) {
+        return p.nama;
+      }),
+      cutoff: cutoff,
+      months: monthsBetween(cutoff, ahead.getFullYear() + '-' + pad2(ahead.getMonth() + 1)),
+      since: since,
+      loaded: false,
+      /** nik + '\u0001' + periode → absensi & snapshot periode arsip itu sudah dimuat (untuk koreksi). */
+      ready: Object.create(null),
+    };
+  }
+
+  function likeOr(patterns) {
+    return patterns
+      .map(function (p) {
+        return 'item_key.like.' + p;
+      })
+      .join(',');
+  }
+
+  function dedupeItems(lists) {
+    var seen = Object.create(null);
+    var out = [];
+    lists.forEach(function (rows) {
+      (rows || []).forEach(function (r) {
+        var id = r.kind + '\u0001' + r.item_key;
+        if (seen[id]) return;
+        seen[id] = true;
+        out.push(r);
+      });
+    });
+    return out;
+  }
+
+  function itemQuery(sb) {
+    return sb.from('sigaji_item').select(ITEM_SELECT).eq('tenant_key', TK);
+  }
+
+  /** Baris sigaji_item dalam jendela boot: lembur/prorata semua, absensi per bulan, snapshot/THR periode aktif. */
+  async function fetchItemsHot(sb, plan) {
+    var jobs = [
+      fetchAllRows(function () {
+        return itemQuery(sb).in('kind', ['lembur', 'prorata']).order('kind').order('item_key');
+      }),
+    ];
+    var pats = plan.months.map(function (m) {
+      return '*|' + m;
+    });
+    pats.push('*|lain');
+    chunk(pats, 40).forEach(function (part) {
+      jobs.push(
+        fetchAllRows(function () {
+          return itemQuery(sb).eq('kind', 'absensi').or(likeOr(part)).order('kind').order('item_key');
+        })
+      );
+    });
+    var safe = plan.hot.filter(function (n) {
+      return OR_SAFE_NAME.test(n);
+    });
+    chunk(safe, 40).forEach(function (names) {
+      jobs.push(
+        fetchAllRows(function () {
+          return itemQuery(sb)
+            .in('kind', PERIOD_ITEM_KINDS)
+            .or(
+              likeOr(
+                names.map(function (n) {
+                  return n + '|*';
+                })
+              )
+            )
+            .order('kind')
+            .order('item_key');
+        })
+      );
+    });
+    plan.hot.forEach(function (n) {
+      if (OR_SAFE_NAME.test(n)) return;
+      jobs.push(
+        fetchAllRows(function () {
+          return itemQuery(sb)
+            .in('kind', PERIOD_ITEM_KINDS)
+            .like('item_key', n + '|*')
+            .order('kind')
+            .order('item_key');
+        })
+      );
+    });
+    return dedupeItems(await Promise.all(jobs));
+  }
+
+  /**
+   * Arsip yang berubah sejak baseline koreksi terakhir: absensi & snapshot karyawan itu di periode arsip
+   * ikut dimuat supaya koreksi absensi bulan ini tetap benar. Periode arsip lain tidak berubah → koreksinya 0.
+   */
+  async function fetchItemsKoreksi(sb, plan) {
+    if (!plan.since) return [];
+    var recent = await fetchAllRows(function () {
+      return itemQuery(sb)
+        .in('kind', ['absensi'].concat(PERIOD_ITEM_KINDS))
+        .gte('updated_at', plan.since)
+        .order('kind')
+        .order('item_key');
+    });
+    var byName = Object.create(null);
+    plan.coldList.forEach(function (p) {
+      byName[p.nama] = p;
+    });
+    var need = { absensi: Object.create(null), karSnapshot: Object.create(null) };
+    recent.forEach(function (r) {
+      var key = String(r.item_key);
+      var cut = key.lastIndexOf('|');
+      var hits = [];
+      var nik = r.nik;
+      if (r.kind === 'absensi') {
+        var ym = key.slice(cut + 1);
+        nik = nik || key.slice(0, cut);
+        plan.coldList.forEach(function (p) {
+          if (periodeMonths(p).indexOf(ym) !== -1) hits.push(p);
+        });
+      } else {
+        var pn = key.slice(0, cut);
+        nik = nik || key.slice(cut + 1);
+        if (byName[pn]) hits.push(byName[pn]);
+      }
+      hits.forEach(function (p) {
+        plan.ready[nik + '\u0001' + p.nama] = true;
+        periodeMonths(p).forEach(function (m) {
+          need.absensi[nik + '|' + m] = true;
+        });
+        need.karSnapshot[p.nama + '|' + nik] = true;
+      });
+    });
+    var jobs = [];
+    Object.keys(need).forEach(function (kind) {
+      chunk(Object.keys(need[kind]), 100).forEach(function (keys) {
+        jobs.push(
+          fetchAllRows(function () {
+            return itemQuery(sb).eq('kind', kind).in('item_key', keys).order('kind').order('item_key');
+          })
+        );
+      });
+    });
+    return dedupeItems([recent].concat(await Promise.all(jobs)));
+  }
+
+  async function fetchTunjVarRowsFor(sb, names) {
+    var parts = await Promise.all(
+      chunk(names, 50).map(function (ns) {
+        return fetchAllRows(function () {
+          return sb
+            .from('sigaji_tunj_var_nilai')
+            .select('periode_nama,nik,kolom_id,nilai')
+            .eq('tenant_key', TK)
+            .in('periode_nama', ns)
+            .order('periode_nama')
+            .order('nik')
+            .order('kolom_id');
+        });
+      })
+    );
+    var out = [];
+    parts.forEach(function (rows) {
+      for (var i = 0; i < rows.length; i++) out.push(rows[i]);
+    });
+    return out;
+  }
+
+  function isSnapshotEntity(e) {
+    return e && e.t === 'I' && e.key && e.key.kind === 'karSnapshot';
+  }
+
+  /** Data periode sudah ada di memori? nik diisi = cukup untuk koreksi absensi karyawan itu. */
+  function archiveReady(pNama, nik) {
+    if (!archive || archive.loaded || !archive.cold[pNama]) return true;
+    return !!(nik && archive.ready[nik + '\u0001' + pNama]);
+  }
+
+  function archiveDateReady(iso) {
+    if (!archive || archive.loaded) return true;
+    return !(String(iso || '').slice(0, 7) < archive.cutoff);
+  }
+
+  function sleep(ms) {
+    return new Promise(function (r) {
+      setTimeout(r, ms);
+    });
+  }
+
+  /** Muat seluruh arsip ke memori (sekali per sesi). @returns {Promise<boolean>} memori berubah */
+  async function loadArchive(sb) {
+    if (!archive || archive.loaded) return false;
+    if (archiveLoading) return archiveLoading;
+    var plan = archive;
+    archiveLoading = (async function () {
+      var parts = await Promise.all([
+        fetchAllRows(function () {
+          return itemQuery(sb)
+            .in('kind', ['absensi'].concat(PERIOD_ITEM_KINDS))
+            .order('kind')
+            .order('item_key');
+        }),
+        fetchTunjVarRowsFor(
+          sb,
+          plan.coldList.map(function (p) {
+            return p.nama;
+          })
+        ),
+      ]);
+      for (var w = 0; saving && w < 300; w++) await sleep(200);
+      if (archive !== plan) return false;
+      var incoming = [];
+      parts[0].forEach(function (row) {
+        var e = D.entityFromRow('I', row);
+        var b = base.get(e.id);
+        var v = row.version != null ? Number(row.version) : null;
+        if (b && (v == null || (b.v != null && b.v >= v))) return;
+        incoming.push({ e: e, v: v });
+      });
+      parts[1].forEach(function (row) {
+        if (Math.round(Number(row.nilai) || 0) === 0) return;
+        var e = D.entityFromRow('T', row);
+        if (base.get(e.id)) return;
+        incoming.push({ e: e, v: null });
+      });
+      var changed = applyIncoming(incoming, []);
+      plan.loaded = true;
+      return changed;
+    })();
+    try {
+      return await archiveLoading;
+    } finally {
+      archiveLoading = null;
+    }
+  }
+
   function rememberLoaded(list, t, row) {
     var e = D.entityFromRow(t, row);
     list.push({
@@ -484,6 +832,21 @@
       pendingServerNow = await fetchServerNow(sb);
     }
     var ver = isV12 ? ',version' : '';
+    pendingArchive = null;
+    var perP = fetchAllRows(function () {
+      return sb.from('sigaji_periode').select('nama,data' + ver).eq('tenant_key', TK).order('nama');
+    });
+    var planP = isV12
+      ? perP.then(function (rows) {
+          return archivePlan(
+            rows.map(function (r) {
+              var d = r.data && typeof r.data === 'object' ? r.data : {};
+              return d.nama ? d : Object.assign({ nama: r.nama }, d);
+            }),
+            new Date()
+          );
+        })
+      : Promise.resolve(null);
     var settled = await Promise.all([
       sb
         .from('sigaji_tenant_meta')
@@ -493,27 +856,28 @@
       fetchAllRows(function () {
         return sb.from('sigaji_karyawan').select('nik,data' + ver).eq('tenant_key', TK).order('nik');
       }),
-      fetchAllRows(function () {
-        return sb.from('sigaji_periode').select('nama,data' + ver).eq('tenant_key', TK).order('nama');
-      }),
+      perP,
       sb
         .from('sigaji_tunj_var_kolom')
         .select('id,nama,sort_order')
         .eq('tenant_key', TK)
         .order('sort_order', { ascending: true }),
-      fetchTunjVarRows(sb),
+      planP.then(function (plan) {
+        return plan ? fetchTunjVarRowsFor(sb, plan.hot) : fetchTunjVarRows(sb);
+      }),
       loadStoreChunks(sb, isV12),
-      isV12
-        ? fetchAllRows(function () {
-            return sb
-              .from('sigaji_item')
-              .select('kind,item_key,nik,data,version')
-              .eq('tenant_key', TK)
-              .order('kind')
-              .order('item_key');
-          })
-        : Promise.resolve([]),
+      planP.then(function (plan) {
+        if (!isV12) return [];
+        if (plan) {
+          return Promise.all([fetchItemsHot(sb, plan), fetchItemsKoreksi(sb, plan)]).then(dedupeItems);
+        }
+        return fetchAllRows(function () {
+          return itemQuery(sb).order('kind').order('item_key');
+        });
+      }),
+      planP,
     ]);
+    pendingArchive = settled[7];
     var meta = settled[0];
     var karRows = settled[1];
     var perRows = settled[2];
@@ -619,6 +983,8 @@
       base.put(x.e, x.v, x.j);
     });
     loadedEntities = null;
+    archive = pendingArchive;
+    pendingArchive = null;
     declinedDeletes = Object.create(null);
     rejected = Object.create(null);
     baseReady = true;
@@ -632,6 +998,8 @@
   function resetBase() {
     base.clear();
     loadedEntities = null;
+    archive = null;
+    pendingArchive = null;
     declinedDeletes = Object.create(null);
     rejected = Object.create(null);
     serverPullAt = null;
@@ -957,7 +1325,10 @@
           var u = upById[id];
           if (!u) return;
           var server = c.missing ? null : c.data;
-          var m = D.mergeEntity(u.base ? JSON.parse(u.base.j) : null, u.e.data, server);
+          var m =
+            server != null && !u.base && isSnapshotEntity(u.e)
+              ? { value: server, conflicts: [] }
+              : D.mergeEntity(u.base ? JSON.parse(u.base.j) : null, u.e.data, server);
           if (m.conflicts.length) {
             report.conflicts.push(entityLabel(u.e, m.value) + ': ' + m.conflicts.slice(0, 4).join(', '));
           }
@@ -1503,6 +1874,14 @@
     getAccess: function () {
       return { hq: access.hq, cabang: access.cabang };
     },
+    archivePlan: archivePlan,
+    archiveReady: archiveReady,
+    archiveDateReady: archiveDateReady,
+    /** Ada periode arsip yang belum dimuat ke memori. */
+    archivePending: function () {
+      return !!(archive && !archive.loaded);
+    },
+    loadArchive: loadArchive,
     _base: base,
   };
 })();

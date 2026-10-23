@@ -73,6 +73,25 @@ function fakeServer(db) {
     tombstones.push({ tbl: table, key, at: now() });
   }
 
+  function likeMatch(val, pat) {
+    let re = '^';
+    for (const c of String(pat)) {
+      if (c === '%' || c === '*') re += '.*';
+      else if (c === '_') re += '.';
+      else re += c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    return new RegExp(re + '$').test(String(val ?? ''));
+  }
+  function orMatch(r, expr) {
+    return String(expr)
+      .split(',')
+      .some((part) => {
+        const m = /^(\w+)\.(like|eq)\.(.*)$/.exec(part);
+        if (!m) return false;
+        if (m[2] === 'like') return likeMatch(r[m[1]], m[3]);
+        return String(r[m[1]]) === m[3];
+      });
+  }
   function from(table) {
     const st = { op: 'select', filters: [], range: null };
     const match = (r) =>
@@ -81,6 +100,8 @@ function fakeServer(db) {
         if (kind === 'in') return v.includes(r[c]);
         if (kind === 'notin') return !v.includes(r[c]);
         if (kind === 'gte') return String(r[c] || '') >= v;
+        if (kind === 'like') return likeMatch(r[c], v);
+        if (kind === 'or') return orMatch(r, v);
         return true;
       });
     const api = {
@@ -101,6 +122,14 @@ function fakeServer(db) {
       },
       gte(c, v) {
         st.filters.push(['gte', c, v]);
+        return api;
+      },
+      like(c, v) {
+        st.filters.push(['like', c, v]);
+        return api;
+      },
+      or(expr) {
+        st.filters.push(['or', '', expr]);
         return api;
       },
       order() {
@@ -443,6 +472,44 @@ function writesSince(srv, mark) {
   mem.karyawan[0].gapok = 1234;
   const r = await app.T.saveDelta(sb, mem);
   assert('maks. 3 putaran lalu minta dicoba lagi', n === 3 && r.retry === true);
+}
+
+// ── boot tidak mengunduh absensi periode terkunci yang sudah lama ──────────
+{
+  const db = seed();
+  const meta = { tenant_key: 'main', version: 1, updated_at: '2026-10-01T00:00:00.000Z' };
+  db.sigaji_periode.push(
+    Object.assign({}, meta, {
+      nama: 'Jan 2020',
+      data: {
+        nama: 'Jan 2020',
+        start: '2019-12-25',
+        end: '2020-01-24',
+        bayar: '2020-01-25',
+        status: 'tutup',
+        snapshot_locked: true,
+      },
+    })
+  );
+  db.sigaji_periode[0].data.start = '2026-09-25';
+  db.sigaji_periode[0].data.end = '2026-10-24';
+  db.sigaji_periode[0].data.status = 'aktif';
+  db.sigaji_item.push(
+    Object.assign({}, meta, { kind: 'absensi', item_key: 'K001|2020-01', nik: 'K001', data: { '2020-01-15': 'alpha' } }),
+    Object.assign({}, meta, { kind: 'karSnapshot', item_key: 'Jan 2020|K001', nik: 'K001', data: { nik: 'K001', gapok: 1 } })
+  );
+  db.sigaji_tunj_var_nilai.push(Object.assign({}, meta, { periode_nama: 'Jan 2020', nik: 'K001', kolom_id: 'v1', nilai: 777 }));
+  const srv = fakeServer(db);
+  const app = makeApp();
+  const mem = await loadInto(app, srv.client('admin'));
+  assert('boot: absensi bulan berjalan ada', mem.absensi.K001 && mem.absensi.K001['2026-10-01'] === 'izin');
+  assert('boot: absensi periode terkunci 2020 tidak dimuat', !(mem.absensi.K001 && mem.absensi.K001['2020-01-15']));
+  assert('boot: snapshot & tunjangan periode arsip tidak dimuat', !((mem.karSnapshot['Jan 2020'] || {}).K001) && !((mem.tunjVarBulan['Jan 2020'] || {}).K001));
+  assert('ada arsip yang belum dimuat', app.T.archivePending() === true);
+  const changed = await app.T.loadArchive(srv.client('admin'));
+  assert('muat arsip: data lama masuk memori', changed && mem.absensi.K001['2020-01-15'] === 'alpha' && mem.karSnapshot['Jan 2020'].K001.gapok === 1);
+  assert('muat arsip: tunjangan periode lama ikut', mem.tunjVarBulan['Jan 2020'].K001.v1 === 777);
+  assert('setelah muat, arsip tidak pending', app.T.archivePending() === false);
 }
 
 console.log('\nSemua tes cloud-tables v12 lulus.');

@@ -231,10 +231,15 @@ function toggleLockPeriode(id){
       if(typeof sigajiCaptureAbsensiPotBaseline==='function')sigajiCaptureAbsensiPotBaseline(p);
       if(typeof sigajiRebaselinePriorLockedAbsensiPot==='function')sigajiRebaselinePriorLockedAbsensiPot(p);
     }catch(eAbsBase){sigajiCatchWarn("js/modules/app-master.js",eAbsBase);}
+    try{
+      if(typeof sigajiSimpanArsipRekap==='function')sigajiSimpanArsipRekap(p);
+    }catch(eArsip){sigajiCatchWarn("js/modules/app-master.js",eArsip);}
     saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci (baseline absensi tersimpan)');
   }else{
+    if(typeof sigajiNeedPeriodeData==='function'&&!sigajiNeedPeriodeData(p.nama)){toast('Data periode '+p.nama+' masih dimuat dari arsip — coba lagi sebentar lagi.');return;}
     if(!confirm('Buka kunci snapshot periode "'+p.nama+'"? Perubahan berikutnya pada periode ini bisa mengubah snapshot.'))return;
     p.snapshot_locked=false;
+    delete p.arsip_rekap;
     saveAll();renderPeriodes();updatePeriodeSimpanButtonState();toast('Kunci periode dibuka');
   }
 }
