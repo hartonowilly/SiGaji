@@ -38,6 +38,7 @@ const suites = [
   'payroll-worker.test.mjs',
   'sql-v12.test.mjs',
   'server-tenant-data.test.mjs',
+  'bpjs-upah.test.mjs',
 ];
 let failed = 0;
 
