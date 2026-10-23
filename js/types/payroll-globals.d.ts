@@ -205,6 +205,7 @@ declare function aturanOverrideUntukTanggal(tanggal?: string): {
 declare function bpjsKomponenDef(key: string, tanggal?: string): { pct: number; basis: number | null; lbl?: string };
 declare function sigajiKunciEraOverrideLama(): string;
 declare function sigajiPesanBerlakuOverride(): string;
+declare function sigajiTanggalHariIni(): string;
 declare function saveAll(): void;
 declare function toast(msg: string): void;
 /** True bila data periode sudah di memori; jika belum, mulai muat arsip. */
@@ -343,6 +344,7 @@ interface HitungGajiResult {
   pph: number;
   terRate?: number;
   aturanId?: string;
+  ptkpStatus?: string;
   pphTanpaThr: number;
   pphAtasThr: number;
   neto: number;
@@ -437,6 +439,9 @@ interface KaryawanPayroll {
   siklus_gaji?: 'bulanan' | 'harian' | 'mingguan' | string;
   hari_gaji?: number;
   ptkp: string;
+  /** Tanggal mulai status PTKP yang sekarang. Sebelumnya ada di ptkp_riwayat. */
+  ptkp_berlaku?: string;
+  ptkp_riwayat?: Array<{ berlakuMulai: string; ptkp: string }>;
   masuk?: string;
   tgl_berhenti?: string;
   cabangId?: string;
