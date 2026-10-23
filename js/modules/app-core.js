@@ -643,17 +643,18 @@ function bpjsKompAktif(k,key){
   const isKes=key==='kes-prs'||key==='kes-kar';
   return isKes?(ak.kes!==false):(ak.tk!==false);
 }
-/**
- * @param {KaryawanPayroll} k
- * @param {number} gapokEff
- * @param {number} tunjBPJS
- * @returns {Record<string, number>}
- */
 function tglAturanDariPeriode(p){
   if(typeof sigajiTanggalAcuanPeriode==='function')return sigajiTanggalAcuanPeriode(p);
   if(!p)return '';
   return String(p.bayar||p.end||p.start||'').slice(0,10);
 }
+/**
+ * @param {KaryawanPayroll} k
+ * @param {number} gapokEff
+ * @param {number} tunjBPJS
+ * @param {string} [tanggal]
+ * @returns {Record<string, number>}
+ */
 function calcBPJS(k,gapokEff,tunjBPJS,tanggal){
   const basis=gapokEff+tunjBPJS;const bm=k.bpjs_manual||{};
   const get=key=>{if(!bpjsKompAktif(k,key))return 0;if(bm[key]!==undefined)return sigajiRp(bm[key]);const def=typeof bpjsKomponenDef==='function'?bpjsKomponenDef(key,tanggal):BPJS_DEF[key];const b=def.basis?Math.min(basis,def.basis):basis;return Math.round(b*def.pct/100);};

@@ -28,6 +28,13 @@ declare var perusahaan: {
   hariKerja?: number;
   ter_custom?: Record<string, number[]>;
   ptkp_nilai?: Record<string, number>;
+  /** Tanggal bayar mulai berlakunya ter_custom / ptkp_nilai yang sekarang. */
+  aturan_override_berlaku?: string;
+  aturan_override_riwayat?: Array<{
+    berlakuMulai: string;
+    ter_custom?: Record<string, Record<number, number>> | null;
+    ptkp_nilai?: Record<string, number> | null;
+  }>;
   /** UMK per tahun, mis. { "2026": 5000000 }. */
   umk?: Record<string, Rupiah>;
   aturan_potongan?: Record<string, { mode?: string; nilai?: number }>;
@@ -48,6 +55,8 @@ interface Periode {
   tipe_periode?: string;
   opsi_lebih_bayar?: string;
   snapshot_locked?: boolean;
+  /** Hasil hitungGaji per NIK, disimpan saat periode dikunci. */
+  hasil_gaji?: { v: number; aturanId?: string; at?: string; byNik?: Record<string, HitungGajiResult> };
   /** Rekap gross/PPh/neto saat dikunci — laporan tidak perlu muat absensi arsip. */
   arsip_rekap?: { v: number; kar: number; gross: number; thr: number; pph: number; neto: number; at: string };
   absensi_pot_baseline?: Record<string, { total: number; details?: unknown[]; settledAt?: string; capturedAt?: string }>;
@@ -181,6 +190,21 @@ declare function pecahPotonganCadangan(
   sisaPotongan: number;
 };
 declare function liburSetFrom(list: unknown): Record<string, boolean>;
+declare function sigajiTanggalAcuanPeriode(p: Periode | null | undefined): string;
+declare function aturanPajakUntukTanggal(tanggal?: string): {
+  id: string;
+  ptkp?: Record<string, number>;
+  ter?: { A?: Array<[number, number]>; B?: Array<[number, number]>; C?: Array<[number, number]> };
+  progresif?: { bjRate?: number; bjCap?: number; lapis?: Array<{ sampai: number; rate: number }> };
+  pesangon?: Array<{ cap: number; rate: number }>;
+} | null;
+declare function aturanOverrideUntukTanggal(tanggal?: string): {
+  ter_custom?: Record<string, Record<number, number>> | null;
+  ptkp_nilai?: Record<string, number> | null;
+};
+declare function bpjsKomponenDef(key: string, tanggal?: string): { pct: number; basis: number | null; lbl?: string };
+declare function sigajiKunciEraOverrideLama(): string;
+declare function sigajiPesanBerlakuOverride(): string;
 declare function saveAll(): void;
 declare function toast(msg: string): void;
 /** True bila data periode sudah di memori; jika belum, mulai muat arsip. */
@@ -317,6 +341,8 @@ interface HitungGajiResult {
   grossPPh: number;
   brutoTH: number;
   pph: number;
+  terRate?: number;
+  aturanId?: string;
   pphTanpaThr: number;
   pphAtasThr: number;
   neto: number;
