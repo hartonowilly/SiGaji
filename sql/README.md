@@ -19,7 +19,7 @@ Jalankan di **SQL Editor** berurutan:
 | 7 | `supabase_tenant_license_set_vendor.sql` | Set kuota `main` (sesuaikan angka) |
 | 8 | `supabase_login_branding_rpc_tenant.sql` | RPC branding per tenant (disarankan) |
 | 9 | `supabase_sigaji_v12_versi_cabang.sql` | **v12**: simpan per baris + versi (tanpa timpa antar HRD), hak akses per peran & cabang. Jalankan saat tidak ada yang mengedit; bisa diulang. Bila berhenti dengan "belum punya Admin/HRD yang tertaut", isi email Admin di Manajemen User sama dengan email login Supabase, lalu ulangi. |
-| 9 | `supabase_sigaji_v12_versi_cabang.sql` | **v12**: simpan per baris + versi (tanpa timpa antar HRD), hak akses per peran & cabang. Jalankan saat tidak ada yang mengedit; bisa diulang. Bila berhenti dengan "belum punya Admin/HRD yang tertaut", isi email Admin di Manajemen User sama dengan email login Supabase, lalu ulangi. |
+| 10 | `supabase_sigaji_v12_cabang_ketat.sql` | Setelah v12: HRD cabang tidak membaca daftar user; lokasi kerja (jika SQL mobile sudah dijalankan) disaring per cabang. Bisa diulang. |
 
 ### Opsional (sesuai fitur)
 

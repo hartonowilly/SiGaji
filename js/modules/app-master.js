@@ -850,11 +850,11 @@ function renderAuditLog(){
   var list=(auditLog||[]).filter(function(e){
     if(pPick!=='(Semua)'&&e.periode!==pPick)return false;
     if(!q)return true;
-    var s=(e.ts+' '+e.periode+' '+e.nik+' '+e.by+' '+e.action+' '+e.detail).toLowerCase();
+    var s=(e.ts+' '+e.periode+' '+e.nik+' '+(e.nama||'')+' '+e.by+' '+(e.byEmail||'')+' '+e.action+' '+e.detail).toLowerCase();
     return s.indexOf(q)>=0;
   }).slice(0,200);
   if(!list.length){
-    wrap.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128221;',title:'Belum ada jejak audit',desc:'Perubahan komponen gaji, tunjangan, dan potongan akan tercatat otomatis.',btnLabel:'Buka Komponen Gaji',btnAction:'showPg',btnActionArg:'kompgaji'}):'<div class="text-muted font-12" style="padding:12px">Belum ada audit log.</div>';
+    wrap.innerHTML=typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128221;',title:'Belum ada jejak audit',desc:'Siapa mengubah gapok, tunjangan, potongan, atau absensi — tercatat otomatis (nama, jam, periode).',btnLabel:'Buka Komponen Gaji',btnAction:'showPg',btnActionArg:'kompgaji'}):'<div class="text-muted font-12" style="padding:12px">Belum ada audit log.</div>';
     return;
   }
   wrap.innerHTML='<div class="sigaji-audit-timeline-inner">'+list.map(function(e,idx){

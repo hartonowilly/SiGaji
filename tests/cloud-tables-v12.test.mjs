@@ -262,8 +262,15 @@ function seed() {
   return {
     sigaji_tenant_meta: [{ tenant_key: 'main', schema_version: 12 }],
     sigaji_user_roles: [
-      { tenant_key: 'main', auth_uid: 'admin', role: 'Admin', cabang_id: null },
-      { tenant_key: 'main', auth_uid: 'hrdc2', role: 'HRD', cabang_id: 'c2' },
+      { tenant_key: 'main', auth_uid: 'admin', role: 'Admin', cabang_id: null, username: 'admin', email: 'admin@pt.co' },
+      {
+        tenant_key: 'main',
+        auth_uid: 'hrdc2',
+        role: 'HRD',
+        cabang_id: 'c2',
+        username: 'hrdc2',
+        email: 'hrd.c2@pt.co',
+      },
     ],
     sigaji_karyawan: [
       v({ nik: 'K001', data: { nik: 'K001', nama: 'Ani', gapok: 5000000, alamat: 'Jl. A', cabangId: 'c2' } }),
@@ -272,14 +279,24 @@ function seed() {
     sigaji_periode: [v({ nama: 'Okt 2026', data: { nama: 'Okt 2026', status: 'open' } })],
     sigaji_store: [
       store('perusahaan', { nama: 'PT Uji' }),
-      store('users', [{ username: 'admin', role: 'Admin' }]),
+      store('users', [
+        { username: 'admin', role: 'Admin', email: 'admin@pt.co' },
+        { username: 'hrdc2', role: 'HRD', email: 'hrd.c2@pt.co', cabangId: 'c2' },
+        { username: 'hrdLain', role: 'HRD', email: 'lain@pt.co', cabangId: 'c9' },
+      ]),
       store('masterCuti', { kuota: 12, carryover: 'no', cbPotong: true }),
       store('hariLibur', []),
       store('roles', {}),
-      store('approvals', []),
+      store('approvals', [
+        { id: 1, nik: 'K001' },
+        { id: 2, nik: 'K002' },
+      ]),
       store('notifikasi', []),
       store('tunjVarLabels', { v1: 'Bonus', v2: 'Uang Makan', v3: 'Lain-lain' }),
-      store('auditLog', []),
+      store('auditLog', [
+        { nik: 'K001', action: 'Simpan Komponen Gaji', by: 'Admin' },
+        { nik: 'K002', action: 'Simpan Komponen Gaji', by: 'Admin' },
+      ]),
       store('bentoLayouts', {}),
       store('cabang', []),
       // Dokumen lama (sebelum v12) — tidak boleh dibaca lagi.
@@ -434,19 +451,32 @@ function writesSince(srv, mark) {
   const sb = srv.client('hrdc2');
   const mem = await loadInto(app, sb);
   assert('akses: HRD cabang dikenali (bukan pusat)', app.T.getAccess().hq === false && app.T.getAccess().cabang === 'c2');
+  assert('HRD cabang: karyawan cabang lain tidak masuk memori', mem.karyawan.length === 1 && mem.karyawan[0].nik === 'K001', mem.karyawan);
+  assert(
+    'HRD cabang: daftar user cabang lain tidak terbaca',
+    mem.users.every((u) => u.username === 'hrdc2' || u.cabangId === 'c2') && !mem.users.some((u) => u.username === 'admin' || u.username === 'hrdLain'),
+    mem.users
+  );
+  assert('HRD cabang: persetujuan cabang lain tidak terbaca', mem.approvals.length === 1 && mem.approvals[0].nik === 'K001', mem.approvals);
+  assert('HRD cabang: audit cabang lain tidak terbaca', mem.auditLog.length === 1 && mem.auditLog[0].nik === 'K001', mem.auditLog);
   mem.periodes[0].status = 'closed';
   mem.perusahaan.nama = 'PT Diubah Cabang';
   mem.karyawan[0].gapok = 5100000;
-  mem.approvals.push({ id: 1, nik: 'K001' });
+  mem.approvals.push({ id: 3, nik: 'K001' });
   const mark = srv.log.length;
   const r = await app.T.saveDelta(sb, mem);
   const tables = writesSince(srv, mark).map((x) => x.table + ':' + (x.ups || x.n));
   assert('periode & profil perusahaan tidak dikirim (khusus pusat), dilaporkan', r.skipped.length === 2 && srv.db.sigaji_periode[0].data.status === 'open', r.skipped);
-  assert('karyawan cabangnya & persetujuan tersimpan', srv.db.sigaji_karyawan[0].data.gapok === 5100000 && srv.db.sigaji_store.find((s) => s.store_key === 'approvals').data.length === 1, tables);
+  const ap = srv.db.sigaji_store.find((s) => s.store_key === 'approvals').data;
+  assert(
+    'karyawan cabangnya tersimpan; persetujuan cabang lain tidak terhapus',
+    srv.db.sigaji_karyawan[0].data.gapok === 5100000 && ap.some((a) => a.nik === 'K002') && ap.some((a) => a.id === 3),
+    { tables, ap }
+  );
   const r2 = await app.T.saveDelta(sb, mem);
   assert('yang dilewati tidak dilaporkan berulang', r2.skipped.length === 0);
 
-  mem.karyawan[1].gapok = 1;
+  mem.karyawan.push({ nik: 'K002', nama: 'Budi', gapok: 1 });
   const r3 = await app.T.saveDelta(sb, mem);
   assert('ditolak RLS → dilaporkan per baris', r3.errors.length === 1 && /Budi/.test(r3.errors[0]), r3.errors);
   const mark2 = srv.log.length;

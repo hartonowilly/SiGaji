@@ -877,12 +877,17 @@ function auditPush(entry){
 function logPayrollAudit(nik,action,detail){
   try{
     var p=PA();
+    var kar=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+    var byNama=(CU&&(CU.nama||CU.username||CU.email))||'';
     auditPush({
       ts:nowIso(),
       periode:(p&&p.nama)||'',
       nik:nik||'',
-      by:(CU&&CU.nama)||'',
+      nama:(kar&&kar.nama)||'',
+      by:byNama,
+      byEmail:(CU&&CU.email)||'',
       role:(CU&&CU.role)||'',
+      cabangId:(CU&&CU.cabangId)||'',
       action:action||'',
       detail:detail||''
     });

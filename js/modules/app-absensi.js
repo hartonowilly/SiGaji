@@ -242,6 +242,9 @@ function toggleAb(nik,date,el){
   const next=S[(S.indexOf(cur)+1)%S.length];
   absensi[nik][date]=next;el.textContent=SL[next];
   el.className='ab-cell ab-st-'+next+(el.classList.contains('is-readonly')?' is-readonly':' is-clickable');
+  if(typeof logPayrollAudit==='function'){
+    logPayrollAudit(nik,'Ubah Absensi',date+' '+(SL[cur]||cur)+' → '+(SL[next]||next));
+  }
   saveAll();
 }
 // ── CUTI REKAP ───────────────────────────────────

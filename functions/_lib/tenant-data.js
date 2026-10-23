@@ -362,6 +362,19 @@ export function assertHq(me) {
   if (cabangScope(me)) throw new Error('Forbidden — hanya Admin / HRD kantor pusat');
 }
 
+/** Lokasi kerja: cabang_id kosong = bersama; selain itu harus masuk cakupan. */
+export function locationVisible(loc, scope) {
+  if (!scope) return true;
+  if (!loc) return false;
+  const id = String(loc.cabang_id || '').trim();
+  return !id || scope.has(id);
+}
+
+export function filterLocationsByScope(list, scope) {
+  if (!scope) return list || [];
+  return (list || []).filter((l) => locationVisible(l, scope));
+}
+
 async function updateBlob(sb, tenant, payload) {
   const { error } = await sb
     .from('sigaji_cloud')
