@@ -23,7 +23,7 @@
 
   window.sigajiMaxBranches = function () {
     if (typeof tenantLicense !== 'undefined' && tenantLicense) {
-      var n = parseInt(tenantLicense.maxBranches, 10);
+      var n = parseInt(String(tenantLicense.maxBranches), 10);
       return n > 0 ? n : 1;
     }
     return 1;
@@ -825,11 +825,11 @@
       mutasiSetText('mutasi-tunj-baru', mutasiFmt(tunjTetapSum(k.tunjangan)));
       mutasiSetText(
         'mutasi-total-lama',
-        mutasiFmt(Math.round(k.gapok || 0) + tunjTetapSum(k.tunjangan))
+        mutasiFmt(Math.round(sigajiRp(k.gapok)) + tunjTetapSum(k.tunjangan))
       );
       mutasiSetText(
         'mutasi-total-baru',
-        mutasiFmt(Math.round(k.gapok || 0) + tunjTetapSum(k.tunjangan))
+        mutasiFmt(Math.round(sigajiRp(k.gapok)) + tunjTetapSum(k.tunjangan))
       );
       if (!note) return;
       note.className = 'info-box font-11 leading-normal mb-0';

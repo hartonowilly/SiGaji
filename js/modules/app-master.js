@@ -56,7 +56,7 @@ function renderPeriodesBody(){
   }).join('');
   updatePeriodeSimpanButtonState();
 }
-function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));var thrBadge=p.thr_aktif?' <span class="font-12 rounded-pill" style="background:rgba(255,255,255,.22);padding:2px 8px">&#127873; THR</span>':'';var html='<div class="pb mb2"><div><div class="dash-hero-label">Periode Aktif</div><div class="dash-hero-title">'+escapeHtml(p.nama)+thrBadge+'</div><div class="dash-hero-meta">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div></div><div class="text-right"><div class="dash-hero-count">'+String(hP)+'</div><div class="dash-hero-count-lbl">hari</div></div></div>';el.innerHTML=html;}
+function renderPBanner(id){var p=PA();var el=document.getElementById(id);if(!el)return;var hP=Math.max(0,Math.ceil((new Date(p.bayar).getTime()-Date.now())/86400000));var thrBadge=p.thr_aktif?' <span class="font-12 rounded-pill" style="background:rgba(255,255,255,.22);padding:2px 8px">&#127873; THR</span>':'';var html='<div class="pb mb2"><div><div class="dash-hero-label">Periode Aktif</div><div class="dash-hero-title">'+escapeHtml(p.nama)+thrBadge+'</div><div class="dash-hero-meta">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div></div><div class="text-right"><div class="dash-hero-count">'+String(hP)+'</div><div class="dash-hero-count-lbl">hari</div></div></div>';el.innerHTML=html;}
 function toggleOpsiLebihBayar(){
   const tipe=document.getElementById('p-tipe-periode')&&document.getElementById('p-tipe-periode').value;
   const el=document.getElementById('fg-opsi-lebih-bayar');
@@ -126,6 +126,7 @@ function renderPeriodeSnapshotGuardUi(blocking){
 }
 function suggestNamaPeriodeBerikutnya(){
   var bulan=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  /** @type {Periode|null} */
   var latest=null;
   (periodes||[]).forEach(function(p){
     if(!p||!p.end)return;
@@ -262,6 +263,7 @@ function parseNamaPeriodeBulanTahun(nama){
 function resolveBulanTahunUntukPola(){
   var parsed=parseNamaPeriodeBulanTahun(document.getElementById('p-nama')&&document.getElementById('p-nama').value);
   if(parsed)return parsed;
+  /** @type {Periode|null} */
   var latest=null;
   (periodes||[]).forEach(function(p){
     if(!p||!p.end)return;
@@ -483,7 +485,7 @@ function toggleUmkEdit(){
   btn.className='btn btn-sm btn-p';
   inp.value=String(parseRpInput(inp.value)||'');
   delete inp.dataset.rpBound;
-  try{inp.focus();inp.select();}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}
+  try{inp.focus();/** @type {HTMLInputElement} */(inp).select();}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}
 }
 function karSiklusBukanBulanan(k){
   var s=typeof sigajiNormalizeSiklusGaji==='function'?sigajiNormalizeSiklusGaji(k&&k.siklus_gaji):String((k&&k.siklus_gaji)||'bulanan');
@@ -582,7 +584,7 @@ function simpanPTKP(){
 }
 function resetPTKP(){if(!confirm('Reset semua nilai PTKP ke default (seperti PMK umum)?'))return;perusahaan.ptkp_nilai={};saveAll();renderPTKPForm();renderPenggajian();renderPPH();toast('PTKP direset');}
 function updateHKRadioStyle(){var hk=perusahaan.hariKerja||6;var l5=document.getElementById('hk-5-lbl');var l6=document.getElementById('hk-6-lbl');if(l5){l5.className='fl items-center gap-sm cursor-pointer rounded-sm flex-1 hk-radio-label '+(hk===5?'hk-radio-active':'hk-radio-idle');}if(l6){l6.className='fl items-center gap-sm cursor-pointer rounded-sm flex-1 hk-radio-label '+(hk===6?'hk-radio-active':'hk-radio-idle');}}
-document.addEventListener('change',function(e){if(e.target.name==='hk-radio'){perusahaan.hariKerja=parseInt(e.target.value)||6;updateHKRadioStyle();}});
+document.addEventListener('change',function(e){var tg=/** @type {HTMLInputElement} */(e.target);if(tg.name==='hk-radio'){perusahaan.hariKerja=parseInt(tg.value)||6;updateHKRadioStyle();}});
 // ── ATURAN POTONGAN ──────────────────────────────
 var JENIS_POT=[{key:'cuti_dalam_kuota',lbl:'Cuti (dalam kuota)',ket:'Dalam saldo'},{key:'cuti_luar_kuota',lbl:'Cuti (luar kuota)',ket:'Saldo habis'},{key:'izin',lbl:'Izin 1 hari',ket:'Izin tertulis'},{key:'sakit',lbl:'Sakit 1 hari',ket:'Dengan/tanpa surat'},{key:'setengah_sakit',lbl:'1/2 Sakit',ket:'Hadir 1/2 hari'},{key:'setengah_ijin',lbl:'1/2 Izin',ket:'Hadir 1/2 hari'},{key:'alpha',lbl:'Alpha/Mangkir',ket:'Tanpa keterangan'}];
 var MODE_OPTS='<option value="tidak_dipotong">Tidak Dipotong</option><option value="prorata">Pro-Rata (1 hari)</option><option value="prorata_setengah">Pro-Rata (1/2 hari)</option><option value="nominal">Nominal Tetap (Rp)</option><option value="persen">Persentase Harian (%)</option>';
@@ -628,7 +630,7 @@ function hapusNotifSemua(){
   });
 }
 function markAllRead(){notifikasi.forEach(function(n){n.read=true;});saveAll();renderNotif();updateNotifBadge();}
-function updateNotifBadge(){var u=notifikasi.filter(function(n){return !n.read;}).length;var d=document.getElementById('ndot');if(d)d.className=u>0?'ndot on':'ndot';var b=document.getElementById('nc-badge');if(b){b.style.display=u>0?'inline':'none';b.textContent=u;}}
+function updateNotifBadge(){var u=notifikasi.filter(function(n){return !n.read;}).length;var d=document.getElementById('ndot');if(d)d.className=u>0?'ndot on':'ndot';var b=document.getElementById('nc-badge');if(b){b.style.display=u>0?'inline':'none';b.textContent=String(u);}}
 // ── MY CUTI ──────────────────────────────────────
 function renderMyCuti(){
   if(!CU||!CU.nik)return;var k=karyawan.find(function(x){return x.nik===CU.nik;});if(!k)return;
@@ -896,7 +898,7 @@ function renderMigrationStatus(){
   el.innerHTML=html;
 }
 var importData=null;
-function readImportFile(input){var f=input.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var data=JSON.parse(e.target.result);importData=data;var meta=data._meta||{};var el=document.getElementById('import-info');var html='';if(el){html='<strong>File:</strong> '+escapeHtml(meta.versi||'SiGaji')+' - '+String((data.karyawan||[]).length)+' karyawan'+(meta.snapshotPeriodeCount!=null?' | snapshot '+String(meta.snapshotPeriodeCount)+' periode / '+String(meta.snapshotRowCount||0)+' baris':'');el.innerHTML=html;}var cl=document.getElementById('import-checklist');if(cl){html=DATA_KEYS.map(function(k){var ada=data[k]!==undefined;return '<label class="fl items-center gap-xs font-12" style="cursor:'+(ada?'pointer':'default')+'; opacity:'+(ada?1:.4)+'"><input class="chk-brand" type="checkbox" id="imp-'+escapeAttr(k)+'" '+(ada?'checked':'')+' '+(ada?'':'disabled')+'> '+escapeHtml(DATA_LABELS[k]||k)+'</label>';}).join('');cl.innerHTML=html;}document.getElementById('import-preview').style.display='block';toast('File dibaca');}catch(err){toast('Gagal baca file: '+err.message);}};r.readAsText(f);}
+function readImportFile(input){var f=input.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var data=JSON.parse(String(e.target.result));importData=data;var meta=data._meta||{};var el=document.getElementById('import-info');var html='';if(el){html='<strong>File:</strong> '+escapeHtml(meta.versi||'SiGaji')+' - '+String((data.karyawan||[]).length)+' karyawan'+(meta.snapshotPeriodeCount!=null?' | snapshot '+String(meta.snapshotPeriodeCount)+' periode / '+String(meta.snapshotRowCount||0)+' baris':'');el.innerHTML=html;}var cl=document.getElementById('import-checklist');if(cl){html=DATA_KEYS.map(function(k){var ada=data[k]!==undefined;return '<label class="fl items-center gap-xs font-12" style="cursor:'+(ada?'pointer':'default')+'; opacity:'+(ada?1:.4)+'"><input class="chk-brand" type="checkbox" id="imp-'+escapeAttr(k)+'" '+(ada?'checked':'')+' '+(ada?'':'disabled')+'> '+escapeHtml(DATA_LABELS[k]||k)+'</label>';}).join('');cl.innerHTML=html;}document.getElementById('import-preview').style.display='block';toast('File dibaca');}catch(err){toast('Gagal baca file: '+err.message);}};r.readAsText(f);}
 /** Import: salin utuh tanpa membuang field (thr_ikut, tgl_berhenti, natura.kp, dll.). */
 function normalisasiData(key,val){
   var v=sigajiDeepClone(val);

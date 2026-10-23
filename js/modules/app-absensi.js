@@ -21,7 +21,7 @@ function populateAbsensiPeriodeSelect(){
   var sel=document.getElementById('ab-periode-sel');
   if(!sel)return;
   var prev=sel.value;
-  var sorted=(periodes||[]).slice().sort(function(a,b){return new Date(a.start||0)-new Date(b.start||0);});
+  var sorted=(periodes||[]).slice().sort(function(a,b){return new Date(a.start||0).getTime()-new Date(b.start||0).getTime();});
   sel.innerHTML=sorted.map(function(p){
     var label=(p.nama||'')+' · '+fmtDate(p.start)+' – '+fmtDate(p.end);
     return '<option value="'+p.id+'">'+escapeHtml(label)+'</option>';
@@ -247,7 +247,7 @@ function toggleAb(nik,date,el){
 // ── CUTI REKAP ───────────────────────────────────
 function renderCutiRekap(){
   const yr=parseInt((document.getElementById('ab-yr')&&document.getElementById('ab-yr').value)||2026);
-  const el=document.getElementById('cuti-yr-lbl');if(el)el.textContent=yr;
+  const el=document.getElementById('cuti-yr-lbl');if(el)el.textContent=String(yr);
   const kuotaEl=document.getElementById('cuti-kuota');if(kuotaEl)kuotaEl.value=masterCuti.kuota;
   const coEl=document.getElementById('cuti-carryover');if(coEl)coEl.value=masterCuti.carryover;
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
@@ -348,10 +348,10 @@ function renderLemburList(){
   var num=0;
   var listLem=sortKaryawanByNik(karyawan||[]);
   el.innerHTML=listLem.map(function(k){
-    const ld=lembur[k.nik]||[];const upj=k.gapok/173;if(!ld.length)return'';
+    const ld=lembur[k.nik]||[];const upj=sigajiRp(k.gapok)/173;if(!ld.length)return'';
     num++;
     return '<div class="tabs-spaced-lg"><div class="fw-700 font-12 ct-brand mb-xs">'+escapeHtml(k.nama)+' <span class="text-muted">#'+num+'</span></div>'
-      +ld.map(function(r,i){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);
+      +ld.map(function(r,i){const j=parseFloat(String(r.jam))||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);
         var lr=r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal);
         var lemRo=CU&&CU.role!=='Admin'&&lr;
         return '<div class="fl gap1 mb1 items-center flex-wrap">'
@@ -361,7 +361,7 @@ function renderLemburList(){
           +(lemRo?'':'<button class="btn btn-sm btn-r"'+sigajiDataAction('del-lembur',{nik:k.nik,i:i})+'>&#10007;</button>')+'</div>';
       }).join('')+'</div>';
   }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnAction:'addLemburForKar'}):'<div class="text-subtle font-12">Belum ada.</div>');
-  let tot=0;karyawan.forEach(function(k){const upj=k.gapok/173;(lembur[k.nik]||[]).forEach(function(r){const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);tot+=Math.round(h);});});
+  let tot=0;karyawan.forEach(function(k){const upj=sigajiRp(k.gapok)/173;(lembur[k.nik]||[]).forEach(function(r){const j=parseFloat(String(r.jam))||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);tot+=Math.round(h);});});
   const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128200;',title:'Rekap kosong',desc:'Total lembur muncul setelah ada input jam.'}):'<div class="text-subtle font-12">Belum ada.</div>');
 }
 function updLembur(nik,i,f,v){
@@ -402,14 +402,14 @@ function hapusLemburBulan(){
   });
 }
 // ── HARI LIBUR ───────────────────────────────────
-function initLibnasYearSelect(){var el=document.getElementById('libnas-yr');if(!el)return;var thn=new Date().getFullYear();el.innerHTML='';for(var y=thn+1;y>=2017;y--){var opt=document.createElement('option');opt.value=y;opt.textContent=y;if(y===thn)opt.selected=true;el.appendChild(opt);}}
+function initLibnasYearSelect(){var el=document.getElementById('libnas-yr');if(!el)return;var thn=new Date().getFullYear();el.innerHTML='';for(var y=thn+1;y>=2017;y--){var opt=document.createElement('option');opt.value=String(y);opt.textContent=String(y);if(y===thn)opt.selected=true;el.appendChild(opt);}}
 function renderHariLibur(){
   var el=document.getElementById('libur-list');if(!el)return;
   var s=[].concat(hariLibur).sort(function(a,b){return a.tgl.localeCompare(b.tgl);});
   var tc={nasional:'b-err','cuti-bersama':'b-pu',perusahaan:'b-info'};var tn={nasional:'Nasional','cuti-bersama':'Cuti Bersama',perusahaan:'Perusahaan'};
   if(!s.length){el.innerHTML='<div class="text-muted font-12" style="padding:.5rem">Belum ada.</div>';return;}
   var grouped={};s.forEach(function(l){var yr=l.tgl.substring(0,4);if(!grouped[yr])grouped[yr]=[];grouped[yr].push(l);});
-  el.innerHTML=Object.entries(grouped).sort(function(a,b){return b[0]-a[0];}).map(function(kv){
+  el.innerHTML=Object.entries(grouped).sort(function(a,b){return Number(b[0])-Number(a[0]);}).map(function(kv){
     return '<div class="tabs-spaced-lg"><div class="font-11 fw-700 text-muted border-bottom-muted" style="padding:4px 0; margin-bottom:.4rem">'+kv[0]+' — '+kv[1].length+' hari</div>'
       +kv[1].map(function(l){
         return '<div class="libur-item"><div><strong>'+l.nama+'</strong>'+(l.tipe==='cuti-bersama'&&masterCuti.cbPotong?'<span class="font-9 ct-purple" style="margin-left:4px">-1 kuota</span>':'')+'<br><span class="u-muted-10">'+l.tgl+'</span></div><div class="fl gap1"><span class="bdg '+(tc[l.tipe]||'b-gray')+'">'+(tn[l.tipe]||l.tipe)+'</span><button class="btn btn-sm btn-r"'+sigajiDataAction('hapus-libur',{tgl:l.tgl})+'>&#10007;</button></div></div>';

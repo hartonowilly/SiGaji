@@ -31,24 +31,24 @@
     var sisaAuto=sisaCutiOtomatis(k.nik,k.tgl_berhenti);
     var sisaCuti=sisaAuto;
     if(phk.sisa_cuti_hari!==undefined&&phk.sisa_cuti_hari!==null&&String(phk.sisa_cuti_hari).trim()!==''){
-      sisaCuti=Math.max(0,parseFloat(phk.sisa_cuti_hari)||0);
+      sisaCuti=Math.max(0,parseFloat(String(phk.sisa_cuti_hari))||0);
     }
     var uphCuti=Math.round(dasar/25*Math.max(0,sisaCuti));
     var upAuto=0,upmkAuto=0;
     if(opt.manual){
-      upAuto=Math.round(parseFloat(phk.up_manual)||0);
-      upmkAuto=Math.round(parseFloat(phk.upmk_manual)||0);
+      upAuto=Math.round(sigajiRp(phk.up_manual)||0);
+      upmkAuto=Math.round(sigajiRp(phk.upmk_manual)||0);
     }else if(opt.f===0||opt.uphOnly){
       upAuto=0;upmkAuto=0;
     }else if(opt.f!=null){
       upAuto=Math.round(bUp*dasar*opt.f);
       upmkAuto=Math.round(bUpmk*dasar*opt.f);
     }
-    var up=(phk.up_manual!==undefined&&phk.up_manual!==null&&String(phk.up_manual).trim()!=='')?Math.round(parseFloat(phk.up_manual)):upAuto;
-    var upmk=(phk.upmk_manual!==undefined&&phk.upmk_manual!==null&&String(phk.upmk_manual).trim()!=='')?Math.round(parseFloat(phk.upmk_manual)):upmkAuto;
-    var uph=(phk.uph_manual!==undefined&&phk.uph_manual!==null&&String(phk.uph_manual).trim()!=='')?Math.round(parseFloat(phk.uph_manual)):uphCuti;
-    uph+=Math.round(parseFloat(phk.uph_tambahan)||0);
-    var pisah=Math.round(parseFloat(phk.pisah)||0);
+    var up=(phk.up_manual!==undefined&&phk.up_manual!==null&&String(phk.up_manual).trim()!=='')?Math.round(sigajiRp(phk.up_manual)):upAuto;
+    var upmk=(phk.upmk_manual!==undefined&&phk.upmk_manual!==null&&String(phk.upmk_manual).trim()!=='')?Math.round(sigajiRp(phk.upmk_manual)):upmkAuto;
+    var uph=(phk.uph_manual!==undefined&&phk.uph_manual!==null&&String(phk.uph_manual).trim()!=='')?Math.round(sigajiRp(phk.uph_manual)):uphCuti;
+    uph+=Math.round(sigajiRp(phk.uph_tambahan)||0);
+    var pisah=Math.round(sigajiRp(phk.pisah)||0);
     var total=up+upmk+uph+pisah;
     return{
       ok:true,dasar:dasar,mk:mk,bUp:bUp,bUpmk:bUpmk,up:up,upmk:upmk,uph:uph,pisah:pisah,total:total,

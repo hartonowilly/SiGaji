@@ -105,7 +105,7 @@ function refreshTunjVarTotals() {
     var r = tunjVarBulan[pn][k.nik] || {};
     var sum = 0;
     cols.forEach(function (c) {
-      var v = parseFloat(r[c.id]);
+      var v = sigajiRp(r[c.id]);
       if (isNaN(v)) v = 0;
       Lsum[c.id] += v;
       sum += v;
@@ -185,7 +185,7 @@ function exportTunjVarExcelTemplate() {
       var r = (tunjVarBulan[pn] || {})[k.nik] || {};
       var row = [k.nik, k.nama];
       cols.forEach(function (c) {
-        var v = parseFloat(r[c.id]);
+        var v = sigajiRp(r[c.id]);
         row.push(isNaN(v) ? 0 : v);
       });
       aoa.push(row);
@@ -347,7 +347,7 @@ function renderTunjVariabelBulan() {
     var nikA = escNik(k.nik);
     var tds = cols
       .map(function (c) {
-        var v = parseFloat(r[c.id]);
+        var v = sigajiRp(r[c.id]);
         if (isNaN(v)) v = 0;
         sum += v;
         var idEsc = String(c.id).replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
