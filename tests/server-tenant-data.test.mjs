@@ -24,6 +24,8 @@ const {
   cabangScope,
   filterKaryawanByScope,
   assertHq,
+  locationVisible,
+  filterLocationsByScope,
 } = await import(pathToFileURL(tmp).href);
 fs.unlinkSync(tmp);
 
@@ -248,6 +250,19 @@ function fakeSb(tables) {
     thrown = true;
   }
   assert('HRD cabang ditolak untuk fitur kantor pusat', thrown);
+  const locs = [
+    { id: 1, nama: 'A', cabang_id: 'c1' },
+    { id: 2, nama: 'B', cabang_id: 'c9' },
+    { id: 3, nama: 'Bersama', cabang_id: '' },
+  ];
+  assert('lokasi bersama terlihat HRD cabang', locationVisible(locs[2], sc) === true);
+  assert('lokasi cabang lain tersembunyi', locationVisible(locs[1], sc) === false);
+  assert(
+    'daftar lokasi HRD cabang = cabangnya + bersama',
+    filterLocationsByScope(locs, sc)
+      .map((l) => l.nama)
+      .join() === 'A,Bersama'
+  );
 }
 
 console.log('\nSemua tes data tenant server lulus.');

@@ -183,21 +183,158 @@
   }
 
   async function loadAccess(sb) {
-    access = { hq: true, cabang: '' };
+    access = { hq: true, cabang: '', role: '', nik: '', email: '', username: '' };
     var s = await sb.auth.getSession();
     var uid = s && s.data && s.data.session && s.data.session.user ? s.data.session.user.id : '';
     if (!uid) return access;
     var r = await sb
       .from('sigaji_user_roles')
-      .select('role,cabang_id')
+      .select('role,cabang_id,nik,email,username')
       .eq('tenant_key', TK)
       .eq('auth_uid', uid)
       .maybeSingle();
     if (!r.error && r.data) {
       var cab = String(r.data.cabang_id || '').trim();
-      access = { hq: r.data.role === 'Admin' || !cab, cabang: r.data.role === 'Admin' ? '' : cab };
+      access = {
+        hq: r.data.role === 'Admin' || !cab,
+        cabang: r.data.role === 'Admin' ? '' : cab,
+        role: r.data.role || '',
+        nik: String(r.data.nik || '').trim(),
+        email: String(r.data.email || '').trim(),
+        username: String(r.data.username || '').trim(),
+      };
     }
     return access;
+  }
+
+  var BRANCH_MERGE_STORE = { approvals: true, auditLog: true };
+
+  function branchNikSet(payload) {
+    var niks = Object.create(null);
+    ((payload && payload.karyawan) || []).forEach(function (k) {
+      if (k && k.nik) niks[String(k.nik)] = true;
+    });
+    return niks;
+  }
+
+  function karCabangId(k) {
+    var id = String((k && (k.cabangId || k.cabang)) || '').trim();
+    return id || 'utama';
+  }
+
+  function branchCabSet(acc) {
+    var cabs = Object.create(null);
+    String((acc && acc.cabang) || '')
+      .split(',')
+      .forEach(function (s) {
+        s = String(s || '').trim();
+        if (s) cabs[s] = true;
+      });
+    return cabs;
+  }
+
+  function selfUserFromAccess(acc) {
+    acc = acc || access;
+    if (!acc.username && !acc.email) return null;
+    return {
+      username: acc.username || (acc.email && acc.email.split('@')[0]) || 'hrd',
+      email: acc.email,
+      nama: acc.username || acc.email || 'HRD',
+      role: acc.role || 'HRD',
+      nik: acc.nik || null,
+      cabangId: acc.cabang || '',
+      aktif: true,
+    };
+  }
+
+  function userVisibleToBranch(u, niks, acc) {
+    acc = acc || access;
+    if (!u) return false;
+    if (acc.username && u.username === acc.username) return true;
+    if (acc.email && u.email && String(u.email).toLowerCase() === acc.email.toLowerCase()) return true;
+    var cabs = branchCabSet(acc);
+    if (Object.keys(cabs).length && cabs[String(u.cabangId || '').trim()]) return true;
+    if (u.nik && niks[String(u.nik)]) return true;
+    return false;
+  }
+
+  /** HRD cabang: buang user/persetujuan/jejak audit cabang lain dari memori (dan dari yang dikirim ke UI). */
+  function scopePayloadForBranch(payload, acc) {
+    acc = acc || access;
+    if (!payload || acc.hq) return payload;
+    var cabs = branchCabSet(acc);
+    if (Object.keys(cabs).length && Array.isArray(payload.karyawan)) {
+      payload.karyawan = payload.karyawan.filter(function (k) {
+        return k && cabs[karCabangId(k)];
+      });
+    }
+    var niks = branchNikSet(payload);
+    if (Array.isArray(payload.approvals)) {
+      payload.approvals = payload.approvals.filter(function (a) {
+        return a && niks[String(a.nik)];
+      });
+    }
+    if (Array.isArray(payload.auditLog)) {
+      payload.auditLog = payload.auditLog.filter(function (e) {
+        return e && (!e.nik || niks[String(e.nik)]);
+      });
+    }
+    var users = Array.isArray(payload.users)
+      ? payload.users.filter(function (u) {
+          return userVisibleToBranch(u, niks, acc);
+        })
+      : [];
+    var self = selfUserFromAccess(acc);
+    if (
+      self &&
+      !users.some(function (u) {
+        return (
+          (self.email && u.email && String(u.email).toLowerCase() === self.email.toLowerCase()) ||
+          (self.username && u.username === self.username)
+        );
+      })
+    ) {
+      users.unshift(self);
+    }
+    payload.users = users;
+    return payload;
+  }
+
+  function scopeStoreData(storeKey, data) {
+    if (access.hq || !data) return data;
+    var mem = liveMemory();
+    var niks = branchNikSet(mem || {});
+    if (storeKey === 'approvals' && Array.isArray(data)) {
+      return data.filter(function (a) {
+        return a && niks[String(a.nik)];
+      });
+    }
+    if (storeKey === 'auditLog' && Array.isArray(data)) {
+      return data.filter(function (e) {
+        return e && (!e.nik || niks[String(e.nik)]);
+      });
+    }
+    if (storeKey === 'users' && Array.isArray(data)) {
+      return data.filter(function (u) {
+        return userVisibleToBranch(u, niks);
+      });
+    }
+    return data;
+  }
+
+  async function mergeBranchStoreArray(sb, storeKey, localArr) {
+    var mem = liveMemory();
+    var niks = branchNikSet(mem || {});
+    var cur = await sb.from('sigaji_store').select('data').eq('tenant_key', TK).eq('store_key', storeKey).maybeSingle();
+    if (cur.error) throw cur.error;
+    var server = Array.isArray(cur.data && cur.data.data) ? cur.data.data : [];
+    var kept = server.filter(function (a) {
+      return !a || !niks[String(a.nik)];
+    });
+    var mine = (Array.isArray(localArr) ? localArr : []).filter(function (a) {
+      return a && niks[String(a.nik)];
+    });
+    return kept.concat(mine);
   }
 
   /** Jam server (dasar tarik perubahan berikutnya). */
@@ -372,6 +509,8 @@
 
     incoming.forEach(function (x) {
       var e = x.e;
+      if (e.t === 'K' && !access.hq && e.data && !branchCabSet(access)[karCabangId(e.data)]) return;
+      if (e.t === 'S' && e.key) e.data = scopeStoreData(e.key.store_key, e.data);
       if (e.t === 'T' && !e.data) {
         var bz = base.get(e.id);
         var lz = local[e.id];
@@ -971,6 +1110,28 @@
       bentoLayouts: store.bentoLayouts || {},
       cabang: Array.isArray(store.cabang) ? store.cabang : [],
     };
+    scopePayloadForBranch(payload);
+    if (!access.hq) {
+      var niksKeep = branchNikSet(payload);
+      loaded = loaded.filter(function (x) {
+        if (x.e.t === 'K') return !!(x.e.key && niksKeep[x.e.key.nik]);
+        return !(
+          x.e.t === 'S' &&
+          x.e.key &&
+          (x.e.key.store_key === 'users' || x.e.key.store_key === 'approvals' || x.e.key.store_key === 'auditLog')
+        );
+      });
+      ['users', 'approvals', 'auditLog'].forEach(function (k) {
+        var row = storeRows.filter(function (s) {
+          return s.store_key === k;
+        })[0];
+        rememberLoaded(loaded, 'S', {
+          store_key: k,
+          data: payload[k],
+          version: row && row.version,
+        });
+      });
+    }
     loadedEntities = loaded;
     return payload;
   }
@@ -1289,11 +1450,17 @@
         b.dels.forEach(function (d) {
           delById[d.id] = d;
         });
+        var rpcUps = [];
+        for (var ui = 0; ui < b.ups.length; ui++) {
+          var ru = rpcRow(t, b.ups[ui]);
+          if (t === 'S' && !access.hq && BRANCH_MERGE_STORE[ru.key.store_key] && Array.isArray(ru.data)) {
+            ru.data = await mergeBranchStoreArray(sb, ru.key.store_key, ru.data);
+          }
+          rpcUps.push(ru);
+        }
         var r = await sb.rpc('sigaji_save_rows', {
           p_table: RPC_TABLE[t],
-          p_upserts: b.ups.map(function (u) {
-            return rpcRow(t, u);
-          }),
+          p_upserts: rpcUps,
           p_deletes: b.dels.map(function (d) {
             return { key: d.base.key, base_version: d.base.v };
           }),
@@ -1872,8 +2039,16 @@
     },
     /** Hak tulis sesi ini (v12): { hq: Admin/HRD pusat, cabang: id cabang HRD }. */
     getAccess: function () {
-      return { hq: access.hq, cabang: access.cabang };
+      return {
+        hq: access.hq,
+        cabang: access.cabang,
+        role: access.role,
+        nik: access.nik,
+        email: access.email,
+        username: access.username,
+      };
     },
+    scopePayloadForBranch: scopePayloadForBranch,
     archivePlan: archivePlan,
     archiveReady: archiveReady,
     archiveDateReady: archiveDateReady,

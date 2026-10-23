@@ -14,6 +14,7 @@ import {
   syncAlphaFromMobileAttendance,
   workDateJakarta,
 } from '../_lib/mobile-shared.js';
+import { cabangScope, filterKaryawanByScope, assertHq } from '../_lib/tenant-data.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -71,9 +72,10 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse(200, { ok: true, dates, count: dates.length }, request);
     }
 
-    await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const hrd = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
 
     if (action === 'import_libnas') {
+      assertHq(hrd.me);
       const year = parseInt(body.year, 10) || new Date().getFullYear();
       const fetched = await fetchLibnasFromApi(year);
       if (!fetched.length) {
@@ -126,7 +128,10 @@ export async function onRequestPost({ request, env }) {
         return jsonResponse(400, { ok: false, error: 'date_from wajib' }, request);
       }
       const payload = await loadCloudPayload(sb, tenant);
-      const result = await syncAlphaFromMobileAttendance(sb, tenant, payload, dateFrom, dateTo);
+      const scoped = Object.assign({}, payload, {
+        karyawan: filterKaryawanByScope(payload.karyawan, cabangScope(hrd.me)),
+      });
+      const result = await syncAlphaFromMobileAttendance(sb, tenant, scoped, dateFrom, dateTo);
       return jsonResponse(
         200,
         {

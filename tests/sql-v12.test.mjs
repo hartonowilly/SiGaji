@@ -32,6 +32,7 @@ function assert(name, cond, extra) {
 const sqlV11 = readFileSync(join(root, 'sql/supabase_sigaji_tables_v11.sql'), 'utf8');
 const sqlRoles = readFileSync(join(root, 'sql/supabase_sigaji_user_roles_rls.sql'), 'utf8');
 const sqlV12 = readFileSync(join(root, 'sql/supabase_sigaji_v12_versi_cabang.sql'), 'utf8');
+const sqlKetat = readFileSync(join(root, 'sql/supabase_sigaji_v12_cabang_ketat.sql'), 'utf8');
 
 const UID = {
   admin: '00000000-0000-0000-0000-00000000000a',
@@ -151,6 +152,9 @@ await db.exec(sqlRoles);
 await db.exec(sqlV12);
 await db.exec(sqlV12);
 assert('SQL v12 bisa dijalankan dua kali', true);
+await db.exec(sqlKetat);
+await db.exec(sqlKetat);
+assert('SQL cabang ketat bisa dijalankan dua kali', true);
 
 {
   const r = await rows(db, `select username, role, cabang_id, aktif from public.sigaji_user_roles where tenant_key='main' order by username`);
@@ -188,7 +192,7 @@ await as(db, 'hrdC2', async () => {
   const tv = await rows(db, `select nik from public.sigaji_tunj_var_nilai`);
   assert('HRD cabang: tunjangan hanya cabangnya', tv.map((x) => x.nik).join() === 'K1');
   const s = await rows(db, `select store_key from public.sigaji_store order by store_key`);
-  assert('HRD cabang: dokumen absensi lama di store tidak terbaca', !s.some((x) => x.store_key === 'absensi') && s.some((x) => x.store_key === 'users'), s);
+  assert('HRD cabang: daftar user tidak terbaca (bocoran ditutup)', !s.some((x) => x.store_key === 'users') && s.some((x) => x.store_key === 'approvals'), s);
   assert('HRD cabang: tidak bisa ubah profil perusahaan', (await rows(db, `update public.sigaji_store set data='{"nama":"X"}' where store_key='perusahaan' returning 1`)).length === 0);
   assert('HRD cabang: boleh simpan persetujuan', (await rows(db, `update public.sigaji_store set data='[{"id":1}]' where store_key='approvals' returning 1`)).length === 1);
   assert('HRD cabang: tidak bisa ubah periode', (await rows(db, `update public.sigaji_periode set data='{}' returning 1`)).length === 0);
@@ -295,6 +299,44 @@ await as(db, 'hrdPusat', async () => {
   await as(db, 'pt3', async () => {
     const k = await rows(db, `select nik from public.sigaji_karyawan`);
     assert('tenant baru: Admin pertama terdaftar & hanya melihat tenantnya', k.map((x) => x.nik).join() === 'Z1', k);
+  });
+}
+
+{
+  await db.exec(`update public.sigaji_user_roles set cabang_id = 'c2', aktif = true where username = 'hrdc2'`);
+  await db.exec(`
+    create table if not exists public.sigaji_work_locations (
+      id uuid primary key,
+      tenant_key text not null,
+      nama text not null,
+      lat double precision not null default 0,
+      lon double precision not null default 0,
+      radius_m int not null default 200,
+      cabang_id text
+    );
+    alter table public.sigaji_work_locations enable row level security;
+    grant select, insert, update, delete on public.sigaji_work_locations to authenticated;
+    insert into public.sigaji_work_locations (id, tenant_key, nama, cabang_id) values
+      ('00000000-0000-0000-0000-0000000000a1', 'main', 'Site A', 'c2'),
+      ('00000000-0000-0000-0000-0000000000b1', 'main', 'Site B', 'c9'),
+      ('00000000-0000-0000-0000-0000000000c1', 'main', 'Kantor bersama', null);
+  `);
+  await db.exec(sqlKetat);
+  await as(db, 'hrdC2', async () => {
+    const loc = await rows(db, `select nama from public.sigaji_work_locations order by nama`);
+    assert(
+      'HRD cabang: lokasi hanya cabangnya + bersama',
+      loc.map((x) => x.nama).join() === 'Kantor bersama,Site A',
+      loc
+    );
+    assert(
+      'HRD cabang: tidak bisa tulis lokasi cabang lain',
+      (await rows(db, `update public.sigaji_work_locations set nama='X' where nama='Site B' returning 1`)).length === 0
+    );
+  });
+  await as(db, 'admin', async () => {
+    const loc = await rows(db, `select nama from public.sigaji_work_locations`);
+    assert('Admin: semua lokasi kerja', loc.length === 3, loc);
   });
 }
 

@@ -384,7 +384,22 @@
         return x.aktif !== false && String(x.auth_uid || '') === uid;
       });
     }
-    return matched ? Object.assign({}, matched) : null;
+    if (matched) return Object.assign({}, matched);
+    var ct = window.sigajiCloudTables;
+    var acc = ct && typeof ct.getAccess === 'function' ? ct.getAccess() : null;
+    if (acc && acc.role && !acc.hq) {
+      return {
+        username: acc.username || em.split('@')[0] || 'hrd',
+        email: em,
+        nama: acc.username || em,
+        role: acc.role,
+        nik: acc.nik || null,
+        cabangId: acc.cabang || '',
+        aktif: true,
+        auth_uid: uid,
+      };
+    }
+    return null;
   }
 
   /**

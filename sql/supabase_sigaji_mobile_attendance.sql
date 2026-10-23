@@ -19,9 +19,12 @@ create table if not exists public.sigaji_work_locations (
     check (tipe in ('kantor', 'site', 'dinas', 'mess', 'lainnya')),
   aktif boolean not null default true,
   catatan text,
+  cabang_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.sigaji_work_locations add column if not exists cabang_id text;
 
 create index if not exists sigaji_work_locations_tenant_idx
   on public.sigaji_work_locations (tenant_key, aktif);

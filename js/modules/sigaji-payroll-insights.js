@@ -422,6 +422,14 @@
         escapeHtml(namaKar) +
         '</strong>' +
         (detail ? ' — ' + escapeHtml(detail) : '');
+    } else if (action === 'Ubah Absensi') {
+      line =
+        '<strong>' +
+        escapeHtml(e.by || '-') +
+        '</strong> mengubah absensi <strong>' +
+        escapeHtml(namaKar) +
+        '</strong> — ' +
+        escapeHtml(detail);
     } else if (action.indexOf('PPh Return') >= 0) {
       line =
         '<strong>' +

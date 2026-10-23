@@ -8,7 +8,15 @@ import {
   assertCallerIsHrdOrAdminMobile,
   parseDateOnly,
   workDateJakarta,
+  loadCloudPayload,
 } from '../_lib/mobile-shared.js';
+import {
+  cabangScope,
+  filterKaryawanByScope,
+  assertNikInScope,
+  locationVisible,
+  filterLocationsByScope,
+} from '../_lib/tenant-data.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -20,12 +28,16 @@ export async function onRequestGet({ request, env }) {
     const sb = createSbAdmin(env);
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const ctx = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const scope = cabangScope(ctx.me);
 
     const url = new URL(request.url);
     const kind = url.searchParams.get('kind') || 'locations';
 
     if (kind === 'assignments') {
+      if (url.searchParams.get('nik')) {
+        await assertNikInScope(sb, tenant, ctx.me, url.searchParams.get('nik'));
+      }
       const nik = url.searchParams.get('nik') || '';
       let q = sb
         .from('sigaji_location_assignments')
@@ -38,17 +50,23 @@ export async function onRequestGet({ request, env }) {
       if (aErr) throw aErr;
       const { data: locs, error: lErr } = await sb
         .from('sigaji_work_locations')
-        .select('id,nama,lat,lon,radius_m,tipe')
+        .select('id,nama,lat,lon,radius_m,tipe,cabang_id')
         .eq('tenant_key', tenant);
       if (lErr) throw lErr;
       const locMap = {};
-      (locs || []).forEach((l) => {
+      filterLocationsByScope(locs || [], scope).forEach((l) => {
         if (l && l.id) locMap[l.id] = l;
       });
-      const items = (assigns || []).map((a) => ({
-        ...a,
-        sigaji_work_locations: locMap[a.location_id] || null,
-      }));
+      const payload = await loadCloudPayload(sb, tenant);
+      const allowedNik = new Set(
+        filterKaryawanByScope(payload.karyawan, scope).map((k) => String(k.nik))
+      );
+      const items = (assigns || [])
+        .filter((a) => a && allowedNik.has(String(a.nik)) && locMap[a.location_id])
+        .map((a) => ({
+          ...a,
+          sigaji_work_locations: locMap[a.location_id] || null,
+        }));
       return jsonResponse(200, { ok: true, items }, request);
     }
 
@@ -58,7 +76,7 @@ export async function onRequestGet({ request, env }) {
       .eq('tenant_key', tenant)
       .order('nama');
     if (error) throw error;
-    return jsonResponse(200, { ok: true, items: data || [] }, request);
+    return jsonResponse(200, { ok: true, items: filterLocationsByScope(data || [], scope) }, request);
   } catch (e) {
     return errResp(e, request);
   }
@@ -71,11 +89,18 @@ export async function onRequestPost({ request, env }) {
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     const ctx = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const scope = cabangScope(ctx.me);
     const body = await request.json().catch(() => ({}));
     const action = String(body.action || '').trim();
 
     if (action === 'save_location') {
       const id = body.id || null;
+      const requestedCab = String(body.cabang_id || '').trim();
+      if (scope) {
+        if (requestedCab && !scope.has(requestedCab)) {
+          throw new Error('Forbidden — lokasi cabang lain');
+        }
+      }
       const row = {
         tenant_key: tenant,
         code: String(body.code || '').trim() || null,
@@ -86,12 +111,23 @@ export async function onRequestPost({ request, env }) {
         tipe: String(body.tipe || 'site').trim(),
         aktif: body.aktif !== false,
         catatan: String(body.catatan || '').trim() || null,
+        cabang_id: scope ? requestedCab || [...scope][0] : requestedCab || null,
         updated_at: new Date().toISOString(),
       };
       if (!row.nama || !Number.isFinite(row.lat) || !Number.isFinite(row.lon)) {
         return jsonResponse(400, { ok: false, error: 'nama, lat, lon wajib' }, request);
       }
       if (id) {
+        const { data: cur, error: curErr } = await sb
+          .from('sigaji_work_locations')
+          .select('*')
+          .eq('tenant_key', tenant)
+          .eq('id', id)
+          .maybeSingle();
+        if (curErr) throw curErr;
+        if (!cur || !locationVisible(cur, scope) || (scope && String(cur.cabang_id || '').trim() === '')) {
+          throw new Error('Forbidden — lokasi di luar cabang Anda');
+        }
         const { data, error } = await sb
           .from('sigaji_work_locations')
           .update(row)
@@ -114,6 +150,16 @@ export async function onRequestPost({ request, env }) {
     if (action === 'delete_location') {
       const id = String(body.id || '').trim();
       if (!id) return jsonResponse(400, { ok: false, error: 'id wajib' }, request);
+      const { data: cur, error: curErr } = await sb
+        .from('sigaji_work_locations')
+        .select('*')
+        .eq('tenant_key', tenant)
+        .eq('id', id)
+        .maybeSingle();
+      if (curErr) throw curErr;
+      if (!cur || !locationVisible(cur, scope) || (scope && String(cur.cabang_id || '').trim() === '')) {
+        throw new Error('Forbidden — lokasi di luar cabang Anda');
+      }
       const today = workDateJakarta();
       const { data: assigns, error: assignErr } = await sb
         .from('sigaji_location_assignments')
@@ -170,6 +216,17 @@ export async function onRequestPost({ request, env }) {
       if (dateTo < dateFrom) {
         return jsonResponse(400, { ok: false, error: 'Tanggal akhir harus >= tanggal mulai' }, request);
       }
+      await assertNikInScope(sb, tenant, ctx.me, nik);
+      const { data: loc, error: locErr } = await sb
+        .from('sigaji_work_locations')
+        .select('id,cabang_id')
+        .eq('tenant_key', tenant)
+        .eq('id', locationId)
+        .maybeSingle();
+      if (locErr) throw locErr;
+      if (!loc || !locationVisible(loc, scope)) {
+        throw new Error('Forbidden — lokasi di luar cabang Anda');
+      }
       const row = {
         tenant_key: tenant,
         nik,
@@ -204,6 +261,15 @@ export async function onRequestPost({ request, env }) {
     if (action === 'delete_assignment') {
       const id = String(body.id || '').trim();
       if (!id) return jsonResponse(400, { ok: false, error: 'id wajib' }, request);
+      const { data: cur, error: curErr } = await sb
+        .from('sigaji_location_assignments')
+        .select('id,nik')
+        .eq('tenant_key', tenant)
+        .eq('id', id)
+        .maybeSingle();
+      if (curErr) throw curErr;
+      if (!cur) return jsonResponse(404, { ok: false, error: 'penugasan tidak ditemukan' }, request);
+      await assertNikInScope(sb, tenant, ctx.me, cur.nik);
       const { error } = await sb
         .from('sigaji_location_assignments')
         .delete()
@@ -221,6 +287,9 @@ export async function onRequestPost({ request, env }) {
 
 function errResp(e, request) {
   const msg = e.message || String(e);
+  if (/Forbidden|Invalid auth/i.test(msg)) {
+    return jsonResponse(403, { ok: false, error: msg }, request);
+  }
   if (/violates foreign key|foreign key constraint|still referenced/i.test(msg)) {
     return jsonResponse(
       409,
