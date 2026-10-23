@@ -6,7 +6,7 @@ import {
   handleOptions,
   assertCallerIsHrdOrAdmin,
 } from '../_lib/cf-shared.js';
-import { updateUsersList } from '../_lib/tenant-data.js';
+import { updateUsersList, assertHq } from '../_lib/tenant-data.js';
 
 function sanitizeNama(nama, fallbackEmail) {
   const t = String(nama || '').trim();
@@ -26,6 +26,11 @@ export async function onRequestPost({ request, env }) {
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     const caller = await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
+    try {
+      assertHq(caller.me);
+    } catch (eHq) {
+      return jsonResponse(403, { ok: false, error: eHq.message }, request);
+    }
 
     const body = await request.json().catch(() => ({}));
     const id = String(body.id || '').trim();
@@ -147,6 +152,23 @@ export async function onRequestPost({ request, env }) {
         });
       } catch (e) {
         inviteMsg = `${inviteMsg}; auth_uid save: ${e.message || e}`;
+      }
+      // Peta akun → role untuk RLS (tabel ada setelah SQL user roles / v12).
+      const { error: rerr } = await sb.from('sigaji_user_roles').upsert(
+        {
+          tenant_key: tenant,
+          auth_uid: inviteAuthUserId,
+          role: 'Karyawan',
+          nik: req.nik || null,
+          email: emailLower,
+          username: emailLower.split('@')[0],
+          aktif: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'tenant_key,auth_uid', ignoreDuplicates: true }
+      );
+      if (rerr && !/does not exist|PGRST205|42P01/i.test(String(rerr.message || '') + String(rerr.code || ''))) {
+        inviteMsg = `${inviteMsg}; role map: ${rerr.message || rerr}`;
       }
     }
 

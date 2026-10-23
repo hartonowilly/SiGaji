@@ -6,8 +6,58 @@
 
 const SNAP = Symbol('sigajiTenantSnapshot');
 const STORE_KEYS_READ = ['perusahaan', 'masterCuti', 'hariLibur', 'users', 'absensi'];
+const PAGE = 1000;
 
 let tablesCache = { tenant: '', ok: null, at: 0 };
+let itemsCache = { tenant: '', ok: null, at: 0 };
+
+/** SQL v12 sudah dijalankan: absensi per baris di sigaji_item (bukan dokumen store). */
+export async function itemsReady(sb, tenant) {
+  const now = Date.now();
+  if (itemsCache.tenant === tenant && itemsCache.ok != null && now - itemsCache.at < 60000) {
+    return itemsCache.ok;
+  }
+  const { error } = await sb.from('sigaji_item').select('kind').eq('tenant_key', tenant).limit(1);
+  const ok = !error;
+  itemsCache = { tenant, ok, at: now };
+  return ok;
+}
+
+/** Semua baris (PostgREST membatasi jumlah baris per respons). */
+async function fetchAll(build) {
+  const out = [];
+  for (let from = 0; ; ) {
+    const { data, error } = await build().range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = data || [];
+    out.push(...rows);
+    if (!rows.length) return out;
+    from += rows.length;
+  }
+}
+
+function monthOf(date) {
+  const m = /^(\d{4}-\d{2})/.exec(String(date));
+  return m ? m[1] : 'lain';
+}
+
+async function loadAbsensiItems(sb, tenant, nik) {
+  const rows = await fetchAll(() => {
+    let q = sb
+      .from('sigaji_item')
+      .select('item_key,nik,data')
+      .eq('tenant_key', tenant)
+      .eq('kind', 'absensi');
+    if (nik) q = q.eq('nik', nik);
+    return q.order('item_key');
+  });
+  const out = {};
+  rows.forEach((r) => {
+    if (!r.nik || !r.data || typeof r.data !== 'object') return;
+    out[r.nik] = Object.assign(out[r.nik] || {}, r.data);
+  });
+  return out;
+}
 
 export async function tablesReady(sb, tenant) {
   const now = Date.now();
@@ -80,30 +130,28 @@ export async function loadCloudPayload(sb, tenant) {
     const blob = await loadBlob(sb, tenant);
     return blob;
   }
-  const [kar, per, store] = await Promise.all([
-    sb.from('sigaji_karyawan').select('nik,data').eq('tenant_key', tenant),
-    sb.from('sigaji_periode').select('nama,data').eq('tenant_key', tenant),
-    sb
-      .from('sigaji_store')
-      .select('store_key,data')
-      .eq('tenant_key', tenant)
-      .in('store_key', STORE_KEYS_READ),
+  const useItems = await itemsReady(sb, tenant);
+  const storeKeys = useItems ? STORE_KEYS_READ.filter((k) => k !== 'absensi') : STORE_KEYS_READ;
+  const [kar, per, store, itemAbs] = await Promise.all([
+    fetchAll(() => sb.from('sigaji_karyawan').select('nik,data').eq('tenant_key', tenant).order('nik')),
+    fetchAll(() => sb.from('sigaji_periode').select('nama,data').eq('tenant_key', tenant).order('nama')),
+    sb.from('sigaji_store').select('store_key,data').eq('tenant_key', tenant).in('store_key', storeKeys),
+    useItems ? loadAbsensiItems(sb, tenant) : Promise.resolve(null),
   ]);
-  if (kar.error) throw kar.error;
-  if (per.error) throw per.error;
   if (store.error) throw store.error;
   const st = {};
   (store.data || []).forEach((r) => {
     st[r.store_key] = r.data;
   });
+  const absensi = itemAbs || (st.absensi && typeof st.absensi === 'object' ? st.absensi : {});
   const payload = {
-    karyawan: (kar.data || []).map((r) => Object.assign({ nik: r.nik }, r.data || {})),
-    periodes: (per.data || []).map((r) => Object.assign({ nama: r.nama }, r.data || {})),
+    karyawan: kar.map((r) => Object.assign({ nik: r.nik }, r.data || {})),
+    periodes: per.map((r) => Object.assign({ nama: r.nama }, r.data || {})),
     perusahaan: st.perusahaan || {},
     masterCuti: st.masterCuti || {},
     hariLibur: Array.isArray(st.hariLibur) ? st.hariLibur : [],
     users: Array.isArray(st.users) ? st.users : [],
-    absensi: st.absensi && typeof st.absensi === 'object' ? st.absensi : {},
+    absensi,
   };
   Object.defineProperty(payload, SNAP, {
     value: { absensi: clone(payload.absensi), hariLibur: clone(payload.hariLibur) },
@@ -179,9 +227,71 @@ export function mergeHariLibur(before, after, server) {
 /** Status absensi satu karyawan pada satu tanggal (null bila kosong). */
 export async function getAbsensiStatus(sb, tenant, nik, date) {
   let absensi;
-  if (await tablesReady(sb, tenant)) absensi = await readStoreKey(sb, tenant, 'absensi', {});
-  else absensi = (await loadBlob(sb, tenant)).absensi || {};
+  if (await tablesReady(sb, tenant)) {
+    if (await itemsReady(sb, tenant)) {
+      const { data, error } = await sb
+        .from('sigaji_item')
+        .select('data')
+        .eq('tenant_key', tenant)
+        .eq('kind', 'absensi')
+        .eq('item_key', nik + '|' + monthOf(date))
+        .maybeSingle();
+      if (error) throw error;
+      return (data && data.data && data.data[date]) || null;
+    }
+    absensi = await readStoreKey(sb, tenant, 'absensi', {});
+  } else absensi = (await loadBlob(sb, tenant)).absensi || {};
   return (absensi && absensi[nik] && absensi[nik][date]) || null;
+}
+
+/**
+ * Absensi per baris (nik|bulan): baca versi, terapkan selisih, simpan hanya bila versi belum berubah
+ * (sigaji_save_rows). Bentrok dengan penyimpanan bersamaan → ulangi dengan data terbaru.
+ */
+async function saveAbsensiItems(sb, tenant, changes) {
+  const groups = new Map();
+  Object.keys(changes).forEach((nik) => {
+    Object.keys(changes[nik]).forEach((d) => {
+      const key = nik + '|' + monthOf(d);
+      if (!groups.has(key)) groups.set(key, { nik, days: {} });
+      groups.get(key).days[d] = changes[nik][d];
+    });
+  });
+  let pending = [...groups.keys()];
+  for (let round = 0; pending.length && round < 4; round++) {
+    const { data: rows, error } = await sb
+      .from('sigaji_item')
+      .select('item_key,data,version')
+      .eq('tenant_key', tenant)
+      .eq('kind', 'absensi')
+      .in('item_key', pending);
+    if (error) throw error;
+    const cur = new Map((rows || []).map((r) => [r.item_key, r]));
+    const upserts = [];
+    const deletes = [];
+    pending.forEach((key) => {
+      const g = groups.get(key);
+      const row = cur.get(key);
+      const merged = applyAbsensiChanges({ [g.nik]: Object.assign({}, (row && row.data) || {}) }, { [g.nik]: g.days });
+      const days = merged[g.nik] || {};
+      const k = { kind: 'absensi', item_key: key };
+      const base = row ? row.version : null;
+      if (Object.keys(days).length) upserts.push({ key: k, nik: g.nik, data: days, base_version: base });
+      else if (row) deletes.push({ key: k, base_version: base });
+    });
+    const { data: res, error: re } = await sb.rpc('sigaji_save_rows', {
+      p_table: 'item',
+      p_upserts: upserts,
+      p_deletes: deletes,
+      p_tenant: tenant,
+    });
+    if (re) throw re;
+    if (res && res.errors && res.errors.length) {
+      throw new Error('Simpan absensi gagal: ' + res.errors.map((e) => e.message).join('; '));
+    }
+    pending = ((res && res.conflicts) || []).map((c) => c.key.item_key);
+  }
+  if (pending.length) throw new Error('Absensi sedang diubah bersamaan — coba lagi');
 }
 
 /** Tulis perubahan absensi langsung (baca versi awan terbaru, terapkan selisih). */
@@ -193,8 +303,63 @@ export async function saveAbsensiChanges(sb, tenant, changes) {
     await updateBlob(sb, tenant, blob);
     return;
   }
+  if (await itemsReady(sb, tenant)) {
+    await saveAbsensiItems(sb, tenant, changes);
+    return;
+  }
   const cur = await readStoreKey(sb, tenant, 'absensi', {});
   await writeStoreKey(sb, tenant, 'absensi', applyAbsensiChanges(cur, changes));
+}
+
+/**
+ * Cakupan cabang pemanggil: null = kantor pusat (Admin, atau HRD tanpa cabang), selain itu Set id cabang.
+ * @param {{role?: string, cabangId?: string}|null} me baris Manajemen User
+ */
+export function cabangScope(me) {
+  if (!me || me.role === 'Admin') return null;
+  const ids = String(me.cabangId || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return ids.length ? new Set(ids) : null;
+}
+
+export function karyawanCabangId(k) {
+  const id = String((k && (k.cabangId || k.cabang)) || '').trim();
+  return id || 'utama';
+}
+
+/** Saring daftar karyawan sesuai cakupan cabang. */
+export function filterKaryawanByScope(list, scope) {
+  if (!scope) return list || [];
+  return (list || []).filter((k) => k && scope.has(karyawanCabangId(k)));
+}
+
+/** Lempar 403 bila NIK di luar cabang pemanggil. */
+export async function assertNikInScope(sb, tenant, me, nik) {
+  const scope = cabangScope(me);
+  if (!scope) return;
+  let k = null;
+  if (await tablesReady(sb, tenant)) {
+    const { data, error } = await sb
+      .from('sigaji_karyawan')
+      .select('data')
+      .eq('tenant_key', tenant)
+      .eq('nik', nik)
+      .maybeSingle();
+    if (error) throw error;
+    k = data && data.data;
+  } else {
+    k = ((await loadBlob(sb, tenant)).karyawan || []).find((x) => x && String(x.nik) === String(nik));
+  }
+  if (!k || !scope.has(karyawanCabangId(k))) {
+    throw new Error('Forbidden — karyawan di luar cabang Anda');
+  }
+}
+
+/** Hanya kantor pusat (Admin / HRD tanpa cabang). */
+export function assertHq(me) {
+  if (cabangScope(me)) throw new Error('Forbidden — hanya Admin / HRD kantor pusat');
 }
 
 async function updateBlob(sb, tenant, payload) {

@@ -5,6 +5,7 @@ import {
   handleOptions,
   assertCallerIsHrdOrAdmin,
 } from '../_lib/cf-shared.js';
+import { assertHq } from '../_lib/tenant-data.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -17,7 +18,12 @@ export async function onRequestGet({ request, env }) {
 
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
+    const caller = await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
+    try {
+      assertHq(caller.me);
+    } catch (eHq) {
+      return jsonResponse(403, { ok: false, error: eHq.message }, request);
+    }
 
     const url = new URL(request.url);
     const status = url.searchParams.get('status') || 'pending';

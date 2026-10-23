@@ -31,6 +31,8 @@ const suites = [
   'migrasi-pph-import.test.mjs',
   'sinkron-delta.test.mjs',
   'cloud-tables-delta.test.mjs',
+  'cloud-tables-v12.test.mjs',
+  'sql-v12.test.mjs',
   'server-tenant-data.test.mjs',
 ];
 let failed = 0;

@@ -58,6 +58,10 @@ function fakeSupabase(db) {
       limit() {
         return api;
       },
+      range(a, b) {
+        st.range = [a, b];
+        return api;
+      },
       async maybeSingle() {
         const r = (db[table] || []).filter(match);
         return { data: r[0] ? JSON.parse(JSON.stringify(r[0])) : null, error: null };
@@ -72,7 +76,10 @@ function fakeSupabase(db) {
         return api;
       },
       then(res, rej) {
-        const list = db[table] || (db[table] = []);
+        if (!db[table]) {
+          return Promise.resolve({ data: null, error: { message: 'relation "' + table + '" does not exist', code: '42P01' } }).then(res, rej);
+        }
+        const list = db[table];
         let out;
         if (st.op === 'upsert') {
           log.push({ table, op: 'upsert', n: st.rows.length, keys: st.rows.map((r) => r.nik || r.nama || r.store_key || r.id || r.kolom_id) });
@@ -91,7 +98,9 @@ function fakeSupabase(db) {
           out = { data: null, error: null };
         } else {
           log.push({ table, op: 'select' });
-          out = { data: JSON.parse(JSON.stringify(list.filter(match))), error: null };
+          let rows = list.filter(match);
+          if (st.range) rows = rows.slice(st.range[0], st.range[1] + 1);
+          out = { data: JSON.parse(JSON.stringify(rows)), error: null };
         }
         return Promise.resolve(out).then(res, rej);
       },
@@ -325,6 +334,18 @@ function lastWrites(sb, from) {
   const blob = { karyawan: [{ nik: 'B1' }], periodes: [{ nama: 'P1' }], users: [{ username: 'admin' }] };
   const p = await app.T.tryLoadWithTables(sb, 'uid', async () => blob);
   assert('tabel kosong → isi dari blob lalu muat dari tabel', p.karyawan.length === 1 && db.sigaji_karyawan.length === 1);
+}
+
+// ── > 1000 baris (batas respons PostgREST) termuat semua ───────────────────
+{
+  const db = seedDb();
+  for (let i = 0; i < 2500; i++) {
+    db.sigaji_tunj_var_nilai.push({ tenant_key: 'main', periode_nama: 'Okt 2026', nik: 'N' + i, kolom_id: 'v1', nilai: i + 1 });
+  }
+  const sb = fakeSupabase(db);
+  const app = makeApp();
+  const mem = await loadInto(app, sb);
+  assert('2.501 sel tunjangan termuat semua (bertahap per 1.000)', Object.keys(mem.tunjVarBulan['Okt 2026']).length === 2501);
 }
 
 console.log('\nSemua tes cloud-tables delta lulus.');

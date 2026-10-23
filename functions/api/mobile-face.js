@@ -7,7 +7,9 @@ import {
 import {
   assertCallerWithNik,
   assertCallerIsHrdOrAdminMobile,
+  loadCloudPayload,
 } from '../_lib/mobile-shared.js';
+import { cabangScope, filterKaryawanByScope, assertNikInScope } from '../_lib/tenant-data.js';
 
 const MODEL_VERSION = 'mobilefacenet_v4';
 const MIN_DIM = 128;
@@ -42,7 +44,8 @@ export async function onRequestGet({ request, env }) {
     const sb = createSbAdmin(env);
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const hrdCtx = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const scope = cabangScope(hrdCtx.me);
 
     const { data, error } = await sb
       .from('sigaji_face_enrollments')
@@ -50,8 +53,13 @@ export async function onRequestGet({ request, env }) {
       .eq('tenant_key', tenant)
       .order('updated_at', { ascending: false });
     if (error) throw error;
+    let items = data || [];
+    if (scope) {
+      const allowed = new Set(filterKaryawanByScope((await loadCloudPayload(sb, tenant)).karyawan, scope).map((k) => String(k.nik)));
+      items = items.filter((r) => allowed.has(String(r.nik)));
+    }
 
-    return jsonResponse(200, { ok: true, items: data || [] }, request);
+    return jsonResponse(200, { ok: true, items }, request);
   } catch (e) {
     const msg = e.message || String(e);
     if (/Forbidden|Invalid auth/i.test(msg)) {
@@ -84,6 +92,7 @@ export async function onRequestPost({ request, env }) {
       const hrd = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
       const nik = String(body.nik || '').trim();
       if (!nik) return jsonResponse(400, { ok: false, error: 'nik wajib' }, request);
+      await assertNikInScope(sb, tenant, hrd.me, nik);
       const { error } = await sb
         .from('sigaji_face_enrollments')
         .delete()

@@ -502,6 +502,7 @@
       return false;
     }
     if (cloudTimer && !opts.force) return false;
+    if (upsertInFlight) return false;
     var sb = window.sigajiSupabase;
     var sess = await sb.auth.getSession();
     if (!sess.data || !sess.data.session) return false;
@@ -731,6 +732,9 @@
 
   /** @param {{upserts:number,deletes:number,storeKeys:string[]}|null} res null = tabel tak tersedia/gagal */
   function shouldWriteBlob(res) {
+    // Blob berisi seluruh tenant — hanya kantor pusat yang boleh menulisnya (RLS v12).
+    var ct = window.sigajiCloudTables;
+    if (ct && typeof ct.isV12 === 'function' && ct.isV12() && !ct.getAccess().hq) return false;
     if (!res) return true;
     if (!res.upserts && !res.deletes) return false;
     for (var i = 0; i < res.storeKeys.length; i++) {
@@ -758,6 +762,21 @@
         'Tidak jadi dihapus karena baru diubah pengguna lain: ' +
           res.kept.slice(0, 3).join(', ') +
           (res.kept.length > 3 ? ' (+' + (res.kept.length - 3) + ' lainnya)' : '')
+      );
+    }
+    if (res.errors && res.errors.length) {
+      msgs.push(
+        'Tidak tersimpan ke awan: ' +
+          res.errors.slice(0, 3).join('; ') +
+          (res.errors.length > 3 ? ' (+' + (res.errors.length - 3) + ' lainnya)' : '')
+      );
+    }
+    if (res.skipped && res.skipped.length) {
+      msgs.push(
+        'Hanya kantor pusat yang bisa mengubah: ' +
+          res.skipped.slice(0, 3).join(', ') +
+          (res.skipped.length > 3 ? ' (+' + (res.skipped.length - 3) + ' lainnya)' : '') +
+          ' — perubahan itu tidak dikirim'
       );
     }
     if (msgs.length) toastSafe(msgs.join(' — '));
@@ -824,7 +843,11 @@
           if (!shouldWriteBlob(res)) return;
           return upsertBlobOnly(uid, payload).then(markBlobWritten);
         });
-        if (saved) reportMergeResult(saved);
+        if (saved) {
+          reportMergeResult(saved);
+          // Masih bentrok setelah 3 putaran (banyak yang menyimpan bersamaan) — coba lagi sebentar lagi.
+          if (saved.retry) setTimeout(scheduleUpsert, 3000);
+        }
       } else {
         await upsertBlobOnly(uid, payload);
       }

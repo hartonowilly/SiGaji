@@ -5,6 +5,7 @@ import {
   corsHeaders,
   handleOptions,
 } from '../_lib/cf-shared.js';
+import { assertHq } from '../_lib/tenant-data.js';
 
 async function fetchAllRows(sb, table, buildQuery) {
   const pageSize = 1000;
@@ -49,7 +50,8 @@ export async function onRequestGet({ request, env }) {
 
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
+    const caller = await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
+    assertHq(caller.me);
 
     const url = new URL(request.url);
     const excludeLogo = url.searchParams.get('exclude_logo') === '1' || url.searchParams.get('exclude_logo') === 'true';
@@ -64,6 +66,8 @@ export async function onRequestGet({ request, env }) {
       ['sigaji_tunj_var_kolom', (q) => q.eq('tenant_key', tenant)],
       ['sigaji_tunj_var_nilai', (q) => q.eq('tenant_key', tenant)],
       ['sigaji_store', (q) => q.eq('tenant_key', tenant)],
+      ['sigaji_item', (q) => q.eq('tenant_key', tenant)],
+      ['sigaji_user_roles', (q) => q.eq('tenant_key', tenant)],
     ];
 
     for (const [name, build] of defs) {
@@ -127,7 +131,7 @@ export async function onRequestGet({ request, env }) {
     });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message || String(e) }), {
-      status: 500,
+      status: /Forbidden/.test(String(e && e.message)) ? 403 : 500,
       headers: {
         'content-type': 'application/json; charset=utf-8',
         'cache-control': 'no-store',

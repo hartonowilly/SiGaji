@@ -42,6 +42,30 @@
   var BATCH_OF = { K: 200, P: 100, S: 1, C: 50, T: 500 };
   var V11_TYPES = ['C', 'K', 'P', 'S', 'T'];
 
+  /* ── v12 (sql/supabase_sigaji_v12_versi_cabang.sql): versi per baris, RPC atomik, RLS per cabang ── */
+  var V12_TYPES = ['C', 'K', 'P', 'S', 'I', 'T'];
+  var RPC_TABLE = { K: 'karyawan', P: 'periode', S: 'store', I: 'item' };
+  var RPC_BATCH = { K: 200, P: 100, S: 5, I: 300 };
+  var ITEM_STORE_KEYS = D.ITEM_KINDS;
+  /** Store yang boleh ditulis HRD cabang (sisanya hanya kantor pusat — sama dengan RLS). */
+  var BRANCH_STORE_WRITE = { approvals: true, notifikasi: true, auditLog: true, bentoLayouts: true };
+  var PAGE_ROWS = 1000;
+  var PULL_MARGIN_MS = 30 * 1000;
+  var UPGRADE_CHECK_MS = 5 * 60 * 1000;
+
+  /** null = belum dicek; true = tabel sigaji_item ada (SQL v12 sudah dijalankan). */
+  var v12 = null;
+  /** Hak tulis sesi ini: hq = Admin / HRD tanpa cabang. */
+  var access = { hq: true, cabang: '' };
+  var serverPullAt = null;
+  var pendingServerNow = null;
+  var saving = false;
+  var schemaChanged = false;
+  var lastUpgradeCheckAt = 0;
+  /** Entitas yang ditolak server (RLS) — tidak dikirim ulang sampai isinya berubah lagi. */
+  var rejected = Object.create(null);
+  var skippedNotified = Object.create(null);
+
   var TUNJ_FULL_PULL_MS = 10 * 60 * 1000;
   var TUNJ_PULL_MARGIN_MS = 10 * 60 * 1000;
   var lastTunjPullAt = 0;
@@ -123,15 +147,64 @@
     return out;
   }
 
+  /**
+   * Semua baris query (PostgREST memotong respons di max-rows, biasanya 1000).
+   * Berhenti saat halaman kosong — aman walau batas server lebih kecil dari PAGE_ROWS.
+   * @param {() => any} build query baru yang sudah diurutkan
+   */
+  async function fetchAllRows(build) {
+    var out = [];
+    for (var from = 0; ; ) {
+      var r = await build().range(from, from + PAGE_ROWS - 1);
+      if (r.error) throw r.error;
+      var rows = r.data || [];
+      for (var i = 0; i < rows.length; i++) out.push(rows[i]);
+      if (!rows.length) return out;
+      from += rows.length;
+    }
+  }
+
   async function fetchTunjVarRows(sb, sinceIso) {
-    var q = sb
-      .from('sigaji_tunj_var_nilai')
-      .select('periode_nama,nik,kolom_id,nilai')
-      .eq('tenant_key', TK);
-    if (sinceIso) q = q.gte('updated_at', sinceIso);
-    var res = await q;
-    if (res.error) throw res.error;
-    return res.data || [];
+    return fetchAllRows(function () {
+      var q = sb
+        .from('sigaji_tunj_var_nilai')
+        .select('periode_nama,nik,kolom_id,nilai')
+        .eq('tenant_key', TK);
+      if (sinceIso) q = q.gte('updated_at', sinceIso);
+      return q.order('periode_nama').order('nik').order('kolom_id');
+    });
+  }
+
+  async function detectV12(sb) {
+    var r = await sb.from('sigaji_item').select('kind').eq('tenant_key', TK).limit(1);
+    if (!r.error) return true;
+    if (isTableMissingError(r.error)) return false;
+    throw r.error;
+  }
+
+  async function loadAccess(sb) {
+    access = { hq: true, cabang: '' };
+    var s = await sb.auth.getSession();
+    var uid = s && s.data && s.data.session && s.data.session.user ? s.data.session.user.id : '';
+    if (!uid) return access;
+    var r = await sb
+      .from('sigaji_user_roles')
+      .select('role,cabang_id')
+      .eq('tenant_key', TK)
+      .eq('auth_uid', uid)
+      .maybeSingle();
+    if (!r.error && r.data) {
+      var cab = String(r.data.cabang_id || '').trim();
+      access = { hq: r.data.role === 'Admin' || !cab, cabang: r.data.role === 'Admin' ? '' : cab };
+    }
+    return access;
+  }
+
+  /** Jam server (dasar tarik perubahan berikutnya). */
+  async function fetchServerNow(sb) {
+    var r = await sb.rpc('sigaji_changes_since', { p_since: '9999-12-31T00:00:00Z', p_tenant: TK });
+    if (r.error) throw r.error;
+    return (r.data && r.data.now) || null;
   }
 
   async function fetchTunjVarBulanFromTables(sb) {
@@ -153,6 +226,8 @@
   async function pullTunjVarIntoMemory(sb) {
     var ok = await tablesExist(sb);
     if (!ok || typeof tunjVarBulan === 'undefined') return false;
+    if (v12) return pullChangesV12(sb);
+    await checkSchemaUpgrade(sb);
     var now = Date.now();
     var full = !lastTunjPullAt || now - lastTunjFullPullAt > TUNJ_FULL_PULL_MS;
     var sinceIso = full ? null : new Date(lastTunjPullAt - TUNJ_PULL_MARGIN_MS).toISOString();
@@ -188,6 +263,140 @@
       }
       if (e.data) base.put(e, null);
       else base.remove(e.id);
+    });
+    return changed;
+  }
+
+  /** SQL v12 dijalankan saat sesi v11 masih terbuka: hentikan simpan (format lama) dan minta muat ulang. */
+  async function checkSchemaUpgrade(sb) {
+    if (schemaChanged || v12 !== false) return;
+    var now = Date.now();
+    if (now - lastUpgradeCheckAt < UPGRADE_CHECK_MS) return;
+    lastUpgradeCheckAt = now;
+    var up = false;
+    try {
+      up = await detectV12(sb);
+    } catch (e) {
+      return;
+    }
+    if (!up) return;
+    schemaChanged = true;
+    var msg = SCHEMA_CHANGED_MSG + ' Perubahan yang belum tersimpan di sesi ini mungkin perlu diulang.';
+    if (typeof window.sigajiConfirm === 'function') {
+      var go = await window.sigajiConfirm({ title: 'Database diperbarui', message: msg, okText: 'Muat ulang sekarang' });
+      if (go) window.location.reload();
+    } else if (typeof window.toast === 'function') window.toast(msg);
+  }
+
+  function tombstoneId(d) {
+    var k = d && d.key;
+    if (!k) return null;
+    switch (d.tbl) {
+      case 'sigaji_karyawan':
+        return D.entityId('K', { nik: String(k.nik) });
+      case 'sigaji_periode':
+        return D.entityId('P', { nama: String(k.nama) });
+      case 'sigaji_store':
+        return D.entityId('S', { store_key: k.store_key });
+      case 'sigaji_item':
+        return D.entityId('I', { kind: k.kind, item_key: k.item_key });
+      case 'sigaji_tunj_var_nilai':
+        return D.entityId('T', { periode_nama: k.periode_nama, nik: k.nik, kolom_id: k.kolom_id });
+      case 'sigaji_tunj_var_kolom':
+        return D.entityId('C', { id: k.id });
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Tarik hanya baris yang berubah sejak tarikan terakhir (sigaji_changes_since).
+   * Baris yang tidak sedang diedit di sini → diganti versi awan; yang sedang diedit → digabung 3 arah,
+   * dan simpan berikutnya mengirim hasil gabungan dengan versi awan terbaru.
+   * @returns {Promise<boolean>} true jika memori berubah
+   */
+  async function pullChangesV12(sb) {
+    if (!baseReady || !serverPullAt || saving) return false;
+    var since = new Date(new Date(serverPullAt).getTime() - PULL_MARGIN_MS).toISOString();
+    var r = await sb.rpc('sigaji_changes_since', { p_since: since, p_tenant: TK });
+    if (r.error) throw r.error;
+    if (saving) return false;
+    var ch = r.data || {};
+    if (ch.now) serverPullAt = ch.now;
+
+    var incoming = [];
+    function add(t, rows) {
+      (rows || []).forEach(function (row) {
+        if (t === 'S' && STORE_KEYS.indexOf(row.store_key) === -1) return;
+        if (t === 'S' && ITEM_STORE_KEYS.indexOf(row.store_key) !== -1) return;
+        incoming.push({ e: D.entityFromRow(t, row), v: row.version != null ? Number(row.version) : null });
+      });
+    }
+    add('K', ch.karyawan);
+    add('P', ch.periode);
+    add('S', ch.store);
+    add('I', ch.item);
+    add('C', ch.tunj_kolom);
+    add('T', ch.tunj_nilai);
+    var gone = (ch.deleted || []).map(tombstoneId).filter(Boolean);
+    if (!incoming.length && !gone.length) return false;
+
+    var mem = liveMemory();
+    if (!mem) return false;
+    var src = typeof window.getPayloadForCloud === 'function' ? window.getPayloadForCloud() : mem;
+    var local = Object.create(null);
+    D.explodePayload(src, { items: true }).forEach(function (e) {
+      local[e.id] = e;
+    });
+    var editingCell = typeof window.sigajiTunjVarCellIsEditing === 'function' ? window.sigajiTunjVarCellIsEditing : null;
+    var changed = false;
+
+    gone.forEach(function (id) {
+      var b = base.get(id);
+      if (!b) return;
+      var loc = local[id];
+      var dirty = loc && D.stableStringify(loc.data) !== b.j;
+      base.remove(id);
+      if (dirty) return;
+      D.applyEntityToMemory(mem, { t: b.t, key: b.key, nik: b.nik, id: id }, null);
+      changed = true;
+    });
+
+    incoming.forEach(function (x) {
+      var e = x.e;
+      if (e.t === 'T' && !e.data) {
+        var bz = base.get(e.id);
+        var lz = local[e.id];
+        base.remove(e.id);
+        if (lz && !(bz && D.stableStringify(lz.data) === bz.j)) return;
+        if (lz) {
+          D.applyEntityToMemory(mem, e, 0);
+          changed = true;
+        }
+        return;
+      }
+      var sj = D.stableStringify(e.data);
+      var b = base.get(e.id);
+      if (b && b.j === sj) {
+        base.put(e, x.v != null ? x.v : b.v, sj);
+        return;
+      }
+      var loc = local[e.id];
+      var lj = loc ? D.stableStringify(loc.data) : null;
+      var dirty = b ? lj !== b.j : lj != null;
+      if (e.t === 'T' && editingCell && editingCell(e.key.nik, e.key.kolom_id)) dirty = true;
+      base.put(e, x.v, sj);
+      if (!dirty) {
+        D.applyEntityToMemory(mem, e, e.data);
+        changed = true;
+        return;
+      }
+      if (lj === sj || e.t === 'T') return;
+      var m = D.mergeEntity(b ? JSON.parse(b.j) : null, loc ? loc.data : null, e.data);
+      if (m.value != null && D.stableStringify(m.value) !== lj) {
+        D.applyEntityToMemory(mem, e, m.value);
+        changed = true;
+      }
     });
     return changed;
   }
@@ -245,61 +454,88 @@
     }
   }
 
-  async function loadStoreChunks(sb) {
-    var res = await sb.from('sigaji_store').select('store_key,data').eq('tenant_key', TK);
+  async function loadStoreChunks(sb, withItems) {
+    var q = sb
+      .from('sigaji_store')
+      .select(withItems ? 'store_key,data,version' : 'store_key,data')
+      .eq('tenant_key', TK);
+    if (withItems) q = q.not('store_key', 'in', '(' + ITEM_STORE_KEYS.join(',') + ')');
+    var res = await q;
     if (res.error) throw res.error;
     return res.data || [];
   }
 
   function rememberLoaded(list, t, row) {
     var e = D.entityFromRow(t, row);
-    list.push({ e: { t: e.t, key: e.key, nik: e.nik, id: e.id }, j: D.stableStringify(e.data) });
+    list.push({
+      e: { t: e.t, key: e.key, nik: e.nik, id: e.id },
+      j: D.stableStringify(e.data),
+      v: row.version != null ? Number(row.version) : null,
+    });
   }
 
   async function assemblePayloadFromTables(sb) {
+    var isV12 = await detectV12(sb);
+    v12 = isV12;
+    pendingServerNow = null;
+    if (isV12) {
+      await loadAccess(sb);
+      // Ambil jam server SEBELUM membaca baris: perubahan selama muat ikut tertarik nanti.
+      pendingServerNow = await fetchServerNow(sb);
+    }
+    var ver = isV12 ? ',version' : '';
     var settled = await Promise.all([
       sb
         .from('sigaji_tenant_meta')
         .select('schema_version,max_employees,plan_label,multi_branch_enabled,max_branches')
         .eq('tenant_key', TK)
         .maybeSingle(),
-      sb.from('sigaji_karyawan').select('nik,data').eq('tenant_key', TK),
-      sb.from('sigaji_periode').select('nama,data').eq('tenant_key', TK),
+      fetchAllRows(function () {
+        return sb.from('sigaji_karyawan').select('nik,data' + ver).eq('tenant_key', TK).order('nik');
+      }),
+      fetchAllRows(function () {
+        return sb.from('sigaji_periode').select('nama,data' + ver).eq('tenant_key', TK).order('nama');
+      }),
       sb
         .from('sigaji_tunj_var_kolom')
         .select('id,nama,sort_order')
         .eq('tenant_key', TK)
         .order('sort_order', { ascending: true }),
-      sb
-        .from('sigaji_tunj_var_nilai')
-        .select('periode_nama,nik,kolom_id,nilai')
-        .eq('tenant_key', TK),
-      loadStoreChunks(sb),
+      fetchTunjVarRows(sb),
+      loadStoreChunks(sb, isV12),
+      isV12
+        ? fetchAllRows(function () {
+            return sb
+              .from('sigaji_item')
+              .select('kind,item_key,nik,data,version')
+              .eq('tenant_key', TK)
+              .order('kind')
+              .order('item_key');
+          })
+        : Promise.resolve([]),
     ]);
     var meta = settled[0];
-    var karRes = settled[1];
-    var perRes = settled[2];
+    var karRows = settled[1];
+    var perRows = settled[2];
     var kolRes = settled[3];
-    var nilRes = settled[4];
+    var nilRows = settled[4];
     var storeRows = settled[5];
+    var itemRows = settled[6];
     if (meta.error) throw meta.error;
-    if (karRes.error) throw karRes.error;
-    if (perRes.error) throw perRes.error;
     if (kolRes.error) throw kolRes.error;
-    if (nilRes.error) throw nilRes.error;
 
     var loaded = [];
-    var karyawan = (karRes.data || []).map(function (r) {
+    var karyawan = karRows.map(function (r) {
       var d = r.data && typeof r.data === 'object' ? r.data : {};
       if (!d.nik) d.nik = r.nik;
-      rememberLoaded(loaded, 'K', { nik: r.nik, data: d });
+      rememberLoaded(loaded, 'K', { nik: r.nik, data: d, version: r.version });
       return d;
     });
 
-    var periodes = (perRes.data || []).map(function (r) {
+    var periodes = perRows.map(function (r) {
       var d = r.data && typeof r.data === 'object' ? r.data : {};
       if (!d.nama) d.nama = r.nama;
-      rememberLoaded(loaded, 'P', { nama: r.nama, data: d });
+      rememberLoaded(loaded, 'P', { nama: r.nama, data: d, version: r.version });
       return d;
     });
 
@@ -308,7 +544,7 @@
       return { id: r.id, nama: r.nama || r.id };
     });
 
-    (nilRes.data || []).forEach(function (r) {
+    nilRows.forEach(function (r) {
       if (Math.round(Number(r.nilai) || 0) !== 0) rememberLoaded(loaded, 'T', r);
     });
 
@@ -317,6 +553,15 @@
       store[row.store_key] = row.data;
       if (STORE_KEYS.indexOf(row.store_key) !== -1) rememberLoaded(loaded, 'S', row);
     });
+    if (isV12) {
+      itemRows.forEach(function (row) {
+        if (ITEM_STORE_KEYS.indexOf(row.kind) !== -1) rememberLoaded(loaded, 'I', row);
+      });
+      var parts = D.itemsToPayloadParts(itemRows);
+      ITEM_STORE_KEYS.forEach(function (k) {
+        store[k] = parts[k];
+      });
+    }
 
     var licFromMeta = {
       maxEmployees:
@@ -348,7 +593,7 @@
       users: store.users || [],
       roles: store.roles || {},
       thrManual: store.thrManual || {},
-      tunjVarBulan: buildTunjVarBulanFromRows(nilRes.data),
+      tunjVarBulan: buildTunjVarBulanFromRows(nilRows),
       tunjVarLabels: store.tunjVarLabels || { v1: 'Bonus', v2: 'Uang Makan', v3: 'Lain-lain' },
       tunjVarColumns: tunjVarColumns.length
         ? tunjVarColumns
@@ -371,11 +616,13 @@
     if (!loadedEntities) return false;
     base.clear();
     loadedEntities.forEach(function (x) {
-      base.put(x.e, null, x.j);
+      base.put(x.e, x.v, x.j);
     });
     loadedEntities = null;
     declinedDeletes = Object.create(null);
+    rejected = Object.create(null);
     baseReady = true;
+    serverPullAt = pendingServerNow;
     lastTunjPullAt = Date.now();
     lastTunjFullPullAt = lastTunjPullAt;
     return true;
@@ -386,6 +633,8 @@
     base.clear();
     loadedEntities = null;
     declinedDeletes = Object.create(null);
+    rejected = Object.create(null);
+    serverPullAt = null;
     baseReady = true;
   }
 
@@ -469,6 +718,7 @@
     }
     if (e.t === 'P') return 'Periode ' + e.key.nama;
     if (e.t === 'S') return STORE_LABEL[e.key.store_key] || e.key.store_key;
+    if (e.t === 'I') return (STORE_LABEL[e.key.kind] || e.key.kind) + ' ' + e.key.item_key;
     return e.id;
   }
 
@@ -566,31 +816,252 @@
    * @param {{base?: object, skipMassDeleteGuard?: boolean}} [opts]
    * @returns {Promise<{upserts: number, deletes: number, storeKeys: string[]}>}
    */
+  var SCHEMA_CHANGED_MSG =
+    'Struktur database awan baru saja diperbarui — muat ulang halaman (F5) agar simpan ke awan aktif lagi.';
+
   async function saveDelta(sb, payload, opts) {
     opts = opts || {};
+    if (schemaChanged) throw new Error(SCHEMA_CHANGED_MSG);
     if (!opts.base && !baseReady) {
       throw new Error('Data awan belum termuat di sesi ini — simpan ke awan ditunda (muat ulang halaman lalu login).');
     }
+    if (v12 === null) {
+      v12 = await detectV12(sb);
+      if (v12) await loadAccess(sb);
+    }
     var useBase = opts.base || base;
-    var ents = D.explodePayload(payload, { items: false });
-    var plan = D.planChanges(ents, useBase, V11_TYPES);
+    saving = true;
+    try {
+      return v12 ? await saveDeltaV12(sb, payload, useBase, opts) : await saveDeltaV11(sb, payload, useBase, opts);
+    } finally {
+      saving = false;
+    }
+  }
 
+  async function guardDeletes(plan, useBase, opts) {
     plan.deletes = plan.deletes.filter(function (d) {
       return !declinedDeletes[d.id];
     });
-    if (!opts.skipMassDeleteGuard) {
-      var sus = D.suspiciousMassDelete(plan, useBase);
-      if (sus && !(await confirmMassDelete(sus))) {
-        plan.deletes = plan.deletes.filter(function (d) {
-          if (d.base.t !== sus.t) return true;
-          declinedDeletes[d.id] = true;
-          return false;
-        });
-        if (typeof window.toast === 'function') {
-          window.toast('Penghapusan tidak dikirim ke awan. Muat ulang halaman untuk menampilkan lagi data dari awan.');
-        }
+    if (opts.skipMassDeleteGuard) return;
+    var sus = D.suspiciousMassDelete(plan, useBase);
+    if (sus && !(await confirmMassDelete(sus))) {
+      plan.deletes = plan.deletes.filter(function (d) {
+        if (d.base.t !== sus.t) return true;
+        declinedDeletes[d.id] = true;
+        return false;
+      });
+      if (typeof window.toast === 'function') {
+        window.toast('Penghapusan tidak dikirim ke awan. Muat ulang halaman untuk menampilkan lagi data dari awan.');
       }
     }
+  }
+
+  function storeKeysOf(upserts) {
+    return upserts
+      .filter(function (u) {
+        return u.e.t === 'S';
+      })
+      .map(function (u) {
+        return u.e.key.store_key;
+      });
+  }
+
+  /** HRD cabang: buang perubahan yang hanya boleh dilakukan kantor pusat (RLS akan menolaknya). */
+  function restrictToBranch(plan, report) {
+    function allowed(t, key) {
+      if (t === 'P' || t === 'C') return false;
+      if (t === 'S') return !!BRANCH_STORE_WRITE[key.store_key];
+      return true;
+    }
+    plan.upserts = plan.upserts.filter(function (u) {
+      if (allowed(u.e.t, u.e.key)) return true;
+      var lbl = entityLabel(u.e, u.e.data);
+      if (!skippedNotified[u.e.id]) {
+        skippedNotified[u.e.id] = true;
+        report.skipped.push(lbl);
+      }
+      return false;
+    });
+    plan.deletes = plan.deletes.filter(function (d) {
+      return allowed(d.base.t, d.base.key);
+    });
+  }
+
+  function rpcRow(t, u) {
+    var o = { key: u.e.key, data: u.e.data, base_version: u.base && u.base.v != null ? u.base.v : null };
+    if (t === 'I') o.nik = u.e.nik;
+    return o;
+  }
+
+  /**
+   * Simpan satu jenis entitas lewat sigaji_save_rows: baris hanya ditulis bila versinya belum berubah.
+   * Bentrok → gabung 3 arah dengan data awan terbaru (dikirim balik RPC) → ulangi (maks. 3 putaran).
+   */
+  async function saveTypeViaRpc(sb, t, ups, dels, useBase, report) {
+    var mem = liveMemory();
+    for (var round = 0; (ups.length || dels.length) && round < 3; round++) {
+      var nextUps = [];
+      var nextDels = [];
+      var batches = chunk(ups, RPC_BATCH[t])
+        .map(function (p) {
+          return { ups: p, dels: [] };
+        })
+        .concat(
+          chunk(dels, RPC_BATCH[t]).map(function (p) {
+            return { ups: [], dels: p };
+          })
+        );
+      for (var bi = 0; bi < batches.length; bi++) {
+        var b = batches[bi];
+        var upById = Object.create(null);
+        var delById = Object.create(null);
+        b.ups.forEach(function (u) {
+          upById[u.e.id] = u;
+        });
+        b.dels.forEach(function (d) {
+          delById[d.id] = d;
+        });
+        var r = await sb.rpc('sigaji_save_rows', {
+          p_table: RPC_TABLE[t],
+          p_upserts: b.ups.map(function (u) {
+            return rpcRow(t, u);
+          }),
+          p_deletes: b.dels.map(function (d) {
+            return { key: d.base.key, base_version: d.base.v };
+          }),
+          p_tenant: TK,
+        });
+        if (r.error) throw r.error;
+        var res = r.data || {};
+        (res.saved || []).forEach(function (s) {
+          var u = upById[D.entityId(t, s.key)];
+          if (!u) return;
+          useBase.put(u.e, s.version, u.j);
+          delete rejected[u.e.id];
+        });
+        (res.deleted || []).forEach(function (k) {
+          useBase.remove(D.entityId(t, k));
+        });
+        (res.conflicts || []).forEach(function (c) {
+          var id = D.entityId(t, c.key);
+          var d = delById[id];
+          if (d) {
+            // Diubah pengguna lain sejak dimuat → jangan hapus; tampilkan versi terbaru.
+            var de = { t: t, key: d.base.key, nik: d.base.nik, id: id };
+            if (mem) D.applyEntityToMemory(mem, de, c.data);
+            useBase.put(de, c.version, D.stableStringify(c.data));
+            report.memoryChanged = true;
+            report.kept.push(entityLabel(de, c.data));
+            return;
+          }
+          var u = upById[id];
+          if (!u) return;
+          var server = c.missing ? null : c.data;
+          var m = D.mergeEntity(u.base ? JSON.parse(u.base.j) : null, u.e.data, server);
+          if (m.conflicts.length) {
+            report.conflicts.push(entityLabel(u.e, m.value) + ': ' + m.conflicts.slice(0, 4).join(', '));
+          }
+          if (c.missing) useBase.remove(id);
+          else useBase.put(u.e, c.version, D.stableStringify(server));
+          if (m.value == null) return;
+          var mj = D.stableStringify(m.value);
+          if (mj !== u.j) {
+            u.e.data = m.value;
+            u.j = mj;
+            if (mem) D.applyEntityToMemory(mem, u.e, m.value);
+            report.memoryChanged = true;
+          }
+          if (!c.missing && mj === D.stableStringify(server)) return;
+          nextUps.push({ e: u.e, j: u.j, base: useBase.get(id) });
+        });
+        (res.errors || []).forEach(function (er) {
+          var id = D.entityId(t, er.key);
+          var u = upById[id];
+          if (u) rejected[id] = u.j;
+          else declinedDeletes[id] = true;
+          var e = u ? u.e : delById[id] ? delById[id].base : { t: t, key: er.key, id: id };
+          report.errors.push(entityLabel(e, u ? u.e.data : null) + ': ' + (er.message || er.code || 'gagal'));
+        });
+      }
+      ups = nextUps;
+      dels = nextDels;
+    }
+    if (ups.length) report.retry = true;
+  }
+
+  async function writePlainTypes(sb, plan, useBase, types) {
+    var ts = new Date().toISOString();
+    for (var ti = 0; ti < types.length; ti++) {
+      var t = types[ti];
+      var list = plan.upserts.filter(function (u) {
+        return u.e.t === t;
+      });
+      var parts = chunk(list, BATCH_OF[t]);
+      for (var pi = 0; pi < parts.length; pi++) {
+        var rows = parts[pi].map(function (u) {
+          return rowFor(u.e, ts);
+        });
+        var r = await sb.from(TABLE_OF[t]).upsert(rows, { onConflict: CONFLICT_OF[t] });
+        if (r.error) throw r.error;
+        parts[pi].forEach(function (u) {
+          useBase.put(u.e, null, u.j);
+        });
+      }
+    }
+    await deleteEntities(
+      sb,
+      plan.deletes.filter(function (d) {
+        return types.indexOf(d.base.t) !== -1;
+      }),
+      useBase
+    );
+  }
+
+  async function saveDeltaV12(sb, payload, useBase, opts) {
+    var ents = D.explodePayload(payload, { items: true });
+    var plan = D.planChanges(ents, useBase, V12_TYPES);
+    await guardDeletes(plan, useBase, opts);
+    var report = { memoryChanged: false, conflicts: [], kept: [], errors: [], skipped: [] };
+    plan.upserts = plan.upserts.filter(function (u) {
+      return rejected[u.e.id] !== u.j;
+    });
+    if (!access.hq) restrictToBranch(plan, report);
+    var nUp = plan.upserts.length;
+    var nDel = plan.deletes.length;
+    var storeKeys = storeKeysOf(plan.upserts);
+
+    // Kolom tunjangan dulu (nilai merujuk kolom), lalu baris berversi, lalu sel tunjangan.
+    await writePlainTypes(sb, plan, useBase, ['C']);
+    var rpcTypes = ['K', 'P', 'S', 'I'];
+    for (var i = 0; i < rpcTypes.length; i++) {
+      var t = rpcTypes[i];
+      var ups = plan.upserts.filter(function (u) {
+        return u.e.t === t;
+      });
+      var dels = plan.deletes.filter(function (d) {
+        return d.base.t === t;
+      });
+      if (ups.length || dels.length) await saveTypeViaRpc(sb, t, ups, dels, useBase, report);
+    }
+    await writePlainTypes(sb, plan, useBase, ['T']);
+
+    return {
+      upserts: nUp,
+      deletes: nDel,
+      memoryChanged: report.memoryChanged,
+      conflicts: report.conflicts,
+      kept: report.kept,
+      errors: report.errors,
+      skipped: report.skipped,
+      retry: !!report.retry,
+      storeKeys: storeKeys,
+    };
+  }
+
+  async function saveDeltaV11(sb, payload, useBase, opts) {
+    var ents = D.explodePayload(payload, { items: false });
+    var plan = D.planChanges(ents, useBase, V11_TYPES);
+    await guardDeletes(plan, useBase, opts);
 
     var report = { memoryChanged: false, conflicts: [], kept: [] };
     if (!opts.base && (plan.upserts.length || plan.deletes.length)) {
@@ -791,7 +1262,7 @@
       var needsMigrate = !hasKar && !hasPer;
       if (hasKar && hasPer && !hasKolom) needsMigrate = true;
 
-      if (needsMigrate && typeof loadBlobFn === 'function') {
+      if (needsMigrate && typeof loadBlobFn === 'function' && (!v12 || access.hq)) {
         var blob = await loadBlobFn(uid);
         if (blob && ((blob.karyawan || []).length > 0 || (blob.periodes || []).length > 0)) {
           await migrateBlobToTables(sb, blob);
@@ -814,7 +1285,7 @@
 
     var roleRes = await sb
       .from('sigaji_user_roles')
-      .select('role,nik')
+      .select('role,nik,email,username')
       .eq('tenant_key', TK)
       .eq('auth_uid', authUid)
       .maybeSingle();
@@ -827,7 +1298,14 @@
     var nik = roleRes.data.nik ? String(roleRes.data.nik).trim() : '';
     if (!nik) return null;
 
-    var storeKeys = ['perusahaan', 'masterCuti', 'hariLibur', 'notifikasi', 'roles', 'absensi'];
+    var isV12 = false;
+    try {
+      isV12 = await detectV12(sb);
+    } catch (eV) {
+      isV12 = false;
+    }
+    var storeKeys = ['perusahaan', 'masterCuti', 'hariLibur', 'notifikasi', 'roles'];
+    if (!isV12) storeKeys.push('absensi');
     var parallel = await Promise.all([
       sb.from('sigaji_karyawan').select('data').eq('tenant_key', TK).eq('nik', nik).maybeSingle(),
       sb.from('sigaji_periode').select('data').eq('tenant_key', TK),
@@ -843,6 +1321,17 @@
         .select('max_employees,plan_label,multi_branch_enabled,max_branches')
         .eq('tenant_key', TK)
         .maybeSingle(),
+      isV12
+        ? fetchAllRows(function () {
+            return sb
+              .from('sigaji_item')
+              .select('kind,item_key,nik,data')
+              .eq('tenant_key', TK)
+              .eq('nik', nik)
+              .order('kind')
+              .order('item_key');
+          })
+        : Promise.resolve(null),
     ]);
     var karRes = parallel[0];
     var perRes = parallel[1];
@@ -850,6 +1339,7 @@
     var nilRes = parallel[3];
     var kolRes = parallel[4];
     var metaRes = parallel[5];
+    var ownItems = parallel[6] ? D.itemsToPayloadParts(parallel[6]) : null;
     if (karRes.error) throw karRes.error;
     if (perRes.error) throw perRes.error;
     if (nilRes.error) throw nilRes.error;
@@ -873,7 +1363,18 @@
         });
     }
 
-    var absensi = pickOwnAbsensiFromStore(store.absensi || {}, nik);
+    var absensi = ownItems ? pickOwnAbsensiFromStore(ownItems.absensi, nik) : pickOwnAbsensiFromStore(store.absensi || {}, nik);
+    var karData = karRes.data && karRes.data.data ? karRes.data.data : null;
+    // Daftar user tidak terbaca Karyawan (RLS) — susun baris dirinya dari peta role agar login cocok.
+    var selfUser = {
+      username: roleRes.data.username || '',
+      email: roleRes.data.email || '',
+      nama: (karData && karData.nama) || roleRes.data.username || '',
+      role: roleRes.data.role,
+      nik: nik,
+      aktif: true,
+      auth_uid: authUid,
+    };
     var lic = {
       maxEmployees:
         metaRes.data && metaRes.data.max_employees != null
@@ -902,9 +1403,9 @@
       approvals: [],
       notifikasi: store.notifikasi || [],
       perusahaan: store.perusahaan || {},
-      users: [],
+      users: [selfUser],
       roles: store.roles || {},
-      thrManual: {},
+      thrManual: ownItems ? ownItems.thrManual : {},
       tunjVarBulan: buildTunjVarBulanFromRows(nilRes.data),
       tunjVarLabels: { v1: 'Bonus', v2: 'Uang Makan', v3: 'Lain-lain' },
       tunjVarColumns: tunjVarColumns.length
@@ -914,7 +1415,7 @@
             { id: 'v2', nama: 'Uang Makan' },
             { id: 'v3', nama: 'Lain-lain' },
           ],
-      karSnapshot: {},
+      karSnapshot: ownItems ? ownItems.karSnapshot : {},
       auditLog: [],
       bentoLayouts: {},
       cabang: [],
@@ -994,6 +1495,14 @@
     pullTunjVarIntoMemory: pullTunjVarIntoMemory,
     mergeTunjVarBeforeUploadIntoMemory: mergeTunjVarBeforeUploadIntoMemory,
     normalizeTunjVarColumns: normalizeTunjVarColumns,
+    pullChanges: pullChangesV12,
+    isV12: function () {
+      return v12 === true;
+    },
+    /** Hak tulis sesi ini (v12): { hq: Admin/HRD pusat, cabang: id cabang HRD }. */
+    getAccess: function () {
+      return { hq: access.hq, cabang: access.cabang };
+    },
     _base: base,
   };
 })();

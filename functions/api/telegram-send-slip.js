@@ -6,6 +6,7 @@ import {
   handleOptions,
   assertCallerIsHrdOrAdmin,
 } from '../_lib/cf-shared.js';
+import { assertNikInScope } from '../_lib/tenant-data.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -18,7 +19,7 @@ export async function onRequestPost({ request, env }) {
 
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
+    const caller = await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
 
     const token = requireEnv(env, 'SIGAJI_TELEGRAM_BOT_TOKEN');
     const body = await request.json().catch(() => ({}));
@@ -28,6 +29,7 @@ export async function onRequestPost({ request, env }) {
     const pdfBase64 = String(body.pdfBase64 || '');
     if (!nik) return jsonResponse(400, { ok: false, error: 'nik required' }, request);
     if (!pdfBase64) return jsonResponse(400, { ok: false, error: 'pdfBase64 required' }, request);
+    await assertNikInScope(sb, tenant, caller.me, nik);
 
     const { data: link, error: le } = await sb
       .from('sigaji_telegram_links')
