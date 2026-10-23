@@ -801,7 +801,7 @@ function loadBPJSPanel(k){
   ];
   const mkRow=function(c){
     const ok=bpjsKompAktif(k,c.key);
-    const def=BPJS_DEF[c.key];const b=def.basis?Math.min(basis,def.basis):basis;
+    const def=typeof bpjsKomponenDef==='function'?bpjsKomponenDef(c.key,typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(typeof PA==='function'?PA():null):''):BPJS_DEF[c.key];const b=def.basis?Math.min(basis,def.basis):basis;
     const autoV=Math.round(b*def.pct/100);const isMn=bm[c.key]!==undefined;bmState[c.key]=isMn;
     const chk='<label class="fl items-center cursor-pointer m-0"><input class="cursor-pointer m-0 chk-brand" type="checkbox" data-nik="'+k.nik+'" data-key="'+c.key+'" '+(ok?'checked':'')+' onchange="onBPJSKompChange(this)" style="width:15px; height:15px"></label>';
     const nomVal=ok?(isMn?bm[c.key]:autoV):0;
@@ -877,7 +877,7 @@ function toggleManual(key){
   const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.bpjs_manual)k.bpjs_manual={};
   const isNow=!bmState[key];bmState[key]=isNow;const ve=document.getElementById('b-'+key+'-v');const te=document.getElementById('tm-'+key);
   if(isNow){ve.readOnly=false;ve.className='bi inp-rp manual';ve.setAttribute('data-rp','1');te.textContent='Manual';te.className='tm manual';k.bpjs_manual[key]=parseRpInput(ve.value);ve.oninput=function(){k.bpjs_manual[key]=parseRpInput(ve.value);updateGajiSummary();};if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(ve);}
-  else{delete k.bpjs_manual[key];ve.readOnly=true;ve.className='bi inp-rp';ve.oninput=null;te.textContent='Auto';te.className='tm auto';const ok=bpjsKompAktif(k,key);if(!ok){ve.value=formatRpInputNum(0);}else{const tB2=(k.tunjangan||[]).filter(t=>t.tipe==='tetap').reduce((s,t)=>s+sigajiRp(t.nilai),0);const b2=sigajiRp(k.gapok)+tB2;const def=BPJS_DEF[key];const bas=def.basis?Math.min(b2,def.basis):b2;ve.value=formatRpInputNum(Math.round(bas*def.pct/100));}}
+  else{delete k.bpjs_manual[key];ve.readOnly=true;ve.className='bi inp-rp';ve.oninput=null;te.textContent='Auto';te.className='tm auto';const ok=bpjsKompAktif(k,key);if(!ok){ve.value=formatRpInputNum(0);}else{const tB2=(k.tunjangan||[]).filter(t=>t.tipe==='tetap').reduce((s,t)=>s+sigajiRp(t.nilai),0);const b2=sigajiRp(k.gapok)+tB2;const def=typeof bpjsKomponenDef==='function'?bpjsKomponenDef(key,typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(typeof PA==='function'?PA():null):''):BPJS_DEF[key];const bas=def.basis?Math.min(b2,def.basis):b2;ve.value=formatRpInputNum(Math.round(bas*def.pct/100));}}
   logPayrollAudit(cpNik,'Toggle BPJS Manual',`${key} → ${isNow?'manual':'auto'}`);
   saveAll();
   updateGajiSummary();
@@ -1325,8 +1325,7 @@ function detailGaji(nik,pNama){
   const pN=pNama||PA().nama;
   const p=periodes.find(function(x){return x.nama===pN;})||PA();
   const g=hitungGaji(k,pN);
-  const tbl=getTERTable(k.ptkp);
-  const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
+  const rate=rateTerHasil(g,k,p);
   document.getElementById('m-gaji-t').textContent='Detail Gaji - '+k.nama+' ('+pN+')';
   let h='';
   if(g.thrBruto>0)h+='<div class="card-surface-purple p-inset-sm tabs-spaced-lg font-12"><strong>&#127873; THR:</strong> '+fmt(g.thrBruto)+' dibayar full netto. PPh THR: <strong>'+fmt(g.pphAtasThr)+'</strong> dipotong dari gaji ini.</div>';

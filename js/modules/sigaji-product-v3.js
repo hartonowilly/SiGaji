@@ -507,10 +507,7 @@
   /* ── Waterfall explain ── */
   window.sigajiBuildWaterfallHtml = function (k, pNama, g) {
     if (!k || !g) return '';
-    var tbl = typeof getTERTable === 'function' ? getTERTable(k.ptkp) : TER_A;
-    var rate = (tbl.find(function (r) {
-      return g.grossPPh <= r[0];
-    }) || [0, 0.34])[1];
+    var rate = typeof rateTerHasil === 'function' ? rateTerHasil(g, k, null) : 0;
     var bpjsKar = (g.bpjs.kes_kar || 0) + (g.bpjs.jht_kar || 0) + (g.bpjs.jp_kar || 0);
     var potLain = g.potT || 0;
     var potKehadiran = (g.potKehadiran && g.potKehadiran.total) || 0;

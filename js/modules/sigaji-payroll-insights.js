@@ -294,7 +294,9 @@
       }
 
       var terPph =
-        typeof hitungPPhBln === 'function' && k.ptkp ? hitungPPhBln(g.grossPPh, k.ptkp) : 0;
+        typeof hitungPPhBln === 'function' && k.ptkp
+          ? hitungPPhBln(g.grossPPh, k.ptkp, typeof tglAturanDariPeriode === 'function' ? tglAturanDariPeriode(p) : '')
+          : 0;
       var pphRet = (k.pph_return && k.pph_return.nilai) || 0;
       var reconLebihBayar =
         g.reconciliation &&

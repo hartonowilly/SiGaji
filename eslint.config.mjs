@@ -81,7 +81,7 @@ export default [
   },
   /** Registry global — dipakai modul lain lewat script tag. */
   {
-    files: ['js/constants.js', 'js/ptkp.js', 'js/storage.js'],
+    files: ['js/constants.js', 'js/pajak-aturan.js', 'js/ptkp.js', 'js/storage.js'],
     rules: {
       'no-unused-vars': 'off',
       'no-redeclare': 'off',

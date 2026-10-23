@@ -649,9 +649,14 @@ function bpjsKompAktif(k,key){
  * @param {number} tunjBPJS
  * @returns {Record<string, number>}
  */
-function calcBPJS(k,gapokEff,tunjBPJS){
+function tglAturanDariPeriode(p){
+  if(typeof sigajiTanggalAcuanPeriode==='function')return sigajiTanggalAcuanPeriode(p);
+  if(!p)return '';
+  return String(p.bayar||p.end||p.start||'').slice(0,10);
+}
+function calcBPJS(k,gapokEff,tunjBPJS,tanggal){
   const basis=gapokEff+tunjBPJS;const bm=k.bpjs_manual||{};
-  const get=key=>{if(!bpjsKompAktif(k,key))return 0;if(bm[key]!==undefined)return sigajiRp(bm[key]);const def=BPJS_DEF[key];const b=def.basis?Math.min(basis,def.basis):basis;return Math.round(b*def.pct/100);};
+  const get=key=>{if(!bpjsKompAktif(k,key))return 0;if(bm[key]!==undefined)return sigajiRp(bm[key]);const def=typeof bpjsKomponenDef==='function'?bpjsKomponenDef(key,tanggal):BPJS_DEF[key];const b=def.basis?Math.min(basis,def.basis):basis;return Math.round(b*def.pct/100);};
   return{kes_prs:get('kes-prs'),kes_kar:get('kes-kar'),jht_prs:get('jht-prs'),jht_kar:get('jht-kar'),jp_prs:get('jp-prs'),jp_kar:get('jp-kar'),jkk_prs:get('jkk-prs'),jkm_prs:get('jkm-prs')};
 }
 // ── THR helper ───────────────────────────────────
@@ -670,12 +675,17 @@ function hitungTHRBruto(k,pNama){
   }
   return{mb,nilai:nilaiOto,eligible:true,pl,dasar,isManual:false,nilaiOto};
 }
-function getTERTable(ptkpKey){
-  // PMK 168/2023: Lampiran A = TK/0, TK/1, K/0 (PTKP 54jt & 58.5jt)
-  if(ptkpKey==='TK0'||ptkpKey==='TK1'||ptkpKey==='K0')return TER_A;
-  // Lampiran C = K/3 (PTKP 72jt)
-  if(ptkpKey==='K3')return TER_C;
-  // Lampiran B = TK/2, TK/3, K/1, K/2 (PTKP 63jt & 67.5jt)
+function lampiranTerKey(ptkpKey){
+  if(ptkpKey==='TK0'||ptkpKey==='TK1'||ptkpKey==='K0')return 'A';
+  if(ptkpKey==='K3')return 'C';
+  return 'B';
+}
+function getTERTable(ptkpKey,tanggal){
+  var buku=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tanggal):null;
+  var lmp=lampiranTerKey(ptkpKey);
+  if(buku&&buku.ter&&buku.ter[lmp]&&buku.ter[lmp].length)return buku.ter[lmp];
+  if(lmp==='A')return TER_A;
+  if(lmp==='C')return TER_C;
   return TER_B;
 }
 // PMK 168/2023: metode TER untuk pemotongan bulanan (masa pajak 1-11)
@@ -686,16 +696,24 @@ function getTERTable(ptkpKey){
  * @param {string} ptkpKey — mis. TK0, K1
  * @returns {number}
  */
-function hitungPPhBln(bruto,ptkpKey){
-  if(bruto<=0)return 0;
-  const tbl=getTERTable(ptkpKey);
+function tarifPPhBln(bruto,ptkpKey,tanggal){
+  const tbl=getTERTable(ptkpKey,tanggal);
   const idx=tbl.findIndex(function(r){return bruto<=r[0];});
   const found=idx>=0?tbl[idx]:tbl[tbl.length-1];
-  // Cek custom rate override dari master perusahaan
-  const lmpKey=ptkpKey==='TK0'||ptkpKey==='TK1'||ptkpKey==='K0'?'A':ptkpKey==='K3'?'C':'B';
-  const customRate=perusahaan&&perusahaan.ter_custom&&perusahaan.ter_custom[lmpKey]&&perusahaan.ter_custom[lmpKey][idx>=0?idx:tbl.length-1];
-  const rate=customRate!==undefined?customRate:found[1];
-  return Math.round(bruto*rate);
+  const lmpKey=lampiranTerKey(ptkpKey);
+  const ov=typeof aturanOverrideUntukTanggal==='function'?aturanOverrideUntukTanggal(tanggal):{ter_custom:perusahaan&&perusahaan.ter_custom};
+  const custom=ov&&ov.ter_custom&&ov.ter_custom[lmpKey];
+  const slot=idx>=0?idx:tbl.length-1;
+  if(custom&&custom[slot]!==undefined&&custom[slot]!==null)return custom[slot];
+  return found[1];
+}
+function hitungPPhBln(bruto,ptkpKey,tanggal){
+  if(bruto<=0)return 0;
+  return Math.round(bruto*tarifPPhBln(bruto,ptkpKey,tanggal));
+}
+function rateTerHasil(g,k,p){
+  if(g&&typeof g.terRate==='number')return g.terRate;
+  return tarifPPhBln((g&&g.grossPPh)||0,k&&k.ptkp,tglAturanDariPeriode(p));
 }
 // Fungsi progresif tahunan (untuk referensi / rekonsiliasi Desember)
 // Hitung PPh tahunan progresif dari bruto akumulasi setahun
@@ -705,15 +723,23 @@ function hitungPPhBln(bruto,ptkpKey){
  * @param {string} ptkpKey
  * @returns {number}
  */
-function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey){
-  const bj=Math.min(brutoTahunan*.05,6e6);
-  const pv=nilaiPTKP(ptkpKey);
+function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey,tanggal){
+  var buku=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tanggal):null;
+  var prog=buku&&buku.progresif;
+  var bjRate=prog&&prog.bjRate!=null?prog.bjRate:.05;
+  var bjCap=prog&&prog.bjCap!=null?prog.bjCap:6e6;
+  const bj=Math.min(brutoTahunan*bjRate,bjCap);
+  const pv=nilaiPTKP(ptkpKey,tanggal);
   const pkp=Math.max(0,Math.floor((brutoTahunan-bj-pv)/1000)*1000);
-  let pph=0;
-  if(pkp<=60e6)pph=pkp*.05;
-  else if(pkp<=250e6)pph=3e6+(pkp-60e6)*.15;
-  else if(pkp<=500e6)pph=31.5e6+(pkp-250e6)*.25;
-  else pph=94e6+(pkp-500e6)*.30;
+  var lapis=prog&&prog.lapis&&prog.lapis.length?prog.lapis:[{sampai:60e6,rate:.05},{sampai:250e6,rate:.15},{sampai:500e6,rate:.25},{sampai:Infinity,rate:.30}];
+  var pph=0,prev=0;
+  for(var i=0;i<lapis.length;i++){
+    var upTo=Math.min(pkp,lapis[i].sampai);
+    var base=Math.max(0,upTo-prev);
+    if(base>0)pph+=base*lapis[i].rate;
+    prev=upTo;
+    if(pkp<=lapis[i].sampai)break;
+  }
   return Math.round(pph);
 }
 function hitungPPhProgresif(bruto,ptkpKey){
@@ -722,10 +748,11 @@ function hitungPPhProgresif(bruto,ptkpKey){
 }
 
 // PPh 21 FINAL untuk pesangon/THT/JHT dibayar sekaligus (tarif berlapis PP 68/2009)
-function hitungPPhFinalPesangon(bruto){
+function hitungPPhFinalPesangon(bruto,tanggal){
   const x=Math.max(0,Math.round(bruto||0));
   let pph=0;
-  const lap=[
+  var buku=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tanggal):null;
+  const lap=(buku&&buku.pesangon&&buku.pesangon.length)?buku.pesangon:[
     {cap:50e6,rate:0},
     {cap:100e6,rate:.05},
     {cap:500e6,rate:.15},
@@ -1294,10 +1321,50 @@ function sigajiHitungScopeNik(nik){
   if(!x){x={idx:null,pot:new Map()};s.byNik.set(nik,x);}
   return x;
 }
+var sigajiBekuDalam=false;
+function sigajiAmbilHasilBeku(p,nik){
+  var hg=p&&p.hasil_gaji;
+  if(!hg||hg.v!==1||!hg.byNik||!nik)return null;
+  var row=hg.byNik[nik];
+  if(!row)return null;
+  return deepCloneLite(row);
+}
+/** Simpan hasil hitungGaji periode terkunci agar perubahan tarif tidak menulis ulang slip. */
+function sigajiBekukanHasilPeriode(p,optsBeku){
+  if(!p||!p.nama||sigajiBekuDalam)return false;
+  if(typeof karyawanListPeriode!=='function')return false;
+  optsBeku=optsBeku||{};
+  sigajiBekuDalam=true;
+  try{
+    var byNik={};
+    var aturanId='';
+    karyawanListPeriode(p).forEach(function(kar){
+      if(!kar||!kar.nik)return;
+      var g=hitungGaji(kar,p.nama,{fresh:true});
+      if(g&&g.aturanId)aturanId=g.aturanId;
+      byNik[kar.nik]=g;
+    });
+    if(!Object.keys(byNik).length)return false;
+    p.hasil_gaji={v:1,aturanId:aturanId,at:new Date().toISOString(),byNik:byNik};
+    if(!optsBeku.skipSave&&typeof saveAll==='function')saveAll();
+    return true;
+  }finally{
+    sigajiBekuDalam=false;
+  }
+}
 function hitungGaji(k,pNama,opts){
   if(!__sigajiHitungScope)return sigajiWithHitungCache(function(){return hitungGaji(k,pNama,opts);});
   opts=opts||{};
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
+  const tglAturan=tglAturanDariPeriode(p);
+  if(!opts.fresh&&p&&p.snapshot_locked&&k&&k.nik){
+    var bekuHit=sigajiAmbilHasilBeku(p,k.nik);
+    if(!bekuHit&&!sigajiBekuDalam){
+      sigajiBekukanHasilPeriode(p);
+      bekuHit=sigajiAmbilHasilBeku(p,k.nik);
+    }
+    if(bekuHit)return bekuHit;
+  }
   if(!opts.skipResolve){
     ensureKarSnapshotPeriode(pn,[k]);
     k=resolveKarForPeriode(k,pn);
@@ -1374,7 +1441,7 @@ function hitungGaji(k,pNama,opts){
           phkCtx={mode:'resign',tgl:tglStopIso,items:items,bruto:bruto,pphFinal:0,pphFinalBase:0};
         }else{
           // PHK: dipisah, PPh 21 final pesangon dihitung sendiri
-          const pphFinal=hitungPPhFinalPesangon(bruto);
+          const pphFinal=hitungPPhFinalPesangon(bruto,tglAturan);
           phkCtx={mode:'phk',tgl:tglStopIso,items:items,bruto:bruto,pphFinal:pphFinal,pphFinalBase:bruto};
         }
       }
@@ -1387,7 +1454,7 @@ function hitungGaji(k,pNama,opts){
     ?(isBpjsFullMonth?Math.round(sigajiRp(k.gapok)):gapokEff)
     :gapokKontrakSebulan(k,p,siklusGaji);
   const tunjBpjs=isBpjsFullMonth?0:tBPJS;
-  const bpjs=calcBPJS(k,gapokBpjs,tunjBpjs);
+  const bpjs=calcBPJS(k,gapokBpjs,tunjBpjs,tglAturan);
   // BPJS Perusahaan (JKK+JKM+Kes) = natura kena pajak per PMK 168/2023
   const bpjsPrsNatKP=bpjs.jkk_prs+bpjs.jkm_prs+bpjs.kes_prs;
   const grossPPhRegular=gapokEff+tGross+natKP+lb+bpjsPrsNatKP;
@@ -1403,7 +1470,7 @@ function hitungGaji(k,pNama,opts){
   if(isMasaPajakTerakhir){
     const ytd=getBrutoYTD(k,pn);
     const brutoTahunan=ytd.totalBruto+grossPPh;
-    const pphTahunan=hitungPPhTahunanProgresif(brutoTahunan,k.ptkp);
+    const pphTahunan=hitungPPhTahunanProgresif(brutoTahunan,k.ptkp,tglAturan);
     const pphBulanIni=pphTahunan-ytd.totalPPh;
     pph=Math.max(0,pphBulanIni);
     const selisih=pphBulanIni; // negatif = lebih bayar
@@ -1428,9 +1495,9 @@ function hitungGaji(k,pNama,opts){
     };
     if(selisih<0&&(p.opsi_lebih_bayar||'refund')==='refund') pph=0; // lebih bayar → PPh bulan ini 0
   } else {
-    pph=hitungPPhBln(grossPPh,k.ptkp);
+    pph=hitungPPhBln(grossPPh,k.ptkp,tglAturan);
   }
-  const pphTanpaThr=hitungPPhBln(grossPPhRegular,k.ptkp);
+  const pphTanpaThr=hitungPPhBln(grossPPhRegular,k.ptkp,tglAturan);
   const pphAtasThr=pph-pphTanpaThr;
   const potT=(k.potongan||[]).reduce((s,x)=>s+sigajiRp(x.nilai),0);
   const skipPotHadir=siklusGaji==='harian'||siklusGaji==='mingguan';
@@ -1453,7 +1520,10 @@ function hitungGaji(k,pNama,opts){
     var potJadwal=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+pph+potT;
     jadwalBayar=pecahPotonganCadangan(paysJadwal,potJadwal);
   }
-  return{gapokEff,gapokFull:sigajiRp(k.gapok),gapokRate:Math.round(sigajiRp(k.gapok)),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs};
+  var bukuAturan=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tglAturan):null;
+  var terRate=tarifPPhBln(grossPPh,k.ptkp,tglAturan);
+  var aturanId=bukuAturan&&bukuAturan.id?bukuAturan.id:'';
+  return{gapokEff,gapokFull:sigajiRp(k.gapok),gapokRate:Math.round(sigajiRp(k.gapok)),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs,terRate,aturanId};
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff,idx){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;

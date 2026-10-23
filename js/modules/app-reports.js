@@ -116,8 +116,9 @@ function renderPPHBody(){
   var sums={gross:0,thr:0,pkp:0,pphY:0,pphM:0,pphRet:0};
   var rows=list.map(function(k,idx){
     const g=hitungGaji(k);
-    const tbl=getTERTable(k.ptkp);const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
-    const bj=Math.min(g.grossPPh*12*.05,6e6);const pv=nilaiPTKP(k.ptkp);const pkp=Math.max(0,g.grossPPh*12-bj-pv);
+    const tglP=typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(PA()):'';
+    const rate=typeof rateTerHasil==='function'?rateTerHasil(g,k,PA()):0;
+    const bj=Math.min(g.grossPPh*12*.05,6e6);const pv=nilaiPTKP(k.ptkp,tglP);const pkp=Math.max(0,g.grossPPh*12-bj-pv);
     sums.gross+=g.grossPPh||0;
     sums.thr+=g.thrBruto||0;
     sums.pkp+=pkp;
@@ -388,13 +389,12 @@ function potKhDetailCols(details){
   });
   return z;
 }
-function terInfoForExport(ptkpKey,grossPPh){
-  var tbl=getTERTable(ptkpKey);
+function terInfoForExport(ptkpKey,grossPPh,tanggal,terRateTersimpan){
+  var tbl=getTERTable(ptkpKey,tanggal);
   var idx=tbl.findIndex(function(r){return grossPPh<=r[0];});
   var found=idx>=0?tbl[idx]:tbl[tbl.length-1];
-  var lmpKey=ptkpKey==='TK0'||ptkpKey==='TK1'||ptkpKey==='K0'?'A':ptkpKey==='K3'?'C':'B';
-  var customRate=perusahaan&&perusahaan.ter_custom&&perusahaan.ter_custom[lmpKey]&&perusahaan.ter_custom[lmpKey][idx>=0?idx:tbl.length-1];
-  var rate=customRate!==undefined?customRate:found[1];
+  var lmpKey=typeof lampiranTerKey==='function'?lampiranTerKey(ptkpKey):(ptkpKey==='TK0'||ptkpKey==='TK1'||ptkpKey==='K0'?'A':ptkpKey==='K3'?'C':'B');
+  var rate=terRateTersimpan!=null?terRateTersimpan:(typeof tarifPPhBln==='function'?tarifPPhBln(grossPPh,ptkpKey,tanggal):found[1]);
   return{lampiran:'Lampiran '+lmpKey,ratePct:Math.round(rate*10000)/100,batasBrutoTer:found[0]};
 }
 /** Periode gaji yang memuat tanggal berhenti karyawan */
@@ -579,7 +579,7 @@ function exportExcelKertasKerjaPPh(){
       list.forEach(function(k,idx){
         var g=hitungGaji(k,pNama);
         var pr=getPR(k.nik,pNama);
-        var terI=terInfoForExport(k.ptkp,g.grossPPh);
+        var terI=terInfoForExport(k.ptkp,g.grossPPh,typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(p):'',g.terRate);
         var pk=potKhDetailCols(g.potKehadiran.details);
         var r=new Array(hdr.length).fill('');
         var j=0;
