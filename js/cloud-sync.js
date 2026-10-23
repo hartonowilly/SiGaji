@@ -90,15 +90,20 @@
 
   var CLOUD_FETCH_TIMEOUT_MS = 45000;
 
-  function withCloudTimeout(promise, label) {
+  var CLOUD_AUTH_TIMEOUT_MS = 20000;
+
+  function withCloudTimeout(promise, label, ms) {
+    var timer = null;
     return Promise.race([
       promise,
       new Promise(function (_, reject) {
-        setTimeout(function () {
+        timer = setTimeout(function () {
           reject(new Error(label || 'Timeout memuat data cloud'));
-        }, CLOUD_FETCH_TIMEOUT_MS);
+        }, ms || CLOUD_FETCH_TIMEOUT_MS);
       }),
-    ]);
+    ]).finally(function () {
+      clearTimeout(timer);
+    });
   }
 
   function setResumeBootUi(booting, hasSession) {
@@ -125,21 +130,20 @@
 
   /** Dipanggil segera — login menunggu boot Supabase (tidak lagi bergantung pada fungsi yang baru ada setelah import). */
   function tryCloudLoginWhenReady(email, pw) {
-    (bootPromise || Promise.resolve())
+    withCloudTimeout(bootPromise || Promise.resolve(), 'boot', CLOUD_AUTH_TIMEOUT_MS)
+      .catch(function (e) {
+        // Boot (cek sesi lama) macet/gagal: tetap coba login bila klien Supabase sudah dibuat.
+        console.warn('Sigaji cloud boot belum selesai:', e);
+      })
       .then(function () {
         if (!clientReady || !window.sigajiSupabase) {
+          clearLoginBusy();
           toastSafe(
-            'Koneksi awan tidak tersedia. Periksa URL dan anon key di js/config.js, jaringan, atau buka konsol (F12) bila pustaka Supabase gagal dimuat.'
+            'Koneksi awan tidak tersedia. Coba refresh (Ctrl+Shift+R), periksa jaringan, atau buka F12 → Console bila pustaka Supabase gagal dimuat.'
           );
           return;
         }
         tryCloudLogin(email, pw);
-      })
-      .catch(function (e) {
-        console.error('Sigaji cloud boot:', e);
-        toastSafe(
-          'Gagal memuat Supabase. Coba refresh (Ctrl+F5), pastikan deploy terbaru (npm run build), atau buka F12 → Console.'
-        );
       });
   }
 
@@ -205,6 +209,11 @@
           persistSession: true,
           storage: window.localStorage,
           detectSessionInUrl: true,
+          // Kunci lintas-tab bawaan (navigator.locks) bisa macet selamanya bila ada tab SiGaji lain yang
+          // tertahan/di-suspend browser → getSession & login tidak pernah selesai.
+          lock: function (_name, _acquireTimeout, fn) {
+            return fn();
+          },
         },
       });
       clientReady = true;
@@ -281,7 +290,16 @@
     var hasSession = false;
     setResumeBootUi(true, false);
     try {
-      var sess = await window.sigajiSupabase.auth.getSession();
+      var sess = { data: { session: null } };
+      try {
+        sess = await withCloudTimeout(
+          window.sigajiSupabase.auth.getSession(),
+          'Timeout cek sesi Supabase',
+          CLOUD_AUTH_TIMEOUT_MS
+        );
+      } catch (eSess) {
+        console.warn('Sigaji: cek sesi lama dilewati', eSess);
+      }
       if (
         sess.data &&
         sess.data.session &&
@@ -318,8 +336,11 @@
 
   function tryCloudLogin(email, pw) {
     var sb = window.sigajiSupabase;
-    sb.auth
-      .signInWithPassword({ email: email.trim(), password: pw })
+    withCloudTimeout(
+      sb.auth.signInWithPassword({ email: email.trim(), password: pw }),
+      'Server login tidak merespons dalam 20 detik. Tutup tab SiGaji lain, refresh (Ctrl+Shift+R), lalu coba lagi',
+      CLOUD_AUTH_TIMEOUT_MS
+    )
       .then(function (r) {
         if (r.error) {
           var msg = r.error.message || 'Login gagal';
