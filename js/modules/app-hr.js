@@ -642,6 +642,7 @@ async function simpanKarPanel(){
       }
     }
   }
+  if(oldPtkp!==newPtkp&&typeof sigajiCatatPtkpKaryawan==='function')sigajiCatatPtkpKaryawan(k,newPtkp);
   Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,siklus_gaji:siklusGaji,hari_gaji:hariGaji,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:newPtkp,atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:jk,agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),bpjs_kpj:gv('sp-bpjs-kpj-f'),bpjs_kes_kartu:gv('sp-bpjs-kes-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
   if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&typeof sigajiCanAssignCabang==='function'&&sigajiCanAssignCabang()){
     var cabInp=document.getElementById('sp-cabang-f');
