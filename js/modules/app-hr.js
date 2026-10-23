@@ -1111,13 +1111,28 @@ if(typeof window!=='undefined'){
   window.hitungUlangPenggajian=hitungUlangPenggajian;
   window.sinkronSnapshotPeriodeDariMaster=sinkronSnapshotPeriodeDariMaster;
 }
+var __sigajiPgGen=0;
 function renderPenggajian(skipTunjVar){
-  if(typeof sigajiWithSkeleton==='function'){
-    return sigajiWithSkeleton('tb-penggajian',12,function(){
-      renderPenggajianBody(skipTunjVar);
-    });
+  var my=++__sigajiPgGen;
+  var p=typeof PA==='function'?PA():null;
+  var list=p&&typeof karyawanListPeriode==='function'?karyawanListPeriode(p):[];
+  var finish=function(map){
+    if(my!==__sigajiPgGen)return;
+    if(typeof sigajiWithSkeleton==='function'){
+      return sigajiWithSkeleton('tb-penggajian',12,function(){
+        renderPenggajianBody(skipTunjVar,map);
+      });
+    }
+    renderPenggajianBody(skipTunjVar,map);
+  };
+  var needWorker=list.length>=(window.sigajiHitungGajiMassal&&window.sigajiHitungGajiMassal.THRESHOLD||60);
+  if(needWorker&&typeof window.sigajiHitungGajiMassal==='function'&&p){
+    var el=document.getElementById('tb-penggajian');
+    if(el)el.innerHTML='<tr><td colspan="12" class="text-subtle">Menghitung gaji…</td></tr>';
+    window.sigajiHitungGajiMassal(p.nama,list).then(finish,function(){finish(null);});
+    return;
   }
-  renderPenggajianBody(skipTunjVar);
+  finish(null);
 }
 function fillPgPenggajianFoot(foot,nKar,hasCab,sums){
   foot.replaceChildren();
@@ -1173,7 +1188,7 @@ function fillPgPenggajianFoot(foot,nKar,hasCab,sums){
   tr.appendChild(tdTail);
   foot.appendChild(tr);
 }
-function renderPenggajianBody(skipTunjVar){
+function renderPenggajianBody(skipTunjVar,gajiByNik){
   try{if(typeof sigajiSyncPgGajiTableHead==='function')sigajiSyncPgGajiTableHead();}catch(eTh2){sigajiCatchWarn("js/modules/app-hr.js",eTh2);}
   const p=PA();
   // Buat snapshot master untuk periode aktif (agar periode yang sudah dikerjakan tidak berubah)
@@ -1196,7 +1211,7 @@ function renderPenggajianBody(skipTunjVar){
   let prAktif=0;
   var sumGross=0,sumThr=0,sumThBruto=0,sumBpjs=0,sumPph=0,sumPphRet=0,sumNeto=0,sumPotKh=0;
   const rows=karyawanListPeriode(p).map(function(k,idx){
-    const g=hitungGaji(k,p.nama);
+    const g=(gajiByNik&&gajiByNik[k.nik])||hitungGaji(k,p.nama);
     sumGross+=g.grossPPh||0;
     sumThr+=g.thrBruto||0;
     sumThBruto+=g.brutoTH||0;

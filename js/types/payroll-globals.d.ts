@@ -44,6 +44,9 @@ interface Periode {
   tipe_periode?: string;
   opsi_lebih_bayar?: string;
   snapshot_locked?: boolean;
+  /** Rekap gross/PPh/neto saat dikunci — laporan tidak perlu muat absensi arsip. */
+  arsip_rekap?: { v: number; kar: number; gross: number; thr: number; pph: number; neto: number; at: string };
+  absensi_pot_baseline?: Record<string, { total: number; details?: unknown[]; settledAt?: string; capturedAt?: string }>;
 }
 
 /** SheetJS (CDN) — tanpa tipe resmi di proyek ini. */
@@ -176,6 +179,9 @@ declare function pecahPotonganCadangan(
 declare function liburSetFrom(list: unknown): Record<string, boolean>;
 declare function saveAll(): void;
 declare function toast(msg: string): void;
+/** True bila data periode sudah di memori; jika belum, mulai muat arsip. */
+declare function sigajiNeedPeriodeData(pNama: string): boolean;
+declare function sigajiPeriodeDataReady(pNama: string, nik?: string): boolean;
 declare function openModal(id: string): void;
 declare function closeModal(id: string): void;
 declare function escapeHtml(s: unknown): string;

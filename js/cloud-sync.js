@@ -735,6 +735,22 @@
     // Blob berisi seluruh tenant — hanya kantor pusat yang boleh menulisnya (RLS v12).
     var ct = window.sigajiCloudTables;
     if (ct && typeof ct.isV12 === 'function' && ct.isV12() && !ct.getAccess().hq) return false;
+    var want = blobOwed || blobWanted(res);
+    if (want && ct && typeof ct.archivePending === 'function' && ct.archivePending()) {
+      // Memori belum berisi periode arsip — blob dari memori ini akan menghapus riwayat lama.
+      blobOwed = true;
+      sigajiEnsureArchive().then(function (ok) {
+        if (ok) cloudUpsert();
+      });
+      return false;
+    }
+    if (want) blobOwed = false;
+    return want;
+  }
+
+  var blobOwed = false;
+
+  function blobWanted(res) {
     if (!res) return true;
     if (!res.upserts && !res.deletes) return false;
     for (var i = 0; i < res.storeKeys.length; i++) {
@@ -742,6 +758,68 @@
     }
     return Date.now() - blobWrittenAt() > BLOB_BACKUP_MS;
   }
+
+  /* ── Arsip periode lama: dimuat di latar saat pertama dibutuhkan ─────────────────────────── */
+  var archiveJob = null;
+  var archiveFailedAt = 0;
+
+  function archivePending() {
+    var ct = window.sigajiCloudTables;
+    return !!(ct && typeof ct.archivePending === 'function' && ct.archivePending());
+  }
+
+  /** @returns {Promise<boolean>} true = arsip sudah ada di memori */
+  function sigajiEnsureArchive() {
+    if (!archivePending()) return Promise.resolve(true);
+    if (archiveJob) return archiveJob;
+    if (Date.now() - archiveFailedAt < 30000) return Promise.resolve(false);
+    var sb = window.sigajiSupabase;
+    if (!sb) return Promise.resolve(false);
+    toastSafe('Memuat arsip periode lama…');
+    archiveJob = window.sigajiCloudTables
+      .loadArchive(sb)
+      .then(function (changed) {
+        if (archivePending()) return false;
+        if (changed) {
+          persistMemoryQuiet();
+        }
+        sigajiRefreshUiAfterCloudData();
+        toastSafe('Arsip periode lama sudah dimuat.');
+        return true;
+      })
+      .catch(function (e) {
+        archiveFailedAt = Date.now();
+        console.error('Sigaji arsip:', e);
+        toastSafe('Gagal memuat arsip periode lama — coba lagi sebentar lagi.');
+        return false;
+      })
+      .finally(function () {
+        archiveJob = null;
+      });
+    return archiveJob;
+  }
+  window.sigajiEnsureArchive = sigajiEnsureArchive;
+
+  /** Data periode ini sudah ada di memori? nik diisi = cukup untuk koreksi absensi karyawan itu. */
+  window.sigajiPeriodeDataReady = function (pNama, nik) {
+    var ct = window.sigajiCloudTables;
+    return !ct || typeof ct.archiveReady !== 'function' || ct.archiveReady(pNama, nik);
+  };
+
+  /** Seperti sigajiPeriodeDataReady, tetapi bila belum siap langsung mulai muat arsip. */
+  window.sigajiNeedPeriodeData = function (pNama) {
+    if (window.sigajiPeriodeDataReady(pNama)) return true;
+    sigajiEnsureArchive();
+    return false;
+  };
+
+  /** Absensi pada tanggal ini sudah ada di memori? Bila belum, mulai muat arsip. */
+  window.sigajiNeedTanggalData = function (iso) {
+    var ct = window.sigajiCloudTables;
+    if (!ct || typeof ct.archiveDateReady !== 'function' || ct.archiveDateReady(iso)) return true;
+    sigajiEnsureArchive();
+    return false;
+  };
 
   /** Hasil gabung dengan perubahan pengguna lain: simpan lokal, gambar ulang, beri tahu bila ada bentrok. */
   function reportMergeResult(res) {

@@ -79,19 +79,43 @@
     showScreen('screen-login');
     return true;
   }
+  /** SQL v12: blob sigaji_cloud hanya untuk kantor pusat — karyawan membaca baris perannya sendiri. */
+  async function loadMeFromRoles(uid) {
+    var r = await sb
+      .from('sigaji_user_roles')
+      .select('role,nik,username,aktif')
+      .eq('tenant_key', tenantKey())
+      .eq('auth_uid', uid)
+      .maybeSingle();
+    if (r.error || !r.data || r.data.aktif === false) return null;
+    var u = { role: r.data.role, nik: r.data.nik || '', username: r.data.username || '' };
+    if (u.nik) {
+      var k = await sb
+        .from('sigaji_karyawan')
+        .select('data')
+        .eq('tenant_key', tenantKey())
+        .eq('nik', u.nik)
+        .maybeSingle();
+      if (!k.error && k.data && k.data.data) u.nama = k.data.data.nama;
+    }
+    return u;
+  }
   async function loadMeFromCloud() {
     var email = (session.user.email || '').toLowerCase();
     var uid = session.user.id;
-    var res = await sb.from('sigaji_cloud').select('payload').eq('tenant_key', tenantKey()).maybeSingle();
-    var payload = (res.data && res.data.payload) || {};
-    var users = payload.users || [];
-    var u =
-      users.find(function (x) {
-        return x && x.aktif !== false && x.email && String(x.email).toLowerCase() === email;
-      }) ||
-      users.find(function (x) {
-        return x && x.aktif !== false && x.auth_uid && String(x.auth_uid) === uid;
-      });
+    var u = await loadMeFromRoles(uid);
+    if (!u) {
+      var res = await sb.from('sigaji_cloud').select('payload').eq('tenant_key', tenantKey()).maybeSingle();
+      var payload = (res.data && res.data.payload) || {};
+      var users = payload.users || [];
+      u =
+        users.find(function (x) {
+          return x && x.aktif !== false && x.email && String(x.email).toLowerCase() === email;
+        }) ||
+        users.find(function (x) {
+          return x && x.aktif !== false && x.auth_uid && String(x.auth_uid) === uid;
+        });
+    }
     if (!u) {
       toast('User tidak ada di data SiGaji — hubungi HRD');
       return false;

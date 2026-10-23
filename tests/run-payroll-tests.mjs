@@ -32,6 +32,9 @@ const suites = [
   'sinkron-delta.test.mjs',
   'cloud-tables-delta.test.mjs',
   'cloud-tables-v12.test.mjs',
+  'arsip-boot.test.mjs',
+  'hitung-cepat-setara.test.mjs',
+  'payroll-worker.test.mjs',
   'sql-v12.test.mjs',
   'server-tenant-data.test.mjs',
 ];

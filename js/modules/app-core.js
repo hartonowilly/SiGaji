@@ -35,10 +35,20 @@ function periodesSortedByStart(list){
 }
 /** Bulan gaji kanonik periode — dari nama (Januari 2025) lalu tanggal akhir/bayar, bukan tanggal mulai.
  *  Pola 25–24: Maret = 25 Feb – 24 Mar → bulan gaji = Maret (end), bukan Februari (start). */
+var __sigajiPeriodeMetaCache=new WeakMap();
 function sigajiPeriodePayrollMeta(p){
+  if(!p)return{ym:'',month:0,year:0,label:'-',crossesPriorMonth:false,priorDays:0};
+  // Dipanggil di setiap pengurutan periode di dalam hitungGaji — ribuan kali per render.
+  if(typeof p!=='object')return sigajiPeriodePayrollMetaCompute(p);
+  var hit=__sigajiPeriodeMetaCache.get(p);
+  if(hit&&hit.nama===p.nama&&hit.start===p.start&&hit.end===p.end&&hit.bayar===p.bayar)return Object.assign({},hit.out);
+  var out=sigajiPeriodePayrollMetaCompute(p);
+  __sigajiPeriodeMetaCache.set(p,{nama:p.nama,start:p.start,end:p.end,bayar:p.bayar,out:out});
+  return Object.assign({},out);
+}
+function sigajiPeriodePayrollMetaCompute(p){
   var blnLong=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
   var blnShort=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  if(!p)return{ym:'',month:0,year:0,label:'-',crossesPriorMonth:false,priorDays:0};
   var nama=String(p.nama||'').toLowerCase();
   var month=0,year=0,i;
   for(i=0;i<blnLong.length;i++){
@@ -80,23 +90,38 @@ function sigajiPeriodePayrollMeta(p){
   };
 }
 function sortPeriodesByPayrollYm(list,desc){
-  return (list||[]).slice().sort(function(a,b){
-    var ma=sigajiPeriodePayrollMeta(a).ym||'';
-    var mb=sigajiPeriodePayrollMeta(b).ym||'';
+  var dec=(list||[]).map(function(p){
+    return{p:p,ym:sigajiPeriodePayrollMeta(p).ym||'',s:String((p&&p.start)||'')};
+  });
+  dec.sort(function(a,b){
+    var ma=a.ym,mb=b.ym;
     if(ma&&mb&&ma!==mb)return desc?mb.localeCompare(ma):ma.localeCompare(mb);
-    var ta=String((a&&a.start)||'').localeCompare(String((b&&b.start)||''));
+    var ta=a.s.localeCompare(b.s);
     return desc?-ta:ta;
   });
+  return dec.map(function(d){return d.p;});
 }
 const isHL=d=>hariLibur.some(l=>l.tgl===d);
 const namaHL=d=>{const l=hariLibur.find(x=>x.tgl===d);return l?l.nama:'';};
 function isHariLiburKerja(dow){const hk=perusahaan.hariKerja||6;return hk===5?(dow===0||dow===6):(dow===0);}
 const ini=n=>(n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+/** Sama dengan /^\d{4}-\d{2}-\d{2}$/ — tanpa regex karena dipanggil untuk setiap tanggal absensi. */
+function isIsoDateStr(t){
+  if(t.length!==10||t.charCodeAt(4)!==45||t.charCodeAt(7)!==45)return false;
+  for(var i=0;i<10;i++){
+    if(i===4||i===7)continue;
+    var c=t.charCodeAt(i);
+    if(c<48||c>57)return false;
+  }
+  return true;
+}
 /** Normalisasi ke YYYY-MM-DD untuk bandingkan kunci absensi / periode (hindari gagal karena sufiks T/Z). */
 function toIsoDate(v){
+  if(typeof v==='string'&&isIsoDateStr(v))return v;
   if(v==null||v==='')return'';
   var t=String(v).trim();
   if(t.length>=10)t=t.substring(0,10);
+  if(isIsoDateStr(t))return t;
   // dd/mm/yyyy (sering dari copy-paste / input manual)
   if(/^\d{2}\/\d{2}\/\d{4}$/.test(t)){
     var p=t.split('/');
@@ -269,12 +294,66 @@ function isCutiBersamaPotongKuotaTgl(tglIso){
   return !isHariLiburKerja(new Date(d+'T12:00:00').getDay());
 }
 /** Cuti dari absensi yang memakai kuota (hari cuti bersama di absen sebagai C tidak dihitung ganda). */
-function cutiManual(nik,yr){
+/** Karyawan per NIK (= karyawan.find pertama) tanpa memindai seluruh daftar tiap panggilan. */
+var __sigajiKarIdx={arr:null,map:null};
+function sigajiKarByNik(nik){
+  if(typeof karyawan==='undefined'||!karyawan)return null;
+  if(__sigajiKarIdx.arr!==karyawan){__sigajiKarIdx.arr=karyawan;__sigajiKarIdx.map=null;}
+  var m=__sigajiKarIdx.map;
+  var i=m?m.get(nik):undefined;
+  if(i!==undefined&&karyawan[i]&&karyawan[i].nik===nik)return karyawan[i];
+  m=new Map();
+  for(var j=0;j<karyawan.length;j++){
+    var x=karyawan[j];
+    if(x&&!m.has(x.nik))m.set(x.nik,j);
+  }
+  __sigajiKarIdx.map=m;
+  i=m.get(nik);
+  return i!==undefined?karyawan[i]:null;
+}
+/** Absensi satu karyawan dikelompokkan per bulan (YYYY-MM → [[tglIso,status]]) — untuk satu kali hitung saja. */
+function sigajiAbsensiIndex(nik){
+  var ab=absensi[nik]||{};
+  var by=new Map();
+  for(var raw in ab){
+    if(!Object.prototype.hasOwnProperty.call(ab,raw))continue;
+    var d=toIsoDate(raw);
+    if(!d)continue;
+    var ym=d.substring(0,7);
+    var b=by.get(ym);
+    if(!b){b=[];by.set(ym,b);}
+    b.push([d,ab[raw]]);
+  }
+  return by;
+}
+/** Entri indeks di bulan-bulan yang beririsan dengan [s,e] — pemanggil tetap menyaring per tanggal. */
+function sigajiAbsensiInRange(idx,s,e){
+  var out=[];
+  if(!/^\d{4}-\d{2}/.test(String(s||''))||!/^\d{4}-\d{2}/.test(String(e||''))){
+    idx.forEach(function(b){for(var i=0;i<b.length;i++)out.push(b[i]);});
+    return out;
+  }
+  var y=parseInt(s.substring(0,4),10),m=parseInt(s.substring(5,7),10);
+  var last=e.substring(0,7);
+  for(var guard=0;guard<1200;guard++){
+    var ym=y+'-'+String(m).padStart(2,'0');
+    if(ym>last)break;
+    var b=idx.get(ym);
+    if(b)for(var i=0;i<b.length;i++)out.push(b[i]);
+    if(++m>12){m=1;y++;}
+  }
+  return out;
+}
+function cutiManual(nik,yr,idx){
   const pfx=String(yr);
-  return Object.entries(absensi[nik]||{}).filter(function(ent){
+  if(idx&&idx.cutiManual&&idx.cutiManual.has(pfx))return idx.cutiManual.get(pfx);
+  const ents=idx?sigajiAbsensiInRange(idx,pfx+'-01-01',pfx+'-12-31'):Object.entries(absensi[nik]||{});
+  const n=ents.filter(function(ent){
     var dn=toIsoDate(ent[0]);
     return dn.startsWith(pfx)&&ent[1]==='cuti'&&!isCutiBersamaPotongKuotaTgl(dn);
   }).length;
+  if(idx)(idx.cutiManual||(idx.cutiManual=new Map())).set(pfx,n);
+  return n;
 }
 /** Ambil daftar rentang tanggal "ekor tahun lalu" yang termasuk dalam periode gaji yang menyilang tahun `yr`. */
 function getCrossYearTailRanges(yr){
@@ -336,16 +415,16 @@ function countCutiBersamaTrackingYear(yr,nik){
  * rentang periode gaji bila periode beririsan dengan kalender `tahun` (mis. 29 Des 2025–27 Jan 2026
  * untuk tampilan kuota 2026: hari Des 2025 di dalam rentang ikut terhitung).
  */
-function cutiManualUntukTahunDanPeriode(nik,tahun,periode){
+function cutiManualUntukTahunDanPeriode(nik,tahun,periode,idx){
   const y=String(tahun);
-  let n=cutiManual(nik,tahun);
+  let n=cutiManual(nik,tahun,idx);
   if(!periode||!periode.start||!periode.end)return n;
   const s=toIsoDate(periode.start),e=toIsoDate(periode.end);
   if(!s||!e||!(e>=y+'-01-01'&&s<=y+'-12-31'))return n;
-  const ab=absensi[nik]||{};
-  for(const raw of Object.keys(ab)){
-    if(ab[raw]!=='cuti')continue;
-    const d=toIsoDate(raw);
+  const ents=idx?sigajiAbsensiInRange(idx,s,e):Object.entries(absensi[nik]||{});
+  for(const ent of ents){
+    if(ent[1]!=='cuti')continue;
+    const d=toIsoDate(ent[0]);
     if(!d)continue;
     if(isCutiBersamaPotongKuotaTgl(d))continue;
     if(d<s||d>e)continue;
@@ -419,7 +498,19 @@ function rincianCutiTahun(nik,yr,opts){
   return{items:items,manual:manual,cb:cb,total:manual+cb};
 }
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01').getTime())/(86400000*30.44));
-function hariKerjaRange(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
+var __sigajiHkCache=new Map();
+function hariKerjaRange(s,e){
+  var hl='';
+  for(var i=0;i<hariLibur.length;i++)hl+=(hariLibur[i]&&hariLibur[i].tgl)+',';
+  var ck=s+'|'+e+'|'+(perusahaan.hariKerja||6)+'|'+hl;
+  var hit=__sigajiHkCache.get(ck);
+  if(hit!==undefined)return hit;
+  var n=hariKerjaRangeCompute(s,e);
+  if(__sigajiHkCache.size>2000)__sigajiHkCache.clear();
+  __sigajiHkCache.set(ck,n);
+  return n;
+}
+function hariKerjaRangeCompute(s,e){const sd=new Date(s),ed=new Date(e);let c=0;for(let d=new Date(sd);d<=ed;d.setDate(d.getDate()+1)){const dow=d.getDay();const ds=d.toISOString().split('T')[0];if(!isHariLiburKerja(dow)&&!isHL(ds))c++;}return c;}
 /** Status 1/2 sakit & 1/2 izin bernilai 0,5 hari — sama seperti dasar potongan gaji. */
 function isStatusSetengahHari(st){return st==='setengah_sakit'||st==='setengah_ijin';}
 function bobotHariAbsen(st){return isStatusSetengahHari(st)?.5:1;}
@@ -932,9 +1023,9 @@ function canEditAbsensiPadaTanggalIso(tglIso){
   if(CU.role==='Admin'&&periodeSnapshotLockedUntukTanggal(tglIso))return true;
   return !periodeSnapshotLockedUntukTanggal(tglIso);
 }
-function sigajiPotKehadiranUntukPeriodeNik(nik,p){
+function sigajiPotKehadiranUntukPeriodeNik(nik,p,idx){
   if(!nik||!p||!p.nama)return{total:0,details:[]};
-  var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  var k=sigajiKarByNik(nik);
   if(!k)return{total:0,details:[]};
   ensureKarSnapshotPeriode(p.nama,[k]);
   k=resolveKarForPeriode(k,p.nama);
@@ -943,7 +1034,7 @@ function sigajiPotKehadiranUntukPeriodeNik(nik,p){
   var isPR=pr&&pr.enabled&&pr.hk>0;
   var prF=isPR?pr.hh/pr.hk:1;
   var gapokEff=Math.round(sigajiRp(k.gapok)*prF);
-  return hitungPotonganKehadiran(nik,p,hkP,gapokEff);
+  return hitungPotonganKehadiran(nik,p,hkP,gapokEff,idx);
 }
 function sigajiCaptureAbsensiPotBaseline(p){
   if(!p)return;
@@ -984,7 +1075,7 @@ function sigajiRebaselinePriorLockedAbsensiPot(periodeBaruDikunci){
   });
 }
 /** Selisih potongan absensi vs baseline saat periode lama dikunci — dipotong / dikembalikan di slip bulan ini. */
-function hitungKoreksiAbsensiBulanSebelumnya(nik,periodeAktifNama){
+function hitungKoreksiAbsensiBulanSebelumnya(nik,periodeAktifNama,idx){
   var out={total:0,details:[]};
   if(!nik||!periodeAktifNama)return out;
   if(perusahaan&&perusahaan.koreksi_absensi_otomatis===false)return out;
@@ -998,7 +1089,12 @@ function hitungKoreksiAbsensiBulanSebelumnya(nik,periodeAktifNama){
     if(!ym||ym>=ymCur)return;
     var base=p.absensi_pot_baseline[nik];
     if(!base||base.total===undefined)return;
-    var now=sigajiPotKehadiranUntukPeriodeNik(nik,p);
+    var sc=sigajiHitungScopeNik(nik);
+    var now=sc&&sc.pot.get(p.nama);
+    if(!now){
+      now=sigajiPotKehadiranUntukPeriodeNik(nik,p,idx||(idx=sigajiAbsensiIndex(nik)));
+      if(sc)sc.pot.set(p.nama,now);
+    }
     var delta=Math.round((now.total||0)-(base.total||0));
     if(!delta)return;
     out.total+=delta;
@@ -1175,13 +1271,34 @@ function getKarSnapshotProgress(pNama,list){
  * @param {{ skipResolve?: boolean }} [opts]
  * @returns {HitungGajiResult}
  */
+var __sigajiHitungScope=null;
+/**
+ * Jalankan fn (render / ekspor sinkron) dengan cache hitung per karyawan: indeks absensi dan potongan
+ * periode terkunci (koreksi absensi, rekonsiliasi PPh) dihitung sekali. Cache dibuang saat fn selesai —
+ * jangan dipakai di sekitar kode yang mengubah absensi / snapshot di tengah jalan.
+ */
+function sigajiWithHitungCache(fn){
+  if(__sigajiHitungScope)return fn();
+  __sigajiHitungScope={byNik:new Map()};
+  try{return fn();}finally{__sigajiHitungScope=null;}
+}
+function sigajiHitungScopeNik(nik){
+  var s=__sigajiHitungScope;
+  if(!s)return null;
+  var x=s.byNik.get(nik);
+  if(!x){x={idx:null,pot:new Map()};s.byNik.set(nik,x);}
+  return x;
+}
 function hitungGaji(k,pNama,opts){
+  if(!__sigajiHitungScope)return sigajiWithHitungCache(function(){return hitungGaji(k,pNama,opts);});
   opts=opts||{};
   const pn=pNama||PA().nama;const p=periodes.find(x=>x.nama===pn)||PA();
   if(!opts.skipResolve){
     ensureKarSnapshotPeriode(pn,[k]);
     k=resolveKarForPeriode(k,pn);
   }
+  const hsc=sigajiHitungScopeNik(k.nik);
+  const abIdx=()=>hsc.idx||(hsc.idx=sigajiAbsensiIndex(k.nik));
   const hkP=hariKerjaRange(p.start,p.end);
   const pr=prorata[k.nik]?.[pn];const isPR=pr?.enabled&&pr.hk>0;
   const prF=isPR?pr.hh/pr.hk:1;
@@ -1314,8 +1431,8 @@ function hitungGaji(k,pNama,opts){
   const skipPotHadir=siklusGaji==='harian'||siklusGaji==='mingguan';
   const potKehadiran=skipPotHadir
     ?{total:0,details:[],gajiHarian:Math.round(sigajiRp(k.gapok)),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
-    :hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
-  const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn):{total:0,details:[]};
+    :hitungPotonganKehadiran(k.nik,p,hkP,gapokEff,abIdx());
+  const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn,abIdx()):{total:0,details:[]};
   const pphRet=sigajiRp(k.pph_return?.nilai);
   // Lebih bayar rekonsiliasi (resign/Desember, opsi refund) dikembalikan ke THP.
   // Carryover tidak masuk bulan ini. Default periode tanpa opsi = refund.
@@ -1333,7 +1450,7 @@ function hitungGaji(k,pNama,opts){
   }
   return{gapokEff,gapokFull:sigajiRp(k.gapok),gapokRate:Math.round(sigajiRp(k.gapok)),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs};
 }
-function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
+function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff,idx){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;
   const abNik=absensi[nik]||{};
   // Fallback: jika browser memuat app.js versi campur (cache), pastikan helper tanggal ada
@@ -1345,10 +1462,11 @@ function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   };
   const pStart=toIso((periode&&periode.start)||'2026-01-01'),pEnd=toIso((periode&&periode.end)||'2026-12-31');
-  var kar=(typeof karyawan!=='undefined'&&karyawan)?karyawan.find(function(x){return x&&x.nik===nik;}):null;
+  var kar=sigajiKarByNik(nik);
   var tStop=toIso(kar&&kar.tgl_berhenti);
   let nIzin=0,nSakit=0,n05S=0,n05I=0,nAlpha=0,nCuti=0;
-  for(const[tglRaw,st]of Object.entries(abNik)){
+  const entries=idx?sigajiAbsensiInRange(idx,pStart,pEnd):Object.entries(abNik);
+  for(const[tglRaw,st]of entries){
     const tgl=toIso(tglRaw);
     if(!tgl||tgl<pStart||tgl>pEnd)continue;
     if(tStop&&tgl>=tStop)continue; // setelah resign tidak dihitung potongan kehadiran
@@ -1358,7 +1476,7 @@ function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff){
   const end=new Date((periode&&periode.end?String(periode.end):'2026-12-31')+'T12:00:00');
   const yr=end.getFullYear();const kuota=masterCuti.kuota||12;
   const cb=(typeof countCutiBersamaUntukTahunDanPeriode==='function')?countCutiBersamaUntukTahunDanPeriode(yr,periode,nik):countCutiBersama(yr,nik);
-  const totalSudahCuti=cutiManualUntukTahunDanPeriode(nik,yr,periode)+cb;
+  const totalSudahCuti=cutiManualUntukTahunDanPeriode(nik,yr,periode,idx)+cb;
   const cutiDalamKuota=Math.min(nCuti,Math.max(0,kuota-(totalSudahCuti-nCuti)));const cutiLuarKuota=nCuti-cutiDalamKuota;
   function pot(mode,nilai,hari){if(hari<=0)return 0;switch(mode){case'tidak_dipotong':return 0;case'prorata':return Math.round(gajiHarian*hari);case'prorata_setengah':return Math.round(gajiHarian*hari*.5);case'nominal':return Math.round((nilai||0)*hari);case'persen':return Math.round(gajiHarian*(nilai||0)/100*hari);default:return 0;}}
   const pCDK=pot(ap.cuti_dalam_kuota?.mode||'tidak_dipotong',ap.cuti_dalam_kuota?.nilai||0,cutiDalamKuota);

@@ -165,6 +165,33 @@ function renderLaporan(){
   }
   renderLaporanBody();
 }
+/** Total hitungGaji semua karyawan yang terlihat di periode p. */
+function sigajiHitungRekapPeriode(p){
+  var r={kar:0,gross:0,thr:0,pph:0,neto:0};
+  var list=karyawanListPeriode(p);
+  r.kar=list.length;
+  list.forEach(function(k){var g=hitungGaji(k,p.nama);r.gross+=g.grossPPh;r.pph+=g.pph;r.neto+=g.neto;r.thr+=g.thrBruto;});
+  return r;
+}
+/** Rekap arsip berisi seluruh perusahaan — hanya berlaku untuk tampilan kantor pusat tanpa filter cabang. */
+function sigajiRekapArsipBerlaku(){
+  if(typeof CU==='undefined'||!CU||CU.role==='Karyawan')return false;
+  if(typeof sigajiGetCabangFilter==='function'&&sigajiGetCabangFilter())return false;
+  var ct=window.sigajiCloudTables;
+  if(ct&&typeof ct.isV12==='function'&&ct.isV12()&&!ct.getAccess().hq)return false;
+  return true;
+}
+function sigajiBolehTulisArsipRekap(){
+  return sigajiRekapArsipBerlaku()&&(CU.role==='Admin'||CU.role==='HRD');
+}
+/** Simpan rekap periode terkunci di periode itu sendiri (dipanggil saat kunci). @returns {boolean} tersimpan */
+function sigajiSimpanArsipRekap(p,r){
+  if(!p||!p.snapshot_locked||!sigajiBolehTulisArsipRekap())return false;
+  if(typeof sigajiPeriodeDataReady==='function'&&!sigajiPeriodeDataReady(p.nama))return false;
+  r=r||sigajiWithHitungCache(function(){return sigajiHitungRekapPeriode(p);});
+  p.arsip_rekap={v:1,kar:r.kar,gross:Math.round(r.gross),thr:Math.round(r.thr),pph:Math.round(r.pph),neto:Math.round(r.neto),at:new Date().toISOString()};
+  return true;
+}
 function renderLaporanBody(){
   var sorted=sortPeriodesByStart(periodes,false);
   var hint=document.getElementById('lap-rekap-hint');
@@ -175,26 +202,38 @@ function renderLaporanBody(){
       +'Total gross/PPh/neto = jumlah hitungGaji semua karyawan periode itu (bukan transfer bank yang sudah cair).';
   }
   var sums={kar:0,gross:0,thr:0,pph:0,neto:0};
-  var rows=sorted.map(function(p){
-    let tB=0,tP=0,tN=0,tT=0;
-    var list=karyawanListPeriode(p);
-    list.forEach(function(k){const g=hitungGaji(k,p.nama);tB+=g.grossPPh;tP+=g.pph;tN+=g.neto;tT+=g.thrBruto;});
-    sums.kar+=list.length;
-    sums.gross+=tB;
-    sums.thr+=tT;
-    sums.pph+=tP;
-    sums.neto+=tN;
+  var pakaiArsip=sigajiRekapArsipBerlaku();
+  var arsipBaru=false;
+  var rows=sigajiWithHitungCache(function(){return sorted.map(function(p){
+    var locked=!!(p.snapshot_locked&&p.status!=='aktif');
+    var r=locked&&pakaiArsip&&p.arsip_rekap&&p.arsip_rekap.v===1?p.arsip_rekap:null;
+    var memuat=!r&&locked&&typeof sigajiNeedPeriodeData==='function'&&!sigajiNeedPeriodeData(p.nama);
+    if(!r&&!memuat){
+      r=sigajiHitungRekapPeriode(p);
+      if(locked&&sigajiSimpanArsipRekap(p,r))arsipBaru=true;
+    }
     var rentang=(p.start&&p.end)?('<div class="font-10 text-subtle fw-400">'+fmtDate(p.start)+' – '+fmtDate(p.end)+'</div>'):'';
     var stLbl=p.status==='aktif'?'Proses':'Selesai';
     var stTip=p.status==='aktif'
       ?'Periode aktif — estimasi, bisa berubah sebelum tutup periode'
       :'Periode tutup — rekap arsip periode tersebut';
-    return '<tr'+(p.status==='aktif'?' class="row-period-active"':'')+'>'
-      +'<td><strong>'+escapeHtml(p.nama)+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+rentang+'</td>'
-      +'<td class="num">'+list.length+'</td><td class="num cell-money">'+fmt(tB)+'</td><td class="num cell-money">'+(tT>0?fmt(tT):'&#8212;')+'</td>'
-      +'<td class="num cell-money">'+fmt(tP)+'</td><td class="num cell-neto"><strong class="cell-neto-strong">'+fmt(tN)+'</strong></td>'
-      +'<td><span class="bdg '+(p.status==='aktif'?'b-warn':'b-ok')+'" title="'+escapeHtml(stTip)+'">'+stLbl+'</span></td></tr>';
-  });
+    var head='<tr'+(p.status==='aktif'?' class="row-period-active"':'')+'>'
+      +'<td><strong>'+escapeHtml(p.nama)+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+rentang+'</td>';
+    var tail='<td><span class="bdg '+(p.status==='aktif'?'b-warn':'b-ok')+'" title="'+escapeHtml(stTip)+'">'+stLbl+'</span></td></tr>';
+    if(memuat){
+      return head+'<td class="num text-subtle" colspan="5" title="Data periode lama sedang dimuat dari arsip">Memuat arsip…</td>'+tail;
+    }
+    sums.kar+=r.kar;
+    sums.gross+=r.gross;
+    sums.thr+=r.thr;
+    sums.pph+=r.pph;
+    sums.neto+=r.neto;
+    return head
+      +'<td class="num">'+r.kar+'</td><td class="num cell-money">'+fmt(r.gross)+'</td><td class="num cell-money">'+(r.thr>0?fmt(r.thr):'&#8212;')+'</td>'
+      +'<td class="num cell-money">'+fmt(r.pph)+'</td><td class="num cell-neto"><strong class="cell-neto-strong">'+fmt(r.neto)+'</strong></td>'
+      +tail;
+  });});
+  if(arsipBaru&&typeof saveAll==='function')setTimeout(saveAll,0);
   var tb=document.getElementById('tb-lap');
   var foot=document.getElementById('tb-lap-foot');
   if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows,50);
