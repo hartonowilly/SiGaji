@@ -111,4 +111,26 @@ const marOverride = px.hitungGaji(k, 'Maret 2026');
 assertEq('override TER tidak mengubah Februari', febOverride.pph, febAwal.pph);
 assertEq('Maret terbuka memakai TER baru', marOverride.terRate, 0.04);
 
+px.periodes.forEach(function (p) {
+  p.status = 'tutup';
+});
+px.periodes.push({
+  id: 3,
+  nama: 'Januari 2027',
+  start: '2026-12-26',
+  end: '2027-01-25',
+  bayar: '2027-01-25',
+  status: 'aktif',
+  tipe_periode: 'biasa',
+});
+const febSebelumStatus = px.hitungGaji(k, 'Februari 2026');
+px.sigajiCatatPtkpKaryawan(k, 'K3');
+k.ptkp = 'K3';
+const febSetelahStatus = px.hitungGaji(k, 'Februari 2026');
+const janBaru = px.hitungGaji(k, 'Januari 2027');
+assertEq('status baru mulai 1 Januari', k.ptkp_berlaku, '2027-01-01');
+assertEq('Februari tetap TK0', febSetelahStatus.ptkpStatus, 'TK0');
+assertEq('PPh Februari tidak berubah', febSetelahStatus.pph, febSebelumStatus.pph);
+assertEq('Januari memakai K3', janBaru.ptkpStatus, 'K3');
+
 console.log('Kunci aturan pajak: semua tes lulus.');

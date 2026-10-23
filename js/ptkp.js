@@ -1,5 +1,65 @@
 /// <reference path="./types/payroll-globals.d.ts" />
 function getPTKPTable(){var o=(perusahaan&&perusahaan.ptkp_nilai)||{};var out={};Object.keys(DEFAULT_PTKP).forEach(function(k){var v=o[k];out[k]=(v!=null&&String(v)!==''&&!isNaN(Number(v)))?Number(v):DEFAULT_PTKP[k];});return out;}
+/** Status PTKP yang dipakai suatu tanggal bayar. Tanpa riwayat, status di profil berlaku untuk semua bulan. */
+function ptkpStatusUntukTanggal(k, tanggal){
+  if(!k)return 'TK0';
+  var sekarang=k.ptkp||'TK0';
+  var batas=k.ptkp_berlaku?String(k.ptkp_berlaku).slice(0,10):'';
+  if(!batas)return sekarang;
+  var t=String(tanggal||'').slice(0,10);
+  if(!t||t>=batas)return sekarang;
+  var hist=Array.isArray(k.ptkp_riwayat)?k.ptkp_riwayat:[];
+  var ptkpLama='';
+  var batasPick='';
+  hist.forEach(function(h){
+    if(!h||!h.berlakuMulai||!h.ptkp)return;
+    if(h.berlakuMulai<=t&&(!batasPick||h.berlakuMulai>=batasPick)){
+      batasPick=h.berlakuMulai;
+      ptkpLama=h.ptkp;
+    }
+  });
+  return ptkpLama||sekarang;
+}
+/** Tahun pajak dari periode Januari (nama atau tanggal mulai). */
+function sigajiTahunPtkpJanuari(p){
+  if(!p)return '';
+  var nama=String(p.nama||'');
+  var m=nama.match(/(\d{4})/);
+  if(m&&typeof isNamaPeriodeJanuari==='function'&&isNamaPeriodeJanuari(nama))return m[1];
+  var src=String(p.start||p.bayar||p.end||'');
+  if(src.length>=4&&src.slice(5,7)==='01')return src.slice(0,4);
+  return '';
+}
+function sigajiTanggalMulaiPtkpBaru(){
+  var p=typeof PA==='function'?PA():null;
+  var th=p?sigajiTahunPtkpJanuari(p):'';
+  if(th)return th+'-01-01';
+  if(p&&!p.snapshot_locked&&typeof sigajiTanggalAcuanPeriode==='function'){
+    var t=sigajiTanggalAcuanPeriode(p);
+    if(t)return t;
+  }
+  if(typeof sigajiTanggalHariIni==='function')return sigajiTanggalHariIni();
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+/** Simpan status lama untuk tanggal sebelum periode perubahan. Status di profil menjadi status baru. */
+function sigajiCatatPtkpKaryawan(k, baru){
+  if(!k)return;
+  var lama=k.ptkp||'TK0';
+  baru=baru||'TK0';
+  if(lama===baru)return;
+  var mulai=sigajiTanggalMulaiPtkpBaru();
+  if(!k.ptkp_berlaku){
+    k.ptkp_riwayat=[{berlakuMulai:'1970-01-01',ptkp:lama}];
+    k.ptkp_berlaku=mulai;
+    return;
+  }
+  if(String(k.ptkp_berlaku).slice(0,10)===mulai)return;
+  var hist=Array.isArray(k.ptkp_riwayat)?k.ptkp_riwayat.slice():[];
+  hist.push({berlakuMulai:String(k.ptkp_berlaku).slice(0,10),ptkp:lama});
+  k.ptkp_riwayat=hist;
+  k.ptkp_berlaku=mulai;
+}
 function nilaiPTKP(key, tanggal){
   if(typeof aturanPajakUntukTanggal!=='function')return getPTKPTable()[key]??DEFAULT_PTKP[key]??63e6;
   var buku=aturanPajakUntukTanggal(tanggal);
@@ -144,14 +204,14 @@ function simpanPtkpJanuari(){
     var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
     if(!k)return;
     var v=isJkPerempuan(/** @type {string} */(k.jk))?'TK0':sel.value;
-    if(k.ptkp!==v){k.ptkp=v;n++;}
+    if(k.ptkp!==v){if(typeof sigajiCatatPtkpKaryawan==='function')sigajiCatatPtkpKaryawan(k,v);k.ptkp=v;n++;}
   });
   if(typeof saveAll==='function')saveAll();
   if(typeof closeModal==='function')closeModal('m-ptkp-januari');
   if(typeof renderKar==='function')renderKar();
   if(typeof renderPenggajian==='function')renderPenggajian();
   if(typeof renderPPH==='function')renderPPH();
-  if(typeof toast==='function')toast(n?('PTKP diperbarui untuk '+n+' karyawan'):'Tidak ada perubahan PTKP');
+  if(typeof toast==='function')toast(n?('PTKP diperbarui untuk '+n+' karyawan. Berlaku mulai 1 Januari. Bulan sebelumnya tetap status lama.'):'Tidak ada perubahan PTKP');
 }
 if(typeof window!=='undefined'){
   window.getPTKPTable=getPTKPTable;

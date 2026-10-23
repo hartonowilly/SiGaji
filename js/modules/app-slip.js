@@ -10,7 +10,8 @@ function makeSlip(k,pNama){
   h+='<div>'+(logo?'<img src="'+logo+'" class="slip-logo"><br>':'')+'<strong class="font-14 ct-brand">&#9670; '+(perusahaan.nama||'Perusahaan')+'</strong><div class="u-muted-10">'+(perusahaan.alamat||'')+'</div></div>';
   h+='<div class="text-right"><strong class="font-13">SLIP GAJI</strong><div class="u-muted-10">Periode: '+pNama+'</div><div class="u-muted-10">Bayar: '+fmtDate(p.bayar||'-')+'</div>'+(g.isPR?'<div class="font-10 ct-warn mt-xs slip-prorate-badge">Pro-Rata '+g.pr.hh+'/'+g.pr.hk+'</div>':'')+'</div>';
   h+='</div>';
-  h+='<div class="semp"><div><span class="text-muted font-9">NIK</span><br><strong>'+k.nik+'</strong></div><div><span class="text-muted font-9">Nama</span><br><strong>'+k.nama+'</strong></div><div><span class="text-muted font-9">Jabatan</span><br>'+k.jabatan+'</div><div><span class="text-muted font-9">Dept</span><br>'+k.dept+'</div><div><span class="text-muted font-9">PTKP</span><br>'+k.ptkp+'</div><div><span class="text-muted font-9">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
+  var ptkpSlip=g.ptkpStatus||k.ptkp;
+  h+='<div class="semp"><div><span class="text-muted font-9">NIK</span><br><strong>'+k.nik+'</strong></div><div><span class="text-muted font-9">Nama</span><br><strong>'+k.nama+'</strong></div><div><span class="text-muted font-9">Jabatan</span><br>'+k.jabatan+'</div><div><span class="text-muted font-9">Dept</span><br>'+k.dept+'</div><div><span class="text-muted font-9">PTKP</span><br>'+ptkpSlip+'</div><div><span class="text-muted font-9">Rekening</span><br>'+(k.bank||'')+' '+(k.norek||'-')+'</div></div>';
   if(g.thrBruto>0){
     h+='<div class="rounded-sm p-inset-sm tabs-spaced-lg slip-thr-box">';
     h+='<div class="fw-700 ct-purple font-12 mb-xs">&#127873; THR '+(p.thr_nama||'Hari Raya')+' - Dibayar Terpisah</div>';
@@ -44,7 +45,7 @@ function makeSlip(k,pNama){
     h+='<div class="cr"><span>PPh sudah dipotong YTD</span><span>- '+fmt(r.pphYTD)+'</span></div>';
     h+='<div class="cr result"><span><strong>PPh 21 bulan ini</strong> (selisih rekonsiliasi)</span><span><strong>'+fmt(g.pph)+'</strong></span></div>';
   }else{
-    h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div>';
+    h+='<div class="cr result"><span>TER '+ptkpSlip+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div>';
   }
   h+='</div>';
   h+='<div class="ssec">Potongan dari Take Home</div>';
@@ -231,7 +232,8 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
     doc.setFontSize(8);
     doc.setTextColor(0,0,0);
     var rhs=fmt(g.pph);
-    var lbl='TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = PPh 21 bulan ini';
+    var ptkpPdf=g.ptkpStatus||k.ptkp;
+    var lbl='TER '+ptkpPdf+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = PPh 21 bulan ini';
     var rhsW=doc.getTextWidth(rhs);
     var maxW=Math.max(40,pw-28-rhsW-6);
     var lines=doc.splitTextToSize(lbl,maxW);
@@ -275,7 +277,7 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   doc.setFillColor(248,249,252);doc.rect(10,y,pw-20,20,'F');
   var cardTop=y;
   doc.setFontSize(8.5);doc.setFont(undefined,'bold');
-  doc.text('NIK: '+k.nik,14,cardTop+6);doc.text('PTKP: '+k.ptkp,pw/2+2,cardTop+6);
+  doc.text('NIK: '+k.nik,14,cardTop+6);doc.text('PTKP: '+(g.ptkpStatus||k.ptkp),pw/2+2,cardTop+6);
   doc.text('Nama: '+k.nama,14,cardTop+12);doc.text('Dept: '+k.dept,pw/2+2,cardTop+12);
   doc.text('Jabatan: '+(k.jabatan||'-'),14,cardTop+18);doc.text('Rekening: '+(k.bank||'')+' '+(k.norek||'-'),pw/2+2,cardTop+18);
   y=cardTop+24;
