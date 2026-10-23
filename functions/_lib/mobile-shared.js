@@ -5,6 +5,14 @@ import {
   loadUsersForAuth,
   matchSigajiUserForAuth,
 } from './cf-shared.js';
+import {
+  loadCloudPayload,
+  saveCloudPayload,
+  saveAbsensiChanges,
+  getAbsensiStatus,
+} from './tenant-data.js';
+
+export { loadCloudPayload, saveCloudPayload };
 
 const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -83,24 +91,7 @@ export function applyLeaveToPayload(payload, nik, dateFrom, dateTo, absensiStatu
   return dates;
 }
 
-export async function loadCloudPayload(sb, tenant) {
-  const { data: row, error } = await sb
-    .from('sigaji_cloud')
-    .select('payload')
-    .eq('tenant_key', tenant)
-    .maybeSingle();
-  if (error) throw error;
-  return (row && row.payload) || {};
-}
-
-export async function saveCloudPayload(sb, tenant, payload) {
-  const { error } = await sb
-    .from('sigaji_cloud')
-    .update({ payload, updated_at: new Date().toISOString() })
-    .eq('tenant_key', tenant);
-  if (error) throw error;
-}
-
+/** Verifikasi token + cocokkan user SiGaji. Payload tenant tidak dimuat di sini (hemat egress) — panggil loadCloudPayload bila perlu. */
 export async function assertCallerAuthenticated(sb, jwt, tenant) {
   if (!jwt) throw new Error('Missing Authorization bearer token');
   const { data: u, error: ue } = await sb.auth.getUser(jwt);
@@ -112,8 +103,7 @@ export async function assertCallerAuthenticated(sb, jwt, tenant) {
       'Akun tidak terhubung ke data SiGaji — samakan email login dengan Manajemen User'
     );
   }
-  const payload = await loadCloudPayload(sb, tenant);
-  return { user: u.user, role: me.role, me, payload };
+  return { user: u.user, role: me.role, me };
 }
 
 export async function assertCallerIsHrdOrAdminMobile(sb, jwt, tenant) {
@@ -358,18 +348,15 @@ export async function applyHadirFromAttendance(sb, tenant, payload, nik, workDat
 }
 
 export async function clearHadirFromAttendance(sb, tenant, nik, workDate) {
-  const payload = await loadCloudPayload(sb, tenant);
-  if (!payload.absensi || !payload.absensi[nik]) return false;
-  if (payload.absensi[nik][workDate] !== 'hadir') return false;
-  delete payload.absensi[nik][workDate];
-  await saveCloudPayload(sb, tenant, payload);
+  if ((await getAbsensiStatus(sb, tenant, nik, workDate)) !== 'hadir') return false;
+  await saveAbsensiChanges(sb, tenant, { [nik]: { [workDate]: null } });
   return true;
 }
 
 export async function trySyncHadirFromAttendance(sb, tenant, nik, workDate) {
-  const payload = await loadCloudPayload(sb, tenant);
-  const changed = await applyHadirFromAttendance(sb, tenant, payload, nik, workDate);
-  if (changed) await saveCloudPayload(sb, tenant, payload);
+  const scratch = { absensi: {} };
+  const changed = await applyHadirFromAttendance(sb, tenant, scratch, nik, workDate);
+  if (changed) await saveAbsensiChanges(sb, tenant, scratch.absensi);
   return changed;
 }
 

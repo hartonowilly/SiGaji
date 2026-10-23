@@ -102,9 +102,26 @@ function sigajiSyncUserApkOnlyUi(){
   if(!rs||!wrap||!cb)return;
   var role=rs.value;
   var staff=role==='Admin'||role==='HRD';
+  var cabWrap=document.getElementById('u-cabang-wrap');
+  if(cabWrap)cabWrap.style.display=role==='HRD'&&sigajiUserCabangOptions().length?'':'none';
   wrap.style.display=staff?'none':'';
   if(staff)cb.checked=false;
   if(hint)hint.textContent=cb.checked&&!staff?'(wajib untuk APK)':'(wajib untuk APK; opsional untuk Karyawan biasa)';
+}
+/** Cabang untuk HRD (multi-cabang aktif). HRD bercabang hanya melihat & mengubah karyawan cabang itu (RLS v12). */
+function sigajiUserCabangOptions(){
+  if(typeof sigajiGetCabangList!=='function')return [];
+  var list=sigajiGetCabangList()||[];
+  return list.length>1?list:[];
+}
+function sigajiFillUserCabangSelect(selected){
+  var sel=document.getElementById('u-cabang');
+  if(!sel)return;
+  var html='<option value="">Kantor pusat — semua cabang</option>'+sigajiUserCabangOptions().map(function(c){
+    return '<option value="'+escapeAttr(c.id)+'">'+escapeHtml((c.kode?c.kode+' — ':'')+(c.nama||c.id))+'</option>';
+  }).join('');
+  sel.innerHTML=html;
+  sel.value=selected||'';
 }
 function sigajiBindUserApkOnlyUi(){
   var rs=document.getElementById('u-role');
@@ -144,6 +161,7 @@ function openUserModal(idx=-1){
   rs.value=ro.value;
   var apkCb=document.getElementById('u-apk-only');
   if(apkCb)apkCb.checked=u.role==='Absen';
+  sigajiFillUserCabangSelect(u.cabangId||'');
   sigajiBindUserApkOnlyUi();
   sigajiSyncUserApkOnlyUi();
   const ns=document.getElementById('u-nik');var h=typeof sigajiKarOptionsHtml==='function'?sigajiKarOptionsHtml(sortKaryawanByNik(karyawan||[]),'-- Tidak tertaut --'):'<option value="">-- Tidak tertaut --</option>'+sortKaryawanByNik(karyawan||[]).map(function(k){return '<option value="'+escapeAttr(k.nik)+'">'+escapeHtml(k.nik)+' &#8212; '+escapeHtml(k.nama)+'</option>';}).join('');ns.innerHTML=h;ns.value=u.nik||'';
@@ -159,6 +177,8 @@ function simpanUser(){
   const nik=document.getElementById('u-nik').value||null;
   const apkOnly=!!(document.getElementById('u-apk-only')&&document.getElementById('u-apk-only').checked);
   const aktif=document.getElementById('u-aktif').checked;
+  var cabSel=document.getElementById('u-cabang');
+  const cabangId=role==='HRD'&&cabSel?String(cabSel.value||'').trim():'';
   const cloud=typeof sigajiIsCloudConfigured==='function'&&sigajiIsCloudConfigured();
   if(!uname||!nama){toast('Username dan nama lengkap wajib');return;}
   if(apkOnly&&role!=='Admin'&&role!=='HRD'){
@@ -184,14 +204,20 @@ function simpanUser(){
     if(users.find(u=>u.username===uname)){toast('Username sudah dipakai');return;}
     const o={username:uname,password:pass,nama,role,nik,aktif};
     if(emailRaw)o.email=emailRaw;
+    if(cabangId)o.cabangId=cabangId;
     users.push(o);
   }else{
     users[idx]={...users[idx],username:uname,password:pass,nama,role,nik,aktif};
     if(emailRaw)users[idx].email=emailRaw;else delete users[idx].email;
+    if(cabangId)users[idx].cabangId=cabangId;else delete users[idx].cabangId;
   }
   saveAll();renderUsers();closeModal('m-user');toast('User disimpan');
   if(cloud&&typeof window.sigajiSyncUserRolesTable==='function'&&window.sigajiSupabase){
-    window.sigajiSyncUserRolesTable(window.sigajiSupabase,users);
+    window.sigajiSyncUserRolesTable(window.sigajiSupabase,users).then(function(res){
+      if(res&&Array.isArray(res.unmatched)&&res.unmatched.indexOf(uname)!==-1){
+        toast('Catatan: '+emailRaw+' belum punya akun login Supabase — undang / daftarkan dulu agar bisa masuk.');
+      }
+    });
   }
 }
 async function hapusUser(i){

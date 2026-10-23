@@ -23,6 +23,14 @@ import {
   companyJamMasuk,
   minutesLateFromIso,
 } from '../_lib/mobile-shared.js';
+import { cabangScope, filterKaryawanByScope, assertNikInScope } from '../_lib/tenant-data.js';
+
+/** HRD cabang: hanya log karyawan cabangnya. */
+function scopeLogs(logs, karyawanScoped, scope) {
+  if (!scope) return logs || [];
+  const allowed = new Set(karyawanScoped.map((k) => String(k.nik)));
+  return (logs || []).filter((l) => l && allowed.has(String(l.nik)));
+}
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -113,17 +121,19 @@ export async function onRequestGet({ request, env }) {
     const workDate = url.searchParams.get('work_date') || workDateJakarta();
     const nikFilter = (url.searchParams.get('nik') || '').trim();
     const locationFilter = (url.searchParams.get('location_id') || '').trim() || null;
+    const scope = cabangScope(hrd.me);
 
     if (url.searchParams.get('dashboard') === '1') {
       const payload = await loadCloudPayload(sb, tenant);
-      const karyawan = payload.karyawan || [];
-      const { data: logs } = await sb
+      const karyawan = filterKaryawanByScope(payload.karyawan, scope);
+      const { data: logsAll } = await sb
         .from('sigaji_attendance_logs')
         .select(
           'id,nik,work_date,event_type,location_id,validation_status,face_verified,face_score,created_at,flags'
         )
         .eq('tenant_key', tenant)
         .eq('work_date', workDate);
+      const logs = scopeLogs(logsAll, karyawan, scope);
       const dash = buildDashboardSummary(karyawan, logs, workDate, locationFilter);
       return jsonResponse(
         200,
@@ -141,7 +151,7 @@ export async function onRequestGet({ request, env }) {
       const jamMasuk = companyJamMasuk(payload);
       const dateFrom = month + '-01';
       const dateTo = month + '-31';
-      const { data: logs } = await sb
+      const { data: logsAll } = await sb
         .from('sigaji_attendance_logs')
         .select('nik,work_date,event_type,validation_status,created_at,location_id,flags')
         .eq('tenant_key', tenant)
@@ -149,8 +159,10 @@ export async function onRequestGet({ request, env }) {
         .gte('work_date', dateFrom)
         .lte('work_date', dateTo)
         .eq('validation_status', 'ok');
+      const karScoped = filterKaryawanByScope(payload.karyawan, scope);
+      const logs = scopeLogs(logsAll, karScoped, scope);
       const karMap = {};
-      (payload.karyawan || []).forEach((k) => {
+      karScoped.forEach((k) => {
         if (k && k.nik) karMap[k.nik] = k.nama || k.nik;
       });
       const locIds = [...new Set((logs || []).map((l) => l.location_id).filter(Boolean))];
@@ -217,8 +229,11 @@ export async function onRequestGet({ request, env }) {
       .order('created_at', { ascending: true });
     if (nikFilter) q = q.eq('nik', nikFilter);
 
-    const { data: logs, error } = await q;
+    const { data: logsAll, error } = await q;
     if (error) throw error;
+    const logs = scope
+      ? scopeLogs(logsAll, filterKaryawanByScope((await loadCloudPayload(sb, tenant)).karyawan, scope), scope)
+      : logsAll;
 
     const locIds = [
       ...new Set((logs || []).map((l) => l.location_id).filter(Boolean)),
@@ -377,6 +392,7 @@ export async function onRequestPost({ request, env }) {
         .maybeSingle();
       if (re) throw re;
       if (!row) return jsonResponse(404, { ok: false, error: 'Log tidak ditemukan' }, request);
+      await assertNikInScope(sb, tenant, hrd.me, row.nik);
 
       if (!attendanceCanDecide(row, decide)) {
         const hint =

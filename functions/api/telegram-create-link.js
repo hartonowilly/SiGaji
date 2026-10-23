@@ -6,6 +6,7 @@ import {
   handleOptions,
   assertCallerIsHrdOrAdmin,
 } from '../_lib/cf-shared.js';
+import { assertNikInScope } from '../_lib/tenant-data.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -23,6 +24,7 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json().catch(() => ({}));
     const nik = String(body.nik || '').trim();
     if (!nik) return jsonResponse(400, { ok: false, error: 'nik required' }, request);
+    await assertNikInScope(sb, tenant, caller.me, nik);
 
     const code = randomCode();
     const ttlMin = Math.max(5, Math.min(60, parseInt(body.ttlMin || 15, 10) || 15));

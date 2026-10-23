@@ -17,6 +17,7 @@ import {
   sumPendingCutiDaysByYear,
   notifyLeaveDecision,
 } from '../_lib/mobile-shared.js';
+import { cabangScope, filterKaryawanByScope, assertNikInScope } from '../_lib/tenant-data.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
@@ -28,7 +29,8 @@ export async function onRequestGet({ request, env }) {
     const sb = createSbAdmin(env);
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const hrdCtx = await assertCallerIsHrdOrAdminMobile(sb, jwt, tenant);
+    const scope = cabangScope(hrdCtx.me);
     const url = new URL(request.url);
     const status = url.searchParams.get('status') || 'pending';
     const { data, error } = await sb
@@ -41,10 +43,12 @@ export async function onRequestGet({ request, env }) {
     if (error) throw error;
     const kMap = {};
     const payload = await loadCloudPayload(sb, tenant);
-    (payload.karyawan || []).forEach((k) => {
+    const karScoped = filterKaryawanByScope(payload.karyawan, scope);
+    karScoped.forEach((k) => {
       if (k && k.nik) kMap[k.nik] = k.nama || k.nik;
     });
-    const items = (data || []).map((r) =>
+    const rowsScoped = scope ? (data || []).filter((r) => Object.prototype.hasOwnProperty.call(kMap, r.nik)) : data || [];
+    const items = rowsScoped.map((r) =>
       Object.assign({}, r, { nama_karyawan: kMap[r.nik] || r.nik })
     );
     return jsonResponse(200, { ok: true, items }, request);
@@ -80,6 +84,7 @@ export async function onRequestPost({ request, env }) {
         .maybeSingle();
       if (re) throw re;
       if (!req) return jsonResponse(404, { ok: false, error: 'not found' }, request);
+      await assertNikInScope(sb, tenant, hrd.me, req.nik);
       if (req.status !== 'pending') {
         return jsonResponse(409, { ok: false, error: 'sudah diputuskan' }, request);
       }

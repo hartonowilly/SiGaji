@@ -184,6 +184,9 @@
 
   window.sigajiGetCabangFilter = function () {
     if (!sigajiMultiBranchEnabled() || !sigajiCanAssignCabang()) return '';
+    // HRD cabang selalu bekerja di cabangnya (data cabang lain memang tidak dimuat — RLS).
+    var own = CU.role === 'HRD' && CU.cabangId ? String(CU.cabangId).trim() : '';
+    if (own && own.indexOf(',') === -1) return own;
     try {
       return String(sessionStorage.getItem(CABANG_FILTER_KEY) || '').trim();
     } catch (e) {

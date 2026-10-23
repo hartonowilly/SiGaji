@@ -18,6 +18,8 @@ Jalankan di **SQL Editor** berurutan:
 | 6 | `supabase_tenant_license_vendor_only.sql` | Trigger lindungi kuota |
 | 7 | `supabase_tenant_license_set_vendor.sql` | Set kuota `main` (sesuaikan angka) |
 | 8 | `supabase_login_branding_rpc_tenant.sql` | RPC branding per tenant (disarankan) |
+| 9 | `supabase_sigaji_v12_versi_cabang.sql` | **v12**: simpan per baris + versi (tanpa timpa antar HRD), hak akses per peran & cabang. Jalankan saat tidak ada yang mengedit; bisa diulang. Bila berhenti dengan "belum punya Admin/HRD yang tertaut", isi email Admin di Manajemen User sama dengan email login Supabase, lalu ulangi. |
+| 9 | `supabase_sigaji_v12_versi_cabang.sql` | **v12**: simpan per baris + versi (tanpa timpa antar HRD), hak akses per peran & cabang. Jalankan saat tidak ada yang mengedit; bisa diulang. Bila berhenti dengan "belum punya Admin/HRD yang tertaut", isi email Admin di Manajemen User sama dengan email login Supabase, lalu ulangi. |
 
 ### Opsional (sesuai fitur)
 
@@ -47,6 +49,8 @@ Sudah tercakup skrip di atas. Cemerlang / deploy utama: `SIGAJI_TENANT_KEY` koso
 ## Tenant ke-2, ke-3, … (1 Supabase)
 
 1. Edit **`supabase_tenant_add.sql`**: ganti semua **`__TENANT_KEY__`** → mis. `pt_majubersama`.
+   Jika Supabase sudah v12, ganti juga **`__ADMIN_EMAIL__`** → email login Admin perusahaan itu (akunnya harus sudah ada di Authentication → Users).
+   Jika Supabase sudah v12, ganti juga **`__ADMIN_EMAIL__`** → email login Admin perusahaan itu (akunnya harus sudah ada di Authentication → Users).
 2. Sesuaikan `max_employees` / `plan_label` di `INSERT sigaji_tenant_meta`.
 3. **Run** di SQL Editor.
 4. Cloudflare deploy baru: `SIGAJI_TENANT_KEY=pt_majubersama` (URL Supabase sama).

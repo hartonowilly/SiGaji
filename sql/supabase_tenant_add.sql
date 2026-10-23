@@ -4,6 +4,7 @@
 -- CARA PAKAI:
 --   1. Find & Replace di file ini: __TENANT_KEY__  →  pt_majubersama
 --      (huruf kecil, underscore, tanpa spasi)
+--      dan (jika sudah SQL v12) __ADMIN_EMAIL__  →  email login Admin perusahaan itu
 --   2. Sesuaikan max_employees / plan_label di INSERT di bawah.
 --   3. Jalankan SELURUH file di Supabase → SQL Editor → Run.
 --   4. Deploy Cloudflare baru dengan SIGAJI_TENANT_KEY = pt_majubersama
@@ -88,6 +89,37 @@ create policy "sigaji_tunj_var_nilai___TENANT_KEY__" on public.sigaji_tunj_var_n
 drop policy if exists "sigaji_store___TENANT_KEY__" on public.sigaji_store;
 create policy "sigaji_store___TENANT_KEY__" on public.sigaji_store for all to authenticated
   using (tenant_key = '__TENANT_KEY__') with check (tenant_key = '__TENANT_KEY__');
+
+-- ── 4b) Sudah SQL v12 (sql/supabase_sigaji_v12_versi_cabang.sql)? ───────────
+-- Kebijakan v12 berlaku untuk semua tenant (per peran & cabang). Kebijakan "for all" per tenant
+-- di atas akan membuka akses penuh lagi, jadi dihapus; sebagai gantinya Admin pertama didaftarkan.
+-- Ganti __ADMIN_EMAIL__ dengan email login Supabase (Authentication → Users) Admin perusahaan ini.
+do $$
+declare
+  t text;
+  admin_uid uuid;
+begin
+  if to_regclass('public.sigaji_item') is null then
+    return;
+  end if;
+  foreach t in array array['sigaji_tenant_meta', 'sigaji_karyawan', 'sigaji_periode', 'sigaji_tunj_var_kolom',
+                           'sigaji_tunj_var_nilai', 'sigaji_store'] loop
+    execute format('drop policy if exists %I on public.%I', t || '___TENANT_KEY__', t);
+  end loop;
+  foreach t in array array['select', 'insert', 'update', 'delete'] loop
+    execute format('drop policy if exists %I on public.sigaji_cloud', 'sigaji_shared_' || t || '___TENANT_KEY__');
+  end loop;
+  update public.sigaji_tenant_meta set schema_version = greatest(coalesce(schema_version, 0), 12)
+  where tenant_key = '__TENANT_KEY__';
+
+  select u.id into admin_uid from auth.users u where lower(u.email) = lower('__ADMIN_EMAIL__') limit 1;
+  if admin_uid is null then
+    raise exception 'Email Admin "__ADMIN_EMAIL__" belum terdaftar di Authentication → Users. Buat akunnya dulu, lalu jalankan ulang.';
+  end if;
+  insert into public.sigaji_user_roles (tenant_key, auth_uid, role, email, username, aktif, updated_at)
+  values ('__TENANT_KEY__', admin_uid, 'Admin', lower('__ADMIN_EMAIL__'), 'admin', true, now())
+  on conflict (tenant_key, auth_uid) do update set role = 'Admin', aktif = true, updated_at = now();
+end $$;
 
 -- ── 5–8) Opsional — jika ERROR "relation does not exist", lewati blok itu
 --        (tabel belum dibuat; jalankan skrip opsional di sql/README.md dulu)

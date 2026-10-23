@@ -229,10 +229,5 @@ export async function assertCallerIsHrdOrAdmin(sb, jwt, tenant) {
       'Forbidden — hanya Admin/HRD (pastikan email login sama dengan Email Supabase di Manajemen User, lalu sinkron data ke awan)'
     );
   }
-  const { data: row } = await sb
-    .from('sigaji_cloud')
-    .select('payload')
-    .eq('tenant_key', tenant)
-    .maybeSingle();
-  return { user: u.user, role, payload: (row && row.payload) || {} };
+  return { user: u.user, role, me };
 }

@@ -166,13 +166,18 @@
     return window.sigajiBuildKaryawanScopedPayload(full, CU);
   };
 
-  function rowsFromUsers(usersList) {
+  function cabangOfUser(u) {
+    var c = u && u.role === 'HRD' && u.cabangId ? String(u.cabangId).trim() : '';
+    return c || null;
+  }
+
+  function rowsFromUsers(usersList, withCabang) {
     var rows = [];
     (usersList || []).forEach(function (u) {
       if (!u || u.aktif === false) return;
       var uid = String(u.auth_uid || '').trim();
       if (!uid) return;
-      rows.push({
+      var row = {
         tenant_key: TK,
         auth_uid: uid,
         role: u.role || 'Karyawan',
@@ -181,29 +186,72 @@
         username: u.username ? String(u.username).trim() : null,
         aktif: u.aktif !== false,
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (withCabang) row.cabang_id = cabangOfUser(u);
+      rows.push(row);
     });
     return rows;
   }
 
-  /** Admin/HRD: sinkron mapping auth → role ke Supabase (RLS). */
+  /** Daftar untuk RPC sigaji_sync_user_roles — server mencocokkan akun login lewat auth_uid lalu email. */
+  function usersForRpc(usersList) {
+    return (usersList || [])
+      .filter(function (u) {
+        return u && (u.email || u.auth_uid);
+      })
+      .map(function (u) {
+        return {
+          username: u.username || null,
+          role: u.role || 'Karyawan',
+          nik: u.nik ? String(u.nik).trim() : null,
+          email: u.email ? String(u.email).toLowerCase().trim() : null,
+          aktif: u.aktif !== false,
+          auth_uid: u.auth_uid || null,
+          cabangId: cabangOfUser(u),
+        };
+      });
+  }
+
+  function isMissingObject(err) {
+    return /does not exist|42P01|42883|PGRST202|PGRST205|Could not find the function/i.test(
+      String((err && (err.message || '')) + ' ' + (err && err.code))
+    );
+  }
+
+  /**
+   * Admin/HRD pusat: sinkron peta akun login → role/NIK/cabang (dasar RLS).
+   * @returns {Promise<{saved:number, deactivated:number, unmatched:string[]}|null>}
+   */
   window.sigajiSyncUserRolesTable = async function (sb, usersList) {
-    if (!sb) return;
-    if (typeof CU !== 'undefined' && CU && !window.sigajiIsStaffRole(CU.role)) return;
-    var rows = rowsFromUsers(usersList || (typeof users !== 'undefined' ? users : []));
-    if (!rows.length) return;
+    if (!sb) return null;
+    if (typeof CU !== 'undefined' && CU && !window.sigajiIsStaffRole(CU.role)) return null;
+    var list = usersList || (typeof users !== 'undefined' ? users : []);
+    if (!usersForRpc(list).length) return null;
+    if (typeof window.sigajiKaryawanRestricted !== 'undefined' && window.sigajiKaryawanRestricted) return null;
     try {
+      var rr = await sb.rpc('sigaji_sync_user_roles', { p_tenant: TK, p_users: usersForRpc(list) });
+      if (!rr.error) return rr.data || null;
+      if (!isMissingObject(rr.error)) {
+        console.warn('Sigaji sync user roles:', rr.error.message || rr.error);
+        return null;
+      }
+      var rows = rowsFromUsers(list, true);
+      if (!rows.length) return null;
       var r = await sb.from('sigaji_user_roles').upsert(rows, { onConflict: 'tenant_key,auth_uid' });
+      if (r.error && /cabang_id/i.test(String(r.error.message || ''))) {
+        r = await sb.from('sigaji_user_roles').upsert(rowsFromUsers(list, false), { onConflict: 'tenant_key,auth_uid' });
+      }
       if (r.error) {
-        if (/does not exist|42P01|PGRST205|sigaji_user_roles/i.test(String(r.error.message || r.error.code))) {
-          console.warn('Sigaji: tabel sigaji_user_roles belum ada — jalankan sql/supabase_sigaji_user_roles_rls.sql');
-          return;
+        if (isMissingObject(r.error)) {
+          console.warn('Sigaji: tabel sigaji_user_roles belum ada — jalankan sql/supabase_sigaji_v12_versi_cabang.sql');
+          return null;
         }
         throw r.error;
       }
     } catch (e) {
       console.warn('Sigaji sync user roles:', e);
     }
+    return null;
   };
 
   window.sigajiCloudTablesKaryawanStoreKeys = KARYAWAN_STORE_READ;
