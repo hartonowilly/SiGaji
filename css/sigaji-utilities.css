@@ -6,10 +6,6 @@
   --pu: var(--color-purple);
   --pul: var(--color-purple-bg);
   --pub: var(--color-purple-border);
-  --indigo: var(--indigo);
-  --indigo-ink: var(--indigo-ink);
-  --ink-body: var(--ink-body);
-  --ink-subtle: var(--ink-subtle);
   --warn-border: var(--color-warning-border);
   --success-border: var(--color-success-border);
 }
