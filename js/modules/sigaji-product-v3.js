@@ -57,7 +57,7 @@
     {
       sel: '.topbar-theme-wrap',
       title: 'Tema & kepadatan',
-      body: 'Longgar/Rapat mengatur jarak baris. Terang = kantor (paling enak baca gaji), Gelap = malam, Warna PT = kop perusahaan — tabel penggajian tetap kertas putih.',
+      body: 'Longgar/Rapat mengatur jarak baris. Terang memakai kulit kaca. Gelap padat tanpa blur. Warna PT berbentuk kantor: sudut siku dan garis tegas, tabel tetap kertas putih.',
     },
   ];
 
@@ -963,9 +963,9 @@
   var UI_PREF_LABEL = {
     comfortable: 'Longgar',
     compact: 'Rapat',
-    light: 'Terang',
-    dark: 'Gelap',
-    brand: 'Warna PT',
+    light: 'Terang · Kaca',
+    dark: 'Gelap · Padat',
+    brand: 'PT · Kantor',
   };
 
   window.sigajiSetUiPref = function (key, val) {

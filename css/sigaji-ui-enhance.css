@@ -1567,7 +1567,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 }
 .narrative-abs-list li { margin-bottom: 0.15rem; }
 [data-theme="dark"] .narrative-warn { color: #fbbf24; }
-.ui-pref-sel { max-width: 118px; font-size: 11px; padding: 4px 8px; }
+.ui-pref-sel { max-width: 148px; font-size: 11px; padding: 4px 8px; }
 
 .period-timeline-bar {
   display: flex;
@@ -2324,4 +2324,139 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 /* Hormati preferensi gerak minim */
 @media (prefers-reduced-motion: reduce) {
   .btn, .btn:hover, .btn:active { transform: none; }
+}
+
+/* ══ Kulit tema ══
+   Terang tetap kaca (aturan di atas).
+   Gelap = padat: permukaan solid, sudut sedang, tanpa blur.
+   Warna PT = kantor: sudut siku, garis tegas, tombol datar, tabel kertas.
+   ══ */
+[data-theme='dark'] {
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-md: 6px;
+}
+[data-theme='brand'] {
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-md: 2px;
+  --border: #c5cdd8;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-card: none;
+}
+
+[data-theme='dark'] .btn,
+[data-theme='brand'] .btn,
+[data-theme='dark'] .topbar,
+[data-theme='brand'] .topbar,
+[data-theme='dark'] .lbox-premium,
+[data-theme='brand'] .lbox-premium {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme='dark'] .btn,
+[data-theme='brand'] .btn {
+  border-radius: var(--radius-md);
+  letter-spacing: 0;
+  box-shadow: none;
+}
+[data-theme='dark'] .btn:hover,
+[data-theme='brand'] .btn:hover,
+[data-theme='dark'] .btn:active,
+[data-theme='brand'] .btn:active {
+  transform: none;
+  filter: none;
+}
+
+[data-theme='dark'] .btn-p,
+[data-theme='brand'] .btn-p {
+  background: var(--blue);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+[data-theme='dark'] .btn-g,
+[data-theme='brand'] .btn-g { background: #166534; box-shadow: none; border-color: transparent; }
+[data-theme='dark'] .btn-r,
+[data-theme='brand'] .btn-r { background: #991b1b; box-shadow: none; border-color: transparent; }
+[data-theme='dark'] .btn-a,
+[data-theme='brand'] .btn-a { background: #92400e; box-shadow: none; border-color: transparent; }
+[data-theme='dark'] .btn-pu,
+[data-theme='brand'] .btn-pu { background: #6d28d9; box-shadow: none; border-color: transparent; }
+
+[data-theme='dark'] .btn-out {
+  background: #1e293b;
+  border: 1px solid #475569;
+  box-shadow: none;
+  color: #e2e8f0;
+}
+[data-theme='brand'] .btn-out {
+  background: #fff;
+  border: 1px solid #c5cdd8;
+  box-shadow: none;
+  color: #1e2330;
+}
+[data-theme='brand'] .btn-out:hover {
+  background: #f4f6f8;
+  border-color: var(--ux-accent, #1a56a0);
+  color: var(--ux-accent-dark, #0d3d7a);
+  transform: none;
+}
+
+[data-theme='dark'] .card,
+[data-theme='dark'] .bento-widget,
+[data-theme='dark'] .periode-pill,
+[data-theme='dark'] .ni {
+  border-radius: var(--radius-md);
+}
+[data-theme='dark'] .card:hover,
+[data-theme='dark'] .periode-pill:hover { transform: none; box-shadow: none; }
+
+[data-theme='brand'] .card,
+[data-theme='brand'] .bento-widget,
+[data-theme='brand'] .period-chrome,
+[data-theme='brand'] .lbox-premium {
+  border-radius: 3px;
+  box-shadow: none;
+  border: 1px solid #c5cdd8;
+  background: #fff;
+}
+[data-theme='brand'] .card:hover { box-shadow: none; }
+[data-theme='brand'] .topbar,
+.topbar.topbar--brand-accent {
+  background: #fff !important;
+  border-bottom: 4px solid var(--ux-accent, #1a56a0) !important;
+  box-shadow: none !important;
+}
+[data-theme='brand'] .periode-pill,
+.topbar.topbar--brand-accent .periode-pill {
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: none;
+}
+[data-theme='brand'] .periode-pill:hover { transform: none; box-shadow: none; }
+[data-theme='brand'] .sidebar .ni,
+[data-theme='brand'] .ni {
+  border-radius: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+[data-theme='brand'] .sidebar .ni.active,
+[data-theme='brand'] .ni.active {
+  border-radius: 0;
+  box-shadow: none;
+  border-left: 3px solid #fff;
+  background: color-mix(in srgb, var(--ux-accent) 40%, transparent);
+}
+[data-theme='brand'] .fg input,
+[data-theme='brand'] .fg select,
+[data-theme='brand'] .fg textarea,
+[data-theme='brand'] .toolbar-select {
+  border-radius: 2px;
+}
+[data-theme='brand'] .av { border-radius: 2px; box-shadow: none; }
+[data-theme='brand'] body,
+[data-theme='brand'] .content {
+  background: #e6ebf1 !important;
 }
