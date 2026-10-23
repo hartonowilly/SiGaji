@@ -8,22 +8,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.6.6">
-<link rel="stylesheet" href="/css/styles.css?v=11.6.6">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.6.6">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.6.6">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.6.6">
-<link rel="stylesheet" href="/css/sigaji-table.css?v=11.6.6">
-<link rel="stylesheet" href="/css/sigaji-components.css?v=11.6.6">
-<link rel="stylesheet" href="/css/sigaji-print.css?v=11.6.6">
-<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.6.6">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.6.7">
+<link rel="stylesheet" href="/css/styles.css?v=11.6.7">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.6.7">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.6.7">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.6.7">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.6.7">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.6.7">
+<link rel="stylesheet" href="/css/sigaji-print.css?v=11.6.7">
+<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.6.7">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.6.6"></script>
+<script src="/js/modules/app-api-shim.js?v=11.6.7"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.6.6"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.6.7"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -486,6 +486,18 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="tab" data-laptab="pph" data-panel="lap-tab-pph">&#128203; PPh 21</div>
   </div>
   <div id="lap-tab-rekap">
+    <div class="card">
+      <div class="ct">Lapor upah BPJS</div>
+      <div class="info-box info-blue font-11 leading-tight tabs-spaced-lg">
+        Excel dari periode gaji aktif. Upah = gaji pokok yang dipakai BPJS + tunjangan tetap (bukan iuran, bukan THR, bukan lembur).
+        <strong>BPJS TK</strong> diunggah di SIPP → Upload Upah. <strong>BPJS Kesehatan</strong> diunggah di e-Dabu → Upload Data → Gaji (sheet GAJI).
+        Isi nomor KPJ dan nomor kartu di profil karyawan. Kode VA Kesehatan di Master → Profil Perusahaan.
+      </div>
+      <div class="fl gap1 flex-wrap">
+        <button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="exportBpjsTkUpah">Unduh upah BPJS TK</button>
+        <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportBpjsKesUpah">Unduh gaji BPJS Kesehatan</button>
+      </div>
+    </div>
     <div id="lap-rekap-hint" class="dash-kpi-hint tabs-spaced-lg"></div>
     <div class="card pg-table-sticky"><div class="table-wrap"><table class="sigaji-table"><thead><tr><th>Periode</th><th class="num">Karyawan</th><th class="num">Total Gross</th><th class="num">Total THR</th><th class="num">Total PPh</th><th class="num">Total Neto</th><th>Status</th></tr></thead>
     <tbody id="tb-lap"></tbody><tfoot id="tb-lap-foot" class="sigaji-table-foot"></tfoot></table></div></div>
@@ -575,6 +587,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Telepon</label><input id="prs-telp"></div>
         <div class="fg"><label>Email HR</label><input id="prs-email"></div>
         <div class="fg"><label>Website</label><input id="prs-web"></div>
+        <div class="fg"><label>Kode VA BPJS Kesehatan</label><input id="prs-bpjs-va" inputmode="numeric" placeholder="Kode virtual account e-Dabu">
+          <div class="font-10 text-muted mt-xs">Ditulis di file gaji e-Dabu. Kosongkan jika belum ada.</div>
+        </div>
         <div class="fg"><label>Warna PT (tema Warna PT)</label>
           <div class="fl gap-sm items-center">
             <input id="prs-brand-color" type="color" value="#1a56a0" title="Aksen tema Warna PT — teks otomatis disesuaikan agar terbaca" oninput="typeof onPrsBrandColorInput==='function'&&onPrsBrandColorInput()">
@@ -1052,6 +1067,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>No. NPWP <span class="text-muted fw-500">(opsional jika KTP 16 digit)</span></label><input id="sp-npwp-f" maxlength="20" oninput="formatNPWP(this);sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()" inputmode="numeric">
           <div class="font-10 text-muted mt-xs" id="sp-npwp-hint"></div>
           <button type="button" class="btn btn-xs btn-out mt-xs" data-sigaji-action="djp-nik-validasi">Cek validasi NIK (portal DJP)</button>
+        </div>
+        <div class="fg"><label>No. KPJ <span class="text-muted fw-500">(BPJS Ketenagakerjaan)</span></label><input id="sp-bpjs-kpj-f" inputmode="numeric" maxlength="16" placeholder="Nomor peserta">
+          <div class="font-10 text-muted mt-xs">Dipakai file upah SIPP. Kosongkan jika belum punya kartu.</div>
+        </div>
+        <div class="fg"><label>No. kartu BPJS Kesehatan</label><input id="sp-bpjs-kes-f" inputmode="numeric" maxlength="16" placeholder="No. JKN-KIS">
+          <div class="font-10 text-muted mt-xs">Dipakai file gaji e-Dabu.</div>
         </div>
         <div class="fg"><label>No. HP</label><input id="sp-hp-f"></div>
         <div class="fg"><label>Email</label><input id="sp-email-f"></div>
@@ -1552,48 +1573,49 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.6.6"></script>
-<script src="/js/sigaji-icons.js?v=11.6.6"></script>
-<script src="/js/sigaji-ui.js?v=11.6.6"></script>
-<script src="/js/sigaji-dom.js?v=11.6.6"></script>
-<script src="/js/sigaji-api.js?v=11.6.6"></script>
-<script src="/js/karyawan-tipe.js?v=11.6.6"></script>
-<script src="/js/siklus-bayar.js?v=11.6.6"></script>
-<script src="/js/storage-idb.js?v=11.6.6"></script>
-<script src="/js/storage.js?v=11.6.6"></script>
-<script src="/js/ptkp.js?v=11.6.6"></script>
-<script src="/js/modules/app-globals.js?v=11.6.6"></script>
-<script src="/js/modules/app-core.js?v=11.6.6"></script>
-<script src="/js/modules/app-access.js?v=11.6.6"></script>
-<script src="/js/modules/app-hr.js?v=11.6.6"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.6.6"></script>
-<script src="/js/modules/app-slip.js?v=11.6.6"></script>
-<script src="/js/modules/app-reports.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-converter-bank.js?v=11.6.6"></script>
-<script src="/js/modules/ebupot-export.js?v=11.6.6"></script>
-<script src="/js/modules/app-absensi.js?v=11.6.6"></script>
-<script src="/js/modules/app-mobile.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.6.6"></script>
-<script src="/js/modules/app-master.js?v=11.6.6"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.6.6"></script>
-<script src="/js/modules/app-shell.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.6.6"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.6.6"></script>
-<script src="/js/pesangon.js?v=11.6.6"></script>
-<script src="/js/payroll-worker-host.js?v=11.6.6"></script>
-<script src="/js/config.js?v=11.6.6"></script>
+<script src="/js/constants.js?v=11.6.7"></script>
+<script src="/js/sigaji-icons.js?v=11.6.7"></script>
+<script src="/js/sigaji-ui.js?v=11.6.7"></script>
+<script src="/js/sigaji-dom.js?v=11.6.7"></script>
+<script src="/js/sigaji-api.js?v=11.6.7"></script>
+<script src="/js/karyawan-tipe.js?v=11.6.7"></script>
+<script src="/js/siklus-bayar.js?v=11.6.7"></script>
+<script src="/js/storage-idb.js?v=11.6.7"></script>
+<script src="/js/storage.js?v=11.6.7"></script>
+<script src="/js/ptkp.js?v=11.6.7"></script>
+<script src="/js/modules/app-globals.js?v=11.6.7"></script>
+<script src="/js/modules/app-core.js?v=11.6.7"></script>
+<script src="/js/modules/app-access.js?v=11.6.7"></script>
+<script src="/js/modules/app-hr.js?v=11.6.7"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.6.7"></script>
+<script src="/js/modules/app-slip.js?v=11.6.7"></script>
+<script src="/js/modules/app-reports.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-converter-bank.js?v=11.6.7"></script>
+<script src="/js/modules/ebupot-export.js?v=11.6.7"></script>
+<script src="/js/modules/bpjs-export.js?v=11.6.7"></script>
+<script src="/js/modules/app-absensi.js?v=11.6.7"></script>
+<script src="/js/modules/app-mobile.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.6.7"></script>
+<script src="/js/modules/app-master.js?v=11.6.7"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.6.7"></script>
+<script src="/js/modules/app-shell.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.6.7"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.6.7"></script>
+<script src="/js/pesangon.js?v=11.6.7"></script>
+<script src="/js/payroll-worker-host.js?v=11.6.7"></script>
+<script src="/js/config.js?v=11.6.7"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.6.6"></script>
-<script src="/js/cloud-roles.js?v=11.6.6"></script>
-<script src="/js/cloud-delta.js?v=11.6.6"></script>
-<script src="/js/cloud-tables.js?v=11.6.6"></script>
+<script src="/js/cloud-branding.js?v=11.6.7"></script>
+<script src="/js/cloud-roles.js?v=11.6.7"></script>
+<script src="/js/cloud-delta.js?v=11.6.7"></script>
+<script src="/js/cloud-tables.js?v=11.6.7"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.6.6"></script>
-<script src="/js/modules/app-boot.js?v=11.6.6"></script>
-<script src="/js/sigaji-events.js?v=11.6.6"></script>
+<script src="/js/cloud-sync.js?v=11.6.7"></script>
+<script src="/js/modules/app-boot.js?v=11.6.7"></script>
+<script src="/js/sigaji-events.js?v=11.6.7"></script>
 </body>
 </html>

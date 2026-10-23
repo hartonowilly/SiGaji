@@ -14,6 +14,8 @@ declare var perusahaan: {
   /** Warna aksen tema "Warna PT" (hex). */
   brand_color?: string;
   web?: string;
+  /** Kode virtual account e-Dabu (file gaji BPJS Kesehatan). */
+  bpjs_kes_va?: string;
   jamMasuk?: string;
   jamPulang?: string;
   /** Nomor urut 1721-A1 terakhir per tahun pajak, mis. { "2026": 12 }. */
@@ -400,6 +402,10 @@ interface KaryawanPayroll {
   email?: string;
   npwp?: string;
   ktp?: string;
+  /** Nomor peserta BPJS Ketenagakerjaan (KPJ). */
+  bpjs_kpj?: string;
+  /** Nomor kartu BPJS Kesehatan (JKN-KIS). */
+  bpjs_kes_kartu?: string;
   aktif?: boolean;
   gapok: Rupiah;
   siklus_gaji?: 'bulanan' | 'harian' | 'mingguan' | string;
