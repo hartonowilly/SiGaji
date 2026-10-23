@@ -157,6 +157,7 @@
 
   /** Deadline regulasi Indonesia — 90 hari ke depan + konteks periode aktif */
   window.sigajiComplianceDeadlines = function () {
+    /** @type {Array<{date: string, label: string, cat: string, hint: string, days?: number}>} */
     var items = [];
     var now = new Date();
     var y = now.getFullYear();

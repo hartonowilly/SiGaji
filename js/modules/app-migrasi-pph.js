@@ -182,7 +182,7 @@ function importMigrasiPphExcel(inp){
           var bruto=brutoIdx>=0?parseMigrasiAngka(row[brutoIdx]):0;
           var pph=pphIdx>=0?parseMigrasiAngka(row[pphIdx]):0;
           if(bruto<=0&&pph<=0){skip++;continue;}
-          var thn=thnIdx>=0?parseInt(row[tahunIdx],10):thnDef;
+          var thn=tahunIdx>=0?parseInt(row[tahunIdx],10):thnDef;
           if(isNaN(thn)||thn<2000)thn=thnDef;
           var nama=namaIdx>=0?String(row[namaIdx]||'').trim():'';
           var status=statusIdx>=0?String(row[statusIdx]||'').trim():'';

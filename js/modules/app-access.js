@@ -1519,7 +1519,7 @@ function doLogout(){
   CU=null;
 }
 if(typeof window!=='undefined')window.enterAppWithUser=enterAppWithUser;
-function uploadLogo(inp){const f=inp.files[0];if(!f)return;if(f.size>2097152){toast('Maks 2MB');return;}const r=new FileReader();r.onload=e=>{perusahaan.logo=e.target.result;saveAll();applyBranding();toast('Logo diupload');};r.readAsDataURL(f);}
+function uploadLogo(inp){const f=inp.files[0];if(!f)return;if(f.size>2097152){toast('Maks 2MB');return;}const r=new FileReader();r.onload=e=>{perusahaan.logo=String(e.target.result);saveAll();applyBranding();toast('Logo diupload');};r.readAsDataURL(f);}
 function hapusLogo(){perusahaan.logo='';saveAll();applyBranding();toast('Logo dihapus');}
 function populatePhkAlasanSelect(){
   try{

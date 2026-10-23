@@ -11,8 +11,10 @@ declare var perusahaan: {
   telp?: string;
   email?: string;
   logo?: string;
-  /** Penomoran & penandatangan 1721-A1. */
-  /** Nomor urut terakhir per tahun pajak, mis. { "2026": 12 }. */
+  web?: string;
+  jamMasuk?: string;
+  jamPulang?: string;
+  /** Nomor urut 1721-A1 terakhir per tahun pajak, mis. { "2026": 12 }. */
   a1_seq?: Record<string, number>;
   a1_prefix?: string;
   a1_kota?: string;
@@ -22,7 +24,8 @@ declare var perusahaan: {
   hariKerja?: number;
   ter_custom?: Record<string, number[]>;
   ptkp_nilai?: Record<string, number>;
-  umk?: Record<string, unknown>;
+  /** UMK per tahun, mis. { "2026": 5000000 }. */
+  umk?: Record<string, Rupiah>;
   aturan_potongan?: Record<string, { mode?: string; nilai?: number }>;
   koreksi_absensi_otomatis?: boolean;
 };
@@ -37,6 +40,7 @@ interface Periode {
   thr_aktif?: boolean;
   thr_nama?: string;
   thr_bayar?: string;
+  thr_hariraya?: string;
   tipe_periode?: string;
   opsi_lebih_bayar?: string;
   snapshot_locked?: boolean;
@@ -54,6 +58,10 @@ interface HTMLElement {
   checked?: boolean;
   readOnly?: boolean;
   disabled?: boolean;
+  alt?: string;
+  placeholder?: string;
+  type?: string;
+  autocomplete?: string;
 }
 
 /** Nilai rupiah: number di memori; data impor/backup lama bisa berupa teks — selalu lewat sigajiRp(). */
@@ -89,7 +97,7 @@ interface ProrataEntry {
 
 declare var periodes: Periode[];
 declare var hariLibur: Array<{ tgl: string; nama?: string; tipe?: string }>;
-declare var masterCuti: { cbPotong?: boolean; kuota?: number };
+declare var masterCuti: { cbPotong?: boolean; kuota?: number; carryover?: string };
 declare var absensi: Record<string, Record<string, string>>;
 declare var prorata: Record<string, Record<string, ProrataEntry>>;
 declare var thrManual: Record<string, Record<string, { aktif?: boolean; nilai?: Rupiah }>>;
@@ -99,20 +107,21 @@ declare var karyawan: KaryawanPayroll[];
 declare var tunjVarBulan: Record<string, Record<string, Record<string, Rupiah>>>;
 declare var tunjVarLabels: Record<string, string>;
 declare var tunjVarColumns: Array<{ id: string; nama?: string }>;
-declare var approvals: Array<Record<string, unknown>>;
-declare var auditLog: Array<Record<string, unknown>>;
+declare var approvals: Array<Record<string, any>>;
+declare var auditLog: Array<Record<string, any>>;
 /** NIK karyawan yang sedang dibuka di panel payroll. */
 declare var cpNik: string | null;
 
-declare var CU: { role?: string; nama?: string; nik?: string } | null | undefined;
+declare var CU: SigajiUser | null | undefined;
 
 declare function sigajiCatchWarn(where: string, err: unknown): void;
 declare function sigajiSortKaryawanByNik(list: KaryawanPayroll[]): KaryawanPayroll[];
 declare function sigajiNextNik(list: KaryawanPayroll[]): string;
 declare function sigajiFilterKaryawanByCabang(list: KaryawanPayroll[]): KaryawanPayroll[];
 declare function sigajiKarCabangId(k: KaryawanPayroll): string;
-declare function sigajiShowEl(el: Element): void;
-declare function sigajiIsPanelVisible(el: Element | string): boolean;
+declare function sigajiShowEl(el: HTMLElement | null, display?: string): void;
+declare function sigajiHideEl(el: HTMLElement | null): void;
+declare function sigajiIsPanelVisible(el: HTMLElement | null): boolean;
 declare function renderTunjPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function renderPotPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function loadBPJSPanel(k: KaryawanPayroll | KarSnapshot): void;
@@ -134,8 +143,8 @@ declare function sigajiKarCabangPemotongMeta(k: KaryawanPayroll): {
   a1_ttd_nama?: string;
   a1_ttd_jabatan?: string;
 };
-declare function sigajiSetPanelVisible(el: Element | string, on: boolean, display?: string): void;
-declare function sigajiSetTbodyRows(tbody: Element | string, rows: string | string[], chunkSize?: number): void;
+declare function sigajiSetPanelVisible(el: HTMLElement | null, on: boolean, display?: string): void;
+declare function sigajiSetTbodyRows(tbody: HTMLElement | null, rows: string[], chunkSize?: number): void;
 declare function sigajiWithSkeleton(target: Element | string, colspan: number, run: () => unknown): unknown;
 declare function sigajiNormalizeKarTipe(v?: string, k?: KaryawanPayroll): string;
 declare function renderSlipSendBatchChecklist(): void;
@@ -161,7 +170,7 @@ declare function pecahPotonganCadangan(
   pays: Array<{ tgl: string; upah: number }>,
   totalPot: number
 ): {
-  items: Array<{ tgl: string; upah: number; potongan: number; dibayar: number }>;
+  items: Array<{ tgl: string; upah: number; potongan: number; dibayar: number; parsial?: boolean }>;
   sisaPotongan: number;
 };
 declare function liburSetFrom(list: unknown): Record<string, boolean>;
@@ -169,20 +178,93 @@ declare function saveAll(): void;
 declare function toast(msg: string): void;
 declare function openModal(id: string): void;
 declare function closeModal(id: string): void;
-declare function escapeHtml(s: string): string;
-declare function escapeAttr(s: string): string;
+declare function escapeHtml(s: unknown): string;
+declare function escapeAttr(s: unknown): string;
 declare function karyawanSortedAll(): Array<Record<string, unknown>>;
 declare function renderKar(): void;
 declare function renderPenggajian(): void;
 declare function renderPPH(): void;
 declare function updatePTKPVal(): void;
-declare function hitungPesangon(k: KaryawanPayroll): {
+/** Data PHK / resign di karyawan (k.phk). Nilai override bisa teks dari impor — baca via sigajiRp. */
+interface PhkData {
+  alasan?: string;
+  sisa_cuti_hari?: number | string;
+  up_manual?: Rupiah;
+  upmk_manual?: Rupiah;
+  uph_manual?: Rupiah;
+  uph_tambahan?: Rupiah;
+  pisah?: Rupiah;
+  keterangan?: string;
+}
+interface HasilPesangon {
   ok: boolean;
-  up?: number;
-  upmk?: number;
-  uph?: number;
-  pisah?: number;
-};
+  pesan?: string;
+  /** Upah dasar pesangon (gapok + tunjangan tetap). */
+  dasar: number;
+  /** Masa kerja (bulan). */
+  mk: number;
+  bUp: number;
+  bUpmk: number;
+  up: number;
+  upmk: number;
+  uph: number;
+  pisah: number;
+  total: number;
+  sisaCuti: number;
+  sisaCutiAuto: number;
+  uphCuti?: number;
+  opt: { f?: number | null; uphOnly?: boolean; manual?: boolean; [key: string]: unknown } | null;
+  faktor?: number | null;
+}
+declare function hitungPesangon(k: KaryawanPayroll): HasilPesangon;
+
+interface SigajiUser {
+  username?: string;
+  email?: string;
+  password?: string;
+  role?: string;
+  nama?: string;
+  nik?: string | null;
+  aktif?: boolean;
+  cabangId?: string;
+}
+interface Cabang {
+  id: string;
+  nama: string;
+  kode?: string;
+  npwp?: string;
+  nitku?: string;
+  alamat?: string;
+  umk?: Rupiah;
+  aktif?: boolean;
+}
+declare var users: SigajiUser[];
+/** Hak akses: nama role → daftar id modul. */
+declare var roles: Record<string, string[]>;
+declare var cabang: Cabang[];
+declare var notifikasi: Array<Record<string, any>>;
+declare var tenantLicense: { maxEmployees: number; planLabel: string; multiBranchEnabled: boolean; maxBranches: number };
+declare var bmState: Record<string, any>;
+declare const DB_KEY: string;
+
+/**
+ * Kode UI lama mengakses properti elemen hasil querySelector tanpa cast.
+ * Dilonggarkan untuk properti DOM umum saja; nama properti lain tetap dicek.
+ */
+interface Element {
+  style: CSSStyleDeclaration;
+  dataset: DOMStringMap;
+  value?: any;
+  checked?: boolean;
+  disabled?: boolean;
+  src?: string;
+  options?: HTMLOptionsCollection;
+  selectedIndex?: number;
+  files?: FileList | null;
+  focus(): void;
+  click(): void;
+  blur(): void;
+}
 
 interface SigajiIdbStore {
   available(): boolean;
@@ -219,7 +301,7 @@ interface HitungGajiResult {
   siklusUnits?: number;
   gapokBpjs?: number;
   jadwalBayar?: {
-    items: Array<{ tgl: string; upah: number; potongan: number; dibayar: number }>;
+    items: Array<{ tgl: string; upah: number; potongan: number; dibayar: number; parsial?: boolean }>;
     sisaPotongan: number;
   } | null;
   grossPPh: number;
@@ -275,7 +357,7 @@ interface HitungGajiResult {
     pphFinal: number;
     pphFinalBase: number;
   } | null;
-  potKehadiran: { total: number; details: Array<{ label: string; nilai: number }> };
+  potKehadiran: { total: number; details: Array<{ label: string; nilai: number }>; gajiHarian?: number };
   potT: number;
   pphRet: number;
   /** Lebih bayar PPh rekonsiliasi yang dikembalikan ke THP (0 bila carryover). */
@@ -320,7 +402,21 @@ interface KaryawanPayroll {
   cabangId?: string;
   cabang?: string;
   mutasi_payroll_efektif?: string;
-  phk?: { alasan?: string };
+  phk?: PhkData;
+  tipe_kerja?: string;
+  dept?: string;
+  jabatan?: string;
+  status?: string;
+  agama?: string;
+  alamat?: string;
+  atasan?: string;
+  lokasi?: string;
+  bank?: string;
+  norek?: string;
+  reknam?: string;
+  /** Baris baru di form karyawan yang belum disimpan. */
+  _new?: boolean;
+  mutasi_riwayat?: Array<Record<string, any>>;
   tunjangan?: Array<{
     nama: string;
     nilai: Rupiah;

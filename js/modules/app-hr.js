@@ -92,7 +92,7 @@ function renderDash(){
 }
 function renderDashBody(){
   try{if(typeof sigajiRenderBranchWorkspaceBanner==='function')sigajiRenderBranchWorkspaceBanner();}catch(eWs){sigajiCatchWarn("js/modules/app-hr.js",eWs);}
-  const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar)-Date.now())/86400000));
+  const p=PA();const hP=Math.max(0,Math.ceil((new Date(p.bayar).getTime()-Date.now())/86400000));
   const thrTag=p.thr_aktif?'<span class="bdg b-pu dash-thr-badge">&#127873; THR '+(p.thr_nama||'')+'</span>':'';
   let tB=0,tP=0,tN=0,tT=0;const depts={};
   const list=karyawanListPeriode(p);
@@ -512,6 +512,7 @@ function sigajiTogglePayrollAdvTabs(){
 }
 if(typeof window!=='undefined')window.sigajiTogglePayrollAdvTabs=sigajiTogglePayrollAdvTabs;
 function applyPayrollSlideTabsVisibility(){
+  /** @type {{btn: Element, tid: string}|null} */
   let first=null;
   PAYROLL_SP_TABS.forEach(function(pair){
     var tid=pair[0],sub=pair[1];
@@ -786,8 +787,8 @@ function onReknamEdit(){const e=document.getElementById('sp-reknam-f');if(e)e.da
 function formatNPWP(input){let v=input.value.replace(/[^0-9]/g,'');if(v.length>15)v=v.slice(0,15);let r='';if(v.length>0)r+=v.slice(0,2);if(v.length>2)r+='.'+v.slice(2,5);if(v.length>5)r+='.'+v.slice(5,8);if(v.length>8)r+='.'+v.slice(8,9);if(v.length>9)r+='-'+v.slice(9,12);if(v.length>12)r+='.'+v.slice(12,15);input.value=r;}
 // ── BPJS PANEL ──────────────────────────────────
 function loadBPJSPanel(k){
-  const tB=(k.tunjangan||[]).filter(function(t){return t.tipe==='tetap';}).reduce(function(s,t){return s+t.nilai;},0);
-  const basis=k.gapok+tB;const bm=k.bpjs_manual||{};
+  const tB=(k.tunjangan||[]).filter(function(t){return t.tipe==='tetap';}).reduce(function(s,t){return s+sigajiRp(t.nilai);},0);
+  const basis=sigajiRp(k.gapok)+tB;const bm=k.bpjs_manual||{};
   const KOMP=[
     {key:'kes-prs',tarif:'4%',lbl:'BPJS Kes Perusahaan (4%)',sec:'kes'},
     {key:'kes-kar',tarif:'1%',lbl:'BPJS Kes Karyawan (1%)',sec:'kes'},
@@ -876,7 +877,7 @@ function toggleManual(key){
   const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.bpjs_manual)k.bpjs_manual={};
   const isNow=!bmState[key];bmState[key]=isNow;const ve=document.getElementById('b-'+key+'-v');const te=document.getElementById('tm-'+key);
   if(isNow){ve.readOnly=false;ve.className='bi inp-rp manual';ve.setAttribute('data-rp','1');te.textContent='Manual';te.className='tm manual';k.bpjs_manual[key]=parseRpInput(ve.value);ve.oninput=function(){k.bpjs_manual[key]=parseRpInput(ve.value);updateGajiSummary();};if(typeof sigajiBindRpInputs==='function')sigajiBindRpInputs(ve);}
-  else{delete k.bpjs_manual[key];ve.readOnly=true;ve.className='bi inp-rp';ve.oninput=null;te.textContent='Auto';te.className='tm auto';const ok=bpjsKompAktif(k,key);if(!ok){ve.value=formatRpInputNum(0);}else{const tB2=(k.tunjangan||[]).filter(t=>t.tipe==='tetap').reduce((s,t)=>s+t.nilai,0);const b2=k.gapok+tB2;const def=BPJS_DEF[key];const bas=def.basis?Math.min(b2,def.basis):b2;ve.value=formatRpInputNum(Math.round(bas*def.pct/100));}}
+  else{delete k.bpjs_manual[key];ve.readOnly=true;ve.className='bi inp-rp';ve.oninput=null;te.textContent='Auto';te.className='tm auto';const ok=bpjsKompAktif(k,key);if(!ok){ve.value=formatRpInputNum(0);}else{const tB2=(k.tunjangan||[]).filter(t=>t.tipe==='tetap').reduce((s,t)=>s+sigajiRp(t.nilai),0);const b2=sigajiRp(k.gapok)+tB2;const def=BPJS_DEF[key];const bas=def.basis?Math.min(b2,def.basis):b2;ve.value=formatRpInputNum(Math.round(bas*def.pct/100));}}
   logPayrollAudit(cpNik,'Toggle BPJS Manual',`${key} → ${isNow?'manual':'auto'}`);
   saveAll();
   updateGajiSummary();
@@ -922,7 +923,7 @@ function renderNaturaPeriodeHint(nik){
 }
 function renderNaturaPanel(k){
   renderNaturaPeriodeHint(k&&k.nik);
-  const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input class="comp-inp font-12 w-full" value="${n.nama}" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="text" class="inp-rp comp-inp font-12 w-full" value="${n.nilai}" data-rp="1" onchange="updNat('${k.nik}',${i},'nilai',parseRpInput(this.value))"><select class="comp-inp font-11" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r"${sigajiDataAction('del-nat',{nik:k.nik,i:i})}>&#10007;</button></div>`).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span class="ct-success fw-700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span class="ct-danger fw-700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';sigajiBindRpInputs(document.getElementById('natura-list'));
+  const list=k.natura||[];document.getElementById('natura-list').innerHTML=list.length?list.map((n,i)=>`<div class="nat-row ${n.kp?'kp':''}"><input class="comp-inp font-12 w-full" value="${n.nama}" onchange="updNat('${k.nik}',${i},'nama',this.value)"><input type="text" class="inp-rp comp-inp font-12 w-full" value="${n.nilai}" data-rp="1" onchange="updNat('${k.nik}',${i},'nilai',parseRpInput(this.value))"><select class="comp-inp font-11" onchange="updNat('${k.nik}',${i},'kp',this.value==='true');renderNaturaPanel(karyawan.find(x=>x.nik==='${k.nik}'))"><option value="false" ${!n.kp?'selected':''}>Tidak Kena Pajak</option><option value="true" ${n.kp?'selected':''}>Kena Pajak</option></select><button class="btn btn-xs btn-r"${sigajiDataAction('del-nat',{nik:k.nik,i:i})}>&#10007;</button></div>`).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada natura.</div>';const kp=list.filter(n=>n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);const nkp=list.filter(n=>!n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);document.getElementById('natura-total').innerHTML=list.length?`<div class="pph-box"><div class="pr-row-info"><span>Natura Tidak KP</span><span class="ct-success fw-700">${fmt(nkp)}</span></div><div class="pr-row-info"><span>Natura Kena Pajak</span><span class="ct-danger fw-700">${fmt(kp)}</span></div><div class="pph-box-tit"><span>Total</span><span>${fmt(kp+nkp)}</span></div></div>`:'';sigajiBindRpInputs(document.getElementById('natura-list'));
 }
 function addNatura(){if(!canAccessPayrollSub('natura'))return;if(!guardPayrollEditUnlocked())return;const k=getPayrollTargetByNik(cpNik,true);if(!k)return;if(!k.natura)k.natura=[];k.natura.push({nama:'Natura Baru',nilai:0,kp:false});logPayrollAudit(cpNik,'Tambah Natura','Natura Baru (manual)');saveAll();renderNaturaPanel(k);updateGajiSummary();}
 function addNatTmpl(nama,nilai,kp){
@@ -1042,6 +1043,7 @@ function renderKompgajiPage(){
 if(typeof window!=='undefined')window.renderKompgajiPage=renderKompgajiPage;
 function applyKompgajiSubtabVisibility(){
   var tabs=document.querySelectorAll('#pg-kompgaji .tabs .tab');
+  /** @type {{el: Element, panel: string}|null} */
   var first=null;
   tabs.forEach(function(t){
     var panel=t.getAttribute('data-kgpanel')||(t.getAttribute('data-kgtab')==='tunjvar'?'kg-tab-tunjvar':'kg-tab-daftar');
@@ -1337,7 +1339,7 @@ function detailGaji(nik,pNama){
   h+='</div>';
   h+='<div class="flex-1"><div class="stit">Potongan</div><div class="pr-row-info"><span>PPh 21</span><span>- '+fmt(g.pph)+'</span></div><div class="pr-row-info"><span>BPJS Kar</span><span>- '+fmt(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar)+'</span></div>';
   (k.potongan||[]).forEach(function(x){h+='<div class="pr-row-info"><span>'+x.nama+'</span><span>- '+fmt(x.nilai)+'</span></div>';});
-  var potKh=g.potKehadiran||{};
+  var potKh=g.potKehadiran||{total:0,details:[]};
   (potKh.details||[]).forEach(function(d){
     h+='<div class="pr-row-info slip-pot-warn"><span>'+escapeHtml(d.label)+'</span><span>- '+fmt(d.nilai)+'</span></div>';
   });

@@ -3,8 +3,13 @@
  * ("0" + "500000") di hitungGaji — hasil harus sama persis dengan nilai angka.
  * Jalankan: node tests/angka-teks.test.mjs
  */
+import fs from 'fs';
+import path from 'path';
 import vm from 'vm';
+import { fileURLToPath } from 'url';
 import { loadPayrollCore } from './lib/payroll-harness.mjs';
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function assertEq(name, actual, expected) {
   if (actual !== expected) {
@@ -75,6 +80,26 @@ assertEq('tunjangan variabel "1.500.000" = 1,5 juta (bukan 1,5)', tv.length && t
 
 px.thrManual['Maret 2026'] = { 'TES-TEKS': { aktif: true, nilai: '2.000.000' } };
 assertEq('THR manual teks = angka', px.hitungTHRBruto(karyawan(true), 'Maret 2026').nilai, 2000000);
+
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/pesangon.js'), 'utf8'), px);
+const kPhk = (asText) =>
+  Object.assign(karyawan(false), {
+    tgl_berhenti: '2026-03-20',
+    phk: {
+      alasan: 'resign_30hr',
+      sisa_cuti_hari: 0,
+      up_manual: asText ? '15.000.000' : 15_000_000,
+      upmk_manual: asText ? '4.000.000' : 4_000_000,
+      uph_tambahan: asText ? '250.000' : 250_000,
+      pisah: asText ? '1.000.000' : 1_000_000,
+    },
+  });
+const psN = px.hitungPesangon(kPhk(false));
+const psT = px.hitungPesangon(kPhk(true));
+for (const f of ['up', 'upmk', 'uph', 'pisah', 'total']) {
+  assertEq('pesangon override teks = angka: ' + f, psT[f], psN[f]);
+}
+assertEq('pesangon override "15.000.000" bukan 15', psT.up, 15_000_000);
 
 const fmt = vm.runInContext('fmt', px);
 assertEq('slip: fmt gapok teks "8.000.000"', fmt('8.000.000'), 'Rp 8.000.000');

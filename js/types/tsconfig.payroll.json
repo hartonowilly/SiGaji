@@ -10,5 +10,5 @@
     "module": "None",
     "skipLibCheck": true
   },
-  "include": ["payroll-globals.d.ts", "../constants.js", "../ptkp.js", "../storage-idb.js", "../modules/app-core.js", "../modules/app-slip.js", "../modules/app-reports.js", "../modules/ebupot-export.js", "../modules/sigaji-converter-bank.js"]
+  "include": ["payroll-globals.d.ts", "ui-globals.d.ts", "../constants.js", "../ptkp.js", "../storage-idb.js", "../modules/app-core.js", "../modules/app-slip.js", "../modules/app-reports.js", "../modules/ebupot-export.js", "../modules/sigaji-converter-bank.js", "../modules/app-hr.js", "../modules/app-hr-tunjvar.js", "../modules/app-absensi.js", "../modules/app-master.js", "../modules/app-access.js", "../modules/sigaji-cabang.js", "../modules/sigaji-sim-thr-pesangon.js", "../modules/sigaji-payroll-insights.js", "../modules/app-migrasi-pph.js", "../karyawan-tipe.js", "../siklus-bayar.js", "../pesangon.js", "../sigaji-dom.js", "../sigaji-ui.js"]
 }

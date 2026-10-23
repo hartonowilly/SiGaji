@@ -28,6 +28,7 @@ const suites = [
   'timeline-tahun.test.mjs',
   'angka-teks.test.mjs',
   'penyimpanan-lokal.test.mjs',
+  'migrasi-pph-import.test.mjs',
 ];
 let failed = 0;
 
