@@ -39,6 +39,7 @@ const suites = [
   'sql-v12.test.mjs',
   'server-tenant-data.test.mjs',
   'bpjs-upah.test.mjs',
+  'build-banner.test.mjs',
 ];
 let failed = 0;
 
