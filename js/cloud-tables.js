@@ -483,8 +483,25 @@
     }
   }
 
+  /** Putus koneksi / respons terpotong (mis. "Content-Length … exceeds response Body", HTTP/3 di Firefox). */
+  function isTransientNetworkError(e) {
+    var m = String((e && (e.message || e.details)) || e || '');
+    return /TypeError|NetworkError|Failed to fetch|Load failed|Content-Length|network|ECONNRESET|aborted/i.test(m);
+  }
+
   async function loadFromTables(sb) {
-    return assemblePayloadFromTables(sb);
+    var attempts = 3;
+    for (var i = 1; ; i++) {
+      try {
+        return await assemblePayloadFromTables(sb);
+      } catch (e) {
+        if (i >= attempts || !isTransientNetworkError(e)) throw e;
+        console.warn('Sigaji: muat tabel terputus, coba lagi (' + i + '/' + (attempts - 1) + ')', e);
+        await new Promise(function (r) {
+          setTimeout(r, 800 * i);
+        });
+      }
+    }
   }
 
   /** Baca kuota lisensi dari sigaji_tenant_meta (penjual) — terpisah dari blob sigaji_cloud. */
