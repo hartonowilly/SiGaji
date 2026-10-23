@@ -228,7 +228,7 @@
       typeof normalizeSiklusGaji === 'function'
         ? normalizeSiklusGaji(k && k.siklus_gaji)
         : String((k && k.siklus_gaji) || 'bulanan');
-    var rate = Math.round(Number(k && k.gapok) || 0);
+    var rate = Math.round(sigajiRp(k && k.gapok));
     var start = p && p.start;
     var end = p && p.end;
     var masuk = k && k.masuk;

@@ -10,5 +10,5 @@
     "module": "None",
     "skipLibCheck": true
   },
-  "include": ["payroll-globals.d.ts", "../constants.js", "../ptkp.js", "../storage-idb.js"]
+  "include": ["payroll-globals.d.ts", "../constants.js", "../ptkp.js", "../storage-idb.js", "../modules/app-core.js"]
 }
