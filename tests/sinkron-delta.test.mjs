@@ -144,6 +144,18 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   );
 }
 {
+  const e0 = { ts: '1', nik: 'K1', action: 'lama' };
+  const mine = { ts: '3', nik: 'K1', action: 'sesi ini' };
+  const theirs = { ts: '2', nik: 'K1', action: 'HRD lain' };
+  const r = D.mergeEntity([e0], [mine, e0], [theirs, e0]);
+  assert(
+    'log audit tanpa id: entri dua HRD sama-sama tersimpan, tambahan sesi ini di depan',
+    r.value.length === 3 && r.value[0].action === 'sesi ini' && r.value[1].action === 'HRD lain' && r.conflicts.length === 0
+  );
+  const r2 = D.mergeEntity([e0, theirs], [theirs], [e0, theirs, mine]);
+  assert('daftar tanpa id: hapusan lokal diterapkan, tambahan awan tetap', r2.value.length === 2 && !r2.value.some((x) => x.action === 'lama'));
+}
+{
   const r = D.mergeEntity(
     { '2026-10-01': 'izin' },
     { '2026-10-01': 'izin', '2026-10-02': 'sakit' },

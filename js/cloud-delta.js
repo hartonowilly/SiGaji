@@ -366,7 +366,7 @@
 
   function listItemKey(x) {
     if (!isPlainObject(x)) return null;
-    var cands = ['id', 'nik', 'username', 'tgl', 'tanggal', 'kode'];
+    var cands = ['id', 'username', 'kode', 'tgl', 'nik', 'tanggal'];
     for (var i = 0; i < cands.length; i++) {
       var v = x[cands[i]];
       if (v != null && v !== '') return cands[i] + ':' + String(v);
@@ -388,6 +388,52 @@
   }
 
   var MISSING = { missing: true };
+
+  /**
+   * Daftar tanpa kunci unik (mis. log audit): gabung sebagai multiset — entri yang ditambah/dihapus
+   * sesi ini diterapkan ke versi awan. Tambahan di depan (unshift) tetap di depan.
+   */
+  function mergeMultiset(base, local, server) {
+    function counts(arr) {
+      var m = Object.create(null);
+      arr.forEach(function (x) {
+        var k = stableStringify(x);
+        m[k] = (m[k] || 0) + 1;
+      });
+      return m;
+    }
+    var cb = counts(base);
+    var cl = counts(local);
+    var removed = Object.create(null);
+    Object.keys(cb).forEach(function (k) {
+      var n = cb[k] - (cl[k] || 0);
+      if (n > 0) removed[k] = n;
+    });
+    var addedCount = Object.create(null);
+    Object.keys(cl).forEach(function (k) {
+      var n = cl[k] - (cb[k] || 0);
+      if (n > 0) addedCount[k] = n;
+    });
+    var front = [];
+    var back = [];
+    var seenFront = true;
+    local.forEach(function (x) {
+      var k = stableStringify(x);
+      if (addedCount[k] > 0) {
+        addedCount[k]--;
+        (seenFront ? front : back).push(x);
+      } else seenFront = false;
+    });
+    var kept = server.filter(function (x) {
+      var k = stableStringify(x);
+      if (removed[k] > 0) {
+        removed[k]--;
+        return false;
+      }
+      return true;
+    });
+    return front.concat(kept, back);
+  }
 
   /**
    * Gabung 3 arah: perubahan lokal (base→local) diterapkan di atas versi awan (server).
@@ -440,6 +486,9 @@
         }),
         conflicts: conflicts,
       };
+    }
+    if (Array.isArray(local) && Array.isArray(server) && (Array.isArray(base) || base === MISSING || base == null)) {
+      return { value: mergeMultiset(Array.isArray(base) ? base : [], local, server), conflicts: conflicts };
     }
     conflicts.push(path || '(seluruh data)');
     return { value: local, conflicts: conflicts };
