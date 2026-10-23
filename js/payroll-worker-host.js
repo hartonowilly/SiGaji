@@ -17,6 +17,7 @@
     var v = cacheVer();
     return [
       '/js/constants.js?v=' + v,
+      '/js/pajak-aturan.js?v=' + v,
       '/js/ptkp.js?v=' + v,
       '/js/karyawan-tipe.js?v=' + v,
       '/js/siklus-bayar.js?v=' + v,
@@ -147,6 +148,12 @@
   window.sigajiHitungGajiMassal = function (pNama, list) {
     list = list || [];
     if (!list.length) return Promise.resolve({});
+    if (typeof sigajiBekukanHasilPeriode === 'function' && typeof periodes !== 'undefined') {
+      var pBeku = (periodes || []).find(function (p) {
+        return p && p.nama === pNama && p.snapshot_locked && !(p.hasil_gaji && p.hasil_gaji.v === 1);
+      });
+      if (pBeku) sigajiBekukanHasilPeriode(pBeku);
+    }
     if (list.length < THRESHOLD) return Promise.resolve(syncMap(pNama, list));
     return ensureWorker().then(function (w) {
       if (!w) return syncMap(pNama, list);

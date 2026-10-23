@@ -61,7 +61,7 @@ const sandbox = {
   Error,
   self: null,
   importScripts: function () {
-    const files = ['js/constants.js', 'js/ptkp.js', 'js/karyawan-tipe.js', 'js/siklus-bayar.js', 'js/modules/app-core.js', 'js/pesangon.js'];
+    const files = ['js/constants.js', 'js/pajak-aturan.js', 'js/ptkp.js', 'js/karyawan-tipe.js', 'js/siklus-bayar.js', 'js/modules/app-core.js', 'js/pesangon.js'];
     files.forEach((rel) => {
       vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), sandbox, { filename: rel });
     });

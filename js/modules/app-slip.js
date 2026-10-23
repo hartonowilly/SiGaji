@@ -3,8 +3,7 @@
 function makeSlip(k,pNama){
   const g=hitungGaji(k,pNama);
   const p=periodes.find(function(x){return x.nama===pNama;})||PA();
-  const tbl=getTERTable(k.ptkp);
-  const rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
+  const rate=rateTerHasil(g,k,p);
   const logo=perusahaan.logo||'';
   let h='<div class="slip">';
   h+='<div class="slip-head">';
@@ -208,8 +207,7 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
     if(pm.cabangNama&&pm.cabangNama!=='Kantor Pusat')ptNama+=' — '+pm.cabangNama;
     if(pm.alamat)ptAlamat=pm.alamat;
   }
-  var tbl=getTERTable(k.ptkp);
-  var rate=(tbl.find(function(r){return g.grossPPh<=r[0];})||[0,.34])[1];
+  var rate=rateTerHasil(g,k,p);
   var doc=new window.jspdf.jsPDF({format:'a4',unit:'mm'});
   var pw=doc.internal.pageSize.getWidth();
   var ph=doc.internal.pageSize.getHeight();
@@ -731,7 +729,7 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
   if(agg.tglBerhentiFilter)y=tx(doc.splitTextToSize('Catatan: Periode dibatasi sesuai Tgl. berhenti di profil karyawan (pegawai keluar tengah tahun).',pw-2*m),LM,y)+2;
 
   var bjTahun=agg.bulan.reduce(function(s,r){return s+Math.min(r.bruto*0.05,500000);},0);
-  var pkpRef=Math.max(0,Math.floor(agg.bruto-bjTahun-nilaiPTKP(k.ptkp)));
+  var pkpRef=Math.max(0,Math.floor(agg.bruto-bjTahun-nilaiPTKP(k.ptkp,agg.lastBayarIso||((tahun||'')+'-12-31'))));
   doc.setFont(undefined,'bold');doc.text('D. PENGHASILAN DAN PEMOTONGAN (rekap data SiGaji)',LM,y);y+=5;
   doc.setFont(undefined,'normal');
   var rowT=function(a,c,y0){doc.text(a,LM,y0);doc.text(c,RM,y0,{align:'right'});return y0+5;};

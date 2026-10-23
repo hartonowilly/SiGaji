@@ -731,15 +731,17 @@ function renderTERTable(){
   });
 }
 function onTERCellChange(el){
+  if(typeof sigajiKunciEraOverrideLama==='function')sigajiKunciEraOverrideLama();
   if(!perusahaan.ter_custom)perusahaan.ter_custom={};
   const lmp=el.dataset.lmp;const idx=parseInt(el.dataset.idx);
   if(!perusahaan.ter_custom[lmp])perusahaan.ter_custom[lmp]={};
   perusahaan.ter_custom[lmp][idx]=parseFloat(el.value)/100;
 }
-function saveTERCustom(){saveAll();toast('Tabel TER disimpan');renderTERTable();}
+function saveTERCustom(){saveAll();toast('Tabel TER disimpan.'+(typeof sigajiPesanBerlakuOverride==='function'?sigajiPesanBerlakuOverride():''));renderTERTable();}
 function resetTERCustom(){
-  if(!confirm('Reset tabel TER ke nilai default PMK 168/2023?'))return;
-  perusahaan.ter_custom={};saveAll();renderTERTable();toast('TER direset ke default PMK 168/2023');
+  if(!confirm('Reset tabel TER ke nilai default PMK 168/2023? Periode yang tanggal bayarnya sudah lewat tidak ikut berubah.'))return;
+  if(typeof sigajiKunciEraOverrideLama==='function')sigajiKunciEraOverrideLama();
+  perusahaan.ter_custom={};saveAll();renderTERTable();toast('TER direset ke default PMK 168/2023.'+(typeof sigajiPesanBerlakuOverride==='function'?sigajiPesanBerlakuOverride():''));
 }
 
 // ── INIT ─────────────────────────────────────────

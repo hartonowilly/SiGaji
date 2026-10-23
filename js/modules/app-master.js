@@ -225,8 +225,11 @@ function toggleLockPeriode(id){
     ensureKarSnapshotPeriode(p.nama,list);
     var prog=getKarSnapshotProgress(p.nama,list);
     if(!prog.ok){toast('Snapshot belum lengkap: '+prog.done+'/'+prog.total);return;}
-    if(!confirm('Kunci snapshot periode "'+p.nama+'"? Setelah dikunci, perubahan master tidak akan mengubah perhitungan periode ini.'))return;
+    if(!confirm('Kunci snapshot periode "'+p.nama+'"? Setelah dikunci, perubahan master, tarif pajak, dan iuran BPJS tidak mengubah slip periode ini.'))return;
     p.snapshot_locked=true;
+    try{
+      if(typeof sigajiBekukanHasilPeriode==='function')sigajiBekukanHasilPeriode(p,{skipSave:true});
+    }catch(eBeku){sigajiCatchWarn("js/modules/app-master.js",eBeku);}
     try{
       if(typeof sigajiCaptureAbsensiPotBaseline==='function')sigajiCaptureAbsensiPotBaseline(p);
       if(typeof sigajiRebaselinePriorLockedAbsensiPot==='function')sigajiRebaselinePriorLockedAbsensiPot(p);
@@ -239,6 +242,7 @@ function toggleLockPeriode(id){
     if(typeof sigajiNeedPeriodeData==='function'&&!sigajiNeedPeriodeData(p.nama)){toast('Data periode '+p.nama+' masih dimuat dari arsip — coba lagi sebentar lagi.');return;}
     if(!confirm('Buka kunci snapshot periode "'+p.nama+'"? Perubahan berikutnya pada periode ini bisa mengubah snapshot.'))return;
     p.snapshot_locked=false;
+    delete p.hasil_gaji;
     delete p.arsip_rekap;
     saveAll();renderPeriodes();updatePeriodeSimpanButtonState();toast('Kunci periode dibuka');
   }
@@ -577,6 +581,7 @@ function renderPTKPForm(){
   }).join('');
 }
 function simpanPTKP(){
+  if(typeof sigajiKunciEraOverrideLama==='function')sigajiKunciEraOverrideLama();
   if(!perusahaan.ptkp_nilai)perusahaan.ptkp_nilai={};
   var next={},ok=true;
   PTKP_KEYS.forEach(function(k){
@@ -591,9 +596,9 @@ function simpanPTKP(){
     if(Math.round(n)===Math.round(def))delete perusahaan.ptkp_nilai[k];else perusahaan.ptkp_nilai[k]=n;
   });
   if(!Object.keys(perusahaan.ptkp_nilai).length)perusahaan.ptkp_nilai={};
-  saveAll();toast('Tabel PTKP disimpan');renderPenggajian();renderPPH();renderPTKPForm();
+  saveAll();toast('Tabel PTKP disimpan.'+(typeof sigajiPesanBerlakuOverride==='function'?sigajiPesanBerlakuOverride():''));renderPenggajian();renderPPH();renderPTKPForm();
 }
-function resetPTKP(){if(!confirm('Reset semua nilai PTKP ke default (seperti PMK umum)?'))return;perusahaan.ptkp_nilai={};saveAll();renderPTKPForm();renderPenggajian();renderPPH();toast('PTKP direset');}
+function resetPTKP(){if(!confirm('Reset semua nilai PTKP ke default (seperti PMK umum)? Periode yang tanggal bayarnya sudah lewat tidak ikut berubah.'))return;if(typeof sigajiKunciEraOverrideLama==='function')sigajiKunciEraOverrideLama();perusahaan.ptkp_nilai={};saveAll();renderPTKPForm();renderPenggajian();renderPPH();toast('PTKP direset.'+(typeof sigajiPesanBerlakuOverride==='function'?sigajiPesanBerlakuOverride():''));}
 function updateHKRadioStyle(){var hk=perusahaan.hariKerja||6;var l5=document.getElementById('hk-5-lbl');var l6=document.getElementById('hk-6-lbl');if(l5){l5.className='fl items-center gap-sm cursor-pointer rounded-sm flex-1 hk-radio-label '+(hk===5?'hk-radio-active':'hk-radio-idle');}if(l6){l6.className='fl items-center gap-sm cursor-pointer rounded-sm flex-1 hk-radio-label '+(hk===6?'hk-radio-active':'hk-radio-idle');}}
 document.addEventListener('change',function(e){var tg=/** @type {HTMLInputElement} */(e.target);if(tg.name==='hk-radio'){perusahaan.hariKerja=parseInt(tg.value)||6;updateHKRadioStyle();}});
 // ── ATURAN POTONGAN ──────────────────────────────

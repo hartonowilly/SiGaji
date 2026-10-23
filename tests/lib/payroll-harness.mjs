@@ -71,6 +71,7 @@ export function loadPayrollCore(overrides = {}) {
     vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: rel });
   };
   run('js/constants.js');
+  run('js/pajak-aturan.js');
   run('js/ptkp.js');
   run('js/karyawan-tipe.js');
   run('js/siklus-bayar.js');

@@ -200,7 +200,7 @@ function ebupotBuildRows(periode) {
     totalPph += pph;
     var terI =
       typeof terInfoForExport === 'function'
-        ? terInfoForExport(k.ptkp, g.grossPPh)
+        ? terInfoForExport(k.ptkp, g.grossPPh, typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(periode):'', g.terRate)
         : { lampiran: '', ratePct: 0 };
     var npwpKar = ebupotNpwp16(k.npwp);
     var nikKar = ebupotKarKtpNik16(k);
