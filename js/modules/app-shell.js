@@ -743,7 +743,13 @@ function resetTERCustom(){
 }
 
 // ── INIT ─────────────────────────────────────────
-setInterval(function(){try{var d=buildExportData();localStorage.setItem('sigaji_autobackup',JSON.stringify(Object.assign({},d,{_meta:Object.assign({},d._meta,{catatan:'Auto backup'})})));}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}},30*60*1000);
+setInterval(function(){
+  try{
+    if(!window.sigajiIdb||!window.sigajiIdb.available())return;
+    var d=buildExportData();
+    window.sigajiIdb.put('autobackup',Object.assign({},d,{_meta:Object.assign({},d._meta,{catatan:'Auto backup'})})).catch(function(e){sigajiCatchWarn("js/modules/app-shell.js",e);});
+  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+},30*60*1000);
 initLibnasYearSelect();
 if(typeof document!=='undefined'){
   function sigajiDomReady(){

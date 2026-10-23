@@ -559,21 +559,22 @@ function bpjsKompAktif(k,key){
  */
 function calcBPJS(k,gapokEff,tunjBPJS){
   const basis=gapokEff+tunjBPJS;const bm=k.bpjs_manual||{};
-  const get=key=>{if(!bpjsKompAktif(k,key))return 0;if(bm[key]!==undefined)return bm[key];const def=BPJS_DEF[key];const b=def.basis?Math.min(basis,def.basis):basis;return Math.round(b*def.pct/100);};
+  const get=key=>{if(!bpjsKompAktif(k,key))return 0;if(bm[key]!==undefined)return sigajiRp(bm[key]);const def=BPJS_DEF[key];const b=def.basis?Math.min(basis,def.basis):basis;return Math.round(b*def.pct/100);};
   return{kes_prs:get('kes-prs'),kes_kar:get('kes-kar'),jht_prs:get('jht-prs'),jht_kar:get('jht-kar'),jp_prs:get('jp-prs'),jp_kar:get('jp-kar'),jkk_prs:get('jkk-prs'),jkm_prs:get('jkm-prs')};
 }
 // ── THR helper ───────────────────────────────────
 function hitungTHRBruto(k,pNama){
   const mb=masaKerjaBulan(k);
   if(mb<1)return{mb,nilai:0,eligible:false,pl:'<1bln',dasar:0,isManual:false};
-  const tTHR=(k.tunjangan||[]).filter(t=>(t.tipe==='tetap'||t.tipe==='tetap_no_bpjs')&&t.thr_ikut!==false).reduce((s,t)=>s+t.nilai,0);
-  const dasar=k.gapok+tTHR;const pr=mb>=12?1:mb/12;const pl=mb>=12?'12/12':mb+'/12';
+  const tTHR=(k.tunjangan||[]).filter(t=>(t.tipe==='tetap'||t.tipe==='tetap_no_bpjs')&&t.thr_ikut!==false).reduce((s,t)=>s+sigajiRp(t.nilai),0);
+  const dasar=sigajiRp(k.gapok)+tTHR;const pr=mb>=12?1:mb/12;const pl=mb>=12?'12/12':mb+'/12';
   const nilaiOto=Math.round(dasar*pr);
   // Cek manual override
   const pKey=pNama||PA().nama;
   const man=(thrManual[pKey]||{})[k.nik];
-  if(man&&man.aktif&&man.nilai>0){
-    return{mb,nilai:man.nilai,eligible:true,pl,dasar,isManual:true,nilaiOto};
+  const nilaiMan=man?sigajiRp(man.nilai):0;
+  if(man&&man.aktif&&nilaiMan>0){
+    return{mb,nilai:nilaiMan,eligible:true,pl,dasar,isManual:true,nilaiOto};
   }
   return{mb,nilai:nilaiOto,eligible:true,pl,dasar,isManual:false,nilaiOto};
 }
@@ -709,8 +710,7 @@ function getTunjVariabelForHitung(nik,pNama){
   const cols=getTunjVarColumnsResolved();
   const out=[];
   cols.forEach(function(col){
-    var nilai=parseFloat(row[col.id]);
-    if(isNaN(nilai))nilai=0;
+    var nilai=sigajiRp(row[col.id]);
     if(nilai>0)out.push({nama:col.nama||col.id,nilai:nilai,tipe:'tidak_tetap',prorata_ikut:false});
   });
   return out;
@@ -1193,19 +1193,19 @@ function hitungGaji(k,pNama,opts){
   var tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
   for(const t of tunjGabungan){
     const prMul=isPR&&t.prorata_ikut===false?1:prF;
-    const eff=Math.round(t.nilai*prMul);
+    const eff=Math.round(sigajiRp(t.nilai)*prMul);
     switch(t.tipe){
       case'tetap':
         tBPJS+=eff;
         tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
-      case'harian_exclude':{const tot=Math.round(t.nilai*prMul);tGross+=tot;tItems.push({...t,eff:tot,inTH:false,isHarian:true});break;}
+      case'harian_exclude':{const tot=Math.round(sigajiRp(t.nilai)*prMul);tGross+=tot;tItems.push({...t,eff:tot,inTH:false,isHarian:true});break;}
       default:tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});
     }
   }
-  const natKP=(k.natura||[]).filter(n=>n.kp).reduce((s,n)=>s+n.nilai,0);
-  const natNKP=(k.natura||[]).filter(n=>!n.kp).reduce((s,n)=>s+n.nilai,0);
+  const natKP=(k.natura||[]).filter(n=>n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);
+  const natNKP=(k.natura||[]).filter(n=>!n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);
   const upj=upahPerJamDariSiklus(k);
   const lb=(lembur[k.nik]||[]).reduce((s,r)=>{const j=parseFloat(r.jam)||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);return s+Math.round(h);},0);
   // THR: jika periode aktif ada THR, gabung ke gross PPh
@@ -1310,13 +1310,13 @@ function hitungGaji(k,pNama,opts){
   }
   const pphTanpaThr=hitungPPhBln(grossPPhRegular,k.ptkp);
   const pphAtasThr=pph-pphTanpaThr;
-  const potT=(k.potongan||[]).reduce((s,x)=>s+x.nilai,0);
+  const potT=(k.potongan||[]).reduce((s,x)=>s+sigajiRp(x.nilai),0);
   const skipPotHadir=siklusGaji==='harian'||siklusGaji==='mingguan';
   const potKehadiran=skipPotHadir
     ?{total:0,details:[],gajiHarian:Math.round(k.gapok||0),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
     :hitungPotonganKehadiran(k.nik,p,hkP,gapokEff);
   const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn):{total:0,details:[]};
-  const pphRet=k.pph_return?.nilai||0;
+  const pphRet=sigajiRp(k.pph_return?.nilai);
   // Lebih bayar rekonsiliasi (resign/Desember, opsi refund) dikembalikan ke THP.
   // Carryover tidak masuk bulan ini. Default periode tanpa opsi = refund.
   const refundPph=(reconciliation&&reconciliation.lebihBayar>0&&reconciliation.opsiLebihBayar==='refund')?reconciliation.lebihBayar:0;

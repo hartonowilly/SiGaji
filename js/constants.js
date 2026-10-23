@@ -14,6 +14,21 @@ function parseRpInput(val){
   var n=parseInt(s,10);
   return isNaN(n)?0:Math.max(0,n);
 }
+/**
+ * Nilai rupiah dari data tersimpan/impor → number. Teks "500000" / "1.500.000" tidak boleh ikut `+`
+ * (0+"500000" jadi gabung teks). Titik berpola ribuan dibaca pemisah ribuan; "2500.5" tetap desimal.
+ * @param {unknown} v
+ * @returns {number}
+ */
+function sigajiRp(v){
+  if(typeof v==='number')return isFinite(v)?v:0;
+  if(v==null||v===''||typeof v==='boolean')return 0;
+  var s=String(v).trim();
+  if(/^-?\d+(\.\d+)?$/.test(s)&&!/^-?\d{1,3}(\.\d{3})+$/.test(s))return Number(s);
+  var neg=/^-/.test(s);
+  var n=parseRpInput(neg?s.slice(1):s);
+  return neg?-n:n;
+}
 /** Format angka untuk kotak input (pemisah ribuan titik). */
 function formatRpInputNum(n){
   var v=Math.max(0,Math.round(Number(n)||0));
@@ -175,4 +190,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
 const SIGAJI_APP_LABEL='SiGaji v10';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.5.97';
+const SIGAJI_MODULES_CACHE='11.5.98';

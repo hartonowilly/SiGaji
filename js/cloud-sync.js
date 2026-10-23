@@ -18,6 +18,9 @@
   var cloudPayloadMode = null;
 
   var cloudTimer = null;
+  /** Naik tiap perubahan dijadwalkan; cloudSyncedSeq menyusul saat unggah berhasil. Beda = ada perubahan belum di awan. */
+  var cloudDirtySeq = 0;
+  var cloudSyncedSeq = 0;
   var clientReady = false;
   /** Promise selesai saat klien Supabase siap (atau gagal). */
   var bootPromise;
@@ -629,6 +632,7 @@
 
   function scheduleUpsert() {
     if (!clientReady || !window.sigajiSupabase) return;
+    cloudDirtySeq++;
     if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('pending');
     clearTimeout(cloudTimer);
     cloudTimer = setTimeout(function () {
@@ -671,7 +675,10 @@
 
   async function cloudUpsert() {
     if (window.sigajiApplyingCloud) return;
+    var seq = cloudDirtySeq;
+    if (typeof window.sigajiLocalDataIncomplete === 'function' && window.sigajiLocalDataIncomplete()) return;
     if (typeof window.sigajiCanUploadCloudPayload === 'function' && !window.sigajiCanUploadCloudPayload()) {
+      cloudSyncedSeq = seq;
       if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('idle');
       return;
     }
@@ -679,6 +686,7 @@
     if (!sb) return;
     var sess = await sb.auth.getSession();
     if (!sess.data || !sess.data.session) {
+      cloudSyncedSeq = seq;
       if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('idle');
       return;
     }
@@ -697,6 +705,7 @@
     var payload = window.getPayloadForCloud();
     if (typeof window.sigajiShouldSkipCloudUpload === 'function' && window.sigajiShouldSkipCloudUpload(payload)) {
       console.warn('Sigaji cloud: lewati unggah — payload masih template kosong (lindungi data tenant di Supabase).');
+      cloudSyncedSeq = seq;
       if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('idle');
       return;
     }
@@ -709,6 +718,7 @@
       } else {
         await upsertBlobOnly(uid, payload);
       }
+      if (seq > cloudSyncedSeq) cloudSyncedSeq = seq;
       if (typeof window.sigajiSetSyncStatus === 'function') {
         window.sigajiSetSyncStatus('synced', new Date().toLocaleTimeString('id-ID'));
       }
@@ -724,6 +734,16 @@
     clearTimeout(cloudTimer);
     return cloudUpsert();
   };
+  window.addEventListener('beforeunload', function (e) {
+    if (cloudDirtySeq <= cloudSyncedSeq) return;
+    if (cloudTimer) {
+      clearTimeout(cloudTimer);
+      cloudTimer = null;
+      cloudUpsert();
+    }
+    e.preventDefault();
+    e.returnValue = '';
+  });
 
   function friendlyAuthEmailError(msg) {
     var m = String(msg || '').toLowerCase();
