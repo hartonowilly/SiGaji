@@ -26,6 +26,7 @@
         '</button>';
     }
     var iconHtml = opts.icon || '&#128196;';
+    if (typeof sigajiReplaceLegacyIcons === 'function') iconHtml = sigajiReplaceLegacyIcons(iconHtml);
     if (opts.illust && typeof sigajiEmptyIllustSvg === 'function') {
       iconHtml = sigajiEmptyIllustSvg(opts.illust);
     }
@@ -236,6 +237,12 @@
     var daysEl = el('period-sticky-days');
     var topPer = el('top-periode');
     if (topPer) topPer.textContent = p.nama;
+    document.querySelectorAll('.pst-periode').forEach(function (node) {
+      node.textContent = p.nama;
+    });
+    document.querySelectorAll('.pst-periode').forEach(function (node) {
+      node.textContent = p.nama;
+    });
     if (nameEl) nameEl.textContent = p.nama;
     if (rangeEl) {
       rangeEl.textContent =

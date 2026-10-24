@@ -722,9 +722,8 @@ function renderTERTable(){
         const customRate=(custom[lmp]||{})[r.idx];
         const displayRate=customRate!==undefined?(customRate*100).toFixed(2):r.rate;
         return'<tr><td class="text-muted">'+r.from+'</td><td class="text-muted">'+r.to+'</td>'+
-          '<td><input type="number" step="0.01" min="0" max="100" value="'+displayRate+'" '+
+          '<td><input type="number" class="comp-inp comp-inp-num" step="0.01" min="0" max="100" value="'+displayRate+'" '+
           'data-lmp="'+lmp+'" data-idx="'+r.idx+'" '+
-          'style="width:70px;padding:2px 5px;border:1px solid #dde1e9;border-radius:4px;font-size:11px;font-family:inherit;text-align:right" '+
           'onchange="onTERCellChange(this)">%</td></tr>';
       }).join('')+
     '</tbody></table>';

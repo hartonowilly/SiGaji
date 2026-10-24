@@ -56,6 +56,12 @@ function sigajiNavIcon(id) {
       '<svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7H14a3.5 3.5 0 010 7H6" ' +
       s +
       '/></svg>',
+    simulasi:
+      '<svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8" ' +
+      s +
+      '/><path d="M14 7h7v7" ' +
+      s +
+      '/></svg>',
     slip:
       '<svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" ' +
       s +
@@ -98,4 +104,101 @@ function sigajiNavIcon(id) {
       '/></svg>',
   };
   return icons[id] || '<svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2" ' + s + '/></svg>';
+}
+
+/** Emoji lama (menu, tab, kosong) → ikon garis yang sama dengan sidebar. */
+var SIGAJI_LEGACY_ICON = [
+  ['\uD83D\uDC64', 'karyawan'],
+  ['\uD83D\uDC65', 'users'],
+  ['\uD83D\uDCC5', 'absensi'],
+  ['\uD83D\uDCB0', 'penggajian'],
+  ['\uD83D\uDCB2', 'kompgaji'],
+  ['\u23F3', 'lembur'],
+  ['\uD83C\uDF81', 'thr'],
+  ['\u2696', 'pesangon'],
+  ['\uD83D\uDCCA', 'simulasi'],
+  ['\uD83D\uDCC8', 'simulasi'],
+  ['\uD83D\uDCCB', 'slip'],
+  ['\uD83D\uDCD2', 'slip'],
+  ['\uD83D\uDCC4', 'laporan'],
+  ['\u2699', 'master'],
+  ['\uD83D\uDCBE', 'backup'],
+  ['\uD83C\uDF1E', 'mycuti'],
+  ['\uD83D\uDD14', 'notifikasi'],
+  ['\uD83C\uDFE2', 'master'],
+  ['\uD83C\uDFE6', 'penggajian'],
+  ['\uD83C\uDFE8', 'absensi'],
+  ['\uD83D\uDCCD', 'absensi'],
+  ['\uD83D\uDCDD', 'laporan'],
+  ['\uD83D\uDCE5', 'backup'],
+  ['\uD83D\uDCE8', 'slip'],
+  ['\uD83D\uDCD1', 'master'],
+  ['\uD83D\uDD10', 'users'],
+  ['\uD83D\uDCF7', 'karyawan'],
+  ['\uD83D\uDCF1', 'myslip'],
+  ['\uD83D\uDCF2', 'myslip'],
+  ['\u270E', 'master'],
+  ['\u2709', 'slip'],
+  ['\u2705', 'users'],
+  ['\u26A0', 'pesangon'],
+  ['\uD83D\uDD04', 'master']
+];
+
+function sigajiReplaceLegacyIcons(html) {
+  var s = String(html || '');
+  if (!s) return s;
+  s = s.replace(/&#(\d+);/g, function (_, n) {
+    var cp = parseInt(n, 10);
+    if (!cp) return _;
+    if (cp > 0xffff) {
+      var u = cp - 0x10000;
+      return String.fromCharCode(0xd800 + (u >> 10), 0xdc00 + (u & 0x3ff));
+    }
+    return String.fromCharCode(cp);
+  });
+  s = s.replace(/\uFE0F/g, '');
+  SIGAJI_LEGACY_ICON.forEach(function (pair) {
+    if (s.indexOf(pair[0]) >= 0) s = s.split(pair[0]).join(sigajiNavIcon(pair[1]));
+  });
+  return s;
+}
+
+function sigajiDressChromeIcons(root) {
+  var scope = root && root.querySelectorAll ? root : document;
+  var nodes = scope.querySelectorAll(
+    '.tab, .pt, .ct, .periode-pill, .notif-btn, .page-actions .btn, .dash-bento-toolbar .btn, .sigaji-empty-icon, .label-upper-brand'
+  );
+  nodes.forEach(function (el) {
+    if (el.dataset && el.dataset.icoDressed === '1') return;
+    var next = sigajiReplaceLegacyIcons(el.innerHTML);
+    if (next !== el.innerHTML) {
+      el.innerHTML = next;
+      if (el.dataset) el.dataset.icoDressed = '1';
+    }
+  });
+}
+
+function sigajiBindPageMore() {
+  if (window.__sigajiPageMoreBound) return;
+  window.__sigajiPageMoreBound = true;
+  document.addEventListener('click', function (e) {
+    var picked = e.target && e.target.closest ? e.target.closest('.page-more-menu button, .page-more-menu .btn') : null;
+    if (picked) {
+      var host = picked.closest('details.page-more');
+      if (host) host.removeAttribute('open');
+    }
+    document.querySelectorAll('details.page-more[open]').forEach(function (d) {
+      if (!d.contains(e.target)) d.removeAttribute('open');
+    });
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () {
+    sigajiDressChromeIcons();
+    sigajiBindPageMore();
+  });
+} else {
+  sigajiDressChromeIcons();
+  sigajiBindPageMore();
 }

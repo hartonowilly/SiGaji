@@ -347,16 +347,16 @@
         escapeHtml(k.nama) +
         '</strong><div class="font-10 text-subtle">' +
         escapeHtml(k.dept) +
-        '</div></td><td>' +
+        '</div></td><td class="num cell-money">' +
         fmt(g0.neto) +
-        '</td><td><strong>' +
+        '</td><td class="num cell-neto"><strong class="cell-neto-strong">' +
         fmt(g1.neto) +
-        '</strong></td><td class="' +
+        '</strong></td><td class="num cell-money ' +
         dCls +
         '">' +
         (dNeto >= 0 ? '+' : '') +
         fmt(dNeto) +
-        '</td><td>' +
+        '</td><td class="num cell-money">' +
         fmt(g1.pph) +
         '</td></tr>'
       );

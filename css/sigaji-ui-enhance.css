@@ -2452,11 +2452,84 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 [data-theme='brand'] .fg input,
 [data-theme='brand'] .fg select,
 [data-theme='brand'] .fg textarea,
-[data-theme='brand'] .toolbar-select {
+[data-theme='brand'] .toolbar-select,
+[data-theme='brand'] .comp-inp,
+[data-theme='brand'] .inp-bordered {
   border-radius: 2px;
 }
 [data-theme='brand'] .av { border-radius: 2px; box-shadow: none; }
 [data-theme='brand'] body,
 [data-theme='brand'] .content {
   background: #e6ebf1 !important;
+}
+
+/* Ikon garis di tab, judul, dan tombol — satu ukuran dengan sidebar */
+.tab .nav-svg,
+.pt .nav-svg,
+.ct .nav-svg,
+.periode-pill .nav-svg,
+.notif-btn .nav-svg,
+.page-actions .nav-svg,
+.sigaji-empty-icon .nav-svg,
+.sigaji-cmdk-icon .nav-svg,
+.perm-cell .nav-svg {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-right: 0.35rem;
+}
+.sigaji-empty-icon .nav-svg {
+  width: 22px;
+  height: 22px;
+  margin-right: 0;
+  color: var(--color-primary);
+}
+
+.pst-periode {
+  font-weight: 700;
+  color: var(--tx);
+}
+.pst-periode:not(:empty)::before {
+  content: 'Periode ';
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.page-more {
+  position: relative;
+}
+.page-more > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.page-more > summary::-webkit-details-marker {
+  display: none;
+}
+.page-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface);
+  color: var(--tx);
+  border: 1px solid var(--bd);
+  border-radius: var(--radius-sm, 8px);
+  box-shadow: var(--shadow-md);
+}
+.page-more-menu .btn {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
 }
