@@ -163,6 +163,34 @@ function sigajiReplaceLegacyIcons(html) {
   return s;
 }
 
+function sigajiSvgNode(id) {
+  var parsed = new DOMParser().parseFromString(sigajiNavIcon(id), 'image/svg+xml');
+  var svg = parsed.documentElement;
+  if (!svg || svg.tagName.toLowerCase() === 'parsererror') return document.createTextNode('');
+  return document.importNode(svg, true);
+}
+
+function sigajiReplaceOneEmoji(textNode) {
+  var value = String(textNode.nodeValue || '').replace(/\uFE0F/g, '');
+  var hit = null;
+  var at = -1;
+  SIGAJI_LEGACY_ICON.forEach(function (pair) {
+    var i = value.indexOf(pair[0]);
+    if (i >= 0 && (at < 0 || i < at)) {
+      at = i;
+      hit = pair;
+    }
+  });
+  if (!hit || !textNode.parentNode) return false;
+  var parent = textNode.parentNode;
+  var before = value.slice(0, at);
+  var after = value.slice(at + hit[0].length);
+  if (before) parent.insertBefore(document.createTextNode(before), textNode);
+  parent.insertBefore(sigajiSvgNode(hit[1]), textNode);
+  textNode.nodeValue = after;
+  return true;
+}
+
 function sigajiDressChromeIcons(root) {
   var scope = root && root.querySelectorAll ? root : document;
   var nodes = scope.querySelectorAll(
@@ -170,11 +198,23 @@ function sigajiDressChromeIcons(root) {
   );
   nodes.forEach(function (el) {
     if (el.dataset && el.dataset.icoDressed === '1') return;
-    var next = sigajiReplaceLegacyIcons(el.innerHTML);
-    if (next !== el.innerHTML) {
-      el.innerHTML = next;
-      if (el.dataset) el.dataset.icoDressed = '1';
+    var changed = false;
+    var guard = 0;
+    while (guard++ < 12) {
+      var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      var texts = [];
+      while (walker.nextNode()) texts.push(walker.currentNode);
+      var step = false;
+      for (var i = 0; i < texts.length; i++) {
+        if (sigajiReplaceOneEmoji(texts[i])) {
+          step = true;
+          changed = true;
+          break;
+        }
+      }
+      if (!step) break;
     }
+    if (changed && el.dataset) el.dataset.icoDressed = '1';
   });
 }
 
