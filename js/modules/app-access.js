@@ -260,7 +260,7 @@ function renderPermMatrix(){
     if(m.adminOnly)return;
     const subs=SUBTABS[m.id];
     if(subs&&subs.length){
-      h+=`<div class="perm-row perm-mod-head"><div class="perm-cell fw-700 flex-col items-start" style="min-width:200px; flex:2">${m.icon} ${m.lbl}<span class="font-10 fw-600 text-muted mt-xs">Centang per sub-tab di bawah (atau semua sekaligus)</span></div>`;
+      h+=`<div class="perm-row perm-mod-head"><div class="perm-cell fw-700 flex-col items-start" style="min-width:200px; flex:2">${typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon} ${m.lbl}<span class="font-10 fw-600 text-muted mt-xs">Centang per sub-tab di bawah (atau semua sekaligus)</span></div>`;
       roleKeys.forEach(r=>{
         const isAdmin=r==='Admin';
         const allOn=isAdmin||subs.every(s=>(roles[r]||[]).includes(m.id+'.'+s));
@@ -279,7 +279,7 @@ function renderPermMatrix(){
         h+=`</div>`;
       });
     }else{
-      h+=`<div class="perm-row"><div class="perm-cell fw-600" style="min-width:200px; flex:2">${m.icon} ${m.lbl}</div>`;
+      h+=`<div class="perm-row"><div class="perm-cell fw-600" style="min-width:200px; flex:2">${typeof sigajiNavIcon==='function'?sigajiNavIcon(m.id):m.icon} ${m.lbl}</div>`;
       roleKeys.forEach(r=>{const isAdmin=r==='Admin';const chk=isAdmin||(roles[r]||[]).includes(m.id);h+=`<div class="perm-cell"><input type="checkbox" ${chk?'checked':''} ${isAdmin?'disabled':''} onchange="togglePerm('${r}','${m.id}',this.checked)"></div>`;});
       h+=`</div>`;
     }

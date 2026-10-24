@@ -163,7 +163,7 @@
       var r=hitungPesangon(k);
       var al=opt.lbl||'—';
       var cls=selNik===k.nik?'style="background:#eff6ff"':'';
-      return '<tr '+cls+' class="psg-row"'+sigajiDataAction('pesangon-pick',{nik:k.nik})+'><td class="text-center fw-700 text-muted">'+(i+1)+'</td><td><strong>'+escapeHtml(k.nama)+'</strong><div class="u-muted-10">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td class="font-11" style="max-width:180px">'+escapeHtml(al)+'</td><td class="text-right">'+(r.ok?fmt(r.total):'—')+'</td><td class="text-center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil</button></td></tr>';
+      return '<tr '+cls+' class="psg-row"'+sigajiDataAction('pesangon-pick',{nik:k.nik})+'><td class="text-center fw-700 text-muted">'+(i+1)+'</td><td><strong>'+escapeHtml(k.nama)+'</strong><div class="u-muted-10">'+escapeHtml(k.nik)+'</div></td><td>'+fmtDate(k.tgl_berhenti)+'</td><td class="font-11" style="max-width:180px">'+escapeHtml(al)+'</td><td class="num cell-neto"><strong class="cell-neto-strong">'+(r.ok?fmt(r.total):'—')+'</strong></td><td class="text-center">'+(phk.alasan?'&#10003;':'<span style="color:#b45309">!</span>')+'</td><td><button class="btn btn-xs btn-out"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil</button></td></tr>';
     }).join('');
     if(selNik&&!list.find(function(k){return k.nik===selNik;}))selNik=list[0].nik;
     if(!selNik&&list.length)selNik=list[0].nik;

@@ -8,22 +8,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.6.10">
-<link rel="stylesheet" href="/css/styles.css?v=11.6.10">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.6.10">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.6.10">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.6.10">
-<link rel="stylesheet" href="/css/sigaji-table.css?v=11.6.10">
-<link rel="stylesheet" href="/css/sigaji-components.css?v=11.6.10">
-<link rel="stylesheet" href="/css/sigaji-print.css?v=11.6.10">
-<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.6.10">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.6.12">
+<link rel="stylesheet" href="/css/styles.css?v=11.6.12">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.6.12">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.6.12">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.6.12">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.6.12">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.6.12">
+<link rel="stylesheet" href="/css/sigaji-print.css?v=11.6.12">
+<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.6.12">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.6.10"></script>
+<script src="/js/modules/app-api-shim.js?v=11.6.12"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.6.10"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.6.12"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -153,7 +153,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MASTER KARYAWAN -->
 <div class="pg" id="pg-karyawan">
   <div class="ph page-header">
-    <div><div class="pt">Master Karyawan</div><div class="pst">Data SDM, PTKP, dan saldo cuti</div></div>
+    <div><div class="pt">Master Karyawan</div><div class="pst">Data SDM, PTKP, dan saldo cuti · <span class="pst-periode"></span></div></div>
     <div class="page-actions fl gap1" id="kar-actions-aktif">
   <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="openNewKar" data-arg="tetap">+ Pegawai Tetap</button>
   <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="openNewKar" data-arg="tidak_tetap">+ Pegawai Tidak Tetap</button>
@@ -188,7 +188,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- KOMPONEN GAJI -->
 <div class="pg" id="pg-kompgaji">
   <div class="ph page-header">
-    <div><div class="pt">Komponen Gaji</div><div class="pst">Gaji pokok, BPJS, tunjangan, dan natura per karyawan</div></div>
+    <div><div class="pt">Komponen Gaji</div><div class="pst">Gaji pokok, BPJS, tunjangan, dan natura · <span class="pst-periode"></span></div></div>
     <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderKompgajiPage">&#8635; Refresh</button></div>
   </div>
   <div class="tabs tabs-spaced">
@@ -214,9 +214,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div class="fl gap1 mb1 flex-wrap items-center">
       <button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="addTunjVarColumn">+ Tambah kolom</button>
-      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="salinTunjVarDariPeriodeLalu">&#8635; Salin dari periode sebelumnya</button>
-      <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportTunjVarExcelTemplate">&#128196; Template Excel</button>
-      <button type="button" class="btn btn-sm btn-s" data-sigaji-action="click-input" data-target="inp-tunjvar-xlsx">&#128229; Import Excel</button>
+      <details class="page-more">
+        <summary class="btn btn-sm btn-out">Lainnya</summary>
+        <div class="page-more-menu">
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="salinTunjVarDariPeriodeLalu">Salin dari periode sebelumnya</button>
+          <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportTunjVarExcelTemplate">Template Excel</button>
+          <button type="button" class="btn btn-sm btn-s" data-sigaji-action="click-input" data-target="inp-tunjvar-xlsx">Import Excel</button>
+        </div>
+      </details>
       <input class="u-hidden" type="file" id="inp-tunjvar-xlsx" accept=".xlsx,.xls" onchange="importTunjVarExcel(this)">
     </div>
     <div id="tunjvar-col-editor" class="mb1 u-muted-12"></div>
@@ -229,7 +234,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- ABSENSI & CUTI — partial (sumber: partials/pg-absensi.html, rakit via npm run assemble) -->
 <div class="pg" id="pg-absensi">
   <div class="ph page-header">
-    <div><div class="pt">Absensi &amp; Cuti</div><div class="pst">Kalender kehadiran, tracking cuti, dan pengajuan</div></div>
+    <div><div class="pt">Absensi &amp; Cuti</div><div class="pst">Kalender kehadiran, tracking cuti, dan pengajuan · <span class="pst-periode"></span></div></div>
     <div class="page-actions page-toolbar-filters fl gap1">
     <label class="toolbar-lbl">Periode gaji</label>
     <select id="ab-periode-sel" class="toolbar-select" onchange="renderAbsensi();renderCutiRekap();"></select>
@@ -297,7 +302,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- LEMBUR -->
 <div class="pg" id="pg-lembur">
   <div class="ph page-header">
-    <div><div class="pt">Lembur</div><div class="pst">Input jam lembur dan rekap per periode aktif</div></div>
+    <div><div class="pt">Lembur</div><div class="pst">Input jam lembur dan rekap · <span class="pst-periode"></span></div></div>
     <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="initLemburPage">&#8635; Refresh</button></div>
   </div>
   <div class="card">
@@ -316,7 +321,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- THR -->
 <div class="pg" id="pg-thr">
   <div class="ph page-header">
-    <div><div class="pt">THR — Tunjangan Hari Raya</div><div class="pst">THR diatur per Periode Gaji di Master → Periode Gaji &amp; THR</div></div>
+    <div><div class="pt">THR — Tunjangan Hari Raya</div><div class="pst">Dihitung dari periode aktif · <span class="pst-periode"></span></div></div>
     <div class="page-actions"><button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="renderTHR">&#9654; Hitung Preview</button></div>
   </div>
   <div class="card card-surface-purple">
@@ -325,7 +330,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="fg"><label>Hari Raya</label><select id="thr-hari"><option>Idul Fitri 1447 H</option><option>Natal 2026</option></select></div>
       <div class="fg"><label>Tgl Hari Raya (referensi)</label><input type="date" id="thr-batas" value="2026-03-20"></div>
     </div>
-    <button class="btn btn-pu" data-sigaji-action="invoke" data-fn="renderTHR">&#9654; Hitung Preview THR</button>
+    <p class="u-muted-11">Preview dihitung dari tombol di atas.</p>
   </div>
   <div class="card"><div class="ct">Preview THR — <span id="thr-hari-lbl">-</span></div>
     <div class="table-wrap">
@@ -338,12 +343,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- PESANGON / PHK -->
 <div class="pg" id="pg-pesangon">
   <div class="ph page-header">
-    <div><div class="pt">Pesangon &amp; PHK</div><div class="pst">Estimasi hak sesuai UU Cipta Kerja / PP 35 Tahun 2021 — bukan pengganti konsultasi hukum</div></div>
+    <div><div class="pt">Pesangon &amp; PHK</div><div class="pst">Estimasi PP 35/2021 · <span class="pst-periode"></span></div></div>
     <div class="page-actions"><button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderPesangon">&#8635; Refresh</button></div>
   </div>
   <div class="card"><div class="ct">Karyawan dengan tanggal berhenti</div>
     <div class="table-wrap">
-    <table><thead><tr><th>No</th><th>Karyawan</th><th>Tgl. berhenti</th><th>Alasan</th><th>Total estimasi</th><th>Data</th><th></th></tr></thead>
+    <table class="sigaji-table"><thead><tr><th>No</th><th>Karyawan</th><th>Tgl. berhenti</th><th>Alasan</th><th class="num">Total estimasi</th><th>Data</th><th></th></tr></thead>
     <tbody id="tb-pesangon"></tbody></table></div>
   </div>
   <div class="card"><div class="ct">Rincian &amp; penyesuaian</div><div id="psg-detail"></div></div>
@@ -353,15 +358,20 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <div class="pg" id="pg-penggajian">
   <div class="ph page-header">
     <div><div class="pt">Proses Penggajian</div><div class="pst" id="pg-periode-lbl">-</div></div>
-    <div class="page-actions fl gap1">
-    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="showPg" data-arg="simulasi" title="Sandbox naik gaji / tunjangan">&#128202; Simulasi</button>
-    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="hitungUlangPenggajian" title="Hitung ulang saja (pro-rata, absensi, lembur, tunj. var) — tidak menimpa gapok/tunjangan periode">&#8635; Hitung Ulang</button>
-    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sinkronSnapshotPeriodeDariMaster" title="HATI-HATI: timpa gapok/tunjangan periode aktif dengan data Master Karyawan">&#128260; Ambil dari Master</button>
-    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelDaftarRekening" title="Format daftar transfer bank">&#128196; Excel Daftar Rekening</button>
-    <button class="btn btn-sm btn-s" data-sigaji-action="invoke" data-fn="openConverterBankModal" title="Converter EXCEL (.xlsm bermakro) untuk upload massal transfer bank">&#127974; Converter Transfer Bank</button>
-    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelBPJS" title="Rekap iuran BPJS per karyawan">&#128196; Excel BPJS</button>
-    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelKertasKerjaPPh" title="Kertas kerja PPh 21 &amp; THP per karyawan">&#128196; Excel Kertas Kerja PPh</button>
-    <button class="btn btn-sm btn-g" data-sigaji-action="invoke" data-fn="exportExcelRekonResign" title="Rekonsiliasi PPh Jan s.d. bulan berhenti — karyawan dengan tgl. berhenti &amp; alasan PHK">&#128196; Excel Rekonsiliasi Resign</button>
+    <div class="page-actions">
+    <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="hitungUlangPenggajian" title="Hitung ulang saja (pro-rata, absensi, lembur, tunj. var) — tidak menimpa gapok/tunjangan periode">Hitung ulang</button>
+    <details class="page-more">
+      <summary class="btn btn-sm btn-out">Lainnya</summary>
+      <div class="page-more-menu">
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="showPg" data-arg="simulasi" title="Sandbox naik gaji / tunjangan">Simulasi</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sinkronSnapshotPeriodeDariMaster" title="HATI-HATI: timpa gapok/tunjangan periode aktif dengan data Master Karyawan">Ambil dari Master</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelDaftarRekening" title="Format daftar transfer bank">Excel daftar rekening</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="openConverterBankModal" title="Converter EXCEL (.xlsm bermakro) untuk upload massal transfer bank">Converter transfer bank</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelBPJS" title="Rekap iuran BPJS per karyawan">Excel BPJS</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelKertasKerjaPPh" title="Kertas kerja PPh 21 &amp; THP per karyawan">Excel kertas kerja PPh</button>
+        <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelRekonResign" title="Rekonsiliasi PPh Jan s.d. bulan berhenti">Excel rekonsiliasi resign</button>
+      </div>
+    </details>
   </div></div>
   <div id="pg-gaji-proses">
   <div id="thr-period-info"></div>
@@ -397,7 +407,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- SIMULASI SANDBOX -->
 <div class="pg" id="pg-simulasi">
   <div class="ph page-header">
-    <div><div class="pt">Simulasi What-if</div><div class="pst">Sandbox gaji, THR, dan pesangon — tidak mengubah snapshot atau profil</div></div>
+    <div><div class="pt">Simulasi What-if</div><div class="pst">Tidak mengubah snapshot · <span class="pst-periode"></span></div></div>
   </div>
   <div class="tabs sim-sandbox-tabs tabs-spaced-lg" role="tablist">
     <button type="button" class="tab active" data-simtab="gaji" data-sigaji-action="invoke" data-fn="sigajiSimSwitchTab" data-arg="gaji">&#128176; Gaji</button>
@@ -425,7 +435,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div id="sim-summary" class="card card-surface-neutral"></div>
     <div class="card"><div class="ct">Perbandingan per karyawan</div>
-      <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>Neto sekarang</th><th>Neto simulasi</th><th>Δ Neto</th><th>PPh simulasi</th></tr></thead>
+      <div class="table-wrap"><table class="sigaji-table"><thead><tr><th>No</th><th>Karyawan</th><th class="num">Neto sekarang</th><th class="num">Neto simulasi</th><th class="num">Δ Neto</th><th class="num">PPh simulasi</th></tr></thead>
       <tbody id="sim-results"></tbody></table></div></div>
   </div>
 
@@ -450,7 +460,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div id="sim-thr-summary" class="card surface-sim-purple"></div>
     <div class="card"><div class="ct">Perbandingan THR per karyawan</div>
-      <div class="table-wrap"><table><thead><tr><th>No</th><th>Karyawan</th><th>THR sekarang</th><th>THR simulasi</th><th>Δ THR</th><th>Proporsi</th></tr></thead>
+      <div class="table-wrap"><table class="sigaji-table"><thead><tr><th>No</th><th>Karyawan</th><th class="num">THR sekarang</th><th class="num">THR simulasi</th><th class="num">Δ THR</th><th>Proporsi</th></tr></thead>
       <tbody id="sim-thr-results"></tbody></table></div></div>
   </div>
 
@@ -539,11 +549,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- LAPORAN & PPh -->
 <div class="pg" id="pg-laporan">
   <div class="ph page-header">
-    <div><div class="pt">Laporan &amp; PPh 21</div><div class="pst">Rekap periode dan PPh / bukti potong</div></div>
-    <div class="page-actions fl gap1">
+    <div><div class="pt">Laporan &amp; PPh 21</div><div class="pst">Rekap periode dan bukti potong · <span class="pst-periode"></span></div></div>
+    <div class="page-actions">
       <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="exportXmlEbupotCoretax">XML Coretax</button>
-      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelEbupotBulanan">Excel</button>
-      <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportCSV">CSV Rekap</button>
+      <details class="page-more">
+        <summary class="btn btn-sm btn-out">Lainnya</summary>
+        <div class="page-more-menu">
+          <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelEbupotBulanan">Excel</button>
+          <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportCSV">CSV rekap</button>
+        </div>
+      </details>
     </div>
   </div>
   <div class="tabs">
@@ -949,10 +964,15 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Slip Gaji Saya</div><div class="pst">Unduh atau bagikan slip periode Anda</div></div>
     <div class="page-actions page-toolbar-slip fl gap1">
     <select class="toolbar-select" id="my-period" onchange="loadMySlip()"></select>
-    <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportPDFMe">&#128438; PDF</button>
-    <button class="btn btn-sm btn-g" type="button" data-sigaji-action="invoke" data-fn="shareMySlipNativePDF">&#128229; Bagikan PDF</button>
-    <button class="btn btn-sm btn-wa" data-sigaji-action="invoke" data-fn="shareMySlipWhatsAppWithPDF">&#128242; WA + PDF</button>
-    <button class="btn btn-sm btn-email" data-sigaji-action="invoke" data-fn="shareMySlipEmailWithPDF">&#9993; Email + PDF</button>
+    <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="exportPDFMe">PDF</button>
+    <details class="page-more">
+      <summary class="btn btn-sm btn-out">Bagikan</summary>
+      <div class="page-more-menu">
+        <button class="btn btn-sm btn-g" type="button" data-sigaji-action="invoke" data-fn="shareMySlipNativePDF">Bagikan PDF</button>
+        <button class="btn btn-sm btn-wa" data-sigaji-action="invoke" data-fn="shareMySlipWhatsAppWithPDF">WA + PDF</button>
+        <button class="btn btn-sm btn-email" data-sigaji-action="invoke" data-fn="shareMySlipEmailWithPDF">Email + PDF</button>
+      </div>
+    </details>
   </div></div>
   <div id="my-slip-content"></div>
 </div>
@@ -1639,50 +1659,50 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.6.10"></script>
-<script src="/js/pajak-aturan.js?v=11.6.10"></script>
-<script src="/js/sigaji-icons.js?v=11.6.10"></script>
-<script src="/js/sigaji-ui.js?v=11.6.10"></script>
-<script src="/js/sigaji-dom.js?v=11.6.10"></script>
-<script src="/js/sigaji-api.js?v=11.6.10"></script>
-<script src="/js/karyawan-tipe.js?v=11.6.10"></script>
-<script src="/js/siklus-bayar.js?v=11.6.10"></script>
-<script src="/js/storage-idb.js?v=11.6.10"></script>
-<script src="/js/storage.js?v=11.6.10"></script>
-<script src="/js/ptkp.js?v=11.6.10"></script>
-<script src="/js/modules/app-globals.js?v=11.6.10"></script>
-<script src="/js/modules/app-core.js?v=11.6.10"></script>
-<script src="/js/modules/app-access.js?v=11.6.10"></script>
-<script src="/js/modules/app-hr.js?v=11.6.10"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.6.10"></script>
-<script src="/js/modules/app-slip.js?v=11.6.10"></script>
-<script src="/js/modules/app-reports.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-converter-bank.js?v=11.6.10"></script>
-<script src="/js/modules/ebupot-export.js?v=11.6.10"></script>
-<script src="/js/modules/bpjs-export.js?v=11.6.10"></script>
-<script src="/js/modules/app-absensi.js?v=11.6.10"></script>
-<script src="/js/modules/app-mobile.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.6.10"></script>
-<script src="/js/modules/app-master.js?v=11.6.10"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.6.10"></script>
-<script src="/js/modules/app-shell.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.6.10"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.6.10"></script>
-<script src="/js/pesangon.js?v=11.6.10"></script>
-<script src="/js/payroll-worker-host.js?v=11.6.10"></script>
-<script src="/js/config.js?v=11.6.10"></script>
+<script src="/js/constants.js?v=11.6.12"></script>
+<script src="/js/pajak-aturan.js?v=11.6.12"></script>
+<script src="/js/sigaji-icons.js?v=11.6.12"></script>
+<script src="/js/sigaji-ui.js?v=11.6.12"></script>
+<script src="/js/sigaji-dom.js?v=11.6.12"></script>
+<script src="/js/sigaji-api.js?v=11.6.12"></script>
+<script src="/js/karyawan-tipe.js?v=11.6.12"></script>
+<script src="/js/siklus-bayar.js?v=11.6.12"></script>
+<script src="/js/storage-idb.js?v=11.6.12"></script>
+<script src="/js/storage.js?v=11.6.12"></script>
+<script src="/js/ptkp.js?v=11.6.12"></script>
+<script src="/js/modules/app-globals.js?v=11.6.12"></script>
+<script src="/js/modules/app-core.js?v=11.6.12"></script>
+<script src="/js/modules/app-access.js?v=11.6.12"></script>
+<script src="/js/modules/app-hr.js?v=11.6.12"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.6.12"></script>
+<script src="/js/modules/app-slip.js?v=11.6.12"></script>
+<script src="/js/modules/app-reports.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-converter-bank.js?v=11.6.12"></script>
+<script src="/js/modules/ebupot-export.js?v=11.6.12"></script>
+<script src="/js/modules/bpjs-export.js?v=11.6.12"></script>
+<script src="/js/modules/app-absensi.js?v=11.6.12"></script>
+<script src="/js/modules/app-mobile.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.6.12"></script>
+<script src="/js/modules/app-master.js?v=11.6.12"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.6.12"></script>
+<script src="/js/modules/app-shell.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.6.12"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.6.12"></script>
+<script src="/js/pesangon.js?v=11.6.12"></script>
+<script src="/js/payroll-worker-host.js?v=11.6.12"></script>
+<script src="/js/config.js?v=11.6.12"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.6.10"></script>
-<script src="/js/cloud-roles.js?v=11.6.10"></script>
-<script src="/js/cloud-delta.js?v=11.6.10"></script>
-<script src="/js/cloud-tables.js?v=11.6.10"></script>
+<script src="/js/cloud-branding.js?v=11.6.12"></script>
+<script src="/js/cloud-roles.js?v=11.6.12"></script>
+<script src="/js/cloud-delta.js?v=11.6.12"></script>
+<script src="/js/cloud-tables.js?v=11.6.12"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.6.10"></script>
-<script src="/js/modules/app-boot.js?v=11.6.10"></script>
-<script src="/js/sigaji-events.js?v=11.6.10"></script>
+<script src="/js/cloud-sync.js?v=11.6.12"></script>
+<script src="/js/modules/app-boot.js?v=11.6.12"></script>
+<script src="/js/sigaji-events.js?v=11.6.12"></script>
 </body>
 </html>

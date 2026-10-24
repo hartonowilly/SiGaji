@@ -241,11 +241,11 @@
         escapeHtml(k.dept) +
         ' · MK ' +
         (t0.mb != null ? t0.mb : '-') +
-        ' bln</div></td><td>' +
+        ' bln</div></td><td class="num cell-money">' +
         (t0.eligible ? fmt(t0.nilai) + ' <span class="font-9 text-subtle">(' + escapeHtml(t0.pl) + ')</span>' : '<span class="text-subtle">—</span>') +
-        '</td><td><strong>' +
+        '</td><td class="num cell-neto"><strong class="cell-neto-strong">' +
         (t1.eligible ? fmt(t1.nilai) : '—') +
-        '</strong></td><td class="' +
+        '</strong></td><td class="num cell-money ' +
         dCls +
         '">' +
         (t0.eligible && t1.eligible ? (d >= 0 ? '+' : '') + fmt(d) : '—') +

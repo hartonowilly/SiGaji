@@ -577,7 +577,7 @@ function renderPTKPForm(){
   var hint={TK0:'Tidak kawin, tanggungan 0',TK1:'Tidak kawin, tanggungan 1',TK2:'Tidak kawin, tanggungan 2',TK3:'Tidak kawin, tanggungan 3',K0:'Kawin, tanggungan 0',K1:'Kawin, tanggungan 1',K2:'Kawin, tanggungan 2',K3:'Kawin, tanggungan 3'};
   tb.innerHTML=PTKP_KEYS.map(function(k){
     return'<tr><td class="fw-700" style="white-space:nowrap">'+PTKP_LBL[k]+'</td><td class="text-muted font-11">'+hint[k]+'</td>'
-      +'<td><input class="w-full font-12" type="number" min="0" step="1000" id="ptkp-val-'+k+'" value="'+Math.round(t[k])+'" style="max-width:200px; padding:6px 10px; border:1.5px solid #dde1e9; border-radius:6px; font-family:inherit"></td></tr>';
+      +'<td><input class="comp-inp inp-rp" type="number" min="0" step="1000" id="ptkp-val-'+k+'" value="'+Math.round(t[k])+'" style="max-width:200px"></td></tr>';
   }).join('');
 }
 function simpanPTKP(){

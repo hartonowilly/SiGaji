@@ -284,7 +284,7 @@
         type: 'modul',
         label: m.lbl,
         sub: m.sec,
-        icon: m.icon || '&#9670;',
+        icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon(m.id) : (m.icon || '&#9670;'),
         run: "showPg('" + m.id + "')",
         hay: (m.lbl + ' ' + m.id + ' ' + m.sec).toLowerCase(),
       });
@@ -296,7 +296,7 @@
         type: 'karyawan',
         label: k.nama,
         sub: k.nik + ' · ' + (k.dept || '-'),
-        icon: '&#128100;',
+        icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon('karyawan') : '&#128100;',
         run: "openPanel('" + String(k.nik).replace(/'/g, "\\'") + "')",
         hay: hay,
       });
