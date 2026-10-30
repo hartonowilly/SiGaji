@@ -218,6 +218,37 @@
   }
 
   function bindDelegatedUi() {
+    /* Fokus input HK/HH di tabel sticky tidak boleh menggulir halaman ke atas. */
+    document.addEventListener(
+      'mousedown',
+      function (ev) {
+        var t = ev.target;
+        if (!t || !t.classList || !t.classList.contains('pr-input')) return;
+        if (document.activeElement === t) return;
+        ev.preventDefault();
+        try {
+          t.focus({ preventScroll: true });
+        } catch (e) {
+          t.focus();
+        }
+      },
+      true
+    );
+    document.addEventListener('change', function (ev) {
+      var t = ev.target;
+      if (!t || !t.classList || !t.classList.contains('pr-input')) return;
+      var nik = t.getAttribute('data-nik');
+      var periode = t.getAttribute('data-periode');
+      var field = t.getAttribute('data-f');
+      if (nik && periode && field && typeof setPRField === 'function') setPRField(nik, periode, field, t.value);
+    });
+    document.addEventListener('keydown', function (ev) {
+      var t = ev.target;
+      if (!t || !t.classList || !t.classList.contains('pr-input')) return;
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      t.blur();
+    });
     document.addEventListener('click', function (ev) {
       var t = ev.target;
       if (!t || !t.closest) return;

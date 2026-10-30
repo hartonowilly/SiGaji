@@ -211,7 +211,6 @@ function syncProrataDariResign(k){
     return;
   }
   applyAbsensiResign(k.nik,stop);
-  var lastWork=addDaysIso(stop,-1);
   (periodes||[]).forEach(function(p){
     if(!p||!p.nama||!p.start||!p.end)return;
     var ps=toIsoDate(p.start),pe=toIsoDate(p.end);
@@ -226,15 +225,10 @@ function syncProrataDariResign(k){
     }
     var pr=getPR(k.nik,p.nama);
     if(pr.resignPrOff)return;
-    var hk=hariKerjaRange(ps,pe);
-    var hh=0;
-    if(lastWork&&lastWork>=ps){
-      var hhEnd=lastWork<=pe?lastWork:pe;
-      hh=hariKerjaRange(ps,hhEnd);
-    }
+    var auto=prorataHkHhOtomatis(k,p);
     pr.enabled=true;
-    pr.hk=hk;
-    pr.hh=hh;
+    pr.hk=auto.hk;
+    pr.hh=auto.hh;
     pr.autoResign=true;
     pr.manual=false;
   });
@@ -604,15 +598,66 @@ function upahPerJamDariSiklus(k){
   if(siklus==='mingguan')return rate/(hkMinggu*8);
   return rate/173;
 }
-function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){const p=PA();const ed=new Date(p.end||'2026-03-24');const hk=hariKerjaRange(p.start,p.end);const hh=hariHadirBulan(nik,ed.getFullYear(),ed.getMonth()+1);prorata[nik][pN]={enabled:false,hk,hh,manual:false};}return prorata[nik][pN];}
+/**
+ * HK = hari kerja seluruh periode.
+ * HH = hari kerja sejak tanggal masuk (atau awal periode) sampai akhir periode,
+ * atau sehari sebelum tanggal berhenti bila resign jatuh di periode ini.
+ */
+function prorataHkHhOtomatis(k,p){
+  var ps=toIsoDate(p&&p.start);
+  var pe=toIsoDate(p&&p.end);
+  var hk=ps&&pe?hariKerjaRange(ps,pe):0;
+  var hhStart=ps;
+  var hhEnd=pe;
+  var masuk=toIsoDate(k&&k.masuk);
+  var stop=toIsoDate(k&&k.tgl_berhenti);
+  if(masuk&&ps&&masuk>ps)hhStart=masuk;
+  if(masuk&&pe&&masuk>pe)hhEnd='';
+  if(stop&&ps&&pe&&hhEnd&&stop>=ps&&stop<=pe){
+    var last=addDaysIso(stop,-1);
+    if(!last||(hhStart&&last<hhStart))hhEnd='';
+    else if(pe&&last<pe)hhEnd=last;
+  }
+  var hh=0;
+  if(hhStart&&hhEnd&&hhEnd>=hhStart)hh=hariKerjaRange(hhStart,hhEnd);
+  if(hk>0&&hh>hk)hh=hk;
+  return {hk:hk,hh:hh};
+}
+function sigajiRefreshProrataOtomatis(nik,pN){
+  var pr=getPR(nik,pN);
+  if(pr.manual)return pr;
+  var k=(typeof karyawan!=='undefined'&&karyawan?karyawan:[]).find(function(x){return x&&String(x.nik)===String(nik);});
+  var p=(typeof periodes!=='undefined'&&periodes?periodes:[]).find(function(x){return x&&x.nama===pN;});
+  if(!p&&typeof PA==='function')p=PA();
+  if(!k||!p)return pr;
+  var auto=prorataHkHhOtomatis(k,p);
+  pr.hk=auto.hk;
+  pr.hh=auto.hh;
+  return pr;
+}
+function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){var k0=(typeof karyawan!=='undefined'&&karyawan?karyawan:[]).find(function(x){return x&&String(x.nik)===String(nik);});var p0=(typeof periodes!=='undefined'&&periodes?periodes:[]).find(function(x){return x&&x.nama===pN;});if(!p0&&typeof PA==='function')p0=PA();var auto=prorataHkHhOtomatis(k0||{nik:nik},p0||{});prorata[nik][pN]={enabled:false,hk:auto.hk||0,hh:auto.hh||0,manual:false};}return prorata[nik][pN];}
 function setPREnabled(nik,pN,v){
   var pr=getPR(nik,pN);
   pr.enabled=!!v;
   if(!v)pr.resignPrOff=true;
-  else delete pr.resignPrOff;
-  saveAll();renderPenggajian();
+  else {
+    delete pr.resignPrOff;
+    sigajiRefreshProrataOtomatis(nik,pN);
+  }
+  saveAll();
+  if(typeof renderPenggajian==='function')renderPenggajian(false,{instant:true,keepScroll:true});
 }
-function setPRField(nik,pN,f,v){const pr=getPR(nik,pN);pr[f]=v;pr.manual=true;delete pr.autoResign;saveAll();renderPenggajian();}
+function setPRField(nik,pN,f,v){
+  var pr=getPR(nik,pN);
+  var n=parseInt(v,10);
+  if(f==='hk')pr.hk=isNaN(n)||n<1?1:Math.min(31,n);
+  else if(f==='hh')pr.hh=isNaN(n)||n<0?0:Math.min(31,n);
+  else pr[f]=v;
+  pr.manual=true;
+  delete pr.autoResign;
+  saveAll();
+  if(typeof renderPenggajian==='function')renderPenggajian(false,{instant:true,keepScroll:true});
+}
 /** Pertahankan HH/HK pro-rata resign bila tgl berhenti di dalam periode (kecuali user mematikan/manual). */
 function ensureProrataResignUntukPeriode(k,p){
   if(!k||!p||!p.nama)return getPR(k&&k.nik,p&&p.nama);
@@ -621,13 +666,10 @@ function ensureProrataResignUntukPeriode(k,p){
   var pr=getPR(k.nik,p.nama);
   if(!stop||!ps||!pe||stop<ps||stop>pe)return pr;
   if(pr.resignPrOff)return pr;
-  var hk=hariKerjaRange(ps,pe);
-  var lastWork=addDaysIso(stop,-1);
-  var hh=0;
-  if(lastWork&&lastWork>=ps)hh=hariKerjaRange(ps,lastWork<=pe?lastWork:pe);
   if(!pr.manual){
-    pr.hk=hk;
-    pr.hh=hh;
+    var autoStop=prorataHkHhOtomatis(k,p);
+    pr.hk=autoStop.hk;
+    pr.hh=autoStop.hh;
     pr.autoResign=true;
   }
   pr.enabled=true;
