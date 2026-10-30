@@ -231,11 +231,13 @@
       if (oy === 'auto' || oy === 'scroll' || oy === 'overlay' || ox === 'auto' || ox === 'scroll' || ox === 'overlay') out.push(n);
       n = n.parentElement;
     }
+    var root = document.scrollingElement || document.documentElement;
+    if (root && out.indexOf(root) < 0) out.push(root);
     return out;
   }
   function prCaptureScroll(from) {
     return {
-      until: Date.now() + 1000,
+      until: Date.now() + 1500,
       items: prScrollables(from).map(function (node) {
         return { node: node, top: node.scrollTop, left: node.scrollLeft };
       }),
@@ -336,6 +338,20 @@
       ev.preventDefault();
       t.blur();
     });
+    /* Render tabel yang ditunda selama HK/HH dipegang dijalankan setelah input dilepas. */
+    document.addEventListener(
+      'focusout',
+      function (ev) {
+        var t = ev.target;
+        if (!t || !t.classList || !t.classList.contains('pr-input')) return;
+        setTimeout(function () {
+          var a = document.activeElement;
+          if (a && a.classList && a.classList.contains('pr-input')) return;
+          if (typeof window.sigajiPgFlushTunda === 'function') window.sigajiPgFlushTunda();
+        }, 0);
+      },
+      true
+    );
     document.addEventListener('click', function (ev) {
       var t = ev.target;
       if (!t || !t.closest) return;
