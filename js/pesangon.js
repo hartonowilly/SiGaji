@@ -140,12 +140,13 @@
     var tb=document.getElementById('tb-pesangon');if(!tb)return;
     // Tampilkan hanya karyawan yang berhenti pada periode aktif (agar pegawai resign bulan lalu tidak "nyangkut")
     var p=typeof PA==='function'?PA():null;
-    var cutoff=p?String(p.bayar||p.end||p.start||''):''; // cutoff sampai tanggal bayar
-    var start=p?String(p.start||''):'';
+    var cutoff=p&&typeof periodeTglCutoffPhk==='function'?periodeTglCutoffPhk(p):(p?String(p.end||p.bayar||p.start||''):'');
+    var start=p&&typeof toIsoDate==='function'?toIsoDate(p.start): (p?String(p.start||''):'');
+    if(typeof toIsoDate==='function')cutoff=toIsoDate(cutoff);
     var list=karyawan.filter(function(k){
-      var t=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
+      var t=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti): (k.tgl_berhenti?String(k.tgl_berhenti).trim():'');
       if(!t)return false;
-      if(!start||!cutoff)return true; // fallback: jika periode tidak tersedia, tampilkan seperti sebelumnya
+      if(!start||!cutoff)return true;
       return t>=start&&t<=cutoff;
     });
     list.sort(function(a,b){
