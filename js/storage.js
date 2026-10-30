@@ -551,6 +551,73 @@ function saveAll(){
     if(typeof window.sigajiQueueCloudSave==='function')window.sigajiQueueCloudSave();
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
+/* ── Jurnal absensi yang belum sampai awan ─────────────────────────────────
+ * Klik absensi tersimpan lokal seketika, tetapi baru dikirim ke awan ±2 detik kemudian (debounce + RPC).
+ * Bila halaman di-refresh/ditutup sebelum itu selesai, data awan yang dimuat ulang menimpa memori dan
+ * klik tadi hilang walau salinan lokalnya ada. Jurnal ini mencatat klik tersebut, memutarnya kembali
+ * setelah data awan termuat, lalu mengirimnya lagi. Entri dihapus begitu unggahan berikutnya berhasil. */
+var JURNAL_ABSENSI_KEY='sigaji_jurnal_absensi';
+var JURNAL_ABSENSI_MAX=300;
+var JURNAL_ABSENSI_UMUR_MS=3*24*60*60*1000;
+function sigajiJurnalAbsensiBaca(){
+  try{
+    var raw=localStorage.getItem(JURNAL_ABSENSI_KEY);
+    var a=raw?JSON.parse(raw):[];
+    return Array.isArray(a)?a:[];
+  }catch(e){return [];}
+}
+function sigajiJurnalAbsensiTulis(list){
+  try{
+    if(!list.length)localStorage.removeItem(JURNAL_ABSENSI_KEY);
+    else localStorage.setItem(JURNAL_ABSENSI_KEY,JSON.stringify(list.slice(-JURNAL_ABSENSI_MAX)));
+  }catch(e){sigajiCatchWarn("js/storage.js",e);}
+}
+/** Catat satu klik absensi (status null = sel dikosongkan). Hanya bila ada awan dan akun boleh mengunggah. */
+function sigajiJurnalAbsensiCatat(nik,tgl,status){
+  if(typeof window.sigajiQueueCloudSave!=='function')return;
+  if(typeof window.sigajiCanUploadCloudPayload==='function'&&!window.sigajiCanUploadCloudPayload())return;
+  if(!nik||!tgl)return;
+  var list=sigajiJurnalAbsensiBaca().filter(function(e){return !(e&&e.nik===nik&&e.tgl===tgl);});
+  list.push({nik:String(nik),tgl:String(tgl),status:status==null?null:String(status),t:Date.now()});
+  sigajiJurnalAbsensiTulis(list);
+}
+/** Unggahan yang payload-nya dibangun pada waktu `sampai` sudah berhasil: entri yang lebih tua tidak perlu lagi. */
+function sigajiJurnalAbsensiSelesai(sampai){
+  var list=sigajiJurnalAbsensiBaca();
+  if(!list.length)return;
+  sigajiJurnalAbsensiTulis(list.filter(function(e){return e&&(e.t||0)>sampai;}));
+}
+/**
+ * Putar ulang jurnal ke memori setelah data awan termuat, lalu simpan (= unggah ulang).
+ * Entri untuk karyawan yang tidak ada di memori atau tanggal yang sudah terkunci dibuang.
+ * @returns {number} jumlah klik yang dipulihkan
+ */
+function sigajiJurnalAbsensiPutar(){
+  var now=Date.now();
+  var list=sigajiJurnalAbsensiBaca();
+  if(!list.length)return 0;
+  var niks=Object.create(null);
+  (karyawan||[]).forEach(function(k){if(k&&k.nik)niks[String(k.nik)]=true;});
+  var sisa=[];
+  list.forEach(function(e){
+    if(!e||!e.nik||!e.tgl)return;
+    if(now-(e.t||0)>JURNAL_ABSENSI_UMUR_MS)return;
+    if(!niks[e.nik])return;
+    if(typeof canEditAbsensiPadaTanggalIso==='function'&&!canEditAbsensiPadaTanggalIso(e.tgl))return;
+    if(!absensi[e.nik])absensi[e.nik]={};
+    if(e.status==null)delete absensi[e.nik][e.tgl];
+    else absensi[e.nik][e.tgl]=e.status;
+    sisa.push(e);
+  });
+  sigajiJurnalAbsensiTulis(sisa);
+  if(sisa.length)saveAll();
+  return sisa.length;
+}
+if(typeof window!=='undefined'){
+  window.sigajiJurnalAbsensiCatat=sigajiJurnalAbsensiCatat;
+  window.sigajiJurnalAbsensiSelesai=sigajiJurnalAbsensiSelesai;
+  window.sigajiJurnalAbsensiPutar=sigajiJurnalAbsensiPutar;
+}
 /** True jika menerima payload ini akan mengosongkan data penting yang sudah ada di perangkat (cegah “hilang” setelah login awan). */
 function cloudPayloadWouldWipeMeaningfulLocal(o){
   if(!o||typeof o!=='object')return false;
