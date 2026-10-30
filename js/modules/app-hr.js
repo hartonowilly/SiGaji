@@ -1138,19 +1138,59 @@ function segarkanProrataBaris(k,p){
   }
   return pr;
 }
+/** Input HK/HH yang sedang dipegang pengguna (fokus) — tabel tidak boleh digambar ulang di bawah jarinya. */
+function sigajiPgActivePrInput(){
+  var a=document.activeElement;
+  if(!a||!a.classList||!a.classList.contains('pr-input'))return null;
+  var tb=document.getElementById('tb-penggajian');
+  if(!tb||!tb.contains(a))return null;
+  return a;
+}
+var __sigajiPgRenderTunda=false;
+/** Dipanggil saat input HK/HH dilepas: bila ada render yang ditunda, jalankan sekarang. */
+function sigajiPgFlushTunda(){
+  if(!__sigajiPgRenderTunda)return;
+  __sigajiPgRenderTunda=false;
+  renderPenggajian(false,{instant:true,keepScroll:true});
+}
+if(typeof window!=='undefined')window.sigajiPgFlushTunda=sigajiPgFlushTunda;
 function renderPenggajian(skipTunjVar,opts){
   opts=opts||{};
+  var tbEl=document.getElementById('tb-penggajian');
+  var sudahAdaBaris=!!(tbEl&&tbEl.dataset.sigajiSkel!=='1'&&tbEl.querySelector('tr td.pg-sticky-name'));
+  // Pengguna sedang mengetik HK/HH: jangan ganti tabel (fokus & posisi layar hilang). Gambar ulang setelah dilepas.
+  if(!opts.instant&&sigajiPgActivePrInput()){
+    __sigajiPgRenderTunda=true;
+    return;
+  }
+  // Tabel sudah terisi → gambar ulang di tempat, tanpa skeleton, posisi scroll dipertahankan
+  // (render dari sinkron awan / approval / halaman lain tidak boleh melempar layar ke atas).
+  var instant=!!opts.instant||sudahAdaBaris;
+  var keepScroll=opts.keepScroll!==false&&(opts.keepScroll||sudahAdaBaris);
   var my=++__sigajiPgGen;
-  var kept=opts.keepScroll?sigajiCapturePgScroll():null;
+  var kept=keepScroll?sigajiCapturePgScroll():null;
+  var fokus=sigajiPgActivePrInput();
+  var fokusKey=fokus?{nik:fokus.getAttribute('data-nik'),per:fokus.getAttribute('data-periode'),f:fokus.getAttribute('data-f')}:null;
   var p=typeof PA==='function'?PA():null;
   var list=p&&typeof karyawanListPeriode==='function'?karyawanListPeriode(p):[];
   var finish=function(map){
     if(my!==__sigajiPgGen)return;
     var paint=function(){
+      __sigajiPgRenderTunda=false;
       renderPenggajianBody(skipTunjVar,map);
       sigajiRestorePgScroll(kept);
+      if(fokusKey&&fokusKey.nik){
+        var tb2=document.getElementById('tb-penggajian');
+        var again=/** @type {HTMLInputElement|null} */(tb2?tb2.querySelector('.pr-input[data-nik="'+fokusKey.nik.replace(/"/g,'\\"')+'"][data-f="'+fokusKey.f+'"]'):null);
+        if(again){
+          var fokusLagi=/** @type {any} */(again);
+          try{fokusLagi.focus({preventScroll:true});}catch(eF){again.focus();}
+          try{again.select();}catch(eS){sigajiCatchWarn("js/modules/app-hr.js",eS);}
+          sigajiRestorePgScroll(kept);
+        }
+      }
     };
-    if(opts.instant||typeof sigajiWithSkeleton!=='function'){
+    if(instant||typeof sigajiWithSkeleton!=='function'){
       paint();
       return;
     }
@@ -1160,7 +1200,8 @@ function renderPenggajian(skipTunjVar,opts){
   var needWorker=list.length>=(window.sigajiHitungGajiMassal&&window.sigajiHitungGajiMassal.THRESHOLD||60);
   if(needWorker&&typeof window.sigajiHitungGajiMassal==='function'&&p){
     var el=document.getElementById('tb-penggajian');
-    if(el)el.innerHTML='<tr><td colspan="12" class="text-subtle">Menghitung gaji…</td></tr>';
+    // Baris lama tetap tampil selama worker menghitung; tabel kosong saja yang diberi penanda.
+    if(el&&!sudahAdaBaris)el.innerHTML='<tr><td colspan="12" class="text-subtle">Menghitung gaji…</td></tr>';
     window.sigajiHitungGajiMassal(p.nama,list).then(finish,function(){finish(null);});
     return;
   }

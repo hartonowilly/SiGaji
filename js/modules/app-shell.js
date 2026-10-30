@@ -386,9 +386,10 @@ function showPg(pg){
   if(!canAccess(pg)){toast('Tidak punya akses ke modul ini');return;}
   try{if(typeof closeAnyPanel==='function')closeAnyPanel();}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   sigajiCloseNavDrawer();
+  var el=document.getElementById('pg-'+pg);
+  var sudahAktif=!!(el&&el.classList.contains('active'));
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
-  var el=document.getElementById('pg-'+pg);
   if(el){
     el.classList.add('active');
     el.classList.remove('u-hidden');
@@ -398,7 +399,8 @@ function showPg(pg){
     el.style.animation='';
   }
   var content=document.querySelector('.content');
-  if(content)content.scrollTop=0;
+  // Halaman yang sama dibuka lagi (mis. render ulang dari sinkron) tidak melempar layar ke atas.
+  if(content&&!sudahAktif)content.scrollTop=0;
   document.querySelectorAll('.ni').forEach(function(n){if(n.dataset.pg===pg)n.classList.add('active');});
   if(pg==='notifikasi'){notifikasi.forEach(function(n){n.read=true;});saveAll();renderNotif();updateNotifBadge();}
   if(pg==='absensi')setTimeout(function(){applyAbsensiSubtabVisibility();if(typeof renderMobileAbsensiTabs==='function')renderMobileAbsensiTabs();renderAbsensi();},50);
