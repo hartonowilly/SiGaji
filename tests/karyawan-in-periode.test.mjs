@@ -52,5 +52,26 @@ assert(
     SEPT
   ) === true
 );
+assert(
+  'resign 10 Sep tetap tampil walau tgl bayar 25 Sep sudah lewat tanggal berhenti',
+  px.karyawanInPeriode(
+    { nik: 'K0005', masuk: '2020-01-01', tgl_berhenti: '2026-09-10' },
+    SEPT
+  ) === true
+);
+assert(
+  'tanggal berhenti dd/mm/yyyy di dalam periode tetap tampil',
+  px.karyawanInPeriode(
+    { nik: 'K0006', masuk: '01/01/2020', tgl_berhenti: '10/09/2026' },
+    SEPT
+  ) === true
+);
+assert(
+  'resign sehari setelah akhir periode tetap tampil (masih gaji periode ini)',
+  px.karyawanInPeriode(
+    { nik: 'K0007', masuk: '2020-01-01', tgl_berhenti: '2026-09-25' },
+    SEPT
+  ) === true
+);
 
 console.log('\nKaryawan vs periode: semua tes lulus.');

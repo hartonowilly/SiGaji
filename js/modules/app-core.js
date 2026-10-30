@@ -844,17 +844,19 @@ function prevPeriodeChrono(pnama){
 }
 
 // Karyawan tampil di periode jika masa kerjanya menyinggung rentang periode:
-// sudah masuk pada/sebelum tgl akhir, dan belum resign sebelum tgl awal
-// (resign di dalam periode tetap tampil untuk gaji terakhir).
+// sudah masuk pada/sebelum tgl akhir, dan belum resign sebelum tgl awal.
+// Resign di bulan periode ini (sebelum atau sesudah tgl bayar) tetap masuk
+// kertas kerja, BPJS, rekening, dan laporan periode itu.
 function karyawanInPeriode(k,p){
   if(!k)return false;
   if(!p||!p.start)return true;
-  var start=String(p.start||'').slice(0,10);
-  var end=String(p.end||p.bayar||p.start||'').slice(0,10);
-  var masuk=String((k.masuk)||'').trim().slice(0,10);
+  var start=toIsoDate(p.start);
+  var end=toIsoDate(p.end||p.bayar||p.start);
+  var masuk=toIsoDate(k.masuk);
   if(masuk&&end&&masuk>end)return false;
-  var t=String((k.tgl_berhenti)||'').trim().slice(0,10);
+  var t=toIsoDate(k.tgl_berhenti);
   if(!t)return true;
+  if(!start)return true;
   return t>=start;
 }
 function sortKaryawanByNik(list){
@@ -1406,10 +1408,11 @@ function hitungGaji(k,pNama,opts){
 
   // ── PEMBAYARAN BERHENTI (UPH / PHK) ────────────
   // Sumber data: k.tgl_berhenti + k.phk + hitungPesangon() (pesangon.js)
-  const tglStopIso=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
+  const tglStopIso=toIsoDate(k.tgl_berhenti);
   // Cutoff: lihat periodeTglCutoffPhk — mendukung bayar lebih awal dari end (bank hari kerja).
-  const stopCutoff=periodeTglCutoffPhk(p);
-  const isStopInPeriode=!!(tglStopIso&&p.start&&stopCutoff&&tglStopIso>=p.start&&tglStopIso<=stopCutoff);
+  const stopCutoff=toIsoDate(periodeTglCutoffPhk(p));
+  const pStartIso=toIsoDate(p.start);
+  const isStopInPeriode=!!(tglStopIso&&pStartIso&&stopCutoff&&tglStopIso>=pStartIso&&tglStopIso<=stopCutoff);
   const alasan=(k.phk&&k.phk.alasan)?String(k.phk.alasan):'';
   const hasPhkAlasan=!!alasan.trim();
   const isResign=alasan.indexOf('resign')===0;

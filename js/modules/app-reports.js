@@ -399,12 +399,13 @@ function terInfoForExport(ptkpKey,grossPPh,tanggal,terRateTersimpan){
 }
 /** Periode gaji yang memuat tanggal berhenti karyawan */
 function findPeriodeForTglBerhenti(k){
-  var t=String((k&&k.tgl_berhenti)||'').trim();
+  var t=typeof toIsoDate==='function'?toIsoDate(k&&k.tgl_berhenti):String((k&&k.tgl_berhenti)||'').trim();
   if(!t)return null;
   var found=null;
   periodes.forEach(function(p){
-    var cutoff=periodeTglCutoffPhk(p);
-    if(p.start&&cutoff&&t>=String(p.start)&&t<=String(cutoff))found=p;
+    var start=typeof toIsoDate==='function'?toIsoDate(p.start):String(p.start||'');
+    var cutoff=typeof toIsoDate==='function'?toIsoDate(periodeTglCutoffPhk(p)):periodeTglCutoffPhk(p);
+    if(start&&cutoff&&t>=start&&t<=cutoff)found=p;
   });
   return found;
 }

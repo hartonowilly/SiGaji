@@ -650,7 +650,7 @@ function aggregatePajakTahun(k,tahun){
   sorted.forEach(function(per){
     if(new Date(per.bayar||per.end||per.start).getFullYear()!==tahun)return;
     var bayarIso=per.bayar||per.end||per.start;
-    if(tStop&&bayarIso>tStop)return;
+    if(typeof karyawanInPeriode==='function'&&!karyawanInPeriode(k,per))return;
     var g=hitungGaji(k,per.nama);
     bruto+=g.grossPPh;pph+=g.pph;thrBruto+=g.thrBruto||0;pphThr+=g.pphAtasThr||0;pphRet+=g.pphRet||0;
     bulan.push({nama:per.nama,tgl:bayarIso,bruto:Math.round(g.grossPPh),pph:Math.round(g.pph)});
