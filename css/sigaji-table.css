@@ -32,6 +32,7 @@
 .sigaji-table-scroll .table-wrap {
   overflow-x: auto;
   overflow-y: visible;
+  overflow-anchor: none;
   -webkit-overflow-scrolling: touch;
 }
 

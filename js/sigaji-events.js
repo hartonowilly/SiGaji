@@ -217,13 +217,58 @@
     }
   }
 
-  function bindDelegatedUi() {
-    /* Fokus input HK/HH di tabel sticky tidak boleh menggulir halaman ke atas. */
+  /* Chrome menggulir .content ke atas saat input di tabel ber-header sticky
+     menerima fokus, dan preventScroll tidak menghentikannya. Kunci posisi
+     scroll beberapa frame setelah klik. */
+  var prScrollLock = null;
+  function prScrollables(from) {
+    var out = [];
+    var n = from && from.parentElement;
+    while (n) {
+      var st = window.getComputedStyle(n);
+      var oy = st.overflowY;
+      var ox = st.overflowX;
+      if (oy === 'auto' || oy === 'scroll' || oy === 'overlay' || ox === 'auto' || ox === 'scroll' || ox === 'overlay') out.push(n);
+      n = n.parentElement;
+    }
+    return out;
+  }
+  function prCaptureScroll(from) {
+    return {
+      until: Date.now() + 1000,
+      items: prScrollables(from).map(function (node) {
+        return { node: node, top: node.scrollTop, left: node.scrollLeft };
+      }),
+    };
+  }
+  function prRestoreScroll() {
+    if (!prScrollLock) return;
+    var items = prScrollLock.items;
+    for (var i = 0; i < items.length; i++) {
+      var s = items[i];
+      if (s.node.scrollTop !== s.top) s.node.scrollTop = s.top;
+      if (s.node.scrollLeft !== s.left) s.node.scrollLeft = s.left;
+    }
+  }
+  function prArmScrollLock(t) {
+    prScrollLock = prCaptureScroll(t);
+    prRestoreScroll();
+    requestAnimationFrame(function () {
+      prRestoreScroll();
+      requestAnimationFrame(prRestoreScroll);
+    });
+  }
+  var prScrollBound = false;
+  function bindPrScrollLock() {
+    if (prScrollBound) return;
+    prScrollBound = true;
     document.addEventListener(
-      'mousedown',
+      'pointerdown',
       function (ev) {
-        var t = ev.target;
-        if (!t || !t.classList || !t.classList.contains('pr-input')) return;
+        var t = ev.target && ev.target.closest ? ev.target.closest('.pr-input') : null;
+        if (!t) return;
+        if (ev.button != null && ev.button !== 0) return;
+        prArmScrollLock(t);
         if (document.activeElement === t) return;
         ev.preventDefault();
         try {
@@ -231,9 +276,51 @@
         } catch (e) {
           t.focus();
         }
+        try { t.select(); } catch (e2) { /* pilih teks bila browser mengizinkan */ }
+        prRestoreScroll();
       },
       true
     );
+    document.addEventListener(
+      'mouseup',
+      function (ev) {
+        var t = ev.target && ev.target.closest ? ev.target.closest('.pr-input') : null;
+        if (!t || document.activeElement !== t) return;
+        try { t.select(); } catch (e2) { /* pilih teks bila browser mengizinkan */ }
+      },
+      true
+    );
+    document.addEventListener(
+      'focusin',
+      function (ev) {
+        var t = ev.target;
+        if (!t || !t.classList || !t.classList.contains('pr-input')) return;
+        prRestoreScroll();
+        setTimeout(function () {
+          if (document.activeElement !== t) return;
+          try { t.select(); } catch (e2) { /* pilih teks bila browser mengizinkan */ }
+          prRestoreScroll();
+        }, 0);
+      },
+      true
+    );
+    document.addEventListener(
+      'scroll',
+      function () {
+        if (!prScrollLock || Date.now() > prScrollLock.until) return;
+        prRestoreScroll();
+      },
+      true
+    );
+    document.addEventListener(
+      'wheel',
+      function () { prScrollLock = null; },
+      { capture: true, passive: true }
+    );
+  }
+
+  function bindDelegatedUi() {
+    bindPrScrollLock();
     document.addEventListener('change', function (ev) {
       var t = ev.target;
       if (!t || !t.classList || !t.classList.contains('pr-input')) return;

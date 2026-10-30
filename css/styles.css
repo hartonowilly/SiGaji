@@ -67,7 +67,7 @@ body{font-family:var(--font,'Segoe UI',system-ui,sans-serif);background:var(--bg
 .ni.danger{color:#f87171}.ni.danger:hover{background:rgba(155,33,33,.2);border-left-color:#ef4444}
 .nic{width:15px;text-align:center;font-size:13px;flex-shrink:0}
 .nbadge{background:#e24b4a;color:var(--wh);border-radius:20px;font-size:9px;padding:1px 5px;margin-left:auto}
-.content{flex:1;min-width:0;width:100%;max-width:100%;padding:1.1rem;overflow:auto}
+.content{flex:1;min-width:0;width:100%;max-width:100%;padding:1.1rem;overflow:auto;overflow-anchor:none}
 .pg{display:none}.pg.active{display:block}
 .card{background:var(--surface);border-radius:10px;border:1px solid var(--bd);padding:1rem;margin-bottom:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .ct{font-size:13px;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem}
