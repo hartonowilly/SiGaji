@@ -453,6 +453,7 @@
       if (typeof window.enterAppWithUser === 'function') {
         window.enterAppWithUser(cu);
       }
+      putarJurnalAbsensi();
       if (cloudDirtySeq > cloudSyncedSeq) cloudUpsert();
       scheduleCloudPullLoop();
     } catch (e) {
@@ -878,6 +879,7 @@
 
   var upsertInFlight = null;
   var upsertAgain = false;
+  var lastUpsertErrorToasted = '';
 
   async function cloudUpsert() {
     if (upsertInFlight) {
@@ -922,6 +924,7 @@
       return;
     }
     if (typeof window.getPayloadForCloud !== 'function') return;
+    var payloadDibangunPada = Date.now();
     var payload = window.getPayloadForCloud();
     if (typeof window.sigajiShouldSkipCloudUpload === 'function' && window.sigajiShouldSkipCloudUpload(payload)) {
       console.warn('Sigaji cloud: lewati unggah — payload masih template kosong (lindungi data tenant di Supabase).');
@@ -945,6 +948,9 @@
         await upsertBlobOnly(uid, payload);
       }
       if (seq > cloudSyncedSeq) cloudSyncedSeq = seq;
+      if (typeof window.sigajiJurnalAbsensiSelesai === 'function') {
+        window.sigajiJurnalAbsensiSelesai(payloadDibangunPada);
+      }
       if (typeof window.sigajiSetSyncStatus === 'function') {
         window.sigajiSetSyncStatus('synced', new Date().toLocaleTimeString('id-ID'));
       }
@@ -952,7 +958,34 @@
       var er = (err && (err.message || err.details || err.hint)) || String(err);
       if (typeof window.sigajiSetSyncStatus === 'function') window.sigajiSetSyncStatus('error', er);
       console.error('Sigaji cloud upsert:', err);
+      // Indikator kecil di pojok sering luput; beri tahu sekali supaya penyebabnya bisa dilaporkan.
+      if (er !== lastUpsertErrorToasted) {
+        lastUpsertErrorToasted = er;
+        toastSafe(
+          'Perubahan belum sampai ke awan: ' +
+            er +
+            '. Tersimpan di perangkat ini — klik "Coba lagi" di pojok atas atau periksa koneksi.'
+        );
+      }
     }
+  }
+
+  /** Klik absensi yang belum sempat terkirim sebelum halaman ditutup: pulihkan ke memori dan kirim ulang. */
+  function putarJurnalAbsensi() {
+    if (typeof window.sigajiJurnalAbsensiPutar !== 'function') return 0;
+    var n = 0;
+    try {
+      n = window.sigajiJurnalAbsensiPutar();
+    } catch (eJ) {
+      sigajiCatchWarn('js/cloud-sync.js', eJ);
+      return 0;
+    }
+    if (n > 0) {
+      toastSafe(
+        n + ' perubahan absensi yang belum sempat terkirim ke awan dipulihkan dan sedang dikirim ulang.'
+      );
+    }
+    return n;
   }
 
   /** Muat ulang seluruh data dari awan (setelah proses di server, mis. sinkron alpha / impor libur). */
@@ -973,6 +1006,7 @@
     if (typeof CU !== 'undefined' && CU && typeof window.sigajiApplyKaryawanDataRestriction === 'function') {
       window.sigajiApplyKaryawanDataRestriction(CU);
     }
+    putarJurnalAbsensi();
     sigajiRefreshUiAfterCloudData();
     return true;
   }

@@ -207,6 +207,8 @@ declare function sigajiKunciEraOverrideLama(): string;
 declare function sigajiPesanBerlakuOverride(): string;
 declare function sigajiTanggalHariIni(): string;
 declare function saveAll(): void;
+/** Jurnal klik absensi yang belum sampai awan (storage.js). */
+declare function sigajiJurnalAbsensiCatat(nik: string, tgl: string, status: string | null): void;
 declare function toast(msg: string): void;
 /** True bila data periode sudah di memori; jika belum, mulai muat arsip. */
 declare function sigajiNeedPeriodeData(pNama: string): boolean;
