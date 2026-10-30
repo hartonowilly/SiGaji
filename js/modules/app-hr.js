@@ -1114,19 +1114,49 @@ if(typeof window!=='undefined'){
   window.sinkronSnapshotPeriodeDariMaster=sinkronSnapshotPeriodeDariMaster;
 }
 var __sigajiPgGen=0;
-function renderPenggajian(skipTunjVar){
+function sigajiCapturePgScroll(){
+  var content=document.querySelector('.content');
+  var wrap=document.querySelector('#pg-penggajian .table-wrap');
+  return {content:content,wrap:wrap,top:content?content.scrollTop:0,left:wrap?wrap.scrollLeft:0};
+}
+function sigajiRestorePgScroll(s){
+  if(!s)return;
+  if(s.content)s.content.scrollTop=s.top;
+  if(s.wrap)s.wrap.scrollLeft=s.left;
+}
+function segarkanProrataBaris(k,p){
+  if(!k||!p||typeof ensureProrataResignUntukPeriode!=='function')return null;
+  var pr=ensureProrataResignUntukPeriode(k,p);
+  if(!pr||pr.manual||typeof prorataHkHhOtomatis!=='function')return pr;
+  var stop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
+  var ps=typeof toIsoDate==='function'?toIsoDate(p.start):p.start;
+  var pe=typeof toIsoDate==='function'?toIsoDate(p.end):p.end;
+  if(!(stop&&ps&&pe&&stop>=ps&&stop<=pe)){
+    var autoPr=prorataHkHhOtomatis(k,p);
+    pr.hk=autoPr.hk;
+    pr.hh=autoPr.hh;
+  }
+  return pr;
+}
+function renderPenggajian(skipTunjVar,opts){
+  opts=opts||{};
   var my=++__sigajiPgGen;
+  var kept=opts.keepScroll?sigajiCapturePgScroll():null;
   var p=typeof PA==='function'?PA():null;
   var list=p&&typeof karyawanListPeriode==='function'?karyawanListPeriode(p):[];
   var finish=function(map){
     if(my!==__sigajiPgGen)return;
-    if(typeof sigajiWithSkeleton==='function'){
-      return sigajiWithSkeleton('tb-penggajian',12,function(){
-        renderPenggajianBody(skipTunjVar,map);
-      });
+    var paint=function(){
+      renderPenggajianBody(skipTunjVar,map);
+      sigajiRestorePgScroll(kept);
+    };
+    if(opts.instant||typeof sigajiWithSkeleton!=='function'){
+      paint();
+      return;
     }
-    renderPenggajianBody(skipTunjVar,map);
+    sigajiWithSkeleton('tb-penggajian',12,paint);
   };
+  if(p&&list&&list.length)list.forEach(function(k){segarkanProrataBaris(k,p);});
   var needWorker=list.length>=(window.sigajiHitungGajiMassal&&window.sigajiHitungGajiMassal.THRESHOLD||60);
   if(needWorker&&typeof window.sigajiHitungGajiMassal==='function'&&p){
     var el=document.getElementById('tb-penggajian');
@@ -1213,6 +1243,7 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
   let prAktif=0;
   var sumGross=0,sumThr=0,sumThBruto=0,sumBpjs=0,sumPph=0,sumPphRet=0,sumNeto=0,sumPotKh=0;
   const rows=karyawanListPeriode(p).map(function(k,idx){
+    const pr=segarkanProrataBaris(k,p);
     const g=(gajiByNik&&gajiByNik[k.nik])||hitungGaji(k,p.nama);
     sumGross+=g.grossPPh||0;
     sumThr+=g.thrBruto||0;
@@ -1226,20 +1257,12 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
     const ap=approvals.find(function(a){return a.nik===k.nik&&a.period===p.nama;});
     const st=ap?ap.status:'draft';
     const stBdg={pending:'<span class="bdg b-warn">Pending</span>',approved:'<span class="bdg b-ok">Disetujui</span>',rejected:'<span class="bdg b-err">Ditolak</span>',draft:''}[st]||'';
-    const pr=ensureProrataResignUntukPeriode(k,p);
-    if(!pr.manual){
-      var stop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
-      var ps=typeof toIsoDate==='function'?toIsoDate(p.start):p.start;
-      var pe=typeof toIsoDate==='function'?toIsoDate(p.end):p.end;
-      if(!(stop&&ps&&pe&&stop>=ps&&stop<=pe)){
-        pr.hk=hk;
-        const ed=new Date(p.end);
-        pr.hh=hariHadirBulan(k.nik,ed.getFullYear(),ed.getMonth()+1);
-      }
-    }
     if(pr.enabled)prAktif++;
-    const prBtn='<button class="pr-toggle '+(pr.enabled?'on':'off')+'"'+sigajiDataAction('pr-toggle',{nik:k.nik,periode:p.nama,enabled:!pr.enabled?'1':'0'})+'>'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
-    const prInputs=pr.enabled?'<div class="pr-input-row"><span class="u-muted-10">HK:</span><input class="pr-input" type="number" value="'+pr.hk+'" min="1" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hk\',parseInt(this.value)||1)"><span class="u-muted-10">HH:</span><input class="pr-input" type="number" value="'+pr.hh+'" min="0" max="31" onchange="setPRField(\''+k.nik+'\',\''+p.nama+'\',\'hh\',parseInt(this.value)||0)"></div>':'';
+    const prBtn='<button type="button" class="pr-toggle '+(pr.enabled?'on':'off')+'"'+sigajiDataAction('pr-toggle',{nik:k.nik,periode:p.nama,enabled:!pr.enabled?'1':'0'})+'>'+( pr.enabled?'&#9203; Aktif':'&#9711; Off')+'</button>';
+    const prAttr=function(field){
+      return ' data-nik="'+escapeAttr(k.nik)+'" data-periode="'+escapeAttr(p.nama)+'" data-f="'+field+'"';
+    };
+    const prInputs=pr.enabled?'<div class="pr-input-row"><span class="u-muted-10">HK:</span><input class="pr-input" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" value="'+pr.hk+'"'+prAttr('hk')+'><span class="u-muted-10">HH:</span><input class="pr-input" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" value="'+pr.hh+'"'+prAttr('hh')+'></div>':'';
     const thrExplain=g.thrBruto>0?sigajiDataAction('explain',{nik:k.nik,periode:p.nama})+' title="Kenapa angka THR ini?"':'';
     const thrCell=g.thrBruto>0?'<div class="sigaji-money-click ct-purple fw-700"'+thrExplain+'>'+fmt(g.thrBruto)+'</div><div class="font-10 text-purple">PPh THR: '+fmt(g.pphAtasThr)+'</div>'+(typeof sigajiExplainMoneyBtn==='function'?sigajiExplainMoneyBtn(k.nik,p.nama):''):'&#8212;';
     var rowCls=[];
