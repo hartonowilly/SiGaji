@@ -200,19 +200,23 @@ function listKarMasterBase(){
   }
   var list=typeof karyawanSortedAll==='function'?karyawanSortedAll():sortKaryawanByNik(karyawan||[]);
   if(typeof sigajiFilterKaryawanByCabang==='function')list=sigajiFilterKaryawanByCabang(list);
-  var p=typeof PA==='function'?PA():null;
-  if(p&&typeof karyawanInPeriode==='function'){
-    list=list.filter(function(k){return karyawanInPeriode(k,p);});
-  }
   list=list.filter(karMatchesTipeFilter).filter(karMatchesSiklusFilter);
+  var p=typeof PA==='function'?PA():null;
   if(__karListMode==='resign'){
-    return list.filter(isKarResign).sort(function(a,b){
+    return list.filter(function(k){
+      return typeof karyawanResignSampaiPeriode==='function'?karyawanResignSampaiPeriode(k,p):isKarResign(k);
+    }).sort(typeof cmpKarResignTglDesc==='function'?cmpKarResignTglDesc:function(a,b){
       var d=String(b.tgl_berhenti||'').localeCompare(String(a.tgl_berhenti||''));
       if(d)return d;
       return karSiklusThenNikCmp(a,b);
     });
   }
-  return list.filter(function(k){return !isKarResign(k);}).sort(karSiklusThenNikCmp);
+  if(p&&typeof karyawanInPeriode==='function'){
+    list=list.filter(function(k){return karyawanInPeriode(k,p);});
+  }
+  return list.filter(function(k){
+    return typeof karyawanResignSampaiPeriode==='function'? !karyawanResignSampaiPeriode(k,p) : !isKarResign(k);
+  }).sort(karSiklusThenNikCmp);
 }
 function karSiklusThenNikCmp(a,b){
   var ra=typeof sigajiSiklusGajiSortRank==='function'?sigajiSiklusGajiSortRank(karSiklusGajiOf(a)):(karSiklusGajiOf(a)==='harian'?2:karSiklusGajiOf(a)==='mingguan'?1:0);
@@ -221,16 +225,10 @@ function karSiklusThenNikCmp(a,b){
   return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
 }
 function updateKarResignTabBadge(){
-  var n=0,ns=0;
+  var ns=0;
   (karyawan||[]).forEach(function(k){
     if(isKarSampah(k))ns++;
-    else if(isKarResign(k))n++;
   });
-  var badge=document.getElementById('kar-resign-badge');
-  if(badge){
-    badge.textContent=String(n);
-    badge.style.display=n>0?'inline-block':'none';
-  }
   var sb=document.getElementById('kar-sampah-badge');
   if(sb){
     sb.textContent=String(ns);
@@ -305,7 +303,7 @@ function renderKarBody(){
     var empty=__karListMode==='sampah'
       ?sigajiEmptyState({icon:'&#128465;',title:filtered?'Tidak ada yang cocok':'Sampah kosong',desc:'Karyawan yang dihapus tersimpan 30 hari di sini, lalu dihapus permanen.'})
       :__karListMode==='resign'
-      ?sigajiEmptyState({icon:'&#128101;',title:filtered?'Tidak ada resign yang cocok':'Belum ada karyawan resign',desc:filtered?'Ubah filter tipe pegawai atau tipe gaji.':'Karyawan dengan tanggal berhenti akan muncul di tab ini. Putus tautan Telegram dari sini.'})
+      ?sigajiEmptyState({icon:'&#128101;',title:filtered?'Tidak ada resign yang cocok':'Belum ada karyawan resign sampai periode ini',desc:filtered?'Ubah filter tipe pegawai atau tipe gaji.':'Semua yang sudah berhenti sampai akhir periode terpilih tampil di sini, yang resign paling baru di atas.'})
       :filtered
         ?sigajiEmptyState({icon:'&#128101;',title:'Tidak ada karyawan yang cocok',desc:'Ubah filter tipe pegawai atau tipe gaji.'})
         :sigajiEmptyState({icon:'&#128101;',title:'Belum ada karyawan aktif',desc:'Tambah pegawai tetap/tidak tetap atau import Excel untuk mulai payroll.',btnLabel:'+ Pegawai Tetap',btnAction:'openNewKar',btnActionArg:'tetap'});
