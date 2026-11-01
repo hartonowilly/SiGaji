@@ -1,0 +1,1074 @@
+/**
+ * SiGaji — Tema "Buku Kas" (data-theme='kertas').
+ *
+ * Tema ini sengaja berlawanan dengan Terang/Gelap/PT yang bergaya SaaS biru–kaca:
+ *   • kertas krem hangat, garis tinta tipis, tanpa bayangan/gradasi/blur
+ *   • judul serif (Fraunces), isi IBM Plex Sans, angka IBM Plex Mono
+ *   • sidebar terang bergaris, aksen hijau buku kas, merah bata untuk potongan
+ *   • sudut siku (radius 2px), tabel bergaris seperti buku besar
+ *
+ * Semua warna lewat token; blok struktur di bawah hanya mematikan efek
+ * (gradasi, bayangan, blur) yang di tema lain ditulis langsung per komponen.
+ * Font dimuat lazy oleh sigaji-product-v3.js saat tema aktif.
+ */
+[data-theme='kertas'] {
+  --font: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* Kertas */
+  --kertas-bg: #efe8d9;
+  --kertas-surface: #faf6ee;
+  --kertas-surface-2: #f3ede0;
+  --kertas-sidebar: #e8e0cd;
+  --kertas-rule: #cfc3aa;
+  --kertas-rule-light: #e1d8c4;
+  --kertas-ink: #1c1813;
+  --kertas-ink-body: #3b3429;
+  --kertas-ink-muted: #6e6557;
+  --kertas-ink-subtle: #9a9081;
+  --kertas-green: #1f5d3d;
+  --kertas-green-dark: #154229;
+  --kertas-green-bg: #dfe9df;
+  --kertas-green-border: #a9c6b0;
+  --kertas-red: #8a2b2b;
+  --kertas-red-bg: #f3e0dc;
+  --kertas-red-border: #d9a9a3;
+  --kertas-sepia: #8a5a12;
+  --kertas-sepia-bg: #f5e8cf;
+  --kertas-sepia-border: #dcc08a;
+  --kertas-indigo: #4a3f7a;
+  --kertas-indigo-bg: #e8e3f2;
+  --kertas-indigo-border: #bcb2d6;
+
+  --wh: var(--kertas-surface);
+  --bg: var(--kertas-bg);
+  --content-bg: var(--kertas-bg);
+  --color-bg: var(--kertas-bg);
+  --color-bg-content: var(--kertas-bg);
+  --surface: var(--kertas-surface);
+  --surface-2: var(--kertas-surface-2);
+  --color-surface-muted: var(--kertas-surface-2);
+  --sidebar: var(--kertas-sidebar);
+  --sidebar-bg: var(--kertas-sidebar);
+
+  --tx: var(--kertas-ink);
+  --ink: var(--kertas-ink);
+  --color-text: var(--kertas-ink);
+  --ink-body: var(--kertas-ink-body);
+  --muted: var(--kertas-ink-muted);
+  --ink-muted: var(--kertas-ink-muted);
+  --ink-subtle: var(--kertas-ink-subtle);
+  --color-text-muted: var(--kertas-ink-muted);
+  --topbar-fg: var(--kertas-ink);
+
+  --bd: var(--kertas-rule);
+  --border: var(--kertas-rule);
+  --row-border: var(--kertas-rule-light);
+  --color-border: var(--kertas-rule);
+  --color-border-light: var(--kertas-rule-light);
+  --color-slate-200: var(--kertas-rule-light);
+  --color-slate-300: var(--kertas-rule);
+  --color-slate-500: var(--kertas-ink-muted);
+  --color-slate-600: var(--kertas-ink-body);
+
+  /* Aksen utama: hijau buku kas menggantikan biru */
+  --blue: var(--kertas-green);
+  --blue-dark: var(--kertas-green-dark);
+  --blue-light: #2f7a52;
+  --bll: var(--kertas-green-bg);
+  --indigo: var(--kertas-indigo);
+  --indigo-ink: var(--kertas-indigo);
+  --ux-accent: var(--kertas-green);
+  --ux-accent-dark: var(--kertas-green-dark);
+  --ux-accent-ink: var(--kertas-ink);
+  --on-primary: #ffffff;
+  --color-primary: var(--kertas-green);
+  --color-primary-dark: var(--kertas-green-dark);
+  --color-primary-light: #2f7a52;
+  --color-primary-subtle: var(--kertas-green-bg);
+  --color-primary-border: var(--kertas-green-border);
+  --color-blue-50: var(--kertas-surface-2);
+  --color-blue-100: var(--kertas-green-bg);
+  --color-blue-200: var(--kertas-green-border);
+
+  --gr: var(--kertas-green);
+  --grb: var(--kertas-green-bg);
+  --color-success: var(--kertas-green);
+  --color-success-bg: var(--kertas-green-bg);
+  --color-success-border: var(--kertas-green-border);
+  --success-border: var(--kertas-green-border);
+  --am: var(--kertas-sepia);
+  --amb: var(--kertas-sepia-bg);
+  --color-warning: var(--kertas-sepia);
+  --color-warning-bg: var(--kertas-sepia-bg);
+  --color-warning-border: var(--kertas-sepia-border);
+  --warn-border: var(--kertas-sepia-border);
+  --rd: var(--kertas-red);
+  --rdb: var(--kertas-red-bg);
+  --color-danger: var(--kertas-red);
+  --color-danger-bg: var(--kertas-red-bg);
+  --color-danger-border: var(--kertas-red-border);
+  --pu: var(--kertas-indigo);
+  --pul: var(--kertas-indigo-bg);
+  --pub: var(--kertas-indigo-border);
+  --color-purple: var(--kertas-indigo);
+  --color-purple-bg: var(--kertas-indigo-bg);
+  --color-purple-border: var(--kertas-indigo-border);
+  --color-purple-muted: var(--kertas-indigo-bg);
+
+  --row-hover: #ece4d2;
+
+  /* Sidebar terang */
+  --sidebar-fg: var(--kertas-ink-body);
+  --sidebar-fg-muted: var(--kertas-ink-muted);
+  --sidebar-fg-hover: var(--kertas-ink);
+  --sidebar-fg-active: var(--kertas-green);
+
+  /* Bentuk: siku, tanpa bayangan */
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --ux-card-radius: 2px;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 0 0 1px var(--kertas-rule);
+  --shadow-card: none;
+  --shadow-topbar: none;
+  --ux-focus: 0 0 0 3px rgba(31, 93, 61, 0.25);
+
+  /* Tabel buku besar: kepala bergaris tebal, baris bergaris tipis, tanpa zebra */
+  --table-head-bg: var(--kertas-surface-2);
+  --table-head-color: var(--kertas-ink);
+  --table-head-border: var(--kertas-ink);
+  --table-cell-border: var(--kertas-rule-light);
+  --table-sticky-bg: var(--kertas-surface);
+  --table-sticky-head-bg: var(--kertas-surface-2);
+  --table-zebra: var(--kertas-surface);
+  --table-row-hover: var(--row-hover);
+  --table-sticky-shadow: rgba(28, 24, 19, 0.08);
+
+  --row-prorate-bg: #f6efdd;
+  --row-neto-neg-bg: #f3e0dc;
+  --row-pending-bg: #f5ecd6;
+
+  --cell-money-color: var(--kertas-ink);
+  --cell-deduction-color: var(--kertas-red);
+  --cell-neto-color: var(--kertas-green);
+
+  /* Absensi */
+  --ab-izin-bg: #dde6ea;
+  --ab-izin-fg: #2b5566;
+  --ab-half-sakit-bg: #f5e8cf;
+  --ab-half-sakit-fg: #8a5a12;
+  --ab-half-ijin-bg: #dde6ea;
+  --ab-half-ijin-fg: #2b5566;
+  --ab-libnas-bg: #f1e4b8;
+  --ab-libnas-fg: #5c4a12;
+  --ab-grid-head-bg: var(--kertas-sidebar);
+  --ab-grid-head-fg: var(--kertas-ink);
+  --ab-grid-head-border: var(--kertas-rule);
+
+  /* Bento / timeline */
+  --bento-surface: var(--kertas-surface);
+  --bento-surface-2: var(--kertas-surface-2);
+  --bento-border: var(--kertas-rule);
+  --bento-ink: var(--kertas-ink);
+  --bento-muted: var(--kertas-ink-muted);
+}
+
+/* ── Dasar ── */
+[data-theme='kertas'] body,
+[data-theme='kertas'] #app,
+[data-theme='kertas'] .content {
+  background: var(--kertas-bg) !important;
+  color: var(--kertas-ink);
+  font-family: var(--font);
+}
+[data-theme='kertas'] .content {
+  font-size: 13.5px;
+  color: var(--kertas-ink);
+}
+
+/* Judul & angka: ini yang paling membedakan tema */
+[data-theme='kertas'] .pt,
+[data-theme='kertas'] .alogo,
+[data-theme='kertas'] .ct,
+[data-theme='kertas'] .llogo h1,
+[data-theme='kertas'] .mtit,
+[data-theme='kertas'] .sph h3,
+[data-theme='kertas'] .sph .spt-title,
+[data-theme='kertas'] .dash-hero-title,
+[data-theme='kertas'] .bento-hero-title,
+[data-theme='kertas'] .period-sticky-bar strong,
+[data-theme='kertas'] .sigaji-mobile-drawer-title,
+[data-theme='kertas'] .sc-kpi .sv,
+[data-theme='kertas'] .sv,
+[data-theme='kertas'] .dash-hero-count {
+  font-family: var(--font-serif);
+  letter-spacing: 0;
+  font-weight: 600;
+}
+[data-theme='kertas'] .pt,
+[data-theme='kertas'] .page-header .pt {
+  font-size: 1.55rem;
+  line-height: 1.15;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: var(--kertas-ink);
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .ct {
+  font-size: 1.02rem;
+  color: var(--kertas-ink);
+  border-bottom: 1px solid var(--kertas-rule);
+  padding-bottom: 0.55rem;
+}
+[data-theme='kertas'] .pst,
+[data-theme='kertas'] .meta-muted {
+  color: var(--kertas-ink-muted);
+}
+[data-theme='kertas'] .ph {
+  border-bottom: 1px solid var(--kertas-ink);
+  padding-bottom: 0.7rem;
+}
+
+[data-theme='kertas'] td.num,
+[data-theme='kertas'] th.num,
+[data-theme='kertas'] .num,
+[data-theme='kertas'] .sv-money,
+[data-theme='kertas'] .pr-input,
+[data-theme='kertas'] .periode-pill,
+[data-theme='kertas'] .sigaji-build-chip,
+[data-theme='kertas'] .ptl-item,
+[data-theme='kertas'] .gs-row,
+[data-theme='kertas'] .gs-total,
+[data-theme='kertas'] .pr-row-info,
+[data-theme='kertas'] .pph-box,
+[data-theme='kertas'] .ab-kar-nik,
+[data-theme='kertas'] .sigaji-cmdk-hint kbd {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+[data-theme='kertas'] td.num {
+  font-size: 0.8rem;
+}
+
+/* ── Login: kertas buku kas bergaris dengan garis tepi merah ── */
+[data-theme='kertas'] #login {
+  background: var(--kertas-bg)
+    repeating-linear-gradient(0deg, transparent 0 27px, var(--kertas-rule-light) 27px 28px);
+  background-image:
+    linear-gradient(90deg, transparent 0 72px, var(--kertas-red) 72px 73px, transparent 73px),
+    repeating-linear-gradient(0deg, transparent 0 27px, var(--kertas-rule-light) 27px 28px);
+}
+[data-theme='kertas'] .login-bg-deco {
+  display: none;
+}
+[data-theme='kertas'] .lbox,
+[data-theme='kertas'] .lbox-premium {
+  background: var(--kertas-surface);
+  border: 1px solid var(--kertas-ink);
+  border-radius: 2px;
+  box-shadow: 8px 8px 0 var(--kertas-rule);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+[data-theme='kertas'] .llogo h1 {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: var(--kertas-ink);
+  color: var(--kertas-ink);
+  font-size: 2.1rem;
+  font-weight: 600;
+  font-style: italic;
+}
+[data-theme='kertas'] .login-tagline,
+[data-theme='kertas'] .login-pt-nama {
+  color: var(--kertas-ink-muted);
+}
+[data-theme='kertas'] .login-link {
+  color: var(--kertas-green);
+}
+[data-theme='kertas'] .login-link:hover {
+  background: var(--kertas-green-bg);
+}
+[data-theme='kertas'] .login-link-accent {
+  color: var(--kertas-sepia);
+}
+[data-theme='kertas'] .login-link-accent:hover {
+  background: var(--kertas-sepia-bg);
+}
+[data-theme='kertas'] .login-footer {
+  border-top-color: var(--kertas-rule);
+}
+
+/* ── Topbar: kertas dengan garis ganda ── */
+[data-theme='kertas'] .topbar {
+  background: var(--kertas-surface) !important;
+  border-bottom: 3px double var(--kertas-ink) !important;
+  box-shadow: none !important;
+  color: var(--kertas-ink) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-theme='kertas'] .topbar .alogo {
+  color: var(--kertas-ink) !important;
+  font-style: italic;
+  font-size: 1.2rem;
+}
+[data-theme='kertas'] .topbar .uname,
+[data-theme='kertas'] .topbar .sync-status {
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .periode-pill {
+  background: transparent;
+  border: 1px solid var(--kertas-green);
+  color: var(--kertas-green);
+  border-radius: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+[data-theme='kertas'] .periode-pill:hover {
+  transform: none;
+  background: var(--kertas-green-bg);
+  box-shadow: none;
+}
+[data-theme='kertas'] .topbar .av,
+[data-theme='kertas'] .av {
+  border-radius: 2px;
+  background: var(--kertas-green);
+  color: #fff;
+  box-shadow: none;
+}
+[data-theme='kertas'] .topbar .rbadge {
+  background: transparent;
+  color: var(--kertas-ink-body);
+  border: 1px solid var(--kertas-rule);
+  border-radius: 2px;
+}
+[data-theme='kertas'] .save-ind {
+  background: var(--kertas-green-bg);
+  color: var(--kertas-green);
+  border-radius: 2px;
+}
+[data-theme='kertas'] .sigaji-build-chip {
+  background: var(--kertas-surface-2);
+  color: var(--kertas-ink-muted);
+  border-color: var(--kertas-rule);
+  border-radius: 2px;
+}
+[data-theme='kertas'] .topbar .toolbar-select,
+[data-theme='kertas'] .topbar .ui-pref-sel,
+[data-theme='kertas'] .topbar .btn-out,
+[data-theme='kertas'] .topbar-logout {
+  background: var(--kertas-surface);
+  border: 1px solid var(--kertas-rule);
+  color: var(--kertas-ink-body);
+  border-radius: 2px;
+}
+[data-theme='kertas'] .notif-btn {
+  border-radius: 2px;
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .notif-btn:hover {
+  background: var(--kertas-surface-2);
+  transform: none;
+}
+[data-theme='kertas'] .ndot,
+[data-theme='kertas'] .nbadge {
+  background: var(--kertas-red);
+}
+[data-theme='kertas'] .ndot.on {
+  box-shadow: 0 0 0 2px var(--kertas-surface);
+}
+[data-theme='kertas'] .nav-drawer-btn,
+html[data-theme='kertas'].sigaji-mobile-nav .nav-drawer-btn {
+  background: var(--kertas-surface-2);
+  border: 1px solid var(--kertas-rule);
+  color: var(--kertas-ink);
+  border-radius: 2px;
+}
+
+/* Tombol bolak-balik tema (lama ⇄ Buku Kas) — tampil juga di HP, hanya ikon */
+.ui-theme-flip {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap .btn.ui-theme-flip {
+  display: inline-flex !important;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 4px 8px;
+  justify-content: center;
+}
+html.sigaji-mobile-nav .ui-theme-flip .ui-theme-flip-lbl {
+  display: none;
+}
+html.sigaji-mobile-nav .ui-theme-flip .ui-theme-flip-ico {
+  font-size: 15px;
+}
+[data-theme='kertas'] .ui-theme-flip {
+  border-color: var(--kertas-green);
+  color: var(--kertas-green);
+}
+
+/* ── Sidebar terang bergaris ── */
+[data-theme='kertas'] .sidebar,
+[data-theme='kertas'] #sidebar-wrap,
+html[data-theme='kertas'].sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open {
+  background: var(--kertas-sidebar);
+  border-right: 1px solid var(--kertas-rule);
+  box-shadow: none;
+  color: var(--kertas-ink-body);
+}
+[data-theme='kertas'] .nsec {
+  color: var(--kertas-ink-muted);
+  font-family: var(--font-serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--kertas-rule);
+  margin: 0.35rem 0.6rem 0.25rem;
+  padding: 0.75rem 0.25rem 0.25rem;
+}
+[data-theme='kertas'] .sidebar .ni,
+[data-theme='kertas'] .ni {
+  color: var(--kertas-ink-body);
+  border-radius: 0;
+  border-left: 3px solid transparent;
+  margin: 1px 0;
+  padding: 9px 12px 9px 14px;
+  font-weight: 500;
+}
+[data-theme='kertas'] .sidebar .ni:hover,
+[data-theme='kertas'] .ni:hover {
+  background: rgba(28, 24, 19, 0.05);
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .sidebar .ni.active,
+[data-theme='kertas'] .ni.active {
+  background: var(--kertas-surface);
+  color: var(--kertas-green);
+  border-left-color: var(--kertas-green);
+  box-shadow: none;
+  font-weight: 600;
+}
+[data-theme='kertas'] .ni.active .nav-svg,
+[data-theme='kertas'] .ni .nav-svg {
+  color: currentColor;
+}
+[data-theme='kertas'] .ni.danger {
+  color: var(--kertas-red);
+}
+[data-theme='kertas'] .ni.danger:hover {
+  background: var(--kertas-red-bg);
+  border-left-color: var(--kertas-red);
+}
+[data-theme='kertas'] .sidebar-nav-top,
+[data-theme='kertas'] #nav-bottom {
+  border-color: var(--kertas-rule);
+}
+[data-theme='kertas'] .sidebar-collapse-btn {
+  background: var(--kertas-surface);
+  border: 1px solid var(--kertas-rule);
+  color: var(--kertas-ink-body);
+  border-radius: 2px;
+}
+[data-theme='kertas'] .sidebar-collapse-btn:hover {
+  background: var(--kertas-surface-2);
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .sidebar-collapse-btn-ico,
+[data-theme='kertas'] .sidebar-collapse-btn:hover .sidebar-collapse-btn-ico {
+  background: var(--kertas-green-bg);
+  color: var(--kertas-green);
+  border-radius: 2px;
+}
+[data-theme='kertas'] #nav-dynamic {
+  scrollbar-color: var(--kertas-rule) transparent;
+}
+[data-theme='kertas'] #nav-dynamic::-webkit-scrollbar-thumb {
+  background: var(--kertas-rule);
+}
+html[data-theme='kertas'].sigaji-mobile-nav .sigaji-mobile-drawer-head {
+  border-bottom-color: var(--kertas-rule);
+}
+[data-theme='kertas'] .sigaji-mobile-drawer-title,
+[data-theme='kertas'] .sigaji-mobile-drawer-close {
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .nav-backdrop.sigaji-nav-drawer-open {
+  background: rgba(28, 24, 19, 0.45);
+  backdrop-filter: none;
+}
+
+/* ── Kartu, KPI, bento: kertas bergaris, tanpa bayangan ── */
+[data-theme='kertas'] .card,
+[data-theme='kertas'] .sc,
+[data-theme='kertas'] .sc-kpi,
+[data-theme='kertas'] .bento-widget,
+[data-theme='kertas'] .notif-feed,
+[data-theme='kertas'] .ab-grid-host,
+[data-theme='kertas'] .period-sticky-bar,
+[data-theme='kertas'] .period-timeline-bar,
+[data-theme='kertas'] .empty-state,
+[data-theme='kertas'] .alert-empty,
+[data-theme='kertas'] .sigaji-cmdk-panel,
+[data-theme='kertas'] .modal,
+[data-theme='kertas'] .ab-mobile-card {
+  background: var(--kertas-surface);
+  border: 1px solid var(--kertas-rule);
+  border-radius: 2px;
+  box-shadow: none;
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .card:hover,
+[data-theme='kertas'] .sc-kpi:hover,
+[data-theme='kertas'] .bento-widget:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--kertas-ink);
+}
+[data-theme='kertas'] .card {
+  border-top: 2px solid var(--kertas-ink);
+}
+[data-theme='kertas'] .sc:not(.sc-kpi)::before {
+  background: var(--kertas-green);
+  width: 3px;
+  border-radius: 0;
+}
+[data-theme='kertas'] .sc-kpi::after {
+  border-radius: 0;
+  top: 0;
+  bottom: 0;
+}
+[data-theme='kertas'] .sc-kpi-kar::after { background: var(--kertas-ink); }
+[data-theme='kertas'] .sc-kpi-bruto::after { background: var(--kertas-indigo); }
+[data-theme='kertas'] .sc-kpi-pph::after { background: var(--kertas-sepia); }
+[data-theme='kertas'] .sc-kpi-neto::after { background: var(--kertas-green); }
+[data-theme='kertas'] .sc-kpi-icon,
+[data-theme='kertas'] .sc-kpi-kar .sc-kpi-icon,
+[data-theme='kertas'] .sc-kpi-bruto .sc-kpi-icon,
+[data-theme='kertas'] .sc-kpi-pph .sc-kpi-icon,
+[data-theme='kertas'] .sc-kpi-neto .sc-kpi-icon {
+  background: var(--kertas-surface-2);
+  border: 1px solid var(--kertas-rule);
+  border-radius: 2px;
+}
+[data-theme='kertas'] .sc-kpi .sl,
+[data-theme='kertas'] .sl {
+  color: var(--kertas-ink-muted);
+  letter-spacing: 0.1em;
+}
+[data-theme='kertas'] .sc-kpi .sv,
+[data-theme='kertas'] .sv {
+  color: var(--kertas-ink);
+  font-size: 1.55rem;
+}
+[data-theme='kertas'] .sv-money {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 1.1rem !important;
+}
+[data-theme='kertas'] .sv-warn { color: var(--kertas-sepia) !important; }
+[data-theme='kertas'] .sv-ok { color: var(--kertas-green) !important; }
+
+[data-theme='kertas'] .bento-widget-head {
+  border-bottom: 1px solid var(--kertas-rule);
+  background: var(--kertas-surface-2);
+}
+[data-theme='kertas'] .bento-widget-title {
+  color: var(--kertas-ink);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* Hero dashboard: blok hijau datar, bukan gradasi biru */
+[data-theme='kertas'] .pb,
+[data-theme='kertas'] .dash-hero,
+[data-theme='kertas'] .bento-hero {
+  background: var(--kertas-green);
+  color: #fff;
+  border: 1px solid var(--kertas-green-dark);
+  border-radius: 2px;
+  box-shadow: none;
+}
+[data-theme='kertas'] .dash-hero::before {
+  display: none;
+}
+[data-theme='kertas'] .bento-hero {
+  padding: 1rem 1.25rem;
+}
+[data-theme='kertas'] .bento-hero-title,
+[data-theme='kertas'] .bento-hero-count {
+  color: #fff;
+}
+[data-theme='kertas'] .bento-hero-meta,
+[data-theme='kertas'] .bento-hero-count-lbl,
+[data-theme='kertas'] .bento-hero-label {
+  color: rgba(255, 255, 255, 0.82);
+}
+[data-theme='kertas'] .bento-hero-count,
+[data-theme='kertas'] .bento-kpi-val,
+[data-theme='kertas'] .bento-spark-val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+[data-theme='kertas'] .bento-kpi {
+  border-radius: 2px;
+  background: var(--kertas-surface-2);
+  border-color: var(--kertas-rule);
+}
+[data-theme='kertas'] .bento-kpi:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--kertas-ink);
+}
+[data-theme='kertas'] .bento-dept-chip {
+  background: var(--kertas-surface-2);
+  border: 1px solid var(--kertas-rule);
+  border-radius: 2px;
+  color: var(--kertas-ink-body);
+}
+[data-theme='kertas'] .bento-dept-chip strong {
+  color: var(--kertas-green);
+}
+[data-theme='kertas'] #period-sticky-name {
+  color: var(--kertas-ink);
+  font-size: 15px;
+}
+[data-theme='kertas'] .dash-att-bar {
+  background: var(--kertas-green);
+  border-radius: 0;
+}
+[data-theme='kertas'] .dash-att-bar-wrap:hover .dash-att-bar {
+  box-shadow: none;
+  filter: none;
+  background: var(--kertas-green-dark);
+}
+[data-theme='kertas'] .wf-explain-head {
+  background: var(--kertas-green);
+  color: #fff;
+}
+[data-theme='kertas'] .wf-explain-panel {
+  background: var(--kertas-surface);
+  border-left: 1px solid var(--kertas-ink);
+  box-shadow: none;
+}
+
+/* Peringatan dashboard */
+[data-theme='kertas'] .alert-item {
+  border-radius: 0;
+  background: var(--kertas-surface-2);
+  border-left-width: 3px;
+}
+[data-theme='kertas'] .alert-purple { background: var(--kertas-indigo-bg); border-left-color: var(--kertas-indigo); color: var(--kertas-indigo); }
+[data-theme='kertas'] .alert-amber { background: var(--kertas-sepia-bg); border-left-color: var(--kertas-sepia); color: var(--kertas-ink); }
+[data-theme='kertas'] .alert-green { background: var(--kertas-green-bg); border-left-color: var(--kertas-green); color: var(--kertas-green-dark); }
+[data-theme='kertas'] .alert-blue { background: var(--kertas-surface-2); border-left-color: var(--kertas-ink); color: var(--kertas-ink); }
+
+/* ── Tabel buku besar ── */
+[data-theme='kertas'] .card .table-wrap,
+[data-theme='kertas'] .table-wrap,
+[data-theme='kertas'] .card > div[style*='overflow'] {
+  border-radius: 0;
+  border: 1px solid var(--kertas-rule);
+}
+[data-theme='kertas'] th,
+[data-theme='kertas'] .content .table-wrap th,
+[data-theme='kertas'] .sigaji-table th,
+[data-theme='kertas'] .content .table-wrap table th {
+  background: var(--kertas-surface-2);
+  color: var(--kertas-ink);
+  border-bottom: 2px solid var(--kertas-ink);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+[data-theme='kertas'] td {
+  border-bottom: 1px solid var(--kertas-rule-light);
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] tbody tr:nth-child(even) td,
+[data-theme='kertas'] .sigaji-table tbody tr:nth-child(even) td,
+[data-theme='kertas'] .content .table-wrap table.sigaji-table tbody tr:nth-child(even) td {
+  background: transparent;
+}
+[data-theme='kertas'] tbody tr:hover td,
+[data-theme='kertas'] tr:hover td,
+[data-theme='kertas'] .sigaji-table tbody tr:hover td,
+[data-theme='kertas'] .content .table-wrap table tbody tr:hover td {
+  background: var(--row-hover) !important;
+}
+[data-theme='kertas'] .ka {
+  background: var(--kertas-surface-2);
+  color: var(--kertas-ink);
+  border: 1px solid var(--kertas-rule);
+  border-radius: 2px;
+  font-family: var(--font-serif);
+}
+[data-theme='kertas'] .knl {
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .ab-zebra-even,
+[data-theme='kertas'] .ab-grid-table tr.ab-row-odd .ab-sticky-no,
+[data-theme='kertas'] .ab-grid-table tr.ab-row-odd .ab-sticky-name,
+[data-theme='kertas'] .ab-grid-table tr.ab-row-odd .ab-sticky-jab {
+  background: var(--kertas-surface);
+}
+[data-theme='kertas'] .ab-grid-sum-head {
+  background: var(--kertas-green);
+  color: #fff;
+}
+[data-theme='kertas'] .ab-cell {
+  border-right-color: var(--kertas-rule-light);
+  border-bottom-color: var(--kertas-rule-light);
+  font-family: var(--font-mono);
+}
+[data-theme='kertas'] .ab-chip {
+  border-radius: 2px;
+}
+[data-theme='kertas'] .ab-hs { background: var(--ab-half-sakit-bg); color: var(--ab-half-sakit-fg); }
+[data-theme='kertas'] .ab-hi { background: var(--ab-half-ijin-bg); color: var(--ab-half-ijin-fg); }
+[data-theme='kertas'] .dash-kpi-hint {
+  border-radius: 0;
+}
+[data-theme='kertas'] .period-chrome {
+  box-shadow: none;
+  border-bottom: 1px solid var(--kertas-rule);
+}
+
+/* ── Tab: garis bawah, bukan segmen ── */
+[data-theme='kertas'] .tabs {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--kertas-rule);
+  gap: 0;
+  width: 100%;
+}
+[data-theme='kertas'] .tab {
+  border-radius: 0;
+  color: var(--kertas-ink-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  padding: 9px 16px;
+}
+[data-theme='kertas'] .tab:hover {
+  color: var(--kertas-ink);
+  background: transparent;
+}
+[data-theme='kertas'] .tab.active {
+  color: var(--kertas-green);
+  border-bottom-color: var(--kertas-green);
+  background: transparent;
+  box-shadow: none;
+}
+[data-theme='kertas'] .spt-wrap {
+  background: var(--kertas-surface-2);
+  border-bottom: 1px solid var(--kertas-rule);
+}
+[data-theme='kertas'] .spt.active {
+  color: var(--kertas-green);
+  border-bottom-color: var(--kertas-green);
+}
+[data-theme='kertas'] .stit {
+  color: var(--kertas-ink);
+  font-family: var(--font-serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--kertas-rule);
+}
+
+/* ── Tombol datar ── */
+[data-theme='kertas'] .btn {
+  border-radius: 2px;
+  box-shadow: none;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+[data-theme='kertas'] .btn:hover,
+[data-theme='kertas'] .btn:active {
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+[data-theme='kertas'] .btn-p,
+[data-theme='kertas'] #login .btn-p.btn-full {
+  background: var(--kertas-green);
+  border-color: var(--kertas-green-dark);
+  color: #fff;
+  border-radius: 2px;
+}
+[data-theme='kertas'] .btn-p:hover {
+  background: var(--kertas-green-dark);
+}
+[data-theme='kertas'] .btn-g { background: var(--kertas-green); border-color: var(--kertas-green-dark); color: #fff; }
+[data-theme='kertas'] .btn-g:hover { background: var(--kertas-green-dark); }
+[data-theme='kertas'] .btn-r { background: var(--kertas-red); border-color: #6e2020; color: #fff; }
+[data-theme='kertas'] .btn-r:hover { background: #6e2020; }
+[data-theme='kertas'] .btn-a { background: var(--kertas-sepia); border-color: #6a4408; color: #fff; }
+[data-theme='kertas'] .btn-a:hover { background: #6a4408; }
+[data-theme='kertas'] .btn-pu { background: var(--kertas-indigo); border-color: #372e5e; color: #fff; }
+[data-theme='kertas'] .btn-pu:hover { background: #372e5e; }
+[data-theme='kertas'] .btn-out {
+  background: var(--kertas-surface);
+  border: 1px solid var(--kertas-ink-muted);
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .btn-out:hover {
+  background: var(--kertas-surface-2);
+  border-color: var(--kertas-ink);
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .btn-email,
+[data-theme='kertas'] .btn-wa,
+[data-theme='kertas'] .btn-telegram,
+[data-theme='kertas'] .btn-thr-pdf {
+  background: var(--kertas-surface) !important;
+  color: var(--kertas-ink) !important;
+  border: 1px solid var(--kertas-ink-muted) !important;
+  box-shadow: none;
+}
+[data-theme='kertas'] .chip-login {
+  border-radius: 2px;
+}
+
+/* ── Input & select ── */
+[data-theme='kertas'] .fg input,
+[data-theme='kertas'] .fg select,
+[data-theme='kertas'] .fg textarea,
+[data-theme='kertas'] .inp-search,
+[data-theme='kertas'] .toolbar-select,
+[data-theme='kertas'] .pr-input,
+[data-theme='kertas'] .ptl-year-sel,
+[data-theme='kertas'] .audit-select,
+[data-theme='kertas'] .sigaji-cmdk-input {
+  background-color: var(--kertas-surface);
+  border: 1px solid var(--kertas-rule);
+  border-radius: 2px;
+  color: var(--kertas-ink);
+}
+[data-theme='kertas'] .fg input:focus,
+[data-theme='kertas'] .fg select:focus,
+[data-theme='kertas'] .fg textarea:focus,
+[data-theme='kertas'] .inp-search:focus,
+[data-theme='kertas'] .toolbar-select:focus,
+[data-theme='kertas'] .pr-input:focus {
+  border-color: var(--kertas-green);
+  box-shadow: var(--ux-focus);
+}
+[data-theme='kertas'] .fg label,
+[data-theme='kertas'] .toolbar-lbl {
+  color: var(--kertas-ink-muted);
+}
+[data-theme='kertas'] .pr-input {
+  border-color: var(--kertas-sepia-border);
+}
+[data-theme='kertas'] .login-remember input {
+  accent-color: var(--kertas-green);
+}
+
+/* ── Timeline periode ── */
+[data-theme='kertas'] .ptl-item,
+[data-theme='kertas'] .ptl-year-sel,
+[data-theme='kertas'] .ptl-year-btn {
+  border-radius: 2px;
+  border-color: var(--kertas-rule);
+  background: var(--kertas-surface);
+  color: var(--kertas-ink-body);
+}
+[data-theme='kertas'] .ptl-item.active {
+  background: var(--kertas-green);
+  border-color: var(--kertas-green);
+  color: #fff;
+  box-shadow: none;
+}
+[data-theme='kertas'] .period-sticky-label,
+[data-theme='kertas'] .period-sticky-meta {
+  color: var(--kertas-ink-muted);
+}
+[data-theme='kertas'] .period-sticky-chip {
+  border-radius: 2px;
+}
+
+/* ── Panel geser, modal, toast ── */
+[data-theme='kertas'] .sph,
+[data-theme='kertas'] .modal-h {
+  background: var(--kertas-green);
+  color: #fff;
+  border-radius: 0;
+  border-bottom: 1px solid var(--kertas-green-dark);
+}
+[data-theme='kertas'] .sp {
+  box-shadow: none;
+  border-left: 1px solid var(--kertas-ink);
+  background: var(--kertas-surface);
+}
+/* Panel karyawan & komponen gaji memakai selektor #id + !important di ui-enhance; samakan bobotnya */
+[data-theme='kertas'] #slide-panel .sph,
+[data-theme='kertas'] #slide-panel-payroll .sph {
+  background: var(--kertas-green) !important;
+  color: #fff !important;
+  border-bottom: 1px solid var(--kertas-green-dark);
+  box-shadow: none;
+}
+[data-theme='kertas'] #slide-panel-payroll .sph .sp-mode-btn.is-active {
+  color: var(--kertas-green-dark) !important;
+  box-shadow: none;
+}
+[data-theme='kertas'] #slide-panel-payroll .sph .sp-mode-badge {
+  border-radius: 2px;
+}
+[data-theme='kertas'] #slide-panel-payroll .sph .sp-mode-badge--periode {
+  color: var(--kertas-indigo) !important;
+  border-color: var(--kertas-indigo-border) !important;
+}
+[data-theme='kertas'] #slide-panel-payroll .sph .sp-mode-badge--master {
+  color: var(--kertas-ink) !important;
+  border-color: var(--kertas-rule) !important;
+}
+[data-theme='kertas'] #slide-panel .spt-wrap,
+[data-theme='kertas'] #slide-panel-payroll .spt-wrap {
+  background: var(--kertas-surface-2);
+  border-bottom: 1px solid var(--kertas-rule);
+  box-shadow: none;
+}
+[data-theme='kertas'] #slide-panel-payroll .spt {
+  border-radius: 0;
+}
+[data-theme='kertas'] #slide-panel-payroll .spt.active {
+  color: var(--kertas-green);
+  background: var(--kertas-surface);
+  border-bottom-color: var(--kertas-green);
+}
+[data-theme='kertas'] #slide-panel .spb,
+[data-theme='kertas'] #slide-panel-payroll .spb {
+  background: var(--kertas-surface);
+}
+[data-theme='kertas'] #slide-panel .spb::-webkit-scrollbar-thumb,
+[data-theme='kertas'] #slide-panel-payroll .spb::-webkit-scrollbar-thumb {
+  background: var(--kertas-rule);
+  border-color: var(--kertas-surface);
+  border-radius: 0;
+}
+[data-theme='kertas'] .spc {
+  border-radius: 2px;
+}
+[data-theme='kertas'] .spf {
+  background: var(--kertas-surface-2);
+  border-top: 1px solid var(--kertas-rule);
+}
+[data-theme='kertas'] .modal-confirm {
+  border-top: 3px solid var(--kertas-green);
+}
+[data-theme='kertas'] .toast9 {
+  background: var(--kertas-ink);
+  color: var(--kertas-surface);
+  border-radius: 2px;
+  border: 1px solid var(--kertas-ink);
+  box-shadow: 4px 4px 0 var(--kertas-rule);
+}
+[data-theme='kertas'] .mbd.show,
+[data-theme='kertas'] .po.show,
+[data-theme='kertas'] .sigaji-cmdk-overlay {
+  backdrop-filter: none;
+  background: rgba(28, 24, 19, 0.45);
+}
+[data-theme='kertas'] .sigaji-cmdk-item.active {
+  background: var(--kertas-green-bg);
+}
+
+/* ── Lain-lain ── */
+[data-theme='kertas'] .info-box,
+[data-theme='kertas'] .pph-box,
+[data-theme='kertas'] .gs,
+[data-theme='kertas'] .logo-drop,
+[data-theme='kertas'] .reset-admin-hint,
+[data-theme='kertas'] .login-config-hint,
+[data-theme='kertas'] .login-file-hint {
+  border-radius: 0;
+}
+[data-theme='kertas'] .gs {
+  background: var(--kertas-surface-2);
+  border: 1px solid var(--kertas-rule);
+}
+[data-theme='kertas'] .gs-total {
+  color: var(--kertas-ink);
+  border-top: 2px solid var(--kertas-ink);
+}
+[data-theme='kertas'] .pph-box-tit {
+  color: var(--kertas-ink);
+  border-top-color: var(--kertas-rule);
+}
+[data-theme='kertas'] .bdg,
+[data-theme='kertas'] .rbadge,
+[data-theme='kertas'] .period-sticky-chip {
+  border-radius: 2px;
+}
+[data-theme='kertas'] .card-danger-zone {
+  background: var(--kertas-surface);
+  border-left: 3px solid var(--kertas-red);
+}
+[data-theme='kertas'] .perm-hdr {
+  background: var(--kertas-sidebar);
+  color: var(--kertas-ink);
+  border-radius: 0;
+}
+[data-theme='kertas'] .perm-hdr-cell {
+  border-right-color: var(--kertas-rule);
+}
+[data-theme='kertas'] .perm-row {
+  border-radius: 0;
+}
+[data-theme='kertas'] .content::-webkit-scrollbar-thumb,
+[data-theme='kertas'] .sp::-webkit-scrollbar-thumb {
+  background: var(--kertas-rule);
+  border-radius: 0;
+}
+[data-theme='kertas'] button:focus-visible,
+[data-theme='kertas'] .ni:focus-visible,
+[data-theme='kertas'] .tab:focus-visible,
+[data-theme='kertas'] .btn:focus-visible {
+  outline-color: var(--kertas-green);
+}
+[data-theme='kertas'] .pg.active {
+  animation: none;
+}
+
+/* Navigasi bawah di HP */
+html[data-theme='kertas'].sigaji-mobile-nav .sigaji-mobile-bottom-nav {
+  background: var(--kertas-surface);
+  border-top: 2px solid var(--kertas-ink);
+  box-shadow: none;
+}
+html[data-theme='kertas'].sigaji-mobile-nav .sigaji-mbn-item {
+  color: var(--kertas-ink-muted);
+  border-radius: 0;
+}
+html[data-theme='kertas'].sigaji-mobile-nav .sigaji-mbn-item.active {
+  color: var(--kertas-green);
+  background: var(--kertas-green-bg);
+}
+html[data-theme='kertas'].sigaji-mobile-nav .sigaji-mbn-item.active::before {
+  background: var(--kertas-green);
+  border-radius: 0;
+}

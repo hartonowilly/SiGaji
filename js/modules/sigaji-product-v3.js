@@ -57,7 +57,7 @@
     {
       sel: '.topbar-theme-wrap',
       title: 'Tema & kepadatan',
-      body: 'Longgar/Rapat mengatur jarak baris. Terang memakai kulit kaca. Gelap padat tanpa blur. Warna PT berbentuk kantor: sudut siku dan garis tegas, tabel tetap kertas putih.',
+      body: 'Longgar/Rapat mengatur jarak baris. Terang memakai kulit kaca. Gelap padat tanpa blur. Warna PT berbentuk kantor: sudut siku dan garis tegas. Buku Kas = tema baru bergaya buku besar: kertas krem, judul serif, angka monospace — tombol "Tema baru/Tema lama" untuk bolak-balik.',
     },
   ];
 
@@ -924,6 +924,33 @@
     });
   }
 
+  /* Tema "Buku Kas" memakai font sendiri (Fraunces / IBM Plex); dimuat hanya saat dipakai. */
+  var KERTAS_THEME = 'kertas';
+  var KERTAS_FONT_HREF =
+    'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap';
+  function ensureKertasFonts() {
+    if (document.getElementById('sigaji-font-kertas')) return;
+    var link = document.createElement('link');
+    link.id = 'sigaji-font-kertas';
+    link.rel = 'stylesheet';
+    link.href = KERTAS_FONT_HREF;
+    document.head.appendChild(link);
+  }
+
+  function paintThemeFlipBtn(theme) {
+    var btn = document.getElementById('ui-theme-flip');
+    if (!btn) return;
+    var keKertas = theme !== KERTAS_THEME;
+    var ico = btn.querySelector('.ui-theme-flip-ico');
+    var lbl = btn.querySelector('.ui-theme-flip-lbl');
+    if (ico) ico.textContent = keKertas ? '\u2727' : '\u21B6';
+    if (lbl) lbl.textContent = keKertas ? 'Tema baru' : 'Tema lama';
+    btn.title = keKertas
+      ? 'Coba tema baru "Buku Kas": kertas krem, judul serif, angka monospace. Klik lagi untuk kembali.'
+      : 'Kembali ke tema lama (' + (UI_PREF_LABEL[sigajiGetUiPrefs().prevTheme] || 'Terang · Kaca') + ').';
+    btn.setAttribute('aria-pressed', keKertas ? 'false' : 'true');
+  }
+
   window.sigajiApplyUiPrefs = function (prefs) {
     prefs = prefs || sigajiGetUiPrefs();
     var root = document.documentElement;
@@ -931,6 +958,8 @@
     root.setAttribute('data-theme', theme);
     root.setAttribute('data-density', prefs.density || 'comfortable');
     paintBrandTopbar(theme);
+    if (theme === KERTAS_THEME) ensureKertasFonts();
+    paintThemeFlipBtn(theme);
     if (theme === 'brand') {
       var pal = brandPalette(brandAccentRaw());
       root.style.setProperty('--ux-accent', pal.btn);
@@ -963,13 +992,24 @@
     light: 'Terang · Kaca',
     dark: 'Gelap · Padat',
     brand: 'PT · Kantor',
+    kertas: 'Buku Kas · Kertas',
   };
 
   window.sigajiSetUiPref = function (key, val) {
     var p = sigajiGetUiPrefs();
+    /* Ingat tema lama supaya tombol bolak-balik tahu harus kembali ke mana */
+    if (key === 'theme' && val === KERTAS_THEME && p.theme && p.theme !== KERTAS_THEME) p.prevTheme = p.theme;
     p[key] = val;
     sigajiApplyUiPrefs(p);
     toast('Tampilan: ' + (UI_PREF_LABEL[val] || val));
+  };
+
+  /** Satu klik: tema lama ⇄ Buku Kas. Tema lama yang dipakai terakhir diingat. */
+  window.sigajiFlipTheme = function () {
+    var p = sigajiGetUiPrefs();
+    var sekarang = p.theme || 'light';
+    var tujuan = sekarang === KERTAS_THEME ? p.prevTheme || 'light' : KERTAS_THEME;
+    sigajiSetUiPref('theme', tujuan);
   };
 
   /* ── Narrative report ── */
