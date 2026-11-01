@@ -25,7 +25,11 @@
     var key = el.getAttribute('data-key');
     if (mode === '$this') fn(el);
     else if (mode === '$checked') fn(el.checked);
-    else if (mode === '$float') fn(parseFloat(el.value) || 0);
+    else if (mode === '$float') {
+      var n = parseFloat(el.value) || 0;
+      if (key) fn(key, n);
+      else fn(n);
+    }
     else if (mode === '$pref' && key) fn(key, el.value);
     else if (key) fn(key, el.type === 'checkbox' ? (el.checked ? el.value : '') : el.value);
     else fn(el.value);
@@ -48,6 +52,10 @@
     var mstab = el.getAttribute('data-mstab');
     var tipe = el.getAttribute('data-tipe');
     var target = el.getAttribute('data-target');
+    var role = el.getAttribute('data-role');
+    var mod = el.getAttribute('data-mod');
+    var sub = el.getAttribute('data-sub');
+    var field = el.getAttribute('data-f');
 
     switch (action) {
       case 'invoke':
@@ -166,7 +174,7 @@
         if (colId && typeof hapusTunjVarColumn === 'function') hapusTunjVarColumn(colId);
         return true;
       case 'tunjvar-commit': {
-        var inpEl = el.previousElementSibling;
+        var inpEl = el.tagName === 'INPUT' ? el : el.previousElementSibling;
         var val = inpEl ? inpEl.value : '';
         if (nik && colId && typeof tunjVarCommitCell === 'function') tunjVarCommitCell(nik, colId, val);
         return true;
@@ -233,6 +241,38 @@
         return true;
       case 'mobile-loc-save':
         if (typeof saveMobileLocationModal === 'function') saveMobileLocationModal(el);
+        return true;
+      case 'toggle-perm-mod':
+        if (role && mod && typeof togglePermModuleAll === 'function') togglePermModuleAll(role, mod, !!el.checked);
+        return true;
+      case 'toggle-sub-perm':
+        if (role && mod && sub && typeof toggleSubPerm === 'function') toggleSubPerm(role, mod, sub, !!el.checked);
+        return true;
+      case 'toggle-perm':
+        if (role && mod && typeof togglePerm === 'function') togglePerm(role, mod, !!el.checked);
+        return true;
+      case 'upd-pot': {
+        var potVal = el.value;
+        if ((field === 'nilai' || el.getAttribute('data-rp') === '1') && typeof parseRpInput === 'function') {
+          potVal = parseRpInput(potVal);
+        }
+        if (nik && i != null && field && typeof updPot === 'function') updPot(nik, +i, field, potVal);
+        return true;
+      }
+      case 'upd-nat': {
+        var natVal = el.value;
+        if (field === 'kp') natVal = natVal === 'true';
+        else if ((field === 'nilai' || el.getAttribute('data-rp') === '1') && typeof parseRpInput === 'function') {
+          natVal = parseRpInput(natVal);
+        }
+        if (nik && i != null && field && typeof updNat === 'function') updNat(nik, +i, field, natVal);
+        return true;
+      }
+      case 'upd-lembur':
+        if (nik && i != null && field && typeof updLembur === 'function') updLembur(nik, +i, field, el.value);
+        return true;
+      case 'set-tunjvar-nama':
+        if (colId && typeof setTunjVarColNama === 'function') setTunjVarColNama(colId, el.value);
         return true;
       case 'confirm-backdrop':
         if (ev && ev.target === el && typeof sigajiConfirmClose === 'function') {
@@ -388,7 +428,7 @@
       if (actEl) {
         var action = actEl.getAttribute('data-sigaji-action');
         var tag = actEl.tagName;
-        if (tag === 'SELECT' || tag === 'OPTION') return;
+        if (tag === 'SELECT' || tag === 'OPTION' || tag === 'INPUT' || tag === 'TEXTAREA') return;
         if (action && runSigajiAction(action, actEl, ev)) {
           ev.preventDefault();
         }
@@ -502,10 +542,18 @@
       if (ev.key !== 'Enter') return;
       var t = ev.target;
       if (!t || !t.getAttribute) return;
+      var enterAction = t.getAttribute('data-sigaji-action');
+      if (enterAction && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) {
+        if (runSigajiAction(enterAction, t, ev)) {
+          ev.preventDefault();
+          return;
+        }
+      }
       var fn = t.getAttribute('data-sigaji-enter');
       if (!fn || typeof window[fn] !== 'function') return;
       ev.preventDefault();
-      window[fn]();
+      if (t.getAttribute('data-sigaji-enter-arg') === '$this') window[fn](t);
+      else window[fn]();
     });
   }
 

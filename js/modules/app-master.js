@@ -610,7 +610,7 @@ function loadAturanPotongan(){
     var rule=ap[j.key]||{mode:'prorata',nilai:0};var show=rule.mode==='nominal'||rule.mode==='persen';
     return '<tr><td class="fw-700 border-bottom-muted"><span class="master-jab-badge">'+j.lbl+'</span></td>'
       +'<td class="font-11 text-muted border-bottom-muted">'+j.ket+'</td>'
-      +'<td class="border-bottom-muted"><select class="w-full font-11 comp-inp" id="ap-mode-'+j.key+'" onchange="onApModeChange(\''+j.key+'\')">'+MODE_OPTS+'</select></td>'
+      +'<td class="border-bottom-muted"><select class="w-full font-11 comp-inp" id="ap-mode-'+j.key+'" data-sigaji-action="invoke" data-fn="onApModeChange" data-arg="'+j.key+'">'+MODE_OPTS+'</select></td>'
       +'<td class="border-bottom-muted"><div class="fl items-center gap-xs"><span class="u-muted-11" id="ap-pfx-'+j.key+'">'+(rule.mode==='persen'?'%':rule.mode==='nominal'?'Rp':'')+'</span><input class="w-full font-12 comp-inp" type="number" id="ap-val-'+j.key+'" value="'+(rule.nilai||0)+'" style="display:'+(show?'block':'none')+'"></div></td></tr>';
   }).join('');
   JENIS_POT.forEach(function(j){var sel=document.getElementById('ap-mode-'+j.key);var rule=ap[j.key]||{mode:'prorata'};if(sel)sel.value=rule.mode;});

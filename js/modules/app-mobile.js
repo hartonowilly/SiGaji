@@ -107,7 +107,7 @@ async function renderMobileAttendanceLog(btn){
       +'<div class="fl gap1 items-center flex-wrap">'
       +'<label class="font-11 fw-700 text-muted">Tanggal:</label>'
       +'<input class="rounded-sm select-inline select-inline-bordered" type="date" id="mob-log-date" value="'+escapeAttr(today)+'">'
-      +'<select class="rounded-sm select-inline select-inline-bordered" id="mob-log-filter" onchange="mobRenderLogFromCache()">'
+      +'<select class="rounded-sm select-inline select-inline-bordered" id="mob-log-filter" data-sigaji-action="invoke" data-fn="mobRenderLogFromCache">'
       +'<option value="">Semua status</option><option value="ok">OK</option><option value="pending_review">Review</option>'
       +'<option value="outside_geofence">Luar radius</option><option value="rejected">Ditolak / mock</option></select>'
       +'<button type="button" class="btn btn-sm btn-out"'+sigajiDataAction('mob-att-log')+'>&#8635; Muat</button>'

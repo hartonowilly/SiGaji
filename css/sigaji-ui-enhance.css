@@ -478,8 +478,8 @@
      Padding atas/bawah memakai background putih agar posisi visual bar tak berubah. */
   margin: calc(-1 * var(--content-pad-y, 1.5rem)) calc(-1 * var(--content-pad-x, 1.65rem)) 0;
   padding: calc(var(--content-pad-y, 1.5rem) + 0.4rem) var(--content-pad-x, 1.65rem) 0.85rem;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--wh);
+  border-bottom: 1px solid var(--color-border-light);
   box-shadow: 0 6px 10px -8px rgba(15, 23, 42, 0.18);
 }
 .period-timeline-bar {
@@ -498,8 +498,8 @@
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.45rem 1rem;
-  background: linear-gradient(90deg, #eef6ff 0%, #f8fafc 100%);
-  border-top: 1px solid #c5d9f5;
+  background: linear-gradient(90deg, #eef6ff 0%, var(--color-surface-elevated) 100%);
+  border-top: 1px solid var(--color-primary-border);
   font-size: 12px;
 }
 .period-sticky-bar.is-hidden {
@@ -510,7 +510,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-right: 0.35rem;
 }
 .period-sticky-main {
@@ -520,11 +520,11 @@
   gap: 0.35rem 0.65rem;
 }
 #period-sticky-name {
-  color: #1a56a0;
+  color: var(--color-primary);
   font-size: 13px;
 }
 .period-sticky-meta {
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 11px;
 }
 .period-sticky-side {
@@ -535,16 +535,16 @@
 .period-sticky-chip {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #fff;
-  border: 1px solid #dde1e9;
+  background: var(--wh);
+  border: 1px solid var(--color-border);
   font-size: 10px;
   font-weight: 700;
-  color: #374151;
+  color: var(--ink-body);
 }
 .period-sticky-chip.is-lock {
-  border-color: #f5a623;
-  color: #7d4800;
-  background: #fffbf5;
+  border-color: var(--color-warning-border);
+  color: var(--color-warning);
+  background: var(--row-prorate-bg);
 }
 .period-sticky-chip.is-edit {
   border-color: #86efac;
@@ -1162,7 +1162,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 #slide-panel-payroll .spb::-webkit-scrollbar-thumb {
   background: #94a3b8;
   border-radius: 8px;
-  border: 2px solid #fff;
+  border: 2px solid var(--wh);
 }
 
 /* ── Profil karyawan: input lebih lega ── */
@@ -1210,8 +1210,8 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 /* ── Panel samping (karyawan + komponen gaji): header seragam ── */
 #slide-panel .sph,
 #slide-panel-payroll .sph {
-  background: linear-gradient(120deg, #0c2340 0%, #1a56a0 52%, #4338ca 100%) !important;
-  color: #fff !important;
+  background: linear-gradient(120deg, #0c2340 0%, var(--color-primary) 52%, #4338ca 100%) !important;
+  color: var(--wh) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.12);
 }
@@ -1232,18 +1232,18 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 #slide-panel .sph .spc,
 #slide-panel-payroll .sph .spc {
   background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  color: var(--wh);
 }
 #slide-panel .sph .btn-out,
 #slide-panel-payroll .sph .sp-mode-btn:not(.is-active) {
-  color: #fff !important;
+  color: var(--wh) !important;
   border-color: rgba(255, 255, 255, 0.45) !important;
   background: rgba(255, 255, 255, 0.1) !important;
 }
 #slide-panel-payroll .sph .sp-mode-btn.is-active {
-  background: #fff !important;
+  background: var(--wh) !important;
   color: #0c2340 !important;
-  border-color: #fff !important;
+  border-color: var(--wh) !important;
   font-weight: 700;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
 }
@@ -1257,19 +1257,19 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   line-height: 1.35;
 }
 #slide-panel-payroll .sph .sp-mode-badge--periode {
-  background: #fff !important;
+  background: var(--wh) !important;
   color: #312e81 !important;
   border: 1px solid #c7d2fe !important;
 }
 #slide-panel-payroll .sph .sp-mode-badge--master {
-  background: #fff !important;
+  background: var(--wh) !important;
   color: #0f172a !important;
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid var(--color-slate-300) !important;
 }
 #slide-panel .spt-wrap,
 #slide-panel-payroll .spt-wrap {
   background: #eef2f7;
-  border-bottom: 2px solid #cbd5e1;
+  border-bottom: 2px solid var(--color-slate-300);
   box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.04);
 }
 #slide-panel-payroll .spt {
@@ -1277,13 +1277,13 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   user-select: none;
 }
 #slide-panel-payroll .spt.active {
-  color: #1a56a0;
+  color: var(--color-primary);
   background: rgba(255, 255, 255, 0.72);
-  border-bottom-color: #1a56a0;
+  border-bottom-color: var(--color-primary);
 }
 #slide-panel .spb,
 #slide-panel-payroll .spb {
-  background: #fff;
+  background: var(--wh);
 }
 #slide-panel-payroll #tunj-list .tr-row,
 #slide-panel-payroll #pot-list .tr-row {
@@ -1370,7 +1370,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   background: var(--color-surface-elevated);
 }
 .comp-row-tunj { border-left: 3px solid var(--color-primary); }
-.comp-row-pot { border-left: 3px solid #dc2626; background: var(--wh)afb; }
+.comp-row-pot { border-left: 3px solid var(--color-danger); background: var(--color-danger-bg); }
 .comp-row-grid {
   flex: 1;
   display: grid;
@@ -1523,7 +1523,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   cursor: pointer;
 }
 .bento-picker-row:hover {
-  background: var(--color-surface-muted, #f1f5f9);
+  background: var(--color-surface-muted, var(--table-head-bg));
 }
 .bento-drag { color: var(--ink-subtle); font-size: 14px; }
 .bento-widget-body { padding: 0.75rem; flex: 1; overflow: auto; min-height: 0; }
@@ -1600,10 +1600,10 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   font-family: inherit;
   font-size: 12px;
   font-weight: 800;
-  border: 1.5px solid var(--bento-border, #e5e7eb);
+  border: 1.5px solid var(--bento-border, var(--color-border-light));
   border-radius: 20px;
   padding: 5px 10px;
-  background: var(--bento-surface-2, #f8fafc);
+  background: var(--bento-surface-2, var(--color-surface-elevated));
   color: var(--bento-ink, var(--ink-body));
   cursor: pointer;
   outline: none;
@@ -1615,8 +1615,8 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1.5px solid var(--bento-border, #e5e7eb);
-  background: var(--bento-surface-2, #f8fafc);
+  border: 1.5px solid var(--bento-border, var(--color-border-light));
+  background: var(--bento-surface-2, var(--color-surface-elevated));
   color: var(--bento-ink, var(--ink-body));
   font-size: 16px;
   line-height: 1;
@@ -1633,7 +1633,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 }
 .ptl-empty {
   font-size: 11px;
-  color: var(--ink-muted, #6b7280);
+  color: var(--ink-muted, var(--color-text-muted));
   padding: 6px 8px;
   white-space: nowrap;
 }
@@ -1650,8 +1650,8 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   flex-shrink: 0;
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1.5px solid var(--bento-border, #e5e7eb);
-  background: var(--bento-surface-2, #f8fafc);
+  border: 1.5px solid var(--bento-border, var(--color-border-light));
+  background: var(--bento-surface-2, var(--color-surface-elevated));
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -1762,23 +1762,23 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 [data-theme="dark"] .period-sticky-bar {
   background: #1e293b;
   border-color: #334155;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 [data-theme="dark"] .ptl-year-sel,
 [data-theme="dark"] .ptl-year-btn {
   background: #0f172a;
   border-color: #334155;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 [data-theme="dark"] .topbar {
   background: #1e293b !important;
   border-color: #334155 !important;
-  color: #e2e8f0 !important;
+  color: var(--color-slate-200) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 [data-theme="dark"] .topbar .alogo { color: #60a5fa !important; }
-[data-theme="dark"] .topbar .uname { color: #e2e8f0; }
+[data-theme="dark"] .topbar .uname { color: var(--color-slate-200); }
 [data-theme="dark"] .sidebar { filter: brightness(0.95); }
 [data-theme="dark"] .wf-explain-panel { background: #1e293b; }
 [data-theme="dark"] .sigaji-tour-popover { background: #1e293b; color: var(--color-slate-200); }
@@ -1870,9 +1870,9 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 }
 [data-theme="brand"] .sigaji-build-chip,
 .topbar.topbar--brand-accent .sigaji-build-chip {
-  background: var(--color-primary-subtle, #e8f0fb);
-  color: var(--ux-accent, #1a56a0);
-  border-color: var(--color-primary-border, #c5d9f5);
+  background: var(--color-primary-subtle, var(--color-primary-subtle));
+  color: var(--ux-accent, var(--color-primary));
+  border-color: var(--color-primary-border, var(--color-primary-border));
 }
 .bento-widget {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -1899,7 +1899,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   to { opacity: 1; transform: translateY(0); }
 }
 .page-header .pt {
-  background: linear-gradient(135deg, var(--ux-accent, #1a56a0), #2563eb);
+  background: linear-gradient(135deg, var(--ux-accent, var(--color-primary)), var(--indigo));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -2237,8 +2237,8 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 /* Banner periode aktif (master) — teks putih eksplisit, tidak pakai --wh (dark theme) */
 .pb,
 #pb-master > .pb {
-  background: linear-gradient(120deg, #071525 0%, #0c2340 28%, #0d3d7a 52%, #1a56a0 78%, #2563eb 100%) !important;
-  color: #fff !important;
+  background: linear-gradient(120deg, #071525 0%, #0c2340 28%, var(--color-primary-dark) 52%, var(--color-primary) 78%, var(--indigo) 100%) !important;
+  color: var(--wh) !important;
 }
 .pb .dash-hero-label,
 .pb .dash-hero-meta,
@@ -2247,7 +2247,7 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 }
 .pb .dash-hero-title,
 .pb .dash-hero-count {
-  color: #fff !important;
+  color: var(--wh) !important;
 }
 
 .master-tab-panel[hidden] { display: none !important; }
@@ -2274,38 +2274,38 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 /* Tombol berwarna → kaca berwarna: gradien translucent + kilau atas + glow warna */
 .btn-p {
   background: linear-gradient(155deg, color-mix(in srgb, var(--blue) 78%, white), var(--blue));
-  color: var(--on-primary, #fff);
+  color: var(--on-primary, var(--wh));
   box-shadow: 0 4px 16px -5px color-mix(in srgb, var(--blue) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .btn-p:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px color-mix(in srgb, var(--blue) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
 [data-theme='brand'] .btn-p {
   background: var(--ux-accent, var(--blue));
-  color: var(--on-primary, #fff);
+  color: var(--on-primary, var(--wh));
 }
 [data-theme='dark'] .btn-p {
-  color: #fff;
+  color: var(--wh);
 }
 .btn-g {
   background: linear-gradient(155deg, rgba(74, 160, 40, 0.96), rgba(45, 106, 10, 0.92));
-  color: #fff;
+  color: var(--wh);
   box-shadow: 0 4px 16px -5px rgba(45, 106, 10, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 .btn-g:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(45, 106, 10, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
 .btn-r {
   background: linear-gradient(155deg, rgba(200, 60, 60, 0.96), rgba(155, 33, 33, 0.92));
-  color: #fff;
+  color: var(--wh);
   box-shadow: 0 4px 16px -5px rgba(155, 33, 33, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 .btn-r:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(155, 33, 33, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
 .btn-a {
   background: linear-gradient(155deg, rgba(176, 108, 20, 0.96), rgba(125, 72, 0, 0.92));
-  color: #fff;
+  color: var(--wh);
   box-shadow: 0 4px 16px -5px rgba(125, 72, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 .btn-a:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(125, 72, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.34); }
 .btn-pu {
   background: linear-gradient(155deg, rgba(124, 58, 237, 0.96), rgba(91, 33, 182, 0.92));
-  color: #fff;
+  color: var(--wh);
   box-shadow: 0 4px 16px -5px rgba(91, 33, 182, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 .btn-pu:hover { transform: translateY(-1px); box-shadow: 0 9px 24px -6px rgba(91, 33, 182, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
@@ -2335,7 +2335,7 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 [data-theme="dark"] .btn-out {
   background: rgba(30, 41, 59, 0.5);
   border-color: rgba(255, 255, 255, 0.14);
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 [data-theme="dark"] .btn-out:hover {
   background: rgba(51, 65, 85, 0.65);
@@ -2409,20 +2409,20 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 
 [data-theme='dark'] .btn-out {
   background: #1e293b;
-  border: 1px solid #475569;
+  border: 1px solid var(--table-head-color);
   box-shadow: none;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 [data-theme='brand'] .btn-out {
-  background: #fff;
+  background: var(--wh);
   border: 1px solid #c5cdd8;
   box-shadow: none;
-  color: #1e2330;
+  color: var(--sidebar);
 }
 [data-theme='brand'] .btn-out:hover {
   background: #f4f6f8;
-  border-color: var(--ux-accent, #1a56a0);
-  color: var(--ux-accent-dark, #0d3d7a);
+  border-color: var(--ux-accent, var(--color-primary));
+  color: var(--ux-accent-dark, var(--color-primary-dark));
   transform: none;
 }
 
@@ -2442,19 +2442,19 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
   border-radius: 3px;
   box-shadow: none;
   border: 1px solid #c5cdd8;
-  background: #fff;
+  background: var(--wh);
 }
 [data-theme='brand'] .card:hover { box-shadow: none; }
 [data-theme='brand'] .topbar,
 .topbar.topbar--brand-accent {
-  background: #fff !important;
-  border-bottom: 4px solid var(--ux-accent, #1a56a0) !important;
+  background: var(--wh) !important;
+  border-bottom: 4px solid var(--ux-accent, var(--color-primary)) !important;
   box-shadow: none !important;
 }
 [data-theme='brand'] .periode-pill,
 .topbar.topbar--brand-accent .periode-pill {
   border-radius: 2px;
-  background: #fff;
+  background: var(--wh);
   box-shadow: none;
 }
 [data-theme='brand'] .periode-pill:hover { transform: none; box-shadow: none; }
@@ -2468,7 +2468,7 @@ html.sidebar-collapsed .sidebar-collapse-btn-top {
 [data-theme='brand'] .ni.active {
   border-radius: 0;
   box-shadow: none;
-  border-left: 3px solid #fff;
+  border-left: 3px solid var(--wh);
   background: color-mix(in srgb, var(--ux-accent) 40%, transparent);
 }
 [data-theme='brand'] .fg input,

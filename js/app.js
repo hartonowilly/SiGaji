@@ -1,5 +1,5 @@
 /**
  * SiGaji tidak lagi memuat satu file app.js besar.
  * Lihat urutan script di index.html → js/modules/*.md
- * Arsip monolit: _archive/app.legacy.js
+ * Arsip monolit lama ada di riwayat git (folder _archive tidak ikut rilis).
  */

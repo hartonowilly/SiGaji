@@ -709,8 +709,8 @@ function renderTHRBody(){
           +'value="'+(sigajiRp(manData.nilai)>0?sigajiRp(manData.nilai).toLocaleString('id-ID'):'')+'" '
           +'placeholder="Nominal Rp" '
           +'data-nik="'+k.nik+'" data-pnama="'+pNama+'" '
-          +'onchange="simpanTHRManualEl(this)" '
-          +'onkeydown="if(event.key===\'Enter\')simpanTHRManualEl(this)">';
+          +'data-sigaji-action="call-value" data-fn="simpanTHRManualEl" data-arg="$this" '
+          +'data-sigaji-enter="simpanTHRManualEl" data-sigaji-enter-arg="$this">';
         if(t.nilaiOto)manCell+='<span class="font-9 text-subtle">Otomatis: '+fmt(t.nilaiOto)+'</span>';
       }
       manCell+='</div>';

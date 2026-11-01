@@ -22,7 +22,7 @@
 .max-h-slip-table table thead th {
   position: sticky;
   top: 0;
-  background: var(--table-head-bg, #f3f4f6);
+  background: var(--table-head-bg, var(--color-surface-muted));
 }
 
 /* Tabel lebar: hanya scroll horizontal di dalam kontainer.

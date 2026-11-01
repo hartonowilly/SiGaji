@@ -589,6 +589,17 @@
   window.sigajiMobileSubmitLeave = function () {
     submitLeave();
   };
+  document.addEventListener('click', function (ev) {
+    var t = ev.target && ev.target.closest && ev.target.closest('[data-sigaji-action]');
+    if (!t) return;
+    if (t.getAttribute('data-sigaji-action') !== 'invoke') return;
+    var fnName = t.getAttribute('data-fn');
+    var arg = t.getAttribute('data-arg');
+    if (!fnName || typeof window[fnName] !== 'function') return;
+    ev.preventDefault();
+    if (arg != null && arg !== '') window[fnName](arg);
+    else window[fnName]();
+  });
   document.addEventListener('DOMContentLoaded', function () {
     previewFile('photo-in', 'preview-in');
     previewFile('photo-out', 'preview-out');

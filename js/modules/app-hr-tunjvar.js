@@ -28,14 +28,13 @@ function renderTunjVarColEditor() {
     '<div class="fl flex-wrap gap-md items-end">' +
     cols
       .map(function (c) {
-        var idEsc = String(c.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return (
           '<div class="fg m-0 min-w-160"><label class="font-10">Nama kolom</label><div class="fl items-center" style="gap:4px">' +
           '<input class="comp-inp flex-1 font-12" value="' +
           escapeHtml(c.nama) +
-          '" placeholder="Nama" onchange="setTunjVarColNama(\'' +
-          idEsc +
-          "',this.value)\">" +
+          '" placeholder="Nama"' +
+          sigajiDataAction('set-tunjvar-nama', { 'col-id': c.id }) +
+          '>' +
           (cols.length > 1
             ? '<button type="button" class="btn btn-xs btn-r" title="Hapus kolom"' +
               sigajiDataAction('hapus-tunjvar-col', { 'col-id': c.id }) +
@@ -344,24 +343,20 @@ function renderTunjVariabelBulan() {
   var rows = listK.map(function (k, idx) {
     var r = tunjVarBulan[pn][k.nik] || {};
     var sum = 0;
-    var nikA = escNik(k.nik);
     var tds = cols
       .map(function (c) {
         var v = sigajiRp(r[c.id]);
         if (isNaN(v)) v = 0;
         sum += v;
-        var idEsc = String(c.id).replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
         var cellKey = tunjVarCellKey(k.nik, c.id);
         if (__tunjVarEditCells[cellKey]) {
           return (
             '<td><div class="fl gap1 items-center tunjvar-cell-wrap">' +
             '<input type="text" class="tunjvar-inp inp-rp tunjvar-inp-narrow" value="' +
             formatRpInputNum(v) +
-            '" data-rp="1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();tunjVarCommitCell(\'' +
-            nikA +
-            "','" +
-            idEsc +
-            '\',this.value);}">' +
+            '" data-rp="1"' +
+            sigajiDataAction('tunjvar-commit', { nik: k.nik, 'col-id': c.id }) +
+            '>' +
             '<button type="button" class="btn btn-xs btn-g"' +
             sigajiDataAction('tunjvar-commit', { nik: k.nik, 'col-id': c.id }) +
             '>Simpan</button></div></td>'

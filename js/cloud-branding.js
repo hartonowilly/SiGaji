@@ -54,3 +54,4 @@
     if (typeof applyBranding === 'function') applyBranding();
   };
 })();
+if (typeof sigajiApplyCloudLoginUi === 'function') sigajiApplyCloudLoginUi();

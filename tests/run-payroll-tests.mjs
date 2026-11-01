@@ -43,6 +43,7 @@ const suites = [
   'aturan-pajak-kunci.test.mjs',
   'prorata-masuk.test.mjs',
   'outbox.test.mjs',
+  'no-inline-handlers.test.mjs',
   'build-banner.test.mjs',
 ];
 let failed = 0;
