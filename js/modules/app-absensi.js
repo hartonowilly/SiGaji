@@ -79,6 +79,10 @@ function abShiftViewMonth(delta){
   i=Math.max(0,Math.min(keys.length-1,i+(delta||0)));
   abSetViewMonth(keys[i]);
 }
+function renderAbsensiDanCuti(){
+  if(typeof renderAbsensi==='function')renderAbsensi();
+  if(typeof renderCutiRekap==='function')renderCutiRekap();
+}
 function renderAbsensi(){
   if(typeof sigajiWithSkeleton==='function'){
     return sigajiWithSkeleton('ab-grid-wrap',12,renderAbsensiBody);
@@ -126,7 +130,7 @@ function renderAbsensiBody(){
     +'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('ab-shift-month',{delta:-1})+(mi<=0?' disabled':'')+'>&#9664;</button>'
     +'<span class="ab-month-lbl">'+abMonthLabel(window.__sigajiAbMonth)+'</span>'
     +'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('ab-shift-month',{delta:1})+(mi>=monthKeys.length-1?' disabled':'')+'>&#9654;</button>'
-    +'<select class="toolbar-select ab-month-sel" onchange="abSetViewMonth(this.value)">'
+    +'<select class="toolbar-select ab-month-sel" data-sigaji-action="call-value" data-fn="abSetViewMonth">'
     +monthKeys.map(function(k){return'<option value="'+k+'" '+(k===window.__sigajiAbMonth?'selected':'')+'>'+abMonthLabel(k)+'</option>';}).join('')
     +'</select></div>';
   var hdrSub='Kalender absensi — '+pAbs.nama+' · '+fmtDate(pAbs.start)+' – '+fmtDate(pAbs.end)+' · '+daysAll.length+' hari (tampil: '+days.length+' hari)';
@@ -358,8 +362,8 @@ function renderLemburList(){
         var lr=r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal);
         var lemRo=CU&&CU.role!=='Admin'&&lr;
         return '<div class="fl gap1 mb1 items-center flex-wrap">'
-          +'<input type="date" class="comp-inp lembur-inp-date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'onchange="updLembur(\''+k.nik+'\','+i+',\'tanggal\',this.value)">'
-          +'<input type="number" class="comp-inp lembur-inp-jam" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'min="1" max="12" onchange="updLembur(\''+k.nik+'\','+i+',\'jam\',this.value)">'
+          +'<input type="date" class="comp-inp lembur-inp-date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'data-sigaji-action="upd-lembur" data-nik="'+escapeAttr(k.nik)+'" data-i="'+i+'" data-f="tanggal">'
+          +'<input type="number" class="comp-inp lembur-inp-jam" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'min="1" max="12" data-sigaji-action="upd-lembur" data-nik="'+escapeAttr(k.nik)+'" data-i="'+i+'" data-f="jam">'
           +'<span class="font-11 text-muted lembur-inp-amt">'+(j>0?fmt(Math.round(h)):'')+'</span>'
           +(lemRo?'':'<button class="btn btn-sm btn-r"'+sigajiDataAction('del-lembur',{nik:k.nik,i:i})+'>&#10007;</button>')+'</div>';
       }).join('')+'</div>';

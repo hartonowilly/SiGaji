@@ -376,7 +376,7 @@
       '<label class="sigaji-cabang-lbl" for="sigaji-cabang-sel">Lokasi</label>' +
       '<select id="sigaji-cabang-sel" class="toolbar-select sigaji-cabang-sel' +
       (cur ? ' sigaji-cabang-sel-active' : '') +
-      '" title="Buka workspace cabang — data payroll terpisah per lokasi" onchange="sigajiSetCabangFilter(this.value)">' +
+      '" title="Buka workspace cabang — data payroll terpisah per lokasi" data-sigaji-action="call-value" data-fn="sigajiSetCabangFilter">' +
       '<option value="">Gabungan (semua)</option>' +
       list
         .map(function (c) {
@@ -441,7 +441,7 @@
       escapeHtml(c.npwp || '') +
       '" placeholder="Kosongkan = NPWP pusat (badan sama)"' +
       dis +
-      ' oninput="formatNPWP(this)"></div>' +
+      ' data-sigaji-action="call-value" data-fn="formatNPWP" data-arg="$this" data-sigaji-live="1"></div>' +
       '<div class="fg"><label>NITKU / Kode TKU (6 digit)</label><input class="cabang-inp-nitku" data-idx="' +
       i +
       '" value="' +

@@ -106,8 +106,12 @@ export default [
       'js/modules/app-core.js',
       'js/modules/app-hr-tunjvar.js',
       'js/modules/app-access.js',
+      'js/modules/app-auth.js',
+      'js/modules/app-sys.js',
       'js/modules/app-master.js',
       'js/modules/app-hr.js',
+      'js/modules/app-hr-komponen.js',
+      'js/modules/app-hr-payroll.js',
       'js/pesangon.js',
     ],
     rules: {

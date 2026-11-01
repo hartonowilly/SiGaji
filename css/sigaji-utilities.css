@@ -200,6 +200,8 @@
 .card-cuti-purple { background: #f0f0fd; border-color: var(--color-purple-border); }
 .cuti-cb-label { padding: 8px; border: 1px solid var(--color-purple-border); }
 .audit-select { padding: 6px 10px; border: 1.5px solid var(--color-border); font-family: inherit; outline: none; }
+.reset-danger-inp { border: 2px solid var(--color-danger-border); padding: 9px 12px; font-family: inherit; outline: none; }
+.modal-danger-top { border-top: 4px solid var(--color-danger); }
 .label-upper-brand {
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -217,11 +219,11 @@
   border: 1px solid var(--color-primary-border);
 }
 .slip-tg-hint {
-  color: #1565a8;
+  color: var(--color-primary);
   margin: 0.5rem 0 0.75rem;
   padding: 0.5rem 0.75rem;
-  background: #e8f4fc;
-  border: 1px solid #b8d9f0;
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--color-primary-border);
 }
 .card-shadow-brand { box-shadow: 0 1px 8px rgba(26, 86, 160, 0.1); }
 .border-accent-amber { border-left: 4px solid #b45309; }

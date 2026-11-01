@@ -21,7 +21,7 @@
       <input type="email" id="login-email" autocomplete="username" placeholder="anda@perusahaan.com">
       <label>Sandi</label>
       <input type="password" id="login-pw" autocomplete="current-password">
-      <button type="button" class="btn btn-primary" onclick="sigajiMobileLogin()">Masuk</button>
+      <button type="button" class="btn btn-primary" data-sigaji-action="invoke" data-fn="sigajiMobileLogin">Masuk</button>
     </div>
     <p class="pwa-install-hint">Pasang ke layar utama: menu browser → <strong>Tambahkan ke Layar Utama</strong></p>
   </div>
@@ -33,7 +33,7 @@
         <p class="sub" id="home-nama" style="margin:.15rem 0 0">—</p>
         <p class="sub" id="home-nik" style="margin:0">—</p>
       </div>
-      <button type="button" class="notif-bell" id="btn-notif" onclick="sigajiMobileGo('screen-notif')" aria-label="Notifikasi">
+      <button type="button" class="notif-bell" id="btn-notif" data-sigaji-action="invoke" data-fn="sigajiMobileGo" data-arg="screen-notif" aria-label="Notifikasi">
         &#128276;<span class="notif-badge" id="notif-badge" style="display:none">0</span>
       </button>
     </div>
@@ -46,8 +46,8 @@
       </div>
       <button type="button" class="btn btn-success" id="btn-checkin" style="display:none">Check-in</button>
       <button type="button" class="btn btn-primary" id="btn-checkout" style="display:none">Check-out (wajib)</button>
-      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-leave')">Ajuan cuti / izin / sakit</button>
-      <button type="button" class="btn btn-out" onclick="sigajiMobileLogout()">Keluar</button>
+      <button type="button" class="btn btn-out" data-sigaji-action="invoke" data-fn="sigajiMobileGo" data-arg="screen-leave">Ajuan cuti / izin / sakit</button>
+      <button type="button" class="btn btn-out" data-sigaji-action="invoke" data-fn="sigajiMobileLogout">Keluar</button>
     </div>
   </div>
 
@@ -56,8 +56,8 @@
     <p class="sub">Validasi wajah + GPS — gunakan APK SiGaji Absen (bukan PWA browser)</p>
     <div class="card">
       <p style="font-size:.85rem;color:#6b7280">Check-in/out membutuhkan daftar wajah sekali di aplikasi Android.</p>
-      <button type="button" class="btn btn-success" onclick="sigajiMobileSubmitIn()">Kirim check-in</button>
-      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Batal</button>
+      <button type="button" class="btn btn-success" data-sigaji-action="invoke" data-fn="sigajiMobileSubmitIn">Kirim check-in</button>
+      <button type="button" class="btn btn-out" data-sigaji-action="invoke" data-fn="sigajiMobileGo" data-arg="screen-home">Batal</button>
     </div>
   </div>
 
@@ -66,8 +66,8 @@
     <p class="sub">Wajib setelah check-in</p>
     <div class="card">
       <p style="font-size:.85rem;color:#6b7280">Check-out membutuhkan APK SiGaji Absen.</p>
-      <button type="button" class="btn btn-primary" onclick="sigajiMobileSubmitOut()">Kirim check-out</button>
-      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Batal</button>
+      <button type="button" class="btn btn-primary" data-sigaji-action="invoke" data-fn="sigajiMobileSubmitOut">Kirim check-out</button>
+      <button type="button" class="btn btn-out" data-sigaji-action="invoke" data-fn="sigajiMobileGo" data-arg="screen-home">Batal</button>
     </div>
   </div>
 
@@ -76,8 +76,8 @@
     <p class="sub">Status pengajuan cuti / izin / sakit</p>
     <div class="card">
       <div id="notif-list" style="font-size:.85rem;color:#64748b">Memuat…</div>
-      <button type="button" class="btn btn-out" id="btn-notif-read-all" style="display:none" onclick="sigajiMobileMarkAllNotifRead()">Tandai semua dibaca</button>
-      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Kembali</button>
+      <button type="button" class="btn btn-out" id="btn-notif-read-all" style="display:none" data-sigaji-action="invoke" data-fn="sigajiMobileMarkAllNotifRead">Tandai semua dibaca</button>
+      <button type="button" class="btn btn-out" data-sigaji-action="invoke" data-fn="sigajiMobileGo" data-arg="screen-home">Kembali</button>
     </div>
   </div>
 
@@ -103,8 +103,8 @@
         <label>Surat dokter (PDF/foto)</label>
         <input type="file" id="leave-file" accept="image/*,.pdf">
       </div>
-      <button type="button" class="btn btn-primary" onclick="sigajiMobileSubmitLeave()">Kirim pengajuan</button>
-      <button type="button" class="btn btn-out" onclick="sigajiMobileGo('screen-home')">Kembali</button>
+      <button type="button" class="btn btn-primary" data-sigaji-action="invoke" data-fn="sigajiMobileSubmitLeave">Kirim pengajuan</button>
+      <button type="button" class="btn btn-out" data-sigaji-action="invoke" data-fn="sigajiMobileGo" data-arg="screen-home">Kembali</button>
       <div id="leave-history" style="margin-top:1rem;font-size:.85rem;color:#64748b"></div>
     </div>
   </div>
@@ -112,6 +112,6 @@
 <div id="toast"></div>
 <script src="/js/config.js"></script>
 <script src="/js/vendor/supabase.js"></script>
-<script src="/mobile/app.js?v=11.7.3"></script>
+<script src="/mobile/app.js?v=11.7.4"></script>
 </body>
 </html>

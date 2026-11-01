@@ -7,6 +7,7 @@
   "scripts": {
     "build": "node scripts/assemble-index.js && node scripts/generate-config.js",
     "assemble": "node scripts/assemble-index.js",
+    "check:assemble": "node scripts/assemble-index.js --check",
     "bump": "node scripts/bump-cache-version.js",
     "migrate-styles": "node scripts/migrate-inline-styles.js",
     "test": "node tests/run-payroll-tests.mjs",
@@ -21,7 +22,7 @@
     "lint:payroll": "eslint js/modules/app-core.js js/modules/app-hr-tunjvar.js",
     "typecheck:payroll": "tsc -p js/types/tsconfig.payroll.json",
     "check:payroll": "npm test && npm run lint:payroll && npm run typecheck:payroll",
-    "check:quality": "npm run check:payroll && npm run test:cuti && npm run test:converter && npm run lint && npm run lint:ratchet",
+    "check:quality": "npm run check:payroll && npm run test:cuti && npm run test:converter && npm run lint && npm run lint:ratchet && npm run check:assemble",
     "install:hooks": "node scripts/install-git-hooks.js",
     "prepare": "node scripts/install-git-hooks.js"
   },
