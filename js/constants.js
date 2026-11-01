@@ -188,7 +188,7 @@ function bulanUPMKPasal41(months){
 const SCHEMA_VERSION=22;
 /** Hanya login Supabase + data cloud; tidak ada login username admin/hrd lokal. */
 window.SIGAJI_CLOUD_ONLY_MODE=true;
-/** Versi tampilan & backup (v10 = modul Komponen Gaji terpisah dari Master Karyawan). */
-const SIGAJI_APP_LABEL='SiGaji v10';
+/** Label aplikasi di judul tab, status sistem, dan meta backup. Tanpa nomor versi — versi deploy ada di SIGAJI_BUILD. */
+const SIGAJI_APP_LABEL='SiGaji';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.7.0';
+const SIGAJI_MODULES_CACHE='11.7.1';
