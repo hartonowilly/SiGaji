@@ -7,6 +7,9 @@ scripts/backup-supabase.env
 # Jangan commit clone Git bersarang (penyebab Cloudflare: submodule sigaji-app/SiGaji)
 SiGaji/
 
+# Arsip monolit lama — jangan ikut deploy
+_archive/
+
 # Dependensi & artefak lokal
 node_modules/
 .DS_Store

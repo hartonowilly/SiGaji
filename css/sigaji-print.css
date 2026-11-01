@@ -58,7 +58,7 @@
     --bento-surface-2: #fff;
     --bento-border: #999;
     --bento-ink: #000;
-    background: #fff !important;
+    background: var(--wh) !important;
     color: #000 !important;
   }
 
@@ -89,7 +89,7 @@
   .info-box,
   .gs,
   .pph-box {
-    background-color: #fff !important;
+    background-color: var(--wh) !important;
     background-image: none !important;
     color: #000 !important;
     box-shadow: none !important;
@@ -152,7 +152,7 @@
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
-    background: #fff !important;
+    background: var(--wh) !important;
     background-image: none !important;
     color: #000 !important;
     margin: 0 !important;

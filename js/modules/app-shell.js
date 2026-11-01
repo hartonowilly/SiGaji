@@ -726,7 +726,7 @@ function renderTERTable(){
         return'<tr><td class="text-muted">'+r.from+'</td><td class="text-muted">'+r.to+'</td>'+
           '<td><input type="number" class="comp-inp comp-inp-num" step="0.01" min="0" max="100" value="'+displayRate+'" '+
           'data-lmp="'+lmp+'" data-idx="'+r.idx+'" '+
-          'onchange="onTERCellChange(this)">%</td></tr>';
+          'data-sigaji-action="call-value" data-fn="onTERCellChange" data-arg="$this">%</td></tr>';
       }).join('')+
     '</tbody></table>';
   });

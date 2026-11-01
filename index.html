@@ -8,23 +8,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.3">
-<link rel="stylesheet" href="/css/styles.css?v=11.7.3">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.3">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.3">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.3">
-<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.3">
-<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.3">
-<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.3">
-<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.3">
-<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.4">
+<link rel="stylesheet" href="/css/styles.css?v=11.7.4">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.4">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.4">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.4">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.4">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.4">
+<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.4">
+<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.4">
+<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.4">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.7.3"></script>
+<script src="/js/modules/app-api-shim.js?v=11.7.4"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.7.3"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.7.4"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -241,7 +241,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           <button type="button" class="btn btn-sm btn-s" data-sigaji-action="click-input" data-target="inp-tunjvar-xlsx">Import Excel</button>
         </div>
       </details>
-      <input class="u-hidden" type="file" id="inp-tunjvar-xlsx" accept=".xlsx,.xls" onchange="importTunjVarExcel(this)">
+      <input class="u-hidden" type="file" id="inp-tunjvar-xlsx" accept=".xlsx,.xls" data-sigaji-action="call-value" data-fn="importTunjVarExcel" data-arg="$this">
     </div>
     <div id="tunjvar-col-editor" class="mb1 u-muted-12"></div>
     <div class="table-wrap" id="tunjvar-tabel-wrap"></div>
@@ -256,9 +256,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div><div class="pt">Absensi &amp; Cuti</div><div class="pst">Kalender kehadiran, tracking cuti, dan pengajuan · <span class="pst-periode"></span></div></div>
     <div class="page-actions page-toolbar-filters fl gap1">
     <label class="toolbar-lbl">Periode gaji</label>
-    <select id="ab-periode-sel" class="toolbar-select" onchange="renderAbsensi();renderCutiRekap();"></select>
+    <select id="ab-periode-sel" class="toolbar-select" data-sigaji-action="invoke" data-fn="renderAbsensiDanCuti"></select>
     <label class="toolbar-lbl">Tahun cuti</label>
-    <select class="toolbar-select" id="ab-yr" onchange="renderAbsensi();renderCutiRekap();"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
+    <select class="toolbar-select" id="ab-yr" data-sigaji-action="invoke" data-fn="renderAbsensiDanCuti"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
     <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderAbsensi">&#8635; Refresh</button>
   </div></div>
   <div class="tabs">
@@ -301,7 +301,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="flb mb2 flex-wrap gap-sm">
         <div class="ct m-0 border-0 p-0">Rekap keterlambatan</div>
         <div class="fl gap1">
-          <input type="month" id="mob-late-month" class="toolbar-select select-inline" onchange="renderMobileLateReport()">
+          <input type="month" id="mob-late-month" class="toolbar-select select-inline" data-sigaji-action="invoke" data-fn="renderMobileLateReport">
           <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderMobileLateReport">Muat</button>
         </div>
       </div>
@@ -442,13 +442,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card border-accent-indigo">
       <div class="ct ct-indigo">Parameter simulasi gaji</div>
       <div class="fg2">
-        <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-gapok-pct" step="0.5" value="0" onchange="sigajiSimSet('gapokPct',parseFloat(this.value)||0)"></div>
-        <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-tunj-pct" step="0.5" value="0" onchange="sigajiSimSet('tunjPct',parseFloat(this.value)||0)"></div>
+        <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-gapok-pct" step="0.5" value="0" data-sigaji-action="call-value" data-fn="sigajiSimSet" data-arg="$float" data-key="gapokPct"></div>
+        <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-tunj-pct" step="0.5" value="0" data-sigaji-action="call-value" data-fn="sigajiSimSet" data-arg="$float" data-key="tunjPct"></div>
         <div class="fg"><label>Filter dept</label>
-          <select id="sim-dept" onchange="sigajiSimSet('dept',this.value)"><option value="">Semua</option>
+          <select id="sim-dept" data-sigaji-action="call-value" data-fn="sigajiSimSet" data-key="dept"><option value="">Semua</option>
             <option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option>
           </select></div>
-        <div class="fg"><label>Filter NIK</label><select id="sim-nik" onchange="sigajiSimSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
+        <div class="fg"><label>Filter NIK</label><select id="sim-nik" data-sigaji-action="call-value" data-fn="sigajiSimSet" data-key="nik"><option value="">Semua karyawan</option></select></div>
       </div>
       <p class="u-muted-11 mt-md">Contoh: +5% gapok dept Operasional — lihat dampak PPh &amp; neto sebelum keputusan naik gaji.</p>
     </div>
@@ -466,14 +466,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card border-accent-purple">
       <div class="ct ct-purple">Parameter simulasi THR</div>
       <div class="fg2">
-        <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-thr-gapok-pct" step="0.5" value="0" onchange="sigajiSimThrSet('gapokPct',parseFloat(this.value)||0)"></div>
-        <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-thr-tunj-pct" step="0.5" value="0" onchange="sigajiSimThrSet('tunjPct',parseFloat(this.value)||0)"></div>
-        <div class="fg"><label>Masa kerja simulasi (bulan)</label><input type="number" id="sim-thr-mk" min="0" max="120" step="1" placeholder="Kosong = profil" onchange="sigajiSimThrSet('mkBulan',this.value)"></div>
+        <div class="fg"><label>Δ Gaji pokok (%)</label><input type="number" id="sim-thr-gapok-pct" step="0.5" value="0" data-sigaji-action="call-value" data-fn="sigajiSimThrSet" data-arg="$float" data-key="gapokPct"></div>
+        <div class="fg"><label>Δ Tunjangan tetap (%)</label><input type="number" id="sim-thr-tunj-pct" step="0.5" value="0" data-sigaji-action="call-value" data-fn="sigajiSimThrSet" data-arg="$float" data-key="tunjPct"></div>
+        <div class="fg"><label>Masa kerja simulasi (bulan)</label><input type="number" id="sim-thr-mk" min="0" max="120" step="1" placeholder="Kosong = profil" data-sigaji-action="call-value" data-fn="sigajiSimThrSet" data-key="mkBulan"></div>
         <div class="fg"><label>Filter dept</label>
-          <select id="sim-thr-dept" onchange="sigajiSimThrSet('dept',this.value)"><option value="">Semua</option>
+          <select id="sim-thr-dept" data-sigaji-action="call-value" data-fn="sigajiSimThrSet" data-key="dept"><option value="">Semua</option>
             <option>Direksi</option><option>Keuangan</option><option>HRD & Umum</option><option>Operasional</option><option>Teknik</option><option>IT</option><option>Marketing</option><option>Legal</option>
           </select></div>
-        <div class="fg"><label>Filter NIK</label><select id="sim-thr-nik" onchange="sigajiSimThrSet('nik',this.value)"><option value="">Semua karyawan</option></select></div>
+        <div class="fg"><label>Filter NIK</label><select id="sim-thr-nik" data-sigaji-action="call-value" data-fn="sigajiSimThrSet" data-key="nik"><option value="">Semua karyawan</option></select></div>
       </div>
       <p class="u-muted-11 mt-md">Contoh: hire baru 8 bulan — eligible THR proporsional? Naik gapok 10% — berapa tambahan THR?</p>
     </div>
@@ -491,12 +491,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card border-accent-amber">
       <div class="ct text-amber-800">Parameter simulasi pesangon / PHK</div>
       <div class="fg2">
-        <div class="fg ff"><label>Karyawan</label><select id="sim-psg-nik" onchange="sigajiSimPsgSet('nik',this.value)"><option value="">— Pilih —</option></select></div>
-        <div class="fg"><label>Tgl. berhenti (simulasi)</label><input type="date" id="sim-psg-tgl" onchange="sigajiSimPsgSet('tglBerhenti',this.value)"></div>
-        <div class="fg ff"><label>Alasan PHK</label><select id="sim-psg-alasan" onchange="sigajiSimPsgSet('alasan',this.value)"><option value="phk_1x">—</option></select></div>
-        <div class="fg"><label>Sisa cuti (hari, kosong=otomatis)</label><input type="number" min="0" id="sim-psg-sisa-cuti" placeholder="Otomatis" onchange="sigajiSimPsgSet('sisaCuti',this.value)"></div>
-        <div class="fg"><label>UPH tambahan (Rp)</label><input type="number" min="0" id="sim-psg-uph-tambahan" placeholder="0" onchange="sigajiSimPsgSet('uphTambahan',this.value)"></div>
-        <div class="fg"><label>Uang pisah (Rp)</label><input type="number" min="0" id="sim-psg-pisah" placeholder="0" onchange="sigajiSimPsgSet('pisah',this.value)"></div>
+        <div class="fg ff"><label>Karyawan</label><select id="sim-psg-nik" data-sigaji-action="call-value" data-fn="sigajiSimPsgSet" data-key="nik"><option value="">— Pilih —</option></select></div>
+        <div class="fg"><label>Tgl. berhenti (simulasi)</label><input type="date" id="sim-psg-tgl" data-sigaji-action="call-value" data-fn="sigajiSimPsgSet" data-key="tglBerhenti"></div>
+        <div class="fg ff"><label>Alasan PHK</label><select id="sim-psg-alasan" data-sigaji-action="call-value" data-fn="sigajiSimPsgSet" data-key="alasan"><option value="phk_1x">—</option></select></div>
+        <div class="fg"><label>Sisa cuti (hari, kosong=otomatis)</label><input type="number" min="0" id="sim-psg-sisa-cuti" placeholder="Otomatis" data-sigaji-action="call-value" data-fn="sigajiSimPsgSet" data-key="sisaCuti"></div>
+        <div class="fg"><label>UPH tambahan (Rp)</label><input type="number" min="0" id="sim-psg-uph-tambahan" placeholder="0" data-sigaji-action="call-value" data-fn="sigajiSimPsgSet" data-key="uphTambahan"></div>
+        <div class="fg"><label>Uang pisah (Rp)</label><input type="number" min="0" id="sim-psg-pisah" placeholder="0" data-sigaji-action="call-value" data-fn="sigajiSimPsgSet" data-key="pisah"></div>
       </div>
       <p class="u-muted-11 mt-md">Untuk direksi: bandingkan skenario PHK sebelum putusan — tidak menulis ke profil karyawan.</p>
     </div>
@@ -510,12 +510,12 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Slip Gaji</div><div class="pst">Slip bulanan / THR (pilih jenis) dan kirim ke karyawan</div></div>
     <div class="page-actions page-toolbar-slip fl gap1">
-    <select class="toolbar-select" id="slip-per" onchange="onSlipPeriodeChange()"></select>
-    <select class="toolbar-select" id="slip-type" onchange="previewSlip()">
+    <select class="toolbar-select" id="slip-per" data-sigaji-action="invoke" data-fn="onSlipPeriodeChange"></select>
+    <select class="toolbar-select" id="slip-type" data-sigaji-action="invoke" data-fn="previewSlip">
       <option value="gaji">&#128203; Slip Gaji Bulanan</option>
       <option value="thr">&#127873; Slip THR</option>
     </select>
-    <select class="toolbar-select toolbar-select-wide" id="slip-kar" onchange="previewSlip()"><option value="">-- Pilih Karyawan --</option></select>
+    <select class="toolbar-select toolbar-select-wide" id="slip-kar" data-sigaji-action="invoke" data-fn="previewSlip"><option value="">-- Pilih Karyawan --</option></select>
     <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportPDF">&#128438; PDF</button>
     <button class="btn btn-sm btn-thr-pdf u-hidden" id="btn-pdf-all-thr" data-sigaji-action="invoke" data-fn="exportAllTHRPDF">&#127873; PDF THR Semua</button>
   </div></div>
@@ -664,7 +664,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div>
           <img class="logo-prev" id="logo-preview">
           <div class="logo-drop" data-sigaji-action="click-input" data-target="logo-input">
-            <input type="file" id="logo-input" accept="image/*" onchange="uploadLogo(this)">
+            <input type="file" id="logo-input" accept="image/*" data-sigaji-action="call-value" data-fn="uploadLogo" data-arg="$this">
             <div class="mb-xs font-28">&#128247;</div>
             <div class="font-12 fw-700 text-brand">Klik untuk upload logo</div>
             <div class="font-10 text-subtle mt-2px">PNG, JPG, SVG — maks 2MB</div>
@@ -692,7 +692,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         </div>
         <div class="fg"><label>Warna PT (tema Warna PT)</label>
           <div class="fl gap-sm items-center">
-            <input id="prs-brand-color" type="color" value="#1a56a0" title="Aksen tema Warna PT — teks otomatis disesuaikan agar terbaca" oninput="typeof onPrsBrandColorInput==='function'&&onPrsBrandColorInput()">
+            <input id="prs-brand-color" type="color" value="#1a56a0" title="Aksen tema Warna PT — teks otomatis disesuaikan agar terbaca" data-sigaji-action="invoke" data-fn="onPrsBrandColorInput" data-sigaji-live="1">
             <span class="font-11 text-muted">Dipakai di topbar, tombol, dan menu bila tema = Warna PT. Warna sangat terang otomatis dikelamkan agar tulisan tidak tertutup.</span>
           </div>
         </div>
@@ -735,7 +735,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="info-box info-blue font-11 tabs-spaced-lg leading-tight" id="umk-lokasi-hint">
         Paket 1 lokasi: isi satu UMK di sini untuk seluruh karyawan. Nama cabang tidak ditampilkan karena multi-cabang belum aktif. Tombol di bawah menerapkan UMK ke gaji pokok master. Periode yang terkunci tidak diubah otomatis.
       </div>
-      <div class="fg mb-md" style="max-width:160px"><label>Tahun</label><select class="select-inline" id="umk-year-sel" onchange="renderUmkPanel()"></select></div>
+      <div class="fg mb-md" style="max-width:160px"><label>Tahun</label><select class="select-inline" id="umk-year-sel" data-sigaji-action="invoke" data-fn="renderUmkPanel"></select></div>
       <div id="umk-cabang-wrap" class="u-hidden mb-md"></div>
       <div class="fl gap2 flex-wrap items-end tabs-spaced-lg" id="umk-perusahaan-row">
         <div class="fg input-min-w-240">
@@ -759,9 +759,9 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card">
       <div class="ct">Buat / Edit Periode</div>
       <div class="fg2">
-        <div class="fg"><label>Nama Periode</label><input id="p-nama" placeholder="Agustus 2026" oninput="onPeriodeNamaInput()"></div>
+        <div class="fg"><label>Nama Periode</label><input id="p-nama" placeholder="Agustus 2026" data-sigaji-action="invoke" data-fn="onPeriodeNamaInput" data-sigaji-live="1"></div>
         <div class="fg"><label>Pola</label>
-          <select id="p-pola" onchange="updatePolaPeriode()">
+          <select id="p-pola" data-sigaji-action="invoke" data-fn="updatePolaPeriode">
             <option value="custom">Custom</option><option value="25-24">Tgl 25–24</option>
             <option value="21-20">Tgl 21–20</option><option value="1-akhir">Tgl 1–Akhir</option>
           </select>
@@ -773,7 +773,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         </div>
         <div class="fg"><label>Status</label><select id="p-status"><option value="aktif">Aktif</option><option value="tutup">Tutup</option></select></div>
         <div class="fg"><label>Tipe Masa Pajak</label>
-          <select id="p-tipe-periode" onchange="toggleOpsiLebihBayar()">
+          <select id="p-tipe-periode" data-sigaji-action="invoke" data-fn="toggleOpsiLebihBayar">
             <option value="normal">Normal (Jan-Nov) &#8212; Metode TER</option>
             <option value="desember">Desember &#8212; Rekonsiliasi Progresif</option>
             <option value="resign">Resign / PHK &#8212; Rekonsiliasi Progresif</option>
@@ -791,7 +791,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="rounded-md mt-md p-md" style="background:#f5f0ff; border:1.5px solid #c4b5fd">
         <div class="fw-700 ct-purple font-13 mb-md">&#127873; Pengaturan THR untuk Periode Ini</div>
         <label class="fl items-center gap-sm cursor-pointer fw-600 font-12 mb-lg">
-          <input class="chk-purple" type="checkbox" id="p-thr-aktif" onchange="toggleThrFields()">
+          <input class="chk-purple" type="checkbox" id="p-thr-aktif" data-sigaji-action="invoke" data-fn="toggleThrFields">
           Aktifkan THR di periode ini (PPh THR akan digabung ke gaji bulan ini)
         </label>
         <div class="u-hidden" id="thr-fields">
@@ -817,7 +817,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="font-10 text-muted mt-sm leading-normal">Edit periode yang sudah ada: biarkan nama sama lalu Simpan. Untuk bulan berikutnya: kunci snapshot periode aktif dulu, lalu klik <strong>+ Periode baru</strong>.</div>
       <div class="info-box info-blue font-10 mt-sm leading-normal">
         <label class="fl items-start gap-sm cursor-pointer m-0" for="prs-koreksi-absensi-otomatis">
-          <input type="checkbox" id="prs-koreksi-absensi-otomatis" class="mt-2px" onchange="onKoreksiAbsensiOtomatisChange()">
+          <input type="checkbox" id="prs-koreksi-absensi-otomatis" class="mt-2px" data-sigaji-action="invoke" data-fn="onKoreksiAbsensiOtomatisChange">
           <span><strong>Koreksi absensi otomatis</strong> di slip bulan berikutnya<br>
           <span class="text-muted">Setelah <strong>Kunci</strong> periode, baseline potongan absensi tersimpan. Jika Admin mengoreksi absensi di periode terkunci, selisih muncul di slip bulan berikutnya (<em>Koreksi absensi …</em>). Nonaktifkan jika potong/tambah manual saja.</span></span>
         </label>
@@ -832,15 +832,15 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card card-cuti-purple">
       <div class="ct ct-purple">&#127774; Pengaturan Kuota Cuti Tahunan</div>
       <div class="fg2">
-        <div class="fg"><label>Kuota Cuti (hari/tahun)</label><input type="number" id="cuti-kuota" value="12" min="1" max="30" onchange="simpanMasterCuti()"></div>
+        <div class="fg"><label>Kuota Cuti (hari/tahun)</label><input type="number" id="cuti-kuota" value="12" min="1" max="30" data-sigaji-action="invoke" data-fn="simpanMasterCuti"></div>
         <div class="fg"><label>Carry Over</label>
-          <select id="cuti-carryover" onchange="simpanMasterCuti()">
+          <select id="cuti-carryover" data-sigaji-action="invoke" data-fn="simpanMasterCuti">
             <option value="no">Tidak — Hangus akhir tahun</option><option value="yes">Ya — Semua dibawa</option><option value="max5">Ya — Maks 5 hari</option>
           </select>
         </div>
       </div>
       <label class="fl items-center gap-sm cursor-pointer bg-white rounded-sm font-12 fw-600" style="padding:8px; border:1px solid #c4b5fd">
-        <input class="chk-purple" type="checkbox" id="cuti-cb-potong" onchange="simpanMasterCuti()">
+        <input class="chk-purple" type="checkbox" id="cuti-cb-potong" data-sigaji-action="invoke" data-fn="simpanMasterCuti">
         Cuti Bersama (dari hari libur nasional) mengurangi kuota cuti tahunan karyawan
       </label>
     </div>
@@ -919,11 +919,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="ct ct-purple">Saldo PPh YTD (migrasi onboarding)</div>
       <p class="font-12 text-body mb-lg">Impor total <strong>bruto PPh</strong> dan <strong>PPh terpotong</strong> dari payroll manual per NIK (mis. Jan–Apr). Untuk rekonsiliasi Desember / resign. Jangan buat periode gaji bulan yang sama di app.</p>
       <div class="fg2 items-end">
-        <div class="fg"><label>Tahun pajak</label><input class="max-w-120" type="number" id="migrasi-pph-tahun" min="2020" max="2099" onchange="renderMigrasiPphSaldo()"></div>
+        <div class="fg"><label>Tahun pajak</label><input class="max-w-120" type="number" id="migrasi-pph-tahun" min="2020" max="2099" data-sigaji-action="invoke" data-fn="renderMigrasiPphSaldo"></div>
         <div class="fl gap1 flex-wrap">
           <button type="button" class="btn btn-sm btn-s" data-sigaji-action="invoke" data-fn="exportMigrasiPphTemplate">&#128196; Template</button>
           <button type="button" class="btn btn-sm btn-p" data-sigaji-action="click-input" data-target="inp-migrasi-pph-xlsx">&#128229; Import Excel</button>
-          <input class="u-hidden" type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" onchange="importMigrasiPphExcel(this)">
+          <input class="u-hidden" type="file" id="inp-migrasi-pph-xlsx" accept=".xlsx,.xls" data-sigaji-action="call-value" data-fn="importMigrasiPphExcel" data-arg="$this">
           <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderMigrasiPphSaldo">&#8635;</button>
           <button type="button" class="btn btn-sm btn-r" data-sigaji-action="invoke" data-fn="clearMigrasiPphSaldoTahun">Hapus saldo tahun</button>
         </div>
@@ -982,7 +982,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="ph page-header">
     <div><div class="pt">Slip Gaji Saya</div><div class="pst">Unduh atau bagikan slip periode Anda</div></div>
     <div class="page-actions page-toolbar-slip fl gap1">
-    <select class="toolbar-select" id="my-period" onchange="loadMySlip()"></select>
+    <select class="toolbar-select" id="my-period" data-sigaji-action="invoke" data-fn="loadMySlip"></select>
     <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="exportPDFMe">PDF</button>
     <details class="page-more">
       <summary class="btn btn-sm btn-out">Bagikan</summary>
@@ -1039,7 +1039,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card border-accent-left">
       <div class="ct ct-brand">Import backup</div>
       <div class="logo-drop p-md" data-sigaji-action="click-input" data-target="import-file-input">
-        <input type="file" id="import-file-input" accept=".json" onchange="readImportFile(this)">
+        <input type="file" id="import-file-input" accept=".json" data-sigaji-action="call-value" data-fn="readImportFile" data-arg="$this">
         <div class="mb-xs font-20">&#128229;</div>
         <div class="font-12 fw-700 text-brand">Pilih file .json</div>
       </div>
@@ -1065,8 +1065,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="card border-accent-dark">
       <div class="ct ct-dark">Audit payroll</div>
       <div class="fl gap-sm flex-wrap items-center mb-md">
-        <select class="rounded-sm font-12 select-inline" id="audit-periode" style="padding:6px 10px; border:1.5px solid #dde1e9; font-family:inherit; outline:none" onchange="renderAuditLog()"></select>
-        <input class="w-220" id="audit-q" placeholder="Cari NIK / nama / aksi…" oninput="renderAuditLog()">
+        <select class="rounded-sm font-12 select-inline audit-select" id="audit-periode" data-sigaji-action="invoke" data-fn="renderAuditLog"></select>
+        <input class="w-220" id="audit-q" placeholder="Cari NIK / nama / aksi…" data-sigaji-action="invoke" data-fn="renderAuditLog" data-sigaji-live="1">
         <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderAuditLog">&#8635;</button>
       </div>
       <div id="audit-log" class="sigaji-audit-timeline"></div>
@@ -1136,13 +1136,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
       <div class="stit">Identitas Karyawan</div>
       <div class="fg2 sp-kar-grid">
         <div class="fg"><label>Tipe pegawai</label>
-          <select id="sp-tipe-kerja-f" onchange="onSpTipeKerjaChange()">
+          <select id="sp-tipe-kerja-f" data-sigaji-action="invoke" data-fn="onSpTipeKerjaChange">
             <option value="tetap">Pegawai Tetap — NIK diawali K</option>
             <option value="tidak_tetap">Pegawai Tidak Tetap — NIK diawali NT</option>
           </select>
         </div>
         <div class="fg"><label>Tipe gaji</label>
-          <select id="sp-siklus-gaji-f" onchange="onSpSiklusGajiChange()">
+          <select id="sp-siklus-gaji-f" data-sigaji-action="invoke" data-fn="onSpSiklusGajiChange">
             <option value="bulanan">Bulanan</option>
             <option value="harian">Harian</option>
             <option value="mingguan">Mingguan</option>
@@ -1163,13 +1163,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>NIK (ID sistem)</label><input id="sp-nik-f" title="Tetap: K0001 | Tidak tetap: NT0001">
           <div class="font-10 text-muted mt-xs" id="sp-nik-hint"></div>
         </div>
-        <div class="fg ff"><label>Nama Lengkap</label><input id="sp-nama-f" oninput="onNamaChange()"></div>
-        <div class="fg"><label>Jenis Kelamin</label><select id="sp-jk-f" onchange="onJkChange()"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
+        <div class="fg ff"><label>Nama Lengkap</label><input id="sp-nama-f" data-sigaji-action="invoke" data-fn="onNamaChange" data-sigaji-live="1"></div>
+        <div class="fg"><label>Jenis Kelamin</label><select id="sp-jk-f" data-sigaji-action="invoke" data-fn="onJkChange"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
         <div class="fg"><label>Agama</label><select id="sp-agama-f"><option>Islam</option><option>Kristen</option><option>Katolik</option><option>Hindu</option><option>Buddha</option></select></div>
-        <div class="fg"><label>No. KTP <span class="text-muted fw-500">(NIK 16 digit)</span></label><input id="sp-ktp-f" inputmode="numeric" maxlength="16" oninput="sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()">
+        <div class="fg"><label>No. KTP <span class="text-muted fw-500">(NIK 16 digit)</span></label><input id="sp-ktp-f" inputmode="numeric" maxlength="16" data-sigaji-action="invoke" data-fn="sigajiRefreshSpTaxIdHint" data-sigaji-live="1">
           <div class="font-10 text-muted mt-xs" id="sp-ktp-hint"></div>
         </div>
-        <div class="fg"><label>No. NPWP <span class="text-muted fw-500">(opsional jika KTP 16 digit)</span></label><input id="sp-npwp-f" maxlength="20" oninput="formatNPWP(this);sigajiRefreshSpTaxIdHint&&sigajiRefreshSpTaxIdHint()" inputmode="numeric">
+        <div class="fg"><label>No. NPWP <span class="text-muted fw-500">(opsional jika KTP 16 digit)</span></label><input id="sp-npwp-f" maxlength="20" data-sigaji-action="call-value" data-fn="onSpNpwpInput" data-arg="$this" data-sigaji-live="1" inputmode="numeric">
           <div class="font-10 text-muted mt-xs" id="sp-npwp-hint"></div>
           <button type="button" class="btn btn-xs btn-out mt-xs" data-sigaji-action="djp-nik-validasi">Cek validasi NIK (portal DJP)</button>
         </div>
@@ -1199,14 +1199,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <div class="fg"><label>Jabatan</label><input id="sp-jabatan-f"></div>
         <div class="fg"><label>Status Karyawan</label><select id="sp-status-f"><option>Tetap</option><option>Kontrak</option><option>Probasi</option><option>PKWT</option></select></div>
         <div class="fg"><label>Tanggal Masuk</label><input type="date" id="sp-masuk-f"></div>
-        <div class="fg"><label>Tgl. berhenti (opsional, untuk 1721-A1)</label><input type="date" id="sp-berhenti-f" title="Jika diisi: bukti potong A1 hanya memuat periode gaji sampai tanggal ini (mis. resign Februari)" onchange="toggleSpPhkWrap()" oninput="toggleSpPhkWrap()"></div>
+        <div class="fg"><label>Tgl. berhenti (opsional, untuk 1721-A1)</label><input type="date" id="sp-berhenti-f" title="Jika diisi: bukti potong A1 hanya memuat periode gaji sampai tanggal ini (mis. resign Februari)" data-sigaji-action="invoke" data-fn="toggleSpPhkWrap" data-sigaji-live="1"></div>
         <div class="fg ff u-hidden" id="sp-phk-wrap">
           <label>Alasan PHK / berhenti <span class="ct-danger fw-700">*</span> <span class="font-10 text-muted fw-600">(wajib jika ada tanggal berhenti — UU Cipta Kerja)</span></label>
           <select id="sp-phk-alasan"></select>
           <div class="font-10 text-muted mt-xs">Isi tanggal berhenti di atas dulu — kolom alasan muncul otomatis.</div>
         </div>
         <div class="fg"><label>Status PTKP</label>
-          <select id="sp-ptkp-f" onchange="updatePTKPVal()">
+          <select id="sp-ptkp-f" data-sigaji-action="invoke" data-fn="updatePTKPVal">
             <option value="TK0">TK/0 — Rp 54.000.000</option><option value="TK1">TK/1 — Rp 58.500.000</option>
             <option value="TK2">TK/2 — Rp 63.000.000</option><option value="TK3">TK/3 — Rp 67.500.000</option>
             <option value="K0">K/0 — Rp 58.500.000</option><option value="K1">K/1 — Rp 63.000.000</option>
@@ -1230,7 +1230,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </select>
         </div>
         <div class="fg"><label>No. Rekening</label><input id="sp-norek-f" inputmode="numeric"></div>
-        <div class="fg ff"><label>Nama di Rekening</label><input id="sp-reknam-f" oninput="onReknamEdit()"></div>
+        <div class="fg ff"><label>Nama di Rekening</label><input id="sp-reknam-f" data-sigaji-action="invoke" data-fn="onReknamEdit" data-sigaji-live="1"></div>
       </div>
     </div>
   </div>
@@ -1263,16 +1263,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
   </div>
   <div class="spt-wrap" id="payroll-spt-wrap">
-    <div class="spt active" data-kgstab="gaji" role="button" tabindex="0" onclick="switchPayrollSpTab(this,'sp-gaji')">&#128176; Gaji & Tunjangan</div>
-    <div class="spt" data-kgstab="bpjs" role="button" tabindex="0" onclick="switchPayrollSpTab(this,'sp-bpjs')">&#9829; BPJS</div>
-    <div class="spt" data-kgstab="natura" role="button" tabindex="0" onclick="switchPayrollSpTab(this,'sp-natura')">&#127873; Natura</div>
-    <div class="spt" data-kgstab="pphret" role="button" tabindex="0" onclick="switchPayrollSpTab(this,'sp-pphret')">&#9312; PPh Return</div>
-    <div class="spt" data-kgstab="ring" role="button" tabindex="0" onclick="switchPayrollSpTab(this,'sp-ring')">&#128200; Ringkasan</div>
+    <div class="spt active" data-kgstab="gaji" role="button" tabindex="0">&#128176; Gaji & Tunjangan</div>
+    <div class="spt" data-kgstab="bpjs" role="button" tabindex="0">&#9829; BPJS</div>
+    <div class="spt" data-kgstab="natura" role="button" tabindex="0">&#127873; Natura</div>
+    <div class="spt" data-kgstab="pphret" role="button" tabindex="0">&#9312; PPh Return</div>
+    <div class="spt" data-kgstab="ring" role="button" tabindex="0">&#128200; Ringkasan</div>
   </div>
   <div class="spb">
     <div class="u-hidden" id="sp-gaji">
       <div class="stit">Gaji Pokok</div>
-      <div class="fg"><label id="sp-gapok-lbl">Gaji Pokok per Bulan (Rp)</label><input type="text" class="inp-rp" id="sp-gapok-f" data-rp="1" oninput="updateGajiSummary()">
+      <div class="fg"><label id="sp-gapok-lbl">Gaji Pokok per Bulan (Rp)</label><input type="text" class="inp-rp" id="sp-gapok-f" data-rp="1" data-sigaji-action="invoke" data-fn="updateGajiSummary" data-sigaji-live="1">
         <div class="font-10 text-muted mt-xs" id="sp-gapok-siklus-hint">PPh 21 &amp; BPJS dihitung dari total penghasilan sebulan.</div>
       </div>
       <div class="stit flb">
@@ -1327,8 +1327,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           <button type="button" class="btn btn-xs btn-out" data-sigaji-action="invoke" data-fn="clearPphReturnPanel">Kosongkan</button>
         </div>
         <div class="fg2">
-          <div class="fg"><label>Nilai (Rp)</label><input type="text" class="inp-rp" id="sp-pphret-val" data-rp="1" oninput="onPPhRetChange()"></div>
-          <div class="fg"><label>Keterangan</label><input id="sp-pphret-ket" oninput="onPPhRetChange()"></div>
+          <div class="fg"><label>Nilai (Rp)</label><input type="text" class="inp-rp" id="sp-pphret-val" data-rp="1" data-sigaji-action="invoke" data-fn="onPPhRetChange" data-sigaji-live="1"></div>
+          <div class="fg"><label>Keterangan</label><input id="sp-pphret-ket" data-sigaji-action="invoke" data-fn="onPPhRetChange" data-sigaji-live="1"></div>
         </div>
         <div id="pphret-preview"></div>
       </div>
@@ -1399,7 +1399,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="mtit ct-brand">&#128273; Buat Password Baru</div>
     <div class="info-box info-blue font-11 tabs-spaced-lg">Anda membuka link dari email reset password. Masukkan password baru untuk akun Supabase Anda.</div>
     <div class="fg"><label>Password Baru</label><input type="password" id="pw-reset-new" placeholder="min. 6 karakter"></div>
-    <div class="fg"><label>Konfirmasi Password</label><input type="password" id="pw-reset-confirm" placeholder="ulangi password baru" onkeydown="if(event.key==='Enter')doUpdatePassword()"></div>
+    <div class="fg"><label>Konfirmasi Password</label><input type="password" id="pw-reset-confirm" placeholder="ulangi password baru" data-sigaji-enter="doUpdatePassword"></div>
     <div class="mfoot">
       <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-pw-reset">Batal</button>
       <button class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="doUpdatePassword">&#10003; Simpan Password</button>
@@ -1417,7 +1417,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     </div>
     <div class="fg">
       <label>Email</label>
-      <input id="forgot-email" type="email" placeholder="nama@perusahaan.com" onkeydown="if(event.key==='Enter')submitForgotPassword()">
+      <input id="forgot-email" type="email" placeholder="nama@perusahaan.com" data-sigaji-enter="submitForgotPassword">
     </div>
     <div class="mfoot">
       <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-forgot">Batal</button>
@@ -1485,11 +1485,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="font-12 fw-700 mb-sm" id="mutasi-nama-lbl"></div>
     <div class="fg"><label>Dari</label><div class="font-12" id="mutasi-dari-lbl"></div></div>
     <div class="fg"><label>Pindah ke</label>
-      <select id="mutasi-ke" onchange="sigajiMutasiOnCabangChange()"></select>
+      <select id="mutasi-ke" data-sigaji-action="invoke" data-fn="sigajiMutasiOnCabangChange"></select>
     </div>
     <div class="fg2">
       <div class="fg"><label>UMK cabang tujuan (Rp)</label>
-        <input class="inp-rp" id="mutasi-umk" oninput="sigajiRefreshMutasiPreview()" onchange="sigajiRefreshMutasiPreview()">
+        <input class="inp-rp" id="mutasi-umk" data-sigaji-action="invoke" data-fn="sigajiRefreshMutasiPreview" data-sigaji-live="1">
       </div>
       <div class="fg"><label>Tanggal efektif</label>
         <input type="date" id="mutasi-tgl">
@@ -1542,16 +1542,16 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 
 <!-- MODAL RESET -->
 <div class="mbd" id="m-reset">
-  <div class="modal modal-sm" style="border-top:4px solid #9b2121">
+  <div class="modal modal-sm modal-danger-top">
     <button class="mclose" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-reset">&times;</button>
     <div class="mtit ct-danger">&#9888; Reset Semua Data</div>
     <div class="info-box info-red">Menghapus <strong>semua</strong> karyawan, periode, gaji, dan pengaturan. Jika pakai cloud, data di Supabase ikut dikosongkan setelah simpan. Sudah unduh backup?</div>
     <p id="reset-admin-hint" class="reset-admin-hint font-11 text-muted mb-md m-0"></p>
     <div class="fg"><label class="ct-danger fw-700">Password akun Admin (username: admin)</label>
-      <input class="rounded-sm w-full font-13" type="password" id="reset-pw" autocomplete="off" placeholder="Password akun admin — bukan password Anda" style="border:2px solid #f5a3a3; padding:9px 12px; font-family:inherit; outline:none" oninput="updateResetButtonState()">
+      <input class="rounded-sm w-full font-13 reset-danger-inp" type="password" id="reset-pw" autocomplete="off" placeholder="Password akun admin — bukan password Anda" data-sigaji-action="invoke" data-fn="updateResetButtonState" data-sigaji-live="1">
     </div>
     <div class="fg"><label class="ct-danger fw-700">Ketik RESET SEMUA DATA:</label>
-      <input class="rounded-sm w-full font-13" id="reset-inp" placeholder="RESET SEMUA DATA" autocomplete="off" style="border:2px solid #f5a3a3; padding:9px 12px; font-family:inherit; outline:none" oninput="updateResetButtonState()">
+      <input class="rounded-sm w-full font-13 reset-danger-inp" id="reset-inp" placeholder="RESET SEMUA DATA" autocomplete="off" data-sigaji-action="invoke" data-fn="updateResetButtonState" data-sigaji-live="1">
     </div>
     <div class="mfoot">
       <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="closeModal" data-arg="m-reset">Batal</button>
@@ -1609,7 +1609,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <select id="mob-loc-tipe"><option value="kantor">kantor</option><option value="site">site</option><option value="mess">mess</option><option value="dinas">dinas</option><option value="lainnya">lainnya</option></select>
       </div>
       <div class="fg"><label>Radius geofence</label>
-        <input class="w-full" type="range" id="mob-loc-radius" min="50" max="5000" step="10" value="250" oninput="mobLocUpdateRadiusUi()">
+        <input class="w-full" type="range" id="mob-loc-radius" min="50" max="5000" step="10" value="250" data-sigaji-action="invoke" data-fn="mobLocUpdateRadiusUi" data-sigaji-live="1">
         <div class="font-12 text-body mt-xs" id="mob-loc-radius-lbl">250 m</div>
       </div>
     </div>
@@ -1678,51 +1678,54 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.7.3"></script>
-<script src="/js/pajak-aturan.js?v=11.7.3"></script>
-<script src="/js/sigaji-icons.js?v=11.7.3"></script>
-<script src="/js/sigaji-ui.js?v=11.7.3"></script>
-<script src="/js/sigaji-dom.js?v=11.7.3"></script>
-<script src="/js/sigaji-api.js?v=11.7.3"></script>
-<script src="/js/karyawan-tipe.js?v=11.7.3"></script>
-<script src="/js/siklus-bayar.js?v=11.7.3"></script>
-<script src="/js/storage-idb.js?v=11.7.3"></script>
-<script src="/js/storage.js?v=11.7.3"></script>
-<script src="/js/ptkp.js?v=11.7.3"></script>
-<script src="/js/modules/app-globals.js?v=11.7.3"></script>
-<script src="/js/modules/app-core.js?v=11.7.3"></script>
-<script src="/js/modules/app-access.js?v=11.7.3"></script>
-<script src="/js/modules/app-hr.js?v=11.7.3"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.7.3"></script>
-<script src="/js/modules/app-slip.js?v=11.7.3"></script>
-<script src="/js/modules/app-reports.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-converter-bank.js?v=11.7.3"></script>
-<script src="/js/modules/ebupot-export.js?v=11.7.3"></script>
-<script src="/js/modules/bpjs-export.js?v=11.7.3"></script>
-<script src="/js/modules/app-absensi.js?v=11.7.3"></script>
-<script src="/js/modules/app-mobile.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.3"></script>
-<script src="/js/modules/app-master.js?v=11.7.3"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.7.3"></script>
-<script src="/js/modules/app-shell.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.7.3"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.7.3"></script>
-<script src="/js/pesangon.js?v=11.7.3"></script>
-<script src="/js/payroll-worker-host.js?v=11.7.3"></script>
-<script src="/js/config.js?v=11.7.3"></script>
+<script src="/js/constants.js?v=11.7.4"></script>
+<script src="/js/pajak-aturan.js?v=11.7.4"></script>
+<script src="/js/sigaji-icons.js?v=11.7.4"></script>
+<script src="/js/sigaji-ui.js?v=11.7.4"></script>
+<script src="/js/sigaji-dom.js?v=11.7.4"></script>
+<script src="/js/sigaji-api.js?v=11.7.4"></script>
+<script src="/js/karyawan-tipe.js?v=11.7.4"></script>
+<script src="/js/siklus-bayar.js?v=11.7.4"></script>
+<script src="/js/storage-idb.js?v=11.7.4"></script>
+<script src="/js/storage.js?v=11.7.4"></script>
+<script src="/js/ptkp.js?v=11.7.4"></script>
+<script src="/js/modules/app-globals.js?v=11.7.4"></script>
+<script src="/js/modules/app-core.js?v=11.7.4"></script>
+<script src="/js/modules/app-access.js?v=11.7.4"></script>
+<script src="/js/modules/app-auth.js?v=11.7.4"></script>
+<script src="/js/modules/app-sys.js?v=11.7.4"></script>
+<script src="/js/modules/app-hr.js?v=11.7.4"></script>
+<script src="/js/modules/app-hr-komponen.js?v=11.7.4"></script>
+<script src="/js/modules/app-hr-payroll.js?v=11.7.4"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.7.4"></script>
+<script src="/js/modules/app-slip.js?v=11.7.4"></script>
+<script src="/js/modules/app-reports.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-converter-bank.js?v=11.7.4"></script>
+<script src="/js/modules/ebupot-export.js?v=11.7.4"></script>
+<script src="/js/modules/bpjs-export.js?v=11.7.4"></script>
+<script src="/js/modules/app-absensi.js?v=11.7.4"></script>
+<script src="/js/modules/app-mobile.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.4"></script>
+<script src="/js/modules/app-master.js?v=11.7.4"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.7.4"></script>
+<script src="/js/modules/app-shell.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.7.4"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.7.4"></script>
+<script src="/js/pesangon.js?v=11.7.4"></script>
+<script src="/js/payroll-worker-host.js?v=11.7.4"></script>
+<script src="/js/config.js?v=11.7.4"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.7.3"></script>
-<script src="/js/cloud-roles.js?v=11.7.3"></script>
-<script src="/js/cloud-delta.js?v=11.7.3"></script>
-<script src="/js/outbox.js?v=11.7.3"></script>
-<script src="/js/cloud-tables.js?v=11.7.3"></script>
-<script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.7.3"></script>
-<script src="/js/modules/app-boot.js?v=11.7.3"></script>
-<script src="/js/sigaji-events.js?v=11.7.3"></script>
+<script src="/js/cloud-branding.js?v=11.7.4"></script>
+<script src="/js/cloud-roles.js?v=11.7.4"></script>
+<script src="/js/cloud-delta.js?v=11.7.4"></script>
+<script src="/js/outbox.js?v=11.7.4"></script>
+<script src="/js/cloud-tables.js?v=11.7.4"></script>
+<script src="/js/cloud-sync.js?v=11.7.4"></script>
+<script src="/js/modules/app-boot.js?v=11.7.4"></script>
+<script src="/js/sigaji-events.js?v=11.7.4"></script>
 </body>
 </html>

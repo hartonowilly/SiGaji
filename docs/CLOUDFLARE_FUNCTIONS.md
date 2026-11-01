@@ -78,7 +78,7 @@ Uji: `POST https://sigaji.pages.dev/api/auth-register-request` harus mengembalik
 
 ## Keamanan: header HTTP, CORS, rate limit
 
-**Header keamanan** ada di `_headers` (ikut deploy, tidak perlu setelan dashboard): `X-Frame-Options: DENY` + `frame-ancestors 'none'` (anti-clickjacking), `nosniff`, `Referrer-Policy`, `Permissions-Policy` (kamera & GPS hanya untuk situs sendiri), HSTS 1 tahun, dan **CSP dalam mode Report-Only**. Pelanggaran CSP dikirim ke `POST /api/csp-report` dan muncul di **Pages → Functions → Real-time logs** dengan awalan `CSP-REPORT`. Setelah handler inline (`onclick=`) selesai dipindah dan log bersih ±1–2 minggu, ganti `Content-Security-Policy-Report-Only` menjadi `Content-Security-Policy`.
+**Header keamanan** ada di `_headers` (ikut deploy, tidak perlu setelan dashboard): `X-Frame-Options: DENY` + `frame-ancestors 'none'` (anti-clickjacking), `nosniff`, `Referrer-Policy`, `Permissions-Policy` (kamera & GPS hanya untuk situs sendiri), HSTS 1 tahun, dan **CSP penuh** (`script-src 'self'` + CDN yang dipakai). Pelanggaran tetap dikirim ke `POST /api/csp-report` (Pages → Functions → Real-time logs, awalan `CSP-REPORT`). Handler tombol/form memakai `data-sigaji-action`, bukan `onclick=`.
 
 **CORS** (`functions/_lib/cf-shared.js`): `/api/*` hanya menjawab `Access-Control-Allow-Origin` untuk origin yang sama dengan host API (termasuk preview `*.pages.dev`), `www.cemerlang.online` / `cemerlang.online`, dan `localhost`. Domain baru → tambahkan ke `CORS_ALLOWED_HOSTS`. Aplikasi Android tidak mengirim `Origin`, jadi tidak terpengaruh.
 

@@ -367,7 +367,7 @@ html.sigaji-mobile-nav .table-wrap::after {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--color-primary, #1a56a0);
+  color: var(--color-primary, var(--color-primary));
   background: rgba(255, 255, 255, 0.92);
   padding: 3px 8px;
   border-radius: 999px;
@@ -392,7 +392,7 @@ html.sigaji-mobile-nav .content .table-wrap td:first-child {
   box-shadow: 2px 0 6px rgba(15, 23, 42, 0.06);
 }
 html.sigaji-mobile-nav .content .table-wrap thead th:first-child {
-  background: var(--table-head-bg, #f3f4f6);
+  background: var(--table-head-bg, var(--color-surface-muted));
   z-index: 3;
 }
 
@@ -506,7 +506,7 @@ html.sigaji-mobile-nav .ab-month-nav {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--surface, #fff);
+  background: var(--surface, var(--wh));
   padding: 0.35rem 0;
   margin-bottom: 0.35rem;
 }
@@ -618,8 +618,8 @@ html.sigaji-mobile-nav .notif-title {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
     padding: 0.7rem 0.65rem;
     border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
+    border: 1px solid var(--color-slate-200);
+    background: var(--color-surface-elevated);
   }
   #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(1),
   #slide-panel-payroll #tunj-list .payroll-tunj-row > :nth-child(2) {
@@ -643,7 +643,7 @@ html.sigaji-mobile-nav .notif-title {
     padding: 0.7rem 0.65rem;
     border-radius: 10px;
     border: 1px solid #fecaca;
-    background: #fffafb;
+    background: var(--color-danger-bg);
   }
   #slide-panel-payroll #pot-list .payroll-pot-row > :nth-child(1) {
     grid-column: 1 / -1;
@@ -698,7 +698,7 @@ html.sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open .sidebar-collapse-bt
 html.sigaji-mobile-nav .sigaji-mobile-drawer-title {
   font-size: 15px;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--color-surface-elevated);
   letter-spacing: -0.02em;
 }
 html.sigaji-mobile-nav .sigaji-mobile-drawer-close {
@@ -707,7 +707,7 @@ html.sigaji-mobile-nav .sigaji-mobile-drawer-close {
   border: none;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--wh);
   font-size: 26px;
   line-height: 1;
   cursor: pointer;
@@ -737,7 +737,7 @@ html.sigaji-mobile-nav .sigaji-mobile-bottom-nav {
   padding: 0.4rem max(0.35rem, env(safe-area-inset-left)) calc(0.25rem + env(safe-area-inset-bottom, 0))
     max(0.35rem, env(safe-area-inset-right));
   background: rgba(255, 255, 255, 0.96);
-  border-top: 1px solid var(--bd, #e2e8f0);
+  border-top: 1px solid var(--bd, var(--color-slate-200));
   box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.1);
   z-index: 860;
   backdrop-filter: blur(12px);
@@ -763,7 +763,7 @@ html.sigaji-mobile-nav .sigaji-mbn-item {
   border: none;
   border-radius: 14px;
   background: transparent;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, var(--color-slate-500));
   font-family: inherit;
   font-size: 11px;
   font-weight: 700;
@@ -778,7 +778,7 @@ html.sigaji-mobile-nav .sigaji-mbn-item:active {
   transform: scale(0.96);
 }
 html.sigaji-mobile-nav .sigaji-mbn-item.active {
-  color: var(--color-primary, #1a56a0);
+  color: var(--color-primary, var(--color-primary));
   background: rgba(26, 86, 160, 0.1);
 }
 html.sigaji-mobile-nav .sigaji-mbn-item.active::before {
@@ -790,7 +790,7 @@ html.sigaji-mobile-nav .sigaji-mbn-item.active::before {
   width: 20px;
   height: 3px;
   border-radius: 999px;
-  background: var(--color-primary, #1a56a0);
+  background: var(--color-primary, var(--color-primary));
 }
 html.sigaji-mobile-nav .sigaji-mbn-icon {
   display: flex;
