@@ -38,10 +38,11 @@ const suites = [
   'payroll-worker.test.mjs',
   'sql-v12.test.mjs',
   'server-tenant-data.test.mjs',
+  'cors-origin.test.mjs',
   'bpjs-upah.test.mjs',
   'aturan-pajak-kunci.test.mjs',
   'prorata-masuk.test.mjs',
-  'jurnal-absensi.test.mjs',
+  'outbox.test.mjs',
   'build-banner.test.mjs',
 ];
 let failed = 0;

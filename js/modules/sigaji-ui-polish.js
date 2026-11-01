@@ -70,6 +70,38 @@
     return stack;
   }
 
+  window.sigajiToastUndo = function (msg, label, fn) {
+    var stack = ensureToastStack();
+    var item = document.createElement('div');
+    item.className = 'sigaji-toast-item sigaji-toast-undo';
+    var tx = document.createElement('span');
+    tx.textContent = msg;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sync-retry-btn';
+    btn.textContent = label || 'Urungkan';
+    btn.addEventListener('click', function () {
+      try {
+        if (typeof fn === 'function') fn();
+      } catch (e) {
+        console.error(e);
+      }
+      if (item.parentNode) item.parentNode.removeChild(item);
+    });
+    item.appendChild(tx);
+    item.appendChild(btn);
+    stack.appendChild(item);
+    requestAnimationFrame(function () {
+      item.classList.add('show');
+    });
+    setTimeout(function () {
+      item.classList.remove('show');
+      setTimeout(function () {
+        if (item.parentNode) item.parentNode.removeChild(item);
+      }, 320);
+    }, 8000);
+  };
+
   window.sigajiToastPush = function (msg, type) {
     var stack = ensureToastStack();
     var item = document.createElement('div');
@@ -285,7 +317,8 @@
         label: m.lbl,
         sub: m.sec,
         icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon(m.id) : (m.icon || '&#9670;'),
-        run: "showPg('" + m.id + "')",
+        act: 'pg',
+        arg: m.id,
         hay: (m.lbl + ' ' + m.id + ' ' + m.sec).toLowerCase(),
       });
     });
@@ -297,21 +330,23 @@
         label: k.nama,
         sub: k.nik + ' · ' + (k.dept || '-'),
         icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon('karyawan') : '&#128100;',
-        run: "openPanel('" + String(k.nik).replace(/'/g, "\\'") + "')",
+        act: 'panel',
+        arg: String(k.nik),
         hay: hay,
       });
     });
     [
-      { label: 'Finalisasi gaji', sub: 'Proses penggajian', run: "showPg('penggajian')", hay: 'final gaji bayar' },
-      { label: 'Simulasi what-if', sub: 'Sandbox THR & pesangon', run: "showPg('simulasi')", hay: 'simulasi thr pesangon' },
-      { label: 'Export e-Bupot', sub: 'Laporan PPh', run: "showPg('laporan')", hay: 'ebupot pph coretax' },
+      { label: 'Finalisasi gaji', sub: 'Proses penggajian', arg: 'penggajian', hay: 'final gaji bayar' },
+      { label: 'Simulasi what-if', sub: 'Sandbox THR & pesangon', arg: 'simulasi', hay: 'simulasi thr pesangon' },
+      { label: 'Export e-Bupot', sub: 'Laporan PPh', arg: 'laporan', hay: 'ebupot pph coretax' },
     ].forEach(function (x) {
       items.push({
         type: 'aksi',
         label: x.label,
         sub: x.sub,
         icon: '&#9889;',
-        run: x.run,
+        act: 'pg',
+        arg: x.arg,
         hay: x.hay,
       });
     });
@@ -336,8 +371,10 @@
         return (
           '<button type="button" class="sigaji-cmdk-item' +
           (i === 0 ? ' active' : '') +
-          '" data-run="' +
-          escapeHtml(it.run) +
+          '" data-act="' +
+          escapeAttr(it.act) +
+          '" data-arg="' +
+          escapeAttr(it.arg) +
           '"><span class="sigaji-cmdk-icon">' +
           it.icon +
           '</span><span><span class="sigaji-cmdk-lbl">' +
@@ -374,11 +411,15 @@
     ov.setAttribute('aria-hidden', 'true');
   };
 
+  /* Aksi palet dipetakan ke fungsi secara eksplisit — bukan string kode yang di-eval. */
   function cmdkRun(btn) {
-    var run = btn && btn.getAttribute('data-run');
+    var act = btn && btn.getAttribute('data-act');
+    var arg = btn && btn.getAttribute('data-arg');
     sigajiCmdkClose();
-    if (run) try {
-      eval(run);
+    if (!act) return;
+    try {
+      if (act === 'pg' && typeof showPg === 'function') showPg(arg);
+      else if (act === 'panel' && typeof openPanel === 'function') openPanel(arg);
     } catch (e) {
       console.error(e);
     }

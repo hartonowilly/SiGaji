@@ -171,9 +171,33 @@ function renderDashBody(){
   try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){sigajiCatchWarn("js/modules/app-hr.js",eTl);}
 }
 // ── MASTER KARYAWAN ─────────────────────────────
-var __karListMode='aktif'; /* aktif | resign */
-function isKarResign(k){return !!String((k&&k.tgl_berhenti)||'').trim();}
+var __karListMode='aktif'; /* aktif | resign | sampah */
+var KAR_SAMPAH_MS=30*24*60*60*1000;
+function isKarSampah(k){return !!(k&&k.dihapusPada);}
+function isKarResign(k){return !isKarSampah(k)&&!!String((k&&k.tgl_berhenti)||'').trim();}
+function bersihkanSampahKadaluarsa(){
+  var now=Date.now();
+  var berubah=false;
+  (karyawan||[]).forEach(function(k){
+    if(!k||!k.dihapusPada)return;
+    var t=Date.parse(k.dihapusPada);
+    if(!isFinite(t)||now-t<KAR_SAMPAH_MS)return;
+    delete absensi[k.nik];
+    delete lembur[k.nik];
+    k._buang=true;
+    berubah=true;
+  });
+  if(!berubah)return;
+  karyawan=(karyawan||[]).filter(function(k){return !k._buang;});
+  saveAll();
+}
 function listKarMasterBase(){
+  bersihkanSampahKadaluarsa();
+  if(__karListMode==='sampah'){
+    var sampah=sortKaryawanByNik((karyawan||[]).filter(isKarSampah));
+    if(typeof sigajiFilterKaryawanByCabang==='function')sampah=sigajiFilterKaryawanByCabang(sampah);
+    return sampah.filter(karMatchesTipeFilter).filter(karMatchesSiklusFilter);
+  }
   var list=typeof karyawanSortedAll==='function'?karyawanSortedAll():sortKaryawanByNik(karyawan||[]);
   if(typeof sigajiFilterKaryawanByCabang==='function')list=sigajiFilterKaryawanByCabang(list);
   var p=typeof PA==='function'?PA():null;
@@ -197,20 +221,30 @@ function karSiklusThenNikCmp(a,b){
   return String(a.nik||'').localeCompare(String(b.nik||''),'id',{numeric:true,sensitivity:'base'});
 }
 function updateKarResignTabBadge(){
-  var n=0;
-  (karyawan||[]).forEach(function(k){if(isKarResign(k))n++;});
+  var n=0,ns=0;
+  (karyawan||[]).forEach(function(k){
+    if(isKarSampah(k))ns++;
+    else if(isKarResign(k))n++;
+  });
   var badge=document.getElementById('kar-resign-badge');
   if(badge){
     badge.textContent=String(n);
     badge.style.display=n>0?'inline-block':'none';
   }
+  var sb=document.getElementById('kar-sampah-badge');
+  if(sb){
+    sb.textContent=String(ns);
+    sb.style.display=ns>0?'inline-block':'none';
+  }
   var acts=document.getElementById('kar-actions-aktif');
-  if(acts)acts.style.display=__karListMode==='resign'?'none':'';
+  if(acts)acts.style.display=__karListMode==='aktif'?'':'none';
   var search=document.getElementById('kar-search');
-  if(search)search.placeholder=__karListMode==='resign'?'Cari resign (nama, NIK, tgl…)…':'Cari nama, NIK, dept...';
+  if(search){
+    search.placeholder=__karListMode==='resign'?'Cari resign (nama, NIK, tgl…)…':__karListMode==='sampah'?'Cari di sampah…':'Cari nama, NIK, dept...';
+  }
 }
 function switchKarListTab(el,mode){
-  __karListMode=mode==='resign'?'resign':'aktif';
+  __karListMode=mode==='sampah'?'sampah':mode==='resign'?'resign':'aktif';
   document.querySelectorAll('#kar-list-tabs .tab').forEach(function(t){
     t.classList.toggle('active',t.getAttribute('data-kartab')===__karListMode);
   });
@@ -238,7 +272,10 @@ function karRowHtml(k,no){
   var siklusLbl=typeof sigajiSiklusGajiLabel==='function'?sigajiSiklusGajiLabel(siklus):(siklus==='harian'?'Harian':siklus==='mingguan'?'Mingguan':'Bulanan');
   var siklusCls=siklus==='harian'?'b-teal':siklus==='mingguan'?'b-warn':'b-info';
   var subLine=escapeHtml(k.nik)+(stop?' · berhenti '+fmtDate(stop):'');
-  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;${resignBadge}</div><div class="font-10 text-muted font-mono">${subLine}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td><td><span class="bdg ${siklusCls}">${escapeHtml(siklusLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1"><button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button></div></td></tr>`;
+  var aksi=__karListMode==='sampah'
+    ?`<button class="btn btn-sm btn-p"${sigajiDataAction('restore-kar',{nik:k.nik})}>Pulihkan</button><button class="btn btn-sm btn-r"${sigajiDataAction('purge-kar',{nik:k.nik})}>Hapus permanen</button>`
+    :`<button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button>`;
+  return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;${resignBadge}</div><div class="font-10 text-muted font-mono">${subLine}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td><td><span class="bdg ${siklusCls}">${escapeHtml(siklusLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1">${aksi}</div></td></tr>`;
 }
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
@@ -254,7 +291,9 @@ function renderKarBody(){
   if(el){
     var pNama=(typeof PA==='function'&&PA()&&PA().nama)?PA().nama:'';
     var pSuf=pNama?' • '+pNama:'';
-    el.textContent=__karListMode==='resign'
+    el.textContent=__karListMode==='sampah'
+      ?(list.length+' di sampah (pulihkan dalam 30 hari)'+pSuf)
+      :__karListMode==='resign'
       ?(list.length+' resign'+pSuf)
       :(list.length+' karyawan aktif'+pSuf);
   }
@@ -263,7 +302,9 @@ function renderKarBody(){
   if(!list.length&&typeof sigajiEmptyState==='function'){
     var karColspan=10+(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&!(typeof sigajiInBranchWorkspace==='function'&&sigajiInBranchWorkspace())?1:0);
     var filtered=!!(karFilterTipe||karFilterSiklus);
-    var empty=__karListMode==='resign'
+    var empty=__karListMode==='sampah'
+      ?sigajiEmptyState({icon:'&#128465;',title:filtered?'Tidak ada yang cocok':'Sampah kosong',desc:'Karyawan yang dihapus tersimpan 30 hari di sini, lalu dihapus permanen.'})
+      :__karListMode==='resign'
       ?sigajiEmptyState({icon:'&#128101;',title:filtered?'Tidak ada resign yang cocok':'Belum ada karyawan resign',desc:filtered?'Ubah filter tipe pegawai atau tipe gaji.':'Karyawan dengan tanggal berhenti akan muncul di tab ini. Putus tautan Telegram dari sini.'})
       :filtered
         ?sigajiEmptyState({icon:'&#128101;',title:'Tidak ada karyawan yang cocok',desc:'Ubah filter tipe pegawai atau tipe gaji.'})
@@ -332,7 +373,41 @@ function filterKompgaji(q){
   if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
   else if(tb)tb.innerHTML=rows.join('');
 }
-function hapusKar(nik){const k=karyawan.find(x=>x.nik===nik);if(!k)return;sigajiConfirm({title:'Hapus karyawan',message:'Apakah Anda yakin ingin menghapus karyawan "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi, lembur, dan data terkait ikut terhapus. Tindakan ini tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;karyawan=karyawan.filter(x=>x.nik!==nik);delete absensi[nik];delete lembur[nik];saveAll();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');});}
+function hapusKar(nik){
+  const k=karyawan.find(x=>x.nik===nik);
+  if(!k||k.dihapusPada)return;
+  sigajiConfirm({title:'Hapus karyawan',message:'Pindahkan "'+k.nama+'" ke sampah?\n\nNIK: '+k.nik+'\nBisa dipulihkan dari tab Sampah selama 30 hari. Absensi dan lembur ikut tersimpan.',danger:true,okText:'Ya, ke sampah'}).then(function(ok){
+    if(!ok)return;
+    k.dihapusPada=new Date().toISOString();
+    saveAll();
+    if(typeof closePanel==='function')try{closePanel();}catch(eC){sigajiCatchWarn('js/modules/app-hr.js',eC);}
+    renderKar();renderDash();populateSelects();
+    if(typeof sigajiToastUndo==='function'){
+      sigajiToastUndo('Karyawan dipindah ke sampah.','Urungkan',function(){pulihkanKar(nik);});
+    }else toast('Karyawan dipindah ke sampah (30 hari).');
+  });
+}
+function pulihkanKar(nik){
+  const k=karyawan.find(x=>x.nik===nik);
+  if(!k||!k.dihapusPada)return;
+  delete k.dihapusPada;
+  saveAll();
+  renderKar();renderDash();populateSelects();
+  toast('Karyawan dipulihkan');
+}
+function hapusKarPermanen(nik){
+  const k=karyawan.find(x=>x.nik===nik);
+  if(!k)return;
+  sigajiConfirm({title:'Hapus permanen',message:'Hapus permanen "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi dan lembur ikut terhapus. Tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus permanen'}).then(function(ok){
+    if(!ok)return;
+    karyawan=karyawan.filter(x=>x.nik!==nik);
+    delete absensi[nik];
+    delete lembur[nik];
+    saveAll();
+    renderKar();renderDash();populateSelects();
+    toast('Karyawan dihapus permanen');
+  });
+}
 function openNewKar(tipe){
   if(!canAccessSubTab('karyawan','info')){toast('Tidak punya akses menambah profil karyawan');return;}
   if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;
@@ -682,7 +757,7 @@ async function simpanKarPanel(){
     }catch(eTg){sigajiCatchWarn("js/modules/app-hr.js",eTg);}
   }
 }
-function hapusKarFromPanel(){const k=karyawan.find(x=>x.nik===cpNik);if(!k)return;sigajiConfirm({title:'Hapus karyawan',message:'Apakah Anda yakin ingin menghapus karyawan "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi, lembur, dan data terkait ikut terhapus. Tindakan ini tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;karyawan=karyawan.filter(x=>x.nik!==cpNik);delete absensi[cpNik];delete lembur[cpNik];saveAll();closePanel();renderKar();renderDash();populateSelects();toast('Karyawan dihapus');});}
+function hapusKarFromPanel(){hapusKar(cpNik);}
 function renderTunjPanel(k){
   const list=k.tunjangan||[];
   const nik=k.nik;

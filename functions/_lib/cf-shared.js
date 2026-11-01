@@ -65,17 +65,87 @@ export function jsonResponse(status, body, request, extraHeaders) {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+/** Domain produksi yang selalu boleh memanggil /api/* dari browser, selain host yang sama. */
+const CORS_ALLOWED_HOSTS = ['www.cemerlang.online', 'cemerlang.online'];
+
+/**
+ * Origin browser yang diizinkan: host yang sama dengan API ini (web app dan Functions
+ * satu domain, termasuk preview *.pages.dev), domain produksi, atau localhost saat
+ * pengembangan. Aplikasi Android tidak mengirim Origin sehingga tidak terpengaruh.
+ */
+export function isAllowedOrigin(origin, request) {
+  if (!origin) return false;
+  let o;
+  try {
+    o = new URL(origin);
+  } catch (_e) {
+    return false;
+  }
+  if (o.protocol !== 'https:' && o.protocol !== 'http:') return false;
+  const selfHost = String(request.headers.get('host') || '').toLowerCase();
+  const host = o.host.toLowerCase();
+  if (selfHost && host === selfHost) return true;
+  if (CORS_ALLOWED_HOSTS.indexOf(host) !== -1) return true;
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return true;
+  return false;
+}
+
 export function corsHeaders(request) {
-  const origin = request.headers.get('Origin') || '*';
+  const origin = request.headers.get('Origin');
+  if (!origin) return {};
+  if (!isAllowedOrigin(origin, request)) return { Vary: 'Origin' };
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '600',
+    Vary: 'Origin',
   };
 }
 
 export function handleOptions(request) {
   return new Response(null, { status: 204, headers: corsHeaders(request) });
+}
+
+/**
+ * Batasi permintaan per IP (Cache API Cloudflare; gagal = lolos, jangan blokir layanan).
+ * @param {{ name: string, limit: number, windowSec: number }} opts
+ * @returns {Promise<Response|null>} 429 atau null
+ */
+export async function enforceRateLimit(request, opts) {
+  const name = (opts && opts.name) || 'api';
+  const limit = Math.max(1, (opts && opts.limit) || 30);
+  const windowSec = Math.max(10, (opts && opts.windowSec) || 60);
+  const ip =
+    request.headers.get('cf-connecting-ip') ||
+    String(request.headers.get('x-forwarded-for') || '')
+      .split(',')[0]
+      .trim() ||
+    '0';
+  const key = new Request('https://sigaji-rl.internal/' + encodeURIComponent(name) + '/' + encodeURIComponent(ip));
+  try {
+    const cache = caches.default;
+    const hit = await cache.match(key);
+    let n = 1;
+    if (hit) n = (parseInt(await hit.text(), 10) || 0) + 1;
+    await cache.put(
+      key,
+      new Response(String(n), {
+        headers: { 'Cache-Control': 'max-age=' + windowSec, 'Content-Type': 'text/plain' },
+      })
+    );
+    if (n > limit) {
+      return jsonResponse(
+        429,
+        { ok: false, error: 'Terlalu banyak permintaan. Coba lagi beberapa menit.' },
+        request,
+        { 'Retry-After': String(windowSec) }
+      );
+    }
+  } catch (_e) {
+    /* fail-open */
+  }
+  return null;
 }
 
 export async function loadUsersForAuth(sb, tenant) {

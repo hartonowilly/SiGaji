@@ -8,23 +8,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.1">
-<link rel="stylesheet" href="/css/styles.css?v=11.7.1">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.1">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.1">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.1">
-<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.1">
-<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.1">
-<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.1">
-<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.1">
-<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.1">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.3">
+<link rel="stylesheet" href="/css/styles.css?v=11.7.3">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.3">
+<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.3">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.7.1"></script>
+<script src="/js/modules/app-api-shim.js?v=11.7.3"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.7.1"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.7.3"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -35,8 +35,8 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <p id="login-pt-nama" class="login-pt-nama u-hidden"></p>
     <p class="login-tagline">Sistem Informasi Penggajian</p>
   </div>
-  <div class="fg"><label id="lu-lbl">Username</label><input id="lu" value="" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
-  <div class="fg"><label id="lp-lbl">Password</label><input type="password" id="lp" value="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="fg"><label id="lu-lbl">Username</label><input id="lu" value="" autocomplete="username" data-sigaji-enter="doLogin"></div>
+  <div class="fg"><label id="lp-lbl">Password</label><input type="password" id="lp" value="" autocomplete="current-password" data-sigaji-enter="doLogin"></div>
   <label class="login-remember">
     <input type="checkbox" id="remember-username">
     <span id="remember-username-lbl">Ingat email</span>
@@ -80,11 +80,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <span class="save-ind" id="save-ind"></span>
   </div>
   <div class="tl topbar-theme-wrap fl gap1 items-center">
-    <select id="ui-pref-density" class="toolbar-select ui-pref-sel" title="Kepadatan: Longgar = lebih lapang; Rapat = lebih banyak baris di layar" onchange="sigajiSetUiPref('density',this.value)">
+    <select id="ui-pref-density" class="toolbar-select ui-pref-sel" title="Kepadatan: Longgar = lebih lapang; Rapat = lebih banyak baris di layar" data-sigaji-action="pref" data-key="density">
       <option value="comfortable">Longgar</option>
       <option value="compact">Rapat</option>
     </select>
-    <select id="ui-pref-theme" class="toolbar-select ui-pref-sel" title="Terang = kaca (blur, sudut bulat). Gelap = padat tanpa kaca. Warna PT = kantor: sudut siku, garis tegas, kop warna perusahaan. Buku Kas = tema baru: kertas krem, judul serif, angka monospace, sidebar terang." onchange="sigajiSetUiPref('theme',this.value)">
+    <select id="ui-pref-theme" class="toolbar-select ui-pref-sel" title="Terang = kaca (blur, sudut bulat). Gelap = padat tanpa kaca. Warna PT = kantor: sudut siku, garis tegas, kop warna perusahaan. Buku Kas = tema baru: kertas krem, judul serif, angka monospace, sidebar terang." data-sigaji-action="pref" data-key="theme">
       <option value="light">Terang · Kaca</option>
       <option value="dark">Gelap · Padat</option>
       <option value="brand">PT · Kantor</option>
@@ -104,6 +104,22 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="sigaji-mobile-drawer-head" id="sigaji-mobile-drawer-head">
     <span class="sigaji-mobile-drawer-title">Semua modul</span>
     <button type="button" class="sigaji-mobile-drawer-close" data-sigaji-action="nav-drawer" aria-label="Tutup menu">&times;</button>
+    <div class="sigaji-mobile-drawer-prefs" id="sigaji-mobile-drawer-prefs">
+      <label class="sigaji-mobile-pref-lbl">Tampilan
+        <select id="ui-pref-theme-mobile" class="toolbar-select ui-pref-sel" data-sigaji-action="pref" data-key="theme" title="Tema">
+          <option value="light">Terang · Kaca</option>
+          <option value="dark">Gelap · Padat</option>
+          <option value="brand">PT · Kantor</option>
+          <option value="kertas">Buku Kas · Kertas</option>
+        </select>
+      </label>
+      <label class="sigaji-mobile-pref-lbl">Kepadatan
+        <select id="ui-pref-density-mobile" class="toolbar-select ui-pref-sel" data-sigaji-action="pref" data-key="density" title="Kepadatan">
+          <option value="comfortable">Longgar</option>
+          <option value="compact">Rapat</option>
+        </select>
+      </label>
+    </div>
   </div>
   <div id="nav-top" class="sidebar-nav-top" aria-label="Kontrol sidebar"></div>
   <div id="nav-dynamic"></div>
@@ -163,16 +179,17 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div class="tabs tabs-spaced" id="kar-list-tabs">
     <div class="tab active" data-kartab="aktif" data-karpanel="aktif">&#128100; Aktif</div>
     <div class="tab" data-kartab="resign" data-karpanel="resign">&#128100; Resign <span class="nbadge" id="kar-resign-badge" style="display:none;position:static;margin-left:6px">0</span></div>
+    <div class="tab" data-kartab="sampah" data-karpanel="sampah">&#128465; Sampah <span class="nbadge" id="kar-sampah-badge" style="display:none;position:static;margin-left:6px">0</span></div>
   </div>
   <div class="card">
     <div class="flb mb2 kar-toolbar">
-      <input type="text" class="inp-search" id="kar-search" placeholder="Cari nama, NIK, dept..." oninput="filterKar(this.value)">
-      <select id="kar-filter-tipe" class="inp-filter-select" onchange="setKarFilterTipe(this.value)">
+      <input type="text" class="inp-search" id="kar-search" placeholder="Cari nama, NIK, dept..." data-sigaji-action="call-value" data-fn="filterKar" data-sigaji-live="1">
+      <select id="kar-filter-tipe" class="inp-filter-select" data-sigaji-action="call-value" data-fn="setKarFilterTipe">
         <option value="">Semua tipe</option>
         <option value="tetap">Pegawai tetap (K…)</option>
         <option value="tidak_tetap">Tidak tetap (NT…)</option>
       </select>
-      <select id="kar-filter-siklus" class="inp-filter-select" onchange="setKarFilterSiklus(this.value)" title="Saring &amp; urut menurut jadwal bayar">
+      <select id="kar-filter-siklus" class="inp-filter-select" data-sigaji-action="call-value" data-fn="setKarFilterSiklus" title="Saring &amp; urut menurut jadwal bayar">
         <option value="">Semua tipe gaji</option>
         <option value="bulanan">Bayar bulanan</option>
         <option value="mingguan">Bayar mingguan</option>
@@ -200,7 +217,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="kg-tab-daftar">
   <div class="card">
     <div class="flb mb2">
-      <input type="text" class="inp-search" placeholder="Cari komponen..." id="kg-filter" oninput="filterKompgaji(this.value)">
+      <input type="text" class="inp-search" placeholder="Cari komponen..." id="kg-filter" data-sigaji-action="call-value" data-fn="filterKompgaji" data-sigaji-live="1">
       <span class="meta-muted" id="kg-count"></span>
     </div>
     <div class="table-wrap">
@@ -1661,50 +1678,51 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.7.1"></script>
-<script src="/js/pajak-aturan.js?v=11.7.1"></script>
-<script src="/js/sigaji-icons.js?v=11.7.1"></script>
-<script src="/js/sigaji-ui.js?v=11.7.1"></script>
-<script src="/js/sigaji-dom.js?v=11.7.1"></script>
-<script src="/js/sigaji-api.js?v=11.7.1"></script>
-<script src="/js/karyawan-tipe.js?v=11.7.1"></script>
-<script src="/js/siklus-bayar.js?v=11.7.1"></script>
-<script src="/js/storage-idb.js?v=11.7.1"></script>
-<script src="/js/storage.js?v=11.7.1"></script>
-<script src="/js/ptkp.js?v=11.7.1"></script>
-<script src="/js/modules/app-globals.js?v=11.7.1"></script>
-<script src="/js/modules/app-core.js?v=11.7.1"></script>
-<script src="/js/modules/app-access.js?v=11.7.1"></script>
-<script src="/js/modules/app-hr.js?v=11.7.1"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.7.1"></script>
-<script src="/js/modules/app-slip.js?v=11.7.1"></script>
-<script src="/js/modules/app-reports.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-converter-bank.js?v=11.7.1"></script>
-<script src="/js/modules/ebupot-export.js?v=11.7.1"></script>
-<script src="/js/modules/bpjs-export.js?v=11.7.1"></script>
-<script src="/js/modules/app-absensi.js?v=11.7.1"></script>
-<script src="/js/modules/app-mobile.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.1"></script>
-<script src="/js/modules/app-master.js?v=11.7.1"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.7.1"></script>
-<script src="/js/modules/app-shell.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.7.1"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.7.1"></script>
-<script src="/js/pesangon.js?v=11.7.1"></script>
-<script src="/js/payroll-worker-host.js?v=11.7.1"></script>
-<script src="/js/config.js?v=11.7.1"></script>
+<script src="/js/constants.js?v=11.7.3"></script>
+<script src="/js/pajak-aturan.js?v=11.7.3"></script>
+<script src="/js/sigaji-icons.js?v=11.7.3"></script>
+<script src="/js/sigaji-ui.js?v=11.7.3"></script>
+<script src="/js/sigaji-dom.js?v=11.7.3"></script>
+<script src="/js/sigaji-api.js?v=11.7.3"></script>
+<script src="/js/karyawan-tipe.js?v=11.7.3"></script>
+<script src="/js/siklus-bayar.js?v=11.7.3"></script>
+<script src="/js/storage-idb.js?v=11.7.3"></script>
+<script src="/js/storage.js?v=11.7.3"></script>
+<script src="/js/ptkp.js?v=11.7.3"></script>
+<script src="/js/modules/app-globals.js?v=11.7.3"></script>
+<script src="/js/modules/app-core.js?v=11.7.3"></script>
+<script src="/js/modules/app-access.js?v=11.7.3"></script>
+<script src="/js/modules/app-hr.js?v=11.7.3"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.7.3"></script>
+<script src="/js/modules/app-slip.js?v=11.7.3"></script>
+<script src="/js/modules/app-reports.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-converter-bank.js?v=11.7.3"></script>
+<script src="/js/modules/ebupot-export.js?v=11.7.3"></script>
+<script src="/js/modules/bpjs-export.js?v=11.7.3"></script>
+<script src="/js/modules/app-absensi.js?v=11.7.3"></script>
+<script src="/js/modules/app-mobile.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.3"></script>
+<script src="/js/modules/app-master.js?v=11.7.3"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.7.3"></script>
+<script src="/js/modules/app-shell.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.7.3"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.7.3"></script>
+<script src="/js/pesangon.js?v=11.7.3"></script>
+<script src="/js/payroll-worker-host.js?v=11.7.3"></script>
+<script src="/js/config.js?v=11.7.3"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.7.1"></script>
-<script src="/js/cloud-roles.js?v=11.7.1"></script>
-<script src="/js/cloud-delta.js?v=11.7.1"></script>
-<script src="/js/cloud-tables.js?v=11.7.1"></script>
+<script src="/js/cloud-branding.js?v=11.7.3"></script>
+<script src="/js/cloud-roles.js?v=11.7.3"></script>
+<script src="/js/cloud-delta.js?v=11.7.3"></script>
+<script src="/js/outbox.js?v=11.7.3"></script>
+<script src="/js/cloud-tables.js?v=11.7.3"></script>
 <script>if(typeof sigajiApplyCloudLoginUi==='function')sigajiApplyCloudLoginUi();</script>
-<script src="/js/cloud-sync.js?v=11.7.1"></script>
-<script src="/js/modules/app-boot.js?v=11.7.1"></script>
-<script src="/js/sigaji-events.js?v=11.7.1"></script>
+<script src="/js/cloud-sync.js?v=11.7.3"></script>
+<script src="/js/modules/app-boot.js?v=11.7.3"></script>
+<script src="/js/sigaji-events.js?v=11.7.3"></script>
 </body>
 </html>

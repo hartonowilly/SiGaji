@@ -66,7 +66,7 @@ const legacyJsRules = {
 
 export default [
   {
-    ignores: ['js/vendor/**', '_archive/**', 'node_modules/**', 'sigaji_mobile/**'],
+    ignores: ['js/vendor/**', '_archive/**', 'node_modules/**', 'sigaji_mobile/**', 'tests/e2e-smoke.mjs'],
   },
   js.configs.recommended,
   {

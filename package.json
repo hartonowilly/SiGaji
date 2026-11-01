@@ -13,6 +13,7 @@
     "test:payroll": "node tests/run-payroll-tests.mjs",
     "test:cuti": "node tests/cuti-tracking.test.mjs",
     "test:converter": "node tests/converter-bank.test.mjs",
+    "test:e2e": "node tests/e2e-smoke.mjs",
     "test:all": "node tests/run-payroll-tests.mjs && node tests/cuti-tracking.test.mjs && node tests/converter-bank.test.mjs",
     "lint": "eslint js tests --no-warn-ignored",
     "lint:ratchet": "node scripts/lint-ratchet.js",

@@ -75,3 +75,18 @@ DNS apex `cemerlang.online` masih ke Netlify? Lihat **`docs/DNS_CEMERLANG_CLOUDF
 Jika daftar email gagal dan Network tab menampilkan **HTML** (bukan JSON), API tidak ter-route — deploy ulang dengan `functions/api/` dan pastikan **nodejs_compat** aktif.
 
 Uji: `POST https://sigaji.pages.dev/api/auth-register-request` harus mengembalikan JSON, bukan halaman login.
+
+## Keamanan: header HTTP, CORS, rate limit
+
+**Header keamanan** ada di `_headers` (ikut deploy, tidak perlu setelan dashboard): `X-Frame-Options: DENY` + `frame-ancestors 'none'` (anti-clickjacking), `nosniff`, `Referrer-Policy`, `Permissions-Policy` (kamera & GPS hanya untuk situs sendiri), HSTS 1 tahun, dan **CSP dalam mode Report-Only**. Pelanggaran CSP dikirim ke `POST /api/csp-report` dan muncul di **Pages → Functions → Real-time logs** dengan awalan `CSP-REPORT`. Setelah handler inline (`onclick=`) selesai dipindah dan log bersih ±1–2 minggu, ganti `Content-Security-Policy-Report-Only` menjadi `Content-Security-Policy`.
+
+**CORS** (`functions/_lib/cf-shared.js`): `/api/*` hanya menjawab `Access-Control-Allow-Origin` untuk origin yang sama dengan host API (termasuk preview `*.pages.dev`), `www.cemerlang.online` / `cemerlang.online`, dan `localhost`. Domain baru → tambahkan ke `CORS_ALLOWED_HOSTS`. Aplikasi Android tidak mengirim `Origin`, jadi tidak terpengaruh.
+
+**Rate limit di kode** (`enforceRateLimit` + Cache API): registrasi 5/10 menit, tautan Telegram 20/5 menit, email slip 60/menit, unggah mobile 30/5 menit. Bila Cache API gagal, permintaan tetap dilayani (fail-open). Lapis kedua di dashboard (gratis 1 aturan di paket Free): **Cloudflare → domain → Security → WAF → Rate limiting rules**:
+
+| Aturan | Path (URI Path equals) | Batas | Aksi |
+|---|---|---|---|
+| Registrasi | `/api/auth-register-request` | 5 permintaan / 10 menit per IP | Block 10 menit |
+| Semua API | `/api/*` | 300 / menit per IP | Block 1 menit |
+
+Kalau hanya boleh satu aturan, pakai baris terakhir (`/api/*`).

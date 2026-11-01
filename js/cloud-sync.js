@@ -453,7 +453,7 @@
       if (typeof window.enterAppWithUser === 'function') {
         window.enterAppWithUser(cu);
       }
-      putarJurnalAbsensi();
+      putarOutbox();
       if (cloudDirtySeq > cloudSyncedSeq) cloudUpsert();
       scheduleCloudPullLoop();
     } catch (e) {
@@ -505,6 +505,8 @@
     window.sigajiApplyingCloud = true;
     try {
       if (typeof saveAll === 'function') saveAll();
+      // Yang baru ditarik dari awan bukan perubahan lokal: perbarui basis outbox, entri yang menunggu tetap.
+      if (window.sigajiOutbox) window.sigajiOutbox.tandaiBasis(-1);
     } finally {
       window.sigajiApplyingCloud = false;
     }
@@ -948,8 +950,12 @@
         await upsertBlobOnly(uid, payload);
       }
       if (seq > cloudSyncedSeq) cloudSyncedSeq = seq;
-      if (typeof window.sigajiJurnalAbsensiSelesai === 'function') {
-        window.sigajiJurnalAbsensiSelesai(payloadDibangunPada);
+      if (window.sigajiOutbox) {
+        try {
+          window.sigajiOutbox.selesai(payloadDibangunPada);
+        } catch (eOb) {
+          sigajiCatchWarn('js/cloud-sync.js', eOb);
+        }
       }
       if (typeof window.sigajiSetSyncStatus === 'function') {
         window.sigajiSetSyncStatus('synced', new Date().toLocaleTimeString('id-ID'));
@@ -970,20 +976,18 @@
     }
   }
 
-  /** Klik absensi yang belum sempat terkirim sebelum halaman ditutup: pulihkan ke memori dan kirim ulang. */
-  function putarJurnalAbsensi() {
-    if (typeof window.sigajiJurnalAbsensiPutar !== 'function') return 0;
+  /** Perubahan yang belum sempat terkirim sebelum halaman ditutup: pulihkan ke memori dan kirim ulang. */
+  function putarOutbox() {
+    if (!window.sigajiOutbox) return 0;
     var n = 0;
     try {
-      n = window.sigajiJurnalAbsensiPutar();
+      n = window.sigajiOutbox.putar();
     } catch (eJ) {
       sigajiCatchWarn('js/cloud-sync.js', eJ);
       return 0;
     }
     if (n > 0) {
-      toastSafe(
-        n + ' perubahan absensi yang belum sempat terkirim ke awan dipulihkan dan sedang dikirim ulang.'
-      );
+      toastSafe(n + ' perubahan yang belum sempat terkirim ke awan dipulihkan dan sedang dikirim ulang.');
     }
     return n;
   }
@@ -1006,7 +1010,7 @@
     if (typeof CU !== 'undefined' && CU && typeof window.sigajiApplyKaryawanDataRestriction === 'function') {
       window.sigajiApplyKaryawanDataRestriction(CU);
     }
-    putarJurnalAbsensi();
+    putarOutbox();
     sigajiRefreshUiAfterCloudData();
     return true;
   }

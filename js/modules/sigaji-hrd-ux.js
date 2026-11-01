@@ -114,19 +114,35 @@
     }
   };
 
+  var _syncLast = { state: 'idle', detail: '' };
+  /** Jumlah perubahan lokal yang belum sampai awan (outbox). */
+  function outboxJumlah() {
+    try {
+      return window.sigajiOutbox ? window.sigajiOutbox.jumlah() : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+  function perubahanLabel(n) {
+    return n + ' perubahan belum terkirim';
+  }
+
   window.sigajiSetSyncStatus = function (state, detail) {
     var node = el('sync-status');
     if (!node) return;
     clearTimeout(_syncHideT);
+    _syncLast = { state: state || 'idle', detail: detail || '' };
     node.dataset.state = state || 'idle';
     node.title = '';
+    var n = outboxJumlah();
     if (state === 'local') {
       if (typeof sigajiSaveFeedback === 'function') sigajiSaveFeedback('saved');
       node.innerHTML = '';
       return;
     }
     if (state === 'pending') {
-      node.innerHTML = '&#8635; Menyinkronkan…';
+      node.innerHTML = '&#8635; Menyinkronkan…' + (n ? ' <span class="sync-count">' + escapeHtml(String(n)) + '</span>' : '');
+      if (n) node.title = perubahanLabel(n);
       return;
     }
     if (state === 'synced') {
@@ -134,9 +150,7 @@
       if (detail) node.title = detail;
       _syncHideT = setTimeout(function () {
         if (node.dataset.state === 'synced') {
-          node.dataset.state = 'idle';
-          node.innerHTML = '';
-          node.title = '';
+          window.sigajiSetSyncStatus('idle');
         }
       }, 5000);
       return;
@@ -144,13 +158,32 @@
     if (state === 'error') {
       var short = detail ? String(detail).slice(0, 48) : '';
       node.innerHTML =
-        '&#9888; Gagal sync' +
+        '&#9888; ' +
+        (n ? escapeHtml(perubahanLabel(n)) : 'Gagal sync') +
         (short ? ' — ' + escapeHtml(short) : '') +
         ' <button type="button" class="sync-retry-btn" data-sigaji-action="invoke" data-fn="sigajiRetryCloudSync">Coba lagi</button>';
       node.title = detail || '';
       return;
     }
+    if (n) {
+      // Tidak sedang mengunggah, tetapi masih ada yang menunggu (mis. offline / awan belum siap).
+      node.dataset.state = 'queued';
+      node.innerHTML =
+        '&#9203; ' +
+        escapeHtml(perubahanLabel(n)) +
+        ' <button type="button" class="sync-retry-btn" data-sigaji-action="invoke" data-fn="sigajiRetryCloudSync">Kirim</button>';
+      node.title = 'Tersimpan di perangkat ini; akan dikirim ke awan saat koneksi tersedia.';
+      return;
+    }
     node.innerHTML = '';
+  };
+
+  /** Dipanggil js/outbox.js tiap jumlah entri berubah — perbarui angka di indikator tanpa mengubah statusnya. */
+  window.sigajiOutboxCountChanged = function () {
+    var s = _syncLast.state;
+    if (s === 'pending' || s === 'error' || s === 'idle' || s === 'queued') {
+      window.sigajiSetSyncStatus(s === 'queued' ? 'idle' : s, _syncLast.detail);
+    }
   };
 
   function sigajiCloudLoadDismiss() {
