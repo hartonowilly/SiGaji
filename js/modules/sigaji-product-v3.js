@@ -57,7 +57,7 @@
     {
       sel: '.topbar-theme-wrap',
       title: 'Tema & kepadatan',
-      body: 'Longgar/Rapat mengatur jarak baris. Terang memakai kulit kaca. Gelap padat tanpa blur. Warna PT berbentuk kantor: sudut siku dan garis tegas. Buku Kas = tema baru bergaya buku besar: kertas krem, judul serif, angka monospace — tombol "Tema baru/Tema lama" untuk bolak-balik.',
+      body: 'Longgar/Rapat mengatur jarak baris. Terang memakai kulit kaca. Gelap padat tanpa blur. Warna PT berbentuk kantor: sudut siku dan garis tegas. Buku Kas = tema baru bergaya buku besar: kertas krem, judul serif, angka monospace.',
     },
   ];
 
@@ -937,20 +937,6 @@
     document.head.appendChild(link);
   }
 
-  function paintThemeFlipBtn(theme) {
-    var btn = document.getElementById('ui-theme-flip');
-    if (!btn) return;
-    var keKertas = theme !== KERTAS_THEME;
-    var ico = btn.querySelector('.ui-theme-flip-ico');
-    var lbl = btn.querySelector('.ui-theme-flip-lbl');
-    if (ico) ico.textContent = keKertas ? '\u2727' : '\u21B6';
-    if (lbl) lbl.textContent = keKertas ? 'Tema baru' : 'Tema lama';
-    btn.title = keKertas
-      ? 'Coba tema baru "Buku Kas": kertas krem, judul serif, angka monospace. Klik lagi untuk kembali.'
-      : 'Kembali ke tema lama (' + (UI_PREF_LABEL[sigajiGetUiPrefs().prevTheme] || 'Terang · Kaca') + ').';
-    btn.setAttribute('aria-pressed', keKertas ? 'false' : 'true');
-  }
-
   window.sigajiApplyUiPrefs = function (prefs) {
     prefs = prefs || sigajiGetUiPrefs();
     var root = document.documentElement;
@@ -959,7 +945,6 @@
     root.setAttribute('data-density', prefs.density || 'comfortable');
     paintBrandTopbar(theme);
     if (theme === KERTAS_THEME) ensureKertasFonts();
-    paintThemeFlipBtn(theme);
     if (theme === 'brand') {
       var pal = brandPalette(brandAccentRaw());
       root.style.setProperty('--ux-accent', pal.btn);
@@ -997,19 +982,9 @@
 
   window.sigajiSetUiPref = function (key, val) {
     var p = sigajiGetUiPrefs();
-    /* Ingat tema lama supaya tombol bolak-balik tahu harus kembali ke mana */
-    if (key === 'theme' && val === KERTAS_THEME && p.theme && p.theme !== KERTAS_THEME) p.prevTheme = p.theme;
     p[key] = val;
     sigajiApplyUiPrefs(p);
     toast('Tampilan: ' + (UI_PREF_LABEL[val] || val));
-  };
-
-  /** Satu klik: tema lama ⇄ Buku Kas. Tema lama yang dipakai terakhir diingat. */
-  window.sigajiFlipTheme = function () {
-    var p = sigajiGetUiPrefs();
-    var sekarang = p.theme || 'light';
-    var tujuan = sekarang === KERTAS_THEME ? p.prevTheme || 'light' : KERTAS_THEME;
-    sigajiSetUiPref('theme', tujuan);
   };
 
   /* ── Narrative report ── */
