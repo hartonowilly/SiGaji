@@ -3,7 +3,7 @@
 /* exported periodesFindById, periodesSortedByStart, sortPeriodesByPayrollYm, namaHL, ini,
    cutiManualTrackingYear, countCutiBersamaTrackingYear, cutiTerpakai, rincianCutiTahun,
    setPREnabled, setPRField, hitungPPhProgresif, setPphYtdAwal, syncTunjVarLabelsFromColumns,
-   karyawanSortedAll, nextNikOtomatis, clearPphReturnPanel, canEditDataPadaTanggalIso,
+   karyawanSortedAll, karyawanResignSampaiPeriode, cmpKarResignTglDesc, nextNikOtomatis, clearPphReturnPanel, canEditDataPadaTanggalIso,
    refreshKarSnapshotFromMaster, setSpPayrollView, getKarSnapshotProgress */
 // ── HELPERS ─────────────────────────────────────
 /** @returns {Periode} */
@@ -932,6 +932,25 @@ function periodeTglCutoffPhk(p){
   if(!e&&!b)return s;
   if(e&&b&&b>e)return b;
   return e||b||s;
+}
+/** Tab Resign: kumulatif sampai akhir periode terpilih — bukan hanya yang berhenti di bulan itu.
+ *  Oktober menampilkan semua yang tgl_berhenti ≤ akhir Oktober; September hanya sampai akhir September.
+ *  Yang resign di bulan berikutnya tidak tampil. Payroll (karyawanInPeriode) tidak diubah. */
+function karyawanResignSampaiPeriode(k,p){
+  if(!k||k.dihapusPada)return false;
+  var t=toIsoDate(k.tgl_berhenti);
+  if(!t)return false;
+  if(!p)return true;
+  var cutoff=toIsoDate(periodeTglCutoffPhk(p));
+  if(!cutoff)return true;
+  return t<=cutoff;
+}
+/** Urut tab Resign: tgl berhenti terbaru di atas. Format dd/mm/yyyy dinormalisasi dulu. */
+function cmpKarResignTglDesc(a,b){
+  var ta=toIsoDate(a&&a.tgl_berhenti)||'';
+  var tb=toIsoDate(b&&b.tgl_berhenti)||'';
+  if(ta!==tb)return tb.localeCompare(ta);
+  return String((a&&a.nik)||'').localeCompare(String((b&&b.nik)||''),'id',{numeric:true,sensitivity:'base'});
 }
 
 function deepCloneLite(o){

@@ -74,4 +74,70 @@ assert(
   ) === true
 );
 
+const OCT = {
+  nama: 'Oktober 2026',
+  start: '2026-10-01',
+  end: '2026-10-31',
+  bayar: '2026-10-30',
+};
+
+const resignAug = { nik: 'K0101', masuk: '2020-01-01', tgl_berhenti: '2026-08-20' };
+const resignSep = { nik: 'K0102', masuk: '2020-01-01', tgl_berhenti: '2026-09-10' };
+const resignOct = { nik: 'K0103', masuk: '2020-01-01', tgl_berhenti: '2026-10-05' };
+const resignNov = { nik: 'K0104', masuk: '2020-01-01', tgl_berhenti: '2026-11-01' };
+const aktif = { nik: 'K0105', masuk: '2020-01-01' };
+
+assert(
+  'tab Resign September: resign Agustus ikut (kumulatif)',
+  px.karyawanResignSampaiPeriode(resignAug, SEPT) === true
+);
+assert(
+  'tab Resign September: resign 10 Sep tampil',
+  px.karyawanResignSampaiPeriode(resignSep, SEPT) === true
+);
+assert(
+  'tab Resign September: resign Oktober belum tampil',
+  px.karyawanResignSampaiPeriode(resignOct, SEPT) === false
+);
+assert(
+  'tab Resign Oktober: 3 orang sampai Oktober tampil, November belum',
+  px.karyawanResignSampaiPeriode(resignAug, OCT) === true &&
+    px.karyawanResignSampaiPeriode(resignSep, OCT) === true &&
+    px.karyawanResignSampaiPeriode(resignOct, OCT) === true &&
+    px.karyawanResignSampaiPeriode(resignNov, OCT) === false
+);
+assert(
+  'tanpa tgl berhenti bukan resign',
+  px.karyawanResignSampaiPeriode(aktif, OCT) === false
+);
+assert(
+  'karyawan di sampah tidak masuk tab Resign',
+  px.karyawanResignSampaiPeriode(
+    { nik: 'K0106', tgl_berhenti: '2026-09-01', dihapusPada: '2026-09-02T00:00:00.000Z' },
+    OCT
+  ) === false
+);
+assert(
+  'tanggal berhenti dd/mm/yyyy sampai periode tetap kumulatif',
+  px.karyawanResignSampaiPeriode(
+    { nik: 'K0107', masuk: '01/01/2020', tgl_berhenti: '10/09/2026' },
+    OCT
+  ) === true
+);
+
+const sorted = [resignAug, resignOct, resignSep].slice().sort(px.cmpKarResignTglDesc);
+assert(
+  'sort resign: yang paling akhir berhenti di paling atas',
+  sorted[0].nik === 'K0103' && sorted[1].nik === 'K0102' && sorted[2].nik === 'K0101'
+);
+const mixedFmt = [
+  { nik: 'A', tgl_berhenti: '05/10/2026' },
+  { nik: 'B', tgl_berhenti: '2026-11-01' },
+  { nik: 'C', tgl_berhenti: '20/08/2026' },
+].sort(px.cmpKarResignTglDesc);
+assert(
+  'sort resign menormalisasi dd/mm/yyyy',
+  mixedFmt[0].nik === 'B' && mixedFmt[1].nik === 'A' && mixedFmt[2].nik === 'C'
+);
+
 console.log('\nKaryawan vs periode: semua tes lulus.');
