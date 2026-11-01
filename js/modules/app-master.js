@@ -720,7 +720,7 @@ function buildExportData(){
   var snapPeriods=Object.keys(karSnapshot||{});
   var snapRows=snapPeriods.reduce(function(s,pn){return s+Object.keys((karSnapshot&&karSnapshot[pn])||{}).length;},0);
   var meta={
-    versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji v10',
+    versi:typeof SIGAJI_APP_LABEL!=='undefined'?SIGAJI_APP_LABEL:'SiGaji',
     schemaVersion:typeof SCHEMA_VERSION!=='undefined'?SCHEMA_VERSION:3,
     tanggal:new Date().toISOString(),
     catatan:(document.getElementById('backup-catatan')&&document.getElementById('backup-catatan').value)||'',

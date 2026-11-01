@@ -397,31 +397,6 @@ html[data-theme='kertas'].sigaji-mobile-nav .nav-drawer-btn {
   border-radius: 2px;
 }
 
-/* Tombol bolak-balik tema (lama ⇄ Buku Kas) — tampil juga di HP, hanya ikon */
-.ui-theme-flip {
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap .btn.ui-theme-flip {
-  display: inline-flex !important;
-  min-height: 36px;
-  min-width: 36px;
-  padding: 4px 8px;
-  justify-content: center;
-}
-html.sigaji-mobile-nav .ui-theme-flip .ui-theme-flip-lbl {
-  display: none;
-}
-html.sigaji-mobile-nav .ui-theme-flip .ui-theme-flip-ico {
-  font-size: 15px;
-}
-[data-theme='kertas'] .ui-theme-flip {
-  border-color: var(--kertas-green);
-  color: var(--kertas-green);
-}
-
 /* ── Sidebar terang bergaris ── */
 [data-theme='kertas'] .sidebar,
 [data-theme='kertas'] #sidebar-wrap,
