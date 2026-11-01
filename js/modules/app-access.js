@@ -193,13 +193,9 @@ function simpanUser(){
     if(clash){toast('Email Supabase ini sudah dipakai user: '+clash.username);return;}
   }
   var pass=passRaw;
-  if(cloud){
-    if(idx>=0&&users[idx]){
-      pass=passRaw||(users[idx].password||'')||'\u2014cloud\u2014';
-    }else{
-      pass=passRaw||'\u2014cloud\u2014';
-    }
-  }
+  /* Mode cloud: login lewat Supabase Auth, jadi tidak ada alasan menyimpan password apa pun
+     (termasuk sisa password lokal lama) di payload yang ikut terunggah ke awan. */
+  if(cloud)pass='\u2014cloud\u2014';
   if(idx<0){
     if(users.find(u=>u.username===uname)){toast('Username sudah dipakai');return;}
     const o={username:uname,password:pass,nama,role,nik,aktif};

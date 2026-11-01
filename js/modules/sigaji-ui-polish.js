@@ -285,7 +285,8 @@
         label: m.lbl,
         sub: m.sec,
         icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon(m.id) : (m.icon || '&#9670;'),
-        run: "showPg('" + m.id + "')",
+        act: 'pg',
+        arg: m.id,
         hay: (m.lbl + ' ' + m.id + ' ' + m.sec).toLowerCase(),
       });
     });
@@ -297,21 +298,23 @@
         label: k.nama,
         sub: k.nik + ' · ' + (k.dept || '-'),
         icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon('karyawan') : '&#128100;',
-        run: "openPanel('" + String(k.nik).replace(/'/g, "\\'") + "')",
+        act: 'panel',
+        arg: String(k.nik),
         hay: hay,
       });
     });
     [
-      { label: 'Finalisasi gaji', sub: 'Proses penggajian', run: "showPg('penggajian')", hay: 'final gaji bayar' },
-      { label: 'Simulasi what-if', sub: 'Sandbox THR & pesangon', run: "showPg('simulasi')", hay: 'simulasi thr pesangon' },
-      { label: 'Export e-Bupot', sub: 'Laporan PPh', run: "showPg('laporan')", hay: 'ebupot pph coretax' },
+      { label: 'Finalisasi gaji', sub: 'Proses penggajian', arg: 'penggajian', hay: 'final gaji bayar' },
+      { label: 'Simulasi what-if', sub: 'Sandbox THR & pesangon', arg: 'simulasi', hay: 'simulasi thr pesangon' },
+      { label: 'Export e-Bupot', sub: 'Laporan PPh', arg: 'laporan', hay: 'ebupot pph coretax' },
     ].forEach(function (x) {
       items.push({
         type: 'aksi',
         label: x.label,
         sub: x.sub,
         icon: '&#9889;',
-        run: x.run,
+        act: 'pg',
+        arg: x.arg,
         hay: x.hay,
       });
     });
@@ -336,8 +339,10 @@
         return (
           '<button type="button" class="sigaji-cmdk-item' +
           (i === 0 ? ' active' : '') +
-          '" data-run="' +
-          escapeHtml(it.run) +
+          '" data-act="' +
+          escapeAttr(it.act) +
+          '" data-arg="' +
+          escapeAttr(it.arg) +
           '"><span class="sigaji-cmdk-icon">' +
           it.icon +
           '</span><span><span class="sigaji-cmdk-lbl">' +
@@ -374,11 +379,15 @@
     ov.setAttribute('aria-hidden', 'true');
   };
 
+  /* Aksi palet dipetakan ke fungsi secara eksplisit — bukan string kode yang di-eval. */
   function cmdkRun(btn) {
-    var run = btn && btn.getAttribute('data-run');
+    var act = btn && btn.getAttribute('data-act');
+    var arg = btn && btn.getAttribute('data-arg');
     sigajiCmdkClose();
-    if (run) try {
-      eval(run);
+    if (!act) return;
+    try {
+      if (act === 'pg' && typeof showPg === 'function') showPg(arg);
+      else if (act === 'panel' && typeof openPanel === 'function') openPanel(arg);
     } catch (e) {
       console.error(e);
     }

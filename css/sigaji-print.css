@@ -3,6 +3,108 @@
  * Melengkapi export PDF; sembunyikan chrome aplikasi.
  */
 @media print {
+  /* Cetak selalu hitam di atas putih, apa pun tema layar (Gelap/Buku Kas memetakan
+     --wh ke permukaan gelap/krem — jangan ikut ke kertas). */
+  html,
+  html[data-theme='dark'],
+  html[data-theme='brand'],
+  html[data-theme='kertas'] {
+    --wh: #fff;
+    --surface: #fff;
+    --surface-2: #fff;
+    --bg: #fff;
+    --content-bg: #fff;
+    --color-bg: #fff;
+    --color-bg-content: #fff;
+    --color-surface: #fff;
+    --color-surface-elevated: #fff;
+    --tx: #000;
+    --ink: #000;
+    --color-text: #000;
+    --ink-body: #111;
+    --muted: #444;
+    --ink-muted: #444;
+    --ink-subtle: #666;
+    --color-text-muted: #444;
+    --bd: #999;
+    --border: #999;
+    --color-border: #999;
+    --color-border-light: #bbb;
+    --table-head-bg: #eee;
+    --table-head-color: #000;
+    --table-head-border: #000;
+    --table-cell-border: #bbb;
+    --table-zebra: #fff;
+    --row-hover: #fff;
+    --table-row-hover: #fff;
+    --cell-money-color: #000;
+    --cell-deduction-color: #000;
+    --cell-neto-color: #000;
+    --color-primary: #000;
+    --blue: #000;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-card: none;
+    --kertas-bg: #fff;
+    --kertas-surface: #fff;
+    --kertas-surface-2: #fff;
+    --kertas-sidebar: #fff;
+    --kertas-ink: #000;
+    --kertas-ink-body: #111;
+    --kertas-rule: #999;
+    --kertas-rule-light: #bbb;
+    --bento-surface: #fff;
+    --bento-surface-2: #fff;
+    --bento-border: #999;
+    --bento-ink: #000;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Komponen yang di tema Gelap/PT menulis warna literal per komponen (bukan lewat token) */
+  .card,
+  .sc,
+  .sc-kpi,
+  .bento-widget,
+  .bento-widget-head,
+  .bento-kpi,
+  .table-wrap,
+  .slip,
+  .slip *,
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td:not(.ab-cell),
+  .ab-grid-host,
+  .ab-grid-head,
+  .ab-grid-head-sticky,
+  .ab-day-th,
+  .ab-sticky-no,
+  .ab-sticky-name,
+  .ab-sticky-jab,
+  .notif-feed,
+  .info-box,
+  .gs,
+  .pph-box {
+    background-color: #fff !important;
+    background-image: none !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  th {
+    background-color: #eee !important;
+  }
+  .card,
+  .table-wrap,
+  th,
+  td {
+    border-color: #999 !important;
+  }
+
   .sidebar-wrap,
   .sidebar,
   .sidebar-slot,
@@ -42,13 +144,17 @@
   body,
   #app,
   .layout,
-  .content {
+  .content,
+  html[data-theme] body,
+  html[data-theme] .content {
     display: block !important;
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
-    background: var(--wh) !important;
+    background: #fff !important;
+    background-image: none !important;
+    color: #000 !important;
     margin: 0 !important;
     padding: 0 !important;
     visibility: visible !important;

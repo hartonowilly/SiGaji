@@ -65,12 +65,41 @@ export function jsonResponse(status, body, request, extraHeaders) {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+/** Domain produksi yang selalu boleh memanggil /api/* dari browser, selain host yang sama. */
+const CORS_ALLOWED_HOSTS = ['www.cemerlang.online', 'cemerlang.online'];
+
+/**
+ * Origin browser yang diizinkan: host yang sama dengan API ini (web app dan Functions
+ * satu domain, termasuk preview *.pages.dev), domain produksi, atau localhost saat
+ * pengembangan. Aplikasi Android tidak mengirim Origin sehingga tidak terpengaruh.
+ */
+export function isAllowedOrigin(origin, request) {
+  if (!origin) return false;
+  let o;
+  try {
+    o = new URL(origin);
+  } catch (_e) {
+    return false;
+  }
+  if (o.protocol !== 'https:' && o.protocol !== 'http:') return false;
+  const selfHost = String(request.headers.get('host') || '').toLowerCase();
+  const host = o.host.toLowerCase();
+  if (selfHost && host === selfHost) return true;
+  if (CORS_ALLOWED_HOSTS.indexOf(host) !== -1) return true;
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return true;
+  return false;
+}
+
 export function corsHeaders(request) {
-  const origin = request.headers.get('Origin') || '*';
+  const origin = request.headers.get('Origin');
+  if (!origin) return {};
+  if (!isAllowedOrigin(origin, request)) return { Vary: 'Origin' };
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '600',
+    Vary: 'Origin',
   };
 }
 
