@@ -33,7 +33,10 @@ if (checkOnly) {
     process.exit(1);
   }
   const current = fs.readFileSync(outPath, 'utf8');
-  if (current !== html) {
+  const norm = function (s) {
+    return s.replace(/\r\n/g, '\n');
+  };
+  if (norm(current) !== norm(html)) {
     console.error('assemble-index: index.html tidak sama dengan hasil rakit dari template. Jalankan: npm run assemble');
     process.exit(1);
   }
