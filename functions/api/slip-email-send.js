@@ -6,6 +6,7 @@ import {
   envStr,
   jsonResponse,
   handleOptions,
+  enforceRateLimit,
   assertCallerIsHrdOrAdmin,
   smtpConnectProfiles,
   pdfBase64ToBytes,
@@ -126,6 +127,8 @@ export async function onRequestOptions({ request }) {
 
 export async function onRequestPost({ request, env }) {
   try {
+    const limited = await enforceRateLimit(request, { name: 'slip-email', limit: 60, windowSec: 60 });
+    if (limited) return limited;
     const tenant = getTenantKey(env);
     const sb = createSbAdmin(env);
 

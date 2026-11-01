@@ -3,6 +3,7 @@ import {
   getTenantKey,
   jsonResponse,
   handleOptions,
+  enforceRateLimit,
 } from '../_lib/cf-shared.js';
 
 function isEmail(s) {
@@ -16,6 +17,8 @@ export async function onRequestOptions({ request }) {
 
 export async function onRequestPost({ request, env }) {
   try {
+    const limited = await enforceRateLimit(request, { name: 'auth-register', limit: 5, windowSec: 600 });
+    if (limited) return limited;
     const tenant = getTenantKey(env);
     const sb = createSbAdmin(env);
 

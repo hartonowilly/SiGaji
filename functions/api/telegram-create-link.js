@@ -4,6 +4,7 @@ import {
   randomCode,
   jsonResponse,
   handleOptions,
+  enforceRateLimit,
   assertCallerIsHrdOrAdmin,
 } from '../_lib/cf-shared.js';
 import { assertNikInScope } from '../_lib/tenant-data.js';
@@ -14,6 +15,8 @@ export async function onRequestOptions({ request }) {
 
 export async function onRequestPost({ request, env }) {
   try {
+    const limited = await enforceRateLimit(request, { name: 'telegram-link', limit: 20, windowSec: 300 });
+    if (limited) return limited;
     const tenant = getTenantKey(env);
     const sb = createSbAdmin(env);
 

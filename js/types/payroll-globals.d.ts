@@ -207,8 +207,28 @@ declare function sigajiKunciEraOverrideLama(): string;
 declare function sigajiPesanBerlakuOverride(): string;
 declare function sigajiTanggalHariIni(): string;
 declare function saveAll(): void;
-/** Jurnal klik absensi yang belum sampai awan (storage.js). */
-declare function sigajiJurnalAbsensiCatat(nik: string, tgl: string, status: string | null): void;
+declare function pulihkanKar(nik: string): void;
+declare function hapusKarPermanen(nik: string): void;
+declare function sigajiToastUndo(msg: string, label: string, fn: () => void): void;
+declare function sigajiOutboxCountChanged(n?: number): void;
+declare function sigajiOutboxMemRefs(): Record<string, unknown> | null;
+declare var sigajiCloudDelta: { explodePayload(p: unknown, opts?: unknown): unknown[]; stableStringify(v: unknown): string; applyEntityToMemory(mem: unknown, e: unknown, data: unknown): void } | undefined;
+declare function getPayloadForCloud(): unknown;
+declare function sigajiCanUploadCloudPayload(): boolean;
+declare function sigajiQueueCloudSave(): void;
+declare function canEditAbsensiPadaTanggalIso(iso: string): boolean;
+/** Outbox perubahan lokal yang belum sampai awan (js/outbox.js). */
+declare var sigajiOutbox:
+  | {
+      catat(): number;
+      selesai(dibangunPada?: number): void;
+      putar(): number;
+      tandaiBasis(sejak?: number): void;
+      jumlah(): number;
+      reset(): void;
+      adaBasis(): boolean;
+    }
+  | undefined;
 declare function toast(msg: string): void;
 /** True bila data periode sudah di memori; jika belum, mulai muat arsip. */
 declare function sigajiNeedPeriodeData(pNama: string): boolean;
@@ -446,6 +466,10 @@ interface KaryawanPayroll {
   ptkp_riwayat?: Array<{ berlakuMulai: string; ptkp: string }>;
   masuk?: string;
   tgl_berhenti?: string;
+  /** ISO — karyawan di sampah (pulihkan ≤ 30 hari). */
+  dihapusPada?: string;
+  /** Penanda internal saat membersihkan sampah kedaluwarsa. */
+  _buang?: boolean;
   cabangId?: string;
   cabang?: string;
   mutasi_payroll_efektif?: string;

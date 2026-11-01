@@ -107,6 +107,47 @@ export function handleOptions(request) {
   return new Response(null, { status: 204, headers: corsHeaders(request) });
 }
 
+/**
+ * Batasi permintaan per IP (Cache API Cloudflare; gagal = lolos, jangan blokir layanan).
+ * @param {{ name: string, limit: number, windowSec: number }} opts
+ * @returns {Promise<Response|null>} 429 atau null
+ */
+export async function enforceRateLimit(request, opts) {
+  const name = (opts && opts.name) || 'api';
+  const limit = Math.max(1, (opts && opts.limit) || 30);
+  const windowSec = Math.max(10, (opts && opts.windowSec) || 60);
+  const ip =
+    request.headers.get('cf-connecting-ip') ||
+    String(request.headers.get('x-forwarded-for') || '')
+      .split(',')[0]
+      .trim() ||
+    '0';
+  const key = new Request('https://sigaji-rl.internal/' + encodeURIComponent(name) + '/' + encodeURIComponent(ip));
+  try {
+    const cache = caches.default;
+    const hit = await cache.match(key);
+    let n = 1;
+    if (hit) n = (parseInt(await hit.text(), 10) || 0) + 1;
+    await cache.put(
+      key,
+      new Response(String(n), {
+        headers: { 'Cache-Control': 'max-age=' + windowSec, 'Content-Type': 'text/plain' },
+      })
+    );
+    if (n > limit) {
+      return jsonResponse(
+        429,
+        { ok: false, error: 'Terlalu banyak permintaan. Coba lagi beberapa menit.' },
+        request,
+        { 'Retry-After': String(windowSec) }
+      );
+    }
+  } catch (_e) {
+    /* fail-open */
+  }
+  return null;
+}
+
 export async function loadUsersForAuth(sb, tenant) {
   const { data: storeRow, error: se } = await sb
     .from('sigaji_store')

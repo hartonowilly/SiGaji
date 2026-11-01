@@ -967,8 +967,14 @@
     }
     var densEl = document.getElementById('ui-pref-density');
     var themeEl = document.getElementById('ui-pref-theme');
-    if (densEl) densEl.value = prefs.density || 'comfortable';
-    if (themeEl) themeEl.value = prefs.theme || 'light';
+    var densM = document.getElementById('ui-pref-density-mobile');
+    var themeM = document.getElementById('ui-pref-theme-mobile');
+    var densVal = prefs.density || 'comfortable';
+    var themeVal = prefs.theme || 'light';
+    if (densEl) densEl.value = densVal;
+    if (themeEl) themeEl.value = themeVal;
+    if (densM) densM.value = densVal;
+    if (themeM) themeM.value = themeVal;
   };
 
   var UI_PREF_LABEL = {

@@ -82,12 +82,11 @@ Uji: `POST https://sigaji.pages.dev/api/auth-register-request` harus mengembalik
 
 **CORS** (`functions/_lib/cf-shared.js`): `/api/*` hanya menjawab `Access-Control-Allow-Origin` untuk origin yang sama dengan host API (termasuk preview `*.pages.dev`), `www.cemerlang.online` / `cemerlang.online`, dan `localhost`. Domain baru → tambahkan ke `CORS_ALLOWED_HOSTS`. Aplikasi Android tidak mengirim `Origin`, jadi tidak terpengaruh.
 
-**Rate limit** belum ada di kode — pasang di dashboard (gratis 1 aturan di paket Free, lebih banyak di Pro): **Cloudflare → domain → Security → WAF → Rate limiting rules**:
+**Rate limit di kode** (`enforceRateLimit` + Cache API): registrasi 5/10 menit, tautan Telegram 20/5 menit, email slip 60/menit, unggah mobile 30/5 menit. Bila Cache API gagal, permintaan tetap dilayani (fail-open). Lapis kedua di dashboard (gratis 1 aturan di paket Free): **Cloudflare → domain → Security → WAF → Rate limiting rules**:
 
 | Aturan | Path (URI Path equals) | Batas | Aksi |
 |---|---|---|---|
 | Registrasi | `/api/auth-register-request` | 5 permintaan / 10 menit per IP | Block 10 menit |
-| Link Telegram & email slip | `/api/telegram-create-link`, `/api/slip-email-send` | 30 / menit per IP | Managed Challenge |
 | Semua API | `/api/*` | 300 / menit per IP | Block 1 menit |
 
 Kalau hanya boleh satu aturan, pakai baris terakhir (`/api/*`).

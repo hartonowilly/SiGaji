@@ -70,6 +70,38 @@
     return stack;
   }
 
+  window.sigajiToastUndo = function (msg, label, fn) {
+    var stack = ensureToastStack();
+    var item = document.createElement('div');
+    item.className = 'sigaji-toast-item sigaji-toast-undo';
+    var tx = document.createElement('span');
+    tx.textContent = msg;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sync-retry-btn';
+    btn.textContent = label || 'Urungkan';
+    btn.addEventListener('click', function () {
+      try {
+        if (typeof fn === 'function') fn();
+      } catch (e) {
+        console.error(e);
+      }
+      if (item.parentNode) item.parentNode.removeChild(item);
+    });
+    item.appendChild(tx);
+    item.appendChild(btn);
+    stack.appendChild(item);
+    requestAnimationFrame(function () {
+      item.classList.add('show');
+    });
+    setTimeout(function () {
+      item.classList.remove('show');
+      setTimeout(function () {
+        if (item.parentNode) item.parentNode.removeChild(item);
+      }, 320);
+    }, 8000);
+  };
+
   window.sigajiToastPush = function (msg, type) {
     var stack = ensureToastStack();
     var item = document.createElement('div');

@@ -891,6 +891,7 @@ function prevPeriodeChrono(pnama){
 // kertas kerja, BPJS, rekening, dan laporan periode itu.
 function karyawanInPeriode(k,p){
   if(!k)return false;
+  if(k.dihapusPada)return false;
   if(!p||!p.start)return true;
   var start=toIsoDate(p.start);
   var end=toIsoDate(p.end||p.bayar||p.start);
@@ -908,7 +909,7 @@ function sortKaryawanByNik(list){
   });
 }
 function karyawanSortedAll(){
-  return sortKaryawanByNik(karyawan||[]);
+  return sortKaryawanByNik((karyawan||[]).filter(function(k){return !k||!k.dihapusPada;}));
 }
 /** NIK baru per tipe: Kxxxx (tetap) atau NTxxxx (tidak tetap). */
 function nextNikOtomatis(tipe){

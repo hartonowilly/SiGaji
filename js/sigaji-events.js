@@ -17,6 +17,21 @@
     return true;
   }
 
+  function invokeValue(el) {
+    var fnName = el.getAttribute('data-fn');
+    if (!fnName || typeof window[fnName] !== 'function') return false;
+    var fn = window[fnName];
+    var mode = el.getAttribute('data-arg') || '$value';
+    var key = el.getAttribute('data-key');
+    if (mode === '$this') fn(el);
+    else if (mode === '$checked') fn(el.checked);
+    else if (mode === '$float') fn(parseFloat(el.value) || 0);
+    else if (mode === '$pref' && key) fn(key, el.value);
+    else if (key) fn(key, el.type === 'checkbox' ? (el.checked ? el.value : '') : el.value);
+    else fn(el.value);
+    return true;
+  }
+
   function runSigajiAction(action, el, ev) {
     var nik = el.getAttribute('data-nik');
     var periode = el.getAttribute('data-periode');
@@ -37,6 +52,13 @@
     switch (action) {
       case 'invoke':
         return invokeFn(el);
+      case 'pref':
+        if (typeof sigajiSetUiPref === 'function') {
+          sigajiSetUiPref(el.getAttribute('data-key') || 'theme', el.value);
+        }
+        return true;
+      case 'call-value':
+        return invokeValue(el);
       case 'bento-hide': {
         var wid = el.getAttribute('data-id');
         if (wid && typeof sigajiHideBentoWidget === 'function') sigajiHideBentoWidget(wid);
@@ -72,6 +94,12 @@
         return true;
       case 'delete-kar':
         if (nik && typeof hapusKar === 'function') hapusKar(nik);
+        return true;
+      case 'restore-kar':
+        if (nik && typeof pulihkanKar === 'function') pulihkanKar(nik);
+        return true;
+      case 'purge-kar':
+        if (nik && typeof hapusKarPermanen === 'function') hapusKarPermanen(nik);
         return true;
       case 'telegram':
         if (nik && typeof openTelegramModalForNik === 'function') openTelegramModalForNik(nik);
@@ -460,9 +488,24 @@
     document.addEventListener('change', function (ev) {
       var t = ev.target;
       if (!t || !t.getAttribute) return;
-      if (t.tagName !== 'SELECT') return;
       var action = t.getAttribute('data-sigaji-action');
       if (action) runSigajiAction(action, t, ev);
+    });
+    document.addEventListener('input', function (ev) {
+      var t = ev.target;
+      if (!t || !t.getAttribute) return;
+      if (t.getAttribute('data-sigaji-live') !== '1') return;
+      var action = t.getAttribute('data-sigaji-action');
+      if (action) runSigajiAction(action, t, ev);
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      var t = ev.target;
+      if (!t || !t.getAttribute) return;
+      var fn = t.getAttribute('data-sigaji-enter');
+      if (!fn || typeof window[fn] !== 'function') return;
+      ev.preventDefault();
+      window[fn]();
     });
   }
 

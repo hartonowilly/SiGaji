@@ -193,17 +193,18 @@ function simpanUser(){
     if(clash){toast('Email Supabase ini sudah dipakai user: '+clash.username);return;}
   }
   var pass=passRaw;
-  /* Mode cloud: login lewat Supabase Auth, jadi tidak ada alasan menyimpan password apa pun
-     (termasuk sisa password lokal lama) di payload yang ikut terunggah ke awan. */
-  if(cloud)pass='\u2014cloud\u2014';
+  /* Mode cloud: login lewat Supabase Auth — jangan simpan password di payload awan. */
   if(idx<0){
     if(users.find(u=>u.username===uname)){toast('Username sudah dipakai');return;}
-    const o={username:uname,password:pass,nama,role,nik,aktif};
+    const o={username:uname,nama,role,nik,aktif};
+    if(!cloud&&pass)o.password=pass;
     if(emailRaw)o.email=emailRaw;
     if(cabangId)o.cabangId=cabangId;
     users.push(o);
   }else{
-    users[idx]={...users[idx],username:uname,password:pass,nama,role,nik,aktif};
+    users[idx]={...users[idx],username:uname,nama,role,nik,aktif};
+    if(cloud)delete users[idx].password;
+    else if(pass)users[idx].password=pass;
     if(emailRaw)users[idx].email=emailRaw;else delete users[idx].email;
     if(cabangId)users[idx].cabangId=cabangId;else delete users[idx].cabangId;
   }
@@ -1459,8 +1460,11 @@ var _sigajiIdleTimer=null;
 var _sigajiIdleHandlers=[];
 window.SIGAJI_LAST_ACTIVITY_KEY='sigaji_last_activity_ts';
 function getIdleLogoutMs(){
-  var m=(typeof window.SIGAJI_IDLE_LOGOUT_MINUTES!=='undefined'?parseInt(window.SIGAJI_IDLE_LOGOUT_MINUTES,10):0)||0;
-  return Math.max(0,m)*60*1000;
+  /* Bawaan 30 menit bila config.js tidak mengisi (komputer bersama / data gaji). 0 = nonaktif. */
+  var raw=typeof window.SIGAJI_IDLE_LOGOUT_MINUTES!=='undefined'?window.SIGAJI_IDLE_LOGOUT_MINUTES:30;
+  var m=parseInt(raw,10);
+  if(!isFinite(m)||m<0)m=30;
+  return m*60*1000;
 }
 function destroyIdleSession(){
   if(_sigajiIdleTimer){clearTimeout(_sigajiIdleTimer);_sigajiIdleTimer=null;}

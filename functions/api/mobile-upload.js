@@ -3,6 +3,7 @@ import {
   getTenantKey,
   jsonResponse,
   handleOptions,
+  enforceRateLimit,
 } from '../_lib/cf-shared.js';
 import { assertCallerWithNik } from '../_lib/mobile-shared.js';
 
@@ -24,6 +25,8 @@ export async function onRequestOptions({ request }) {
 
 export async function onRequestPost({ request, env }) {
   try {
+    const limited = await enforceRateLimit(request, { name: 'mobile-upload', limit: 30, windowSec: 300 });
+    if (limited) return limited;
     const tenant = getTenantKey(env);
     const sb = createSbAdmin(env);
     const auth = request.headers.get('authorization') || '';

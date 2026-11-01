@@ -578,6 +578,20 @@
   color: var(--color-danger);
   background: var(--color-danger-bg);
 }
+.sync-status[data-state='queued'] {
+  color: var(--amber-ink, #92400e);
+  background: var(--amber-bg, #fef3c7);
+}
+.sync-count {
+  display: inline-block;
+  min-width: 16px;
+  padding: 0 5px;
+  margin-left: 4px;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--wh);
+  text-align: center;
+}
 .sync-retry-btn {
   margin-left: 6px;
   padding: 1px 8px;
@@ -1979,6 +1993,14 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   font-size: 10px;
   color: var(--ink-subtle);
   border-top: 1px solid var(--table-head-bg);
+}
+.sigaji-toast-undo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sigaji-toast-undo .sync-retry-btn {
+  flex-shrink: 0;
 }
 .sigaji-cmdk-hint kbd {
   background: var(--table-head-bg);

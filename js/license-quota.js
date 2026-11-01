@@ -16,6 +16,7 @@
 
   function isKaryawanAktifLic(k) {
     if (!k || !k.nik) return false;
+    if (k.dihapusPada) return false;
     return !String(k.tgl_berhenti || '').trim();
   }
 
