@@ -1,16 +1,16 @@
 /* SiGaji Product v3 — bento dashboard, timeline, tema, waterfall, narasi, tour */
 (function () {
   var WIDGET_DEFS = {
-    hero: { label: 'Periode & countdown', col: 8, row: 2, icon: '&#128197;' },
-    sparkline: { label: 'Sparkline neto', col: 4, row: 2, icon: '&#128200;' },
-    kpis: { label: 'Ringkasan KPI', col: 12, row: 1, icon: '&#128176;' },
-    dept_chips: { label: 'Chip departemen', col: 4, row: 1, icon: '&#127970;' },
-    compliance: { label: 'Deadline kepatuhan', col: 4, row: 2, icon: '&#128337;' },
-    anomalies: { label: 'Anomali payroll', col: 4, row: 2, icon: '&#9888;' },
-    narrative: { label: 'Cerita payroll', col: 8, row: 2, icon: '&#128221;' },
-    alerts: { label: 'Peringatan', col: 4, row: 1, icon: '&#128276;' },
+    hero: { label: 'Periode aktif', col: 8, row: 2, icon: '&#128197;' },
+    sparkline: { label: 'Tren gaji 6 bulan', col: 4, row: 2, icon: '&#128200;' },
+    kpis: { label: 'Angka payroll', col: 12, row: 1, icon: '&#128176;' },
+    dept_chips: { label: 'Per bagian', col: 4, row: 1, icon: '&#127970;' },
+    compliance: { label: 'Jadwal bayar & lapor', col: 4, row: 2, icon: '&#128337;' },
+    anomalies: { label: 'Yang perlu dicek', col: 4, row: 2, icon: '&#9888;' },
+    narrative: { label: 'Ringkasan bulan ini', col: 8, row: 2, icon: '&#128221;' },
+    alerts: { label: 'Pengingat', col: 4, row: 1, icon: '&#128276;' },
     att: { label: 'Kehadiran', col: 6, row: 2, icon: '&#128100;' },
-    dept_table: { label: 'Tabel dept', col: 6, row: 2, icon: '&#128203;' },
+    dept_table: { label: 'Per bagian (tabel)', col: 6, row: 2, icon: '&#128203;' },
   };
 
   var DEFAULT_ORDER = [
@@ -33,19 +33,19 @@
       body: 'Pilih tahun, lalu klik bulan — seluruh aplikasi (gaji, absensi, slip, PPh) mengikuti.',
     },
     {
-      sel: '#dash-bento-grid [data-widget="hero"]',
-      title: 'Periode aktif',
-      body: 'Countdown menuju tanggal bayar gaji. Angka estimasi mengikuti periode di timeline.',
+      sel: '#dash-brief',
+      title: 'Tiga hal di dashboard',
+      body: 'Status periode, daftar yang perlu dikerjakan, dan tiga angka: dibayar ke karyawan, pajak, jumlah orang. Sisanya di Lihat detail.',
     },
     {
-      sel: '#dash-bento-grid [data-widget="anomalies"]',
-      title: 'Cek sebelum final',
-      body: 'Anomali otomatis — pastikan bersih sebelum transfer gaji.',
+      sel: '#dash-brief .dash-tindakan',
+      title: 'Yang perlu dikerjakan',
+      body: 'Rekening kosong, gaji pokok 0, cuti menunggu, atau pajak belum lengkap — tiap baris ada tombol loncat.',
     },
     {
-      sel: '#dash-bento-grid [data-widget="narrative"]',
-      title: 'Cerita untuk direksi',
-      body: 'Ringkasan naratif bulan ini — bisa export PDF.',
+      sel: '#dash-brief .dash-kpi3',
+      title: 'Tiga angka',
+      body: 'Dibayar ke karyawan, pajak dipotong, jumlah orang. Perkiraan — bukan slip final. Tren dan grafik ada di Lihat detail.',
     },
     {
       sel: '.ni[data-pg="penggajian"]',
@@ -237,6 +237,22 @@
 
     function widgetShell(id, inner) {
       var def = WIDGET_DEFS[id] || { col: 4, row: 1, label: id };
+      var arrange = !!window.__sigajiDashArrange;
+      var chrome = arrange
+        ? '<span class="bento-drag" title="Seret untuk ubah urutan">⠿</span>' +
+          '<span class="bento-widget-title">' +
+          def.icon +
+          ' ' +
+          escapeHtml(def.label) +
+          '</span>' +
+          '<button type="button" class="bento-widget-hide btn btn-xs btn-out" title="Sembunyikan widget"' +
+          sigajiDataAction('bento-hide', { id: id }) +
+          '>−</button>'
+        : '<span class="bento-widget-title">' +
+          def.icon +
+          ' ' +
+          escapeHtml(def.label) +
+          '</span>';
       return (
         '<div class="bento-widget" data-widget="' +
         id +
@@ -244,17 +260,14 @@
         def.col +
         '" data-row="' +
         def.row +
-        '" draggable="true">' +
-        '<div class="bento-widget-head">' +
-        '<span class="bento-drag" title="Seret untuk ubah urutan">⠿</span>' +
-        '<span class="bento-widget-title">' +
-        def.icon +
-        ' ' +
-        escapeHtml(def.label) +
-        '</span>' +
-        '<button type="button" class="bento-widget-hide btn btn-xs btn-out" title="Sembunyikan widget"' +
-        sigajiDataAction('bento-hide', { id: id }) +
-        '>−</button></div>' +
+        '"' +
+        (arrange ? ' draggable="true"' : '') +
+        '>' +
+        '<div class="bento-widget-head' +
+        (arrange ? '' : ' bento-widget-head-static') +
+        '">' +
+        chrome +
+        '</div>' +
         '<div class="bento-widget-body">' +
         inner +
         '</div></div>'
@@ -284,7 +297,7 @@
         (netoSeries.length
           ? sparklineSvg(netoSeries, 200, 56)
           : '<div class="text-subtle font-11">Belum cukup periode</div>') +
-        '<div class="bento-spark-lbl">Neto 6 bulan terakhir</div>' +
+        '<div class="bento-spark-lbl">Dibayar ke karyawan — 6 bulan terakhir</div>' +
         (netoSeries.length
           ? '<div class="bento-spark-val">' + fmt(netoSeries[netoSeries.length - 1]) + '</div>'
           : '') +
@@ -295,13 +308,13 @@
         '<div class="bento-kpi" data-tour="kpi-kar"><span class="bento-kpi-lbl">Karyawan</span><span class="bento-kpi-val">' +
         (ctx.nKar != null ? ctx.nKar : '-') +
         '</span></div>' +
-        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'bruto' }) + '><span class="bento-kpi-lbl">Gross PPh</span><span class="bento-kpi-val sigaji-money">' +
+        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'bruto' }) + '><span class="bento-kpi-lbl">Sebelum pajak</span><span class="bento-kpi-val sigaji-money">' +
         fmt(ctx.tB || 0) +
-        '</span><span class="bento-kpi-hint" title="Rincian gross → potongan → neto periode">Ketuk untuk rincian</span></div>' +
-        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'pph' }) + '><span class="bento-kpi-lbl">PPh 21</span><span class="bento-kpi-val sigaji-money-warn">' +
+        '</span><span class="bento-kpi-hint" title="Rincian sebelum pajak → potongan → dibayar">Ketuk untuk rincian</span></div>' +
+        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'pph' }) + '><span class="bento-kpi-lbl">Pajak dipotong</span><span class="bento-kpi-val sigaji-money-warn">' +
         fmt(ctx.tP || 0) +
         '</span></div>' +
-        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'neto' }) + '><span class="bento-kpi-lbl">Neto</span><span class="bento-kpi-val sigaji-money-ok">' +
+        '<div class="bento-kpi bento-kpi-click"' + sigajiDataAction('explain-summary', { type: 'neto' }) + '><span class="bento-kpi-lbl">Dibayar ke karyawan</span><span class="bento-kpi-val sigaji-money-ok">' +
         fmt(ctx.tN || 0) +
         '</span></div></div>' +
         (ctx.hintHtml ? '<div class="dash-kpi-hint mt-md">' + ctx.hintHtml + '</div>' : ''),
@@ -342,7 +355,7 @@
       att: '<div id="d-att-chart"></div>',
 
       dept_table:
-        '<div class="table-wrap"><table><thead><tr><th>Dept</th><th>Kar</th><th>Trend neto</th><th>Gross</th><th>Neto</th></tr></thead><tbody id="d-table"></tbody></table></div>',
+        '<div class="table-wrap"><table><thead><tr><th>Bagian</th><th>Kar</th><th>Tren</th><th>Sebelum pajak</th><th>Dibayar</th></tr></thead><tbody id="d-table"></tbody></table></div>',
     };
 
     grid.innerHTML = order
@@ -351,7 +364,7 @@
       })
       .join('');
 
-    sigajiBindBentoDrag(grid);
+    if (window.__sigajiDashArrange) sigajiBindBentoDrag(grid);
     try {
       if (typeof renderDashComplianceCalendar === 'function') renderDashComplianceCalendar();
     } catch(e1){sigajiCatchWarn("js/modules/sigaji-product-v3.js",e1);}

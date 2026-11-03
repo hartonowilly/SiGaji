@@ -473,6 +473,13 @@ html.sigaji-mobile-nav #sidebar-wrap .nsec {
 }
 
 /* ── Dashboard bento ── */
+html.sigaji-mobile-nav .dash-kpi3 {
+  grid-template-columns: 1fr;
+}
+html.sigaji-mobile-nav .dash-tindakan-row {
+  flex-direction: column;
+  align-items: stretch;
+}
 html.sigaji-mobile-nav .dash-bento-toolbar {
   flex-direction: column;
   align-items: stretch !important;
