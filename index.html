@@ -8,23 +8,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.5">
-<link rel="stylesheet" href="/css/styles.css?v=11.7.5">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.5">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.5">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.5">
-<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.5">
-<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.5">
-<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.5">
-<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.5">
-<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.5">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.6">
+<link rel="stylesheet" href="/css/styles.css?v=11.7.6">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.6">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.6">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.6">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.6">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.6">
+<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.6">
+<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.6">
+<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.6">
 <style>
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.7.5"></script>
+<script src="/js/modules/app-api-shim.js?v=11.7.6"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.7.5"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.7.6"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -644,12 +644,13 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <!-- MASTER PERUSAHAAN -->
 <div class="pg" id="pg-master">
   <div class="ph page-header">
-    <div><div class="pt">Master Perusahaan</div><div class="pst">Profil PT, periode gaji, UMK, libur, PTKP, TER &amp; saldo PPh</div></div>
+    <div><div class="pt">Master Perusahaan</div><div class="pst">Profil PT, periode gaji, UMK, template gaji, libur, PTKP, TER &amp; saldo PPh</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" data-mstab="prs" data-panel="m-prs">&#127970; Profil Perusahaan</div>
     <div class="tab" data-mstab="periode" data-panel="m-periode">&#128197; Periode Gaji & THR</div>
     <div class="tab" data-mstab="umk" data-panel="m-umk">&#128176; UMK</div>
+    <div class="tab" data-mstab="gaji-tpl" data-panel="m-gaji-tpl">&#128176; Template Gaji</div>
     <div class="tab" data-mstab="libur" data-panel="m-libur">&#127976; Hari Libur &amp; Cuti</div>
     <div class="tab" data-mstab="potongan" data-panel="m-potongan" data-master-adv="1">&#9998; Aturan Potongan</div>
     <div class="tab" data-mstab="ter" data-panel="m-ter" data-master-adv="1">&#9878; PTKP &amp; TER</div>
@@ -752,6 +753,56 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
         <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="applyUmkToAllGapok">Set gaji pokok = UMK cabangnya</button>
       </div>
       <div id="umk-history-wrap"></div>
+    </div>
+  </div>
+  <div id="m-gaji-tpl" class="master-tab-panel u-hidden">
+    <div class="card">
+      <div class="ct">Template Gaji (jabatan / grade)</div>
+      <div class="info-box info-blue font-11 tabs-spaced-lg leading-tight">
+        Saat HRD mengisi jabatan atau grade di profil karyawan, gaji pokok dan tunjangan terisi dari template yang paling cocok:
+        kombinasi jabatan+grade, lalu grade saja, lalu jabatan saja. BPJS dan natura tidak diubah. Mengubah template di sini tidak menimpa karyawan yang sudah ada, kecuali Anda klik terapkan.
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Nama</th><th>Kunci</th><th>Gaji pokok</th><th>Tunjangan</th><th></th></tr></thead>
+          <tbody id="tb-gaji-tpl"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" id="gaji-tpl-form">
+      <div class="ct" id="gaji-tpl-form-title">Template baru</div>
+      <div class="fg2">
+        <div class="fg"><label>Nama template</label><input id="gaji-tpl-nama" placeholder="Supervisor Grade 3"></div>
+        <div class="fg"><label>Jabatan</label><input id="gaji-tpl-jabatan" list="sp-jabatan-dl" placeholder="kosong = semua jabatan (kunci grade)"></div>
+        <div class="fg"><label>Grade</label><input id="gaji-tpl-grade" list="sp-grade-dl" placeholder="kosong = semua grade (kunci jabatan)"></div>
+        <div class="fg"><label>Gaji pokok</label><input type="text" class="inp-rp" id="gaji-tpl-gapok" data-rp="1" placeholder="0"></div>
+        <div class="fg"><label>Siklus gaji (opsional)</label>
+          <select id="gaji-tpl-siklus">
+            <option value="">Tidak diubah</option>
+            <option value="bulanan">Bulanan</option>
+            <option value="mingguan">Mingguan</option>
+            <option value="harian">Harian</option>
+          </select>
+        </div>
+      </div>
+      <div class="stit mt1">Tunjangan</div>
+      <div id="gaji-tpl-tunj-list"></div>
+      <button type="button" class="btn btn-sm btn-out mt1" data-sigaji-action="invoke" data-fn="addGajiTplTunjRow">+ Tunjangan</button>
+      <div class="stit mt1">Potongan tetap (opsional)</div>
+      <div id="gaji-tpl-pot-list"></div>
+      <button type="button" class="btn btn-sm btn-out mt1" data-sigaji-action="invoke" data-fn="addGajiTplPotRow">+ Potongan</button>
+      <div class="fl gap2 flex-wrap items-end mt2">
+        <button type="button" class="btn btn-p" data-sigaji-action="invoke" data-fn="simpanGajiTemplate">Simpan template</button>
+        <button type="button" class="btn btn-out" data-sigaji-action="invoke" data-fn="resetGajiTplForm">Template baru</button>
+        <button type="button" class="btn btn-out" id="gaji-tpl-btn-apply" data-sigaji-action="invoke" data-fn="terapkanGajiTplKeKaryawan">Terapkan ke karyawan yang cocok</button>
+      </div>
+      <div class="fl gap2 flex-wrap items-end mt2">
+        <div class="fg flex-1 min-w-220">
+          <label>Buat dari karyawan yang sudah ada</label>
+          <select id="gaji-tpl-dari-kar"></select>
+        </div>
+        <button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="gajiTplDariKaryawan">Salin ke form</button>
+      </div>
     </div>
   </div>
   <div id="m-periode" class="master-tab-panel u-hidden">
@@ -1196,7 +1247,15 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
           </div>
           <div class="font-10 text-muted mt-xs leading-normal">Dropdown = lokasi e-Bupot saja. <strong>Mutasi</strong> menyesuaikan gaji pokok ke UMK cabang baru dan tunjangan tetap agar total THP sama.</div>
         </div>
-        <div class="fg"><label>Jabatan</label><input id="sp-jabatan-f"></div>
+        <div class="fg"><label>Jabatan</label>
+          <input id="sp-jabatan-f" list="sp-jabatan-dl" data-sigaji-action="invoke" data-fn="onSpJabatanGradeInput" data-sigaji-live="1">
+          <datalist id="sp-jabatan-dl"></datalist>
+        </div>
+        <div class="fg"><label>Grade</label>
+          <input id="sp-grade-f" list="sp-grade-dl" placeholder="opsional" data-sigaji-action="invoke" data-fn="onSpJabatanGradeInput" data-sigaji-live="1">
+          <datalist id="sp-grade-dl"></datalist>
+        </div>
+        <div class="fg ff"><div class="font-10 text-muted leading-normal" id="sp-gaji-tpl-hint">Isi jabatan atau grade untuk mengisi komponen gaji dari template.</div></div>
         <div class="fg"><label>Status Karyawan</label><select id="sp-status-f"><option>Tetap</option><option>Kontrak</option><option>Probasi</option><option>PKWT</option></select></div>
         <div class="fg"><label>Tanggal Masuk</label><input type="date" id="sp-masuk-f"></div>
         <div class="fg"><label>Tgl. berhenti (opsional, untuk 1721-A1)</label><input type="date" id="sp-berhenti-f" title="Jika diisi: bukti potong A1 hanya memuat periode gaji sampai tanggal ini (mis. resign Februari)" data-sigaji-action="invoke" data-fn="toggleSpPhkWrap" data-sigaji-live="1"></div>
@@ -1678,54 +1737,55 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.7.5"></script>
-<script src="/js/pajak-aturan.js?v=11.7.5"></script>
-<script src="/js/sigaji-icons.js?v=11.7.5"></script>
-<script src="/js/sigaji-ui.js?v=11.7.5"></script>
-<script src="/js/sigaji-dom.js?v=11.7.5"></script>
-<script src="/js/sigaji-api.js?v=11.7.5"></script>
-<script src="/js/karyawan-tipe.js?v=11.7.5"></script>
-<script src="/js/siklus-bayar.js?v=11.7.5"></script>
-<script src="/js/storage-idb.js?v=11.7.5"></script>
-<script src="/js/storage.js?v=11.7.5"></script>
-<script src="/js/ptkp.js?v=11.7.5"></script>
-<script src="/js/modules/app-globals.js?v=11.7.5"></script>
-<script src="/js/modules/app-core.js?v=11.7.5"></script>
-<script src="/js/modules/app-access.js?v=11.7.5"></script>
-<script src="/js/modules/app-auth.js?v=11.7.5"></script>
-<script src="/js/modules/app-sys.js?v=11.7.5"></script>
-<script src="/js/modules/app-hr.js?v=11.7.5"></script>
-<script src="/js/modules/app-hr-komponen.js?v=11.7.5"></script>
-<script src="/js/modules/app-hr-payroll.js?v=11.7.5"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.7.5"></script>
-<script src="/js/modules/app-slip.js?v=11.7.5"></script>
-<script src="/js/modules/app-reports.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-converter-bank.js?v=11.7.5"></script>
-<script src="/js/modules/ebupot-export.js?v=11.7.5"></script>
-<script src="/js/modules/bpjs-export.js?v=11.7.5"></script>
-<script src="/js/modules/app-absensi.js?v=11.7.5"></script>
-<script src="/js/modules/app-mobile.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.5"></script>
-<script src="/js/modules/app-master.js?v=11.7.5"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.7.5"></script>
-<script src="/js/modules/app-shell.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.7.5"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.7.5"></script>
-<script src="/js/pesangon.js?v=11.7.5"></script>
-<script src="/js/payroll-worker-host.js?v=11.7.5"></script>
-<script src="/js/config.js?v=11.7.5"></script>
+<script src="/js/constants.js?v=11.7.6"></script>
+<script src="/js/pajak-aturan.js?v=11.7.6"></script>
+<script src="/js/sigaji-icons.js?v=11.7.6"></script>
+<script src="/js/sigaji-ui.js?v=11.7.6"></script>
+<script src="/js/sigaji-dom.js?v=11.7.6"></script>
+<script src="/js/sigaji-api.js?v=11.7.6"></script>
+<script src="/js/karyawan-tipe.js?v=11.7.6"></script>
+<script src="/js/siklus-bayar.js?v=11.7.6"></script>
+<script src="/js/storage-idb.js?v=11.7.6"></script>
+<script src="/js/storage.js?v=11.7.6"></script>
+<script src="/js/ptkp.js?v=11.7.6"></script>
+<script src="/js/modules/app-globals.js?v=11.7.6"></script>
+<script src="/js/modules/app-core.js?v=11.7.6"></script>
+<script src="/js/modules/app-access.js?v=11.7.6"></script>
+<script src="/js/modules/app-auth.js?v=11.7.6"></script>
+<script src="/js/modules/app-sys.js?v=11.7.6"></script>
+<script src="/js/modules/app-hr.js?v=11.7.6"></script>
+<script src="/js/modules/app-hr-komponen.js?v=11.7.6"></script>
+<script src="/js/modules/app-hr-gaji-tpl.js?v=11.7.6"></script>
+<script src="/js/modules/app-hr-payroll.js?v=11.7.6"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.7.6"></script>
+<script src="/js/modules/app-slip.js?v=11.7.6"></script>
+<script src="/js/modules/app-reports.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-converter-bank.js?v=11.7.6"></script>
+<script src="/js/modules/ebupot-export.js?v=11.7.6"></script>
+<script src="/js/modules/bpjs-export.js?v=11.7.6"></script>
+<script src="/js/modules/app-absensi.js?v=11.7.6"></script>
+<script src="/js/modules/app-mobile.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.6"></script>
+<script src="/js/modules/app-master.js?v=11.7.6"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.7.6"></script>
+<script src="/js/modules/app-shell.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.7.6"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.7.6"></script>
+<script src="/js/pesangon.js?v=11.7.6"></script>
+<script src="/js/payroll-worker-host.js?v=11.7.6"></script>
+<script src="/js/config.js?v=11.7.6"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.7.5"></script>
-<script src="/js/cloud-roles.js?v=11.7.5"></script>
-<script src="/js/cloud-delta.js?v=11.7.5"></script>
-<script src="/js/outbox.js?v=11.7.5"></script>
-<script src="/js/cloud-tables.js?v=11.7.5"></script>
-<script src="/js/cloud-sync.js?v=11.7.5"></script>
-<script src="/js/modules/app-boot.js?v=11.7.5"></script>
-<script src="/js/sigaji-events.js?v=11.7.5"></script>
+<script src="/js/cloud-branding.js?v=11.7.6"></script>
+<script src="/js/cloud-roles.js?v=11.7.6"></script>
+<script src="/js/cloud-delta.js?v=11.7.6"></script>
+<script src="/js/outbox.js?v=11.7.6"></script>
+<script src="/js/cloud-tables.js?v=11.7.6"></script>
+<script src="/js/cloud-sync.js?v=11.7.6"></script>
+<script src="/js/modules/app-boot.js?v=11.7.6"></script>
+<script src="/js/sigaji-events.js?v=11.7.6"></script>
 </body>
 </html>

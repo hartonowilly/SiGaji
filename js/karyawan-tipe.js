@@ -216,6 +216,8 @@
       nama: tipe === 'tidak_tetap' ? 'Pegawai Tidak Tetap Baru' : 'Karyawan Baru',
       dept: 'Operasional',
       jabatan: tipe === 'tidak_tetap' ? 'Tenaga Tidak Tetap' : 'Staff',
+      grade: '',
+      _gajiTplFresh: true,
       status: tipe === 'tidak_tetap' ? 'Kontrak' : 'Tetap',
       masuk: new Date().toISOString().split('T')[0],
       ptkp: 'TK0',

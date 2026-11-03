@@ -299,6 +299,7 @@ function seed() {
       ]),
       store('bentoLayouts', {}),
       store('cabang', []),
+      store('gajiTemplates', []),
       // Dokumen lama (sebelum v12) — tidak boleh dibaca lagi.
       store('absensi', { K001: { '2026-10-01': 'LAMA' } }),
     ],

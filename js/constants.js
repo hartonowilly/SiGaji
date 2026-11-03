@@ -111,7 +111,7 @@ const SUBTABS={
   karyawan:['info'],
   kompgaji:['gaji','tunjvar','bpjs','natura','pphret','ring'],
   absensi:['kalender','cuti','lokasi','pengajuan'],
-  master:['prs','periode','umk','libur','potongan','ter','saldo-pph'],
+  master:['prs','periode','umk','gaji-tpl','libur','potongan','ter','saldo-pph'],
   laporan:['rekap','variance','pph'],
   approval:['pend','hist'],
 };
@@ -122,6 +122,7 @@ const SUBTAB_LBL={
   'absensi.kalender':'Kalender Absensi','absensi.cuti':'Tracking Cuti',
   'absensi.lokasi':'Lokasi & Penugasan','absensi.pengajuan':'Persetujuan Cuti',
   'master.prs':'Profil Perusahaan','master.periode':'Periode Gaji & THR','master.umk':'UMK',
+  'master.gaji-tpl':'Template Gaji',
   'master.libur':'Hari Libur & Kuota Cuti','master.potongan':'Aturan Potongan','master.ter':'PTKP & TER',
   'master.saldo-pph':'Saldo PPh (migrasi onboarding)',
   'laporan.rekap':'Rekap Penggajian','laporan.variance':'Variance Bulanan','laporan.pph':'PPh 21 & Bukti Potong',
@@ -142,7 +143,7 @@ const MODULES=[
   {id:'simulasi',lbl:'Simulasi What-if',icon:'&#128202;',sec:'Penggajian'},
   {id:'slip',lbl:'Slip Gaji',icon:'&#128203;',sec:'Penggajian'},
   {id:'laporan',lbl:'Laporan & PPh',icon:'&#128196;',sec:'Laporan',subtabs:['rekap','variance','pph']},
-  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','libur','potongan','ter','saldo-pph']},
+  {id:'master',lbl:'Master Perusahaan',icon:'&#9881;',sec:'Pengaturan',subtabs:['prs','periode','umk','gaji-tpl','libur','potongan','ter','saldo-pph']},
   {id:'backup',lbl:'Backup & Sistem',icon:'&#128190;',sec:'Pengaturan',adminOnly:true},
   {id:'users',lbl:'Manajemen User',icon:'&#128101;',sec:'Pengaturan'},
   {id:'myslip',lbl:'Slip Gaji Saya',icon:'&#128203;',sec:'Saya'},
@@ -185,10 +186,10 @@ function bulanUPMKPasal41(months){
   if(months<36)return 0;if(months<72)return 2;if(months<108)return 3;if(months<144)return 4;
   if(months<180)return 5;if(months<216)return 6;if(months<252)return 7;if(months<288)return 8;return 10;
 }
-const SCHEMA_VERSION=22;
+const SCHEMA_VERSION=23;
 /** Hanya login Supabase + data cloud; tidak ada login username admin/hrd lokal. */
 window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Label aplikasi di judul tab, status sistem, dan meta backup. Tanpa nomor versi — versi deploy ada di SIGAJI_BUILD. */
 const SIGAJI_APP_LABEL='SiGaji';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.7.5';
+const SIGAJI_MODULES_CACHE='11.7.6';

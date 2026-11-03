@@ -3,7 +3,7 @@ const path = require('path');
 const root = path.join(__dirname, '..', 'js', 'modules');
 const order = [
   'app-globals.js', 'app-core.js', 'app-access.js', 'app-auth.js', 'app-sys.js',
-  'app-hr.js', 'app-hr-komponen.js', 'app-hr-payroll.js', 'app-slip.js',
+  'app-hr.js', 'app-hr-komponen.js', 'app-hr-gaji-tpl.js', 'app-hr-payroll.js', 'app-slip.js',
   'app-reports.js', 'app-absensi.js', 'app-master.js', 'app-shell.js',
 ];
 let out = '/* Arsip monolit — digabung dari js/modules */\n';
