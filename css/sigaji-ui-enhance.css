@@ -1475,6 +1475,103 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+/* ══ Dashboard layar pertama (3 pertanyaan) ══ */
+.dash-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dash-status {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--tx);
+  line-height: 1.35;
+}
+.dash-brief-h {
+  margin: 0 0 0.5rem;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: none;
+}
+.dash-tindakan {
+  background: var(--wh);
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+}
+.dash-tindakan-ok {
+  color: var(--color-success, #15803d);
+  font-size: 14px;
+  font-weight: 600;
+}
+.dash-tindakan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.dash-tindakan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--color-surface-muted, #f1f5f9);
+}
+.dash-tindakan-row:last-child { border-bottom: 0; }
+.dash-tindakan-text {
+  font-size: 13px;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
+}
+.dash-kpi3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.dash-kpi3-card {
+  text-align: left;
+  background: var(--wh);
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.dash-kpi3-card.dash-kpi3-static { cursor: default; }
+.dash-kpi3-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: 0.35rem;
+}
+.dash-kpi3-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.dash-kpi3-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.dash-brief-bar { margin: 12px 0 8px; }
+.bento-widget-head-static { cursor: default; }
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--color-primary, #2563eb);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
 /* ══ Product v3: bento, timeline, tema, waterfall, tour ══ */
 .dash-bento-grid {
   display: grid;

@@ -141,19 +141,11 @@ function renderDashBody(){
       if(b.izin)tip+=' · izin '+fmtHr(b.izin);
       if(b.sakit)tip+=' · sakit '+fmtHr(b.sakit);
       if(b.alpha)tip+=' · alpha '+fmtHr(b.alpha);
-      return '<div class="dash-att-bar-wrap"><div class="dash-att-bar" style="height:'+b.h+'px" title="'+tip+'"></div>'
-        +'<div class="dash-att-bar-lbl">'+b.d+'</div>'
-        +(nKar?'<div class="dash-att-bar-sub">'+fmtHr(b.hadir)+'/'+nKar+'</div>':'')+'</div>';
+      return '<div class="dash-att-bar-wrap"><div class="dash-att-bar" style="height:'+b.h+'px" title="'+tip+'"></div></div>';
     }).join('');
     var avgHadir=nDays&&nKar?Math.round((stats.hadir/(nDays*nKar))*100):0;
-    attHtml='<p class="dash-att-hint">Grafik harian — proporsi hadir per hari.</p>'
-      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-subtle p-md">—</div>')
-      +'<div class="dash-att-legend">'
-      +'<span class="lg-hadir">Hadir: '+fmtHr(stats.hadir)+'</span>'
-      +'<span class="lg-izin">Izin: '+fmtHr(stats.izin)+'</span>'
-      +'<span class="lg-sakit">Sakit: '+fmtHr(stats.sakit)+'</span>'
-      +'<span class="lg-alpha">Alpha: '+fmtHr(stats.alpha)+'</span>'
-      +'<span class="ml-auto font-10 text-subtle">~'+avgHadir+'% kehadiran</span></div>';
+    attHtml='<p class="dash-att-hint">Hadir ~'+avgHadir+'% · izin '+fmtHr(stats.izin)+' · sakit '+fmtHr(stats.sakit)+' · alpha '+fmtHr(stats.alpha)+'</p>'
+      +(barHtml?'<div class="dash-att-chart">'+barHtml+'</div>':typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128197;',title:'Belum ada hari',desc:'Periode belum valid.',btnLabel:'Atur periode',btnAction:'showPg',btnActionArg:'master'}):'<div class="text-subtle p-md">—</div>');
   }
   var deptTableHtml=Object.entries(depts).map(function(ent){
     var d=ent[0],v=ent[1];
@@ -167,6 +159,11 @@ function renderDashBody(){
       pRet:pRet,pAp:pAp,attHtml:attHtml,deptTableHtml:deptTableHtml
     });
   }catch(eBento){console.error('bento',eBento);}
+  try{
+    if(typeof sigajiRenderDashBrief==='function')sigajiRenderDashBrief({
+      p:p,tB:tB,tP:tP,tN:tN,nKar:list.length,list:list,pAp:pAp,thrAktif:!!p.thr_aktif
+    });
+  }catch(eBrief){console.error('dash-brief',eBrief);}
   try{if(typeof sigajiUpdatePeriodStickyBar==='function')sigajiUpdatePeriodStickyBar();}catch(ePs){sigajiCatchWarn("js/modules/app-hr.js",ePs);}
   try{if(typeof sigajiRenderPeriodTimeline==='function')sigajiRenderPeriodTimeline();}catch(eTl){sigajiCatchWarn("js/modules/app-hr.js",eTl);}
 }
