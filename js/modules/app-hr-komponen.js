@@ -229,8 +229,11 @@ function closePanel(){
   document.body.classList.remove('sigaji-kar-panel-open');
   if(!document.getElementById('slide-panel-payroll').classList.contains('show')){
     document.getElementById('panel-overlay').classList.remove('show');
-    try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);}catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
   }
+  try{
+    if(typeof sigajiApplyPanelDockForViewport==='function')sigajiApplyPanelDockForViewport();
+    else if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);
+  }catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
   cpNik=null;
 }
 function closeAnyPanel(){closePanel();closePayrollPanel();}
@@ -312,8 +315,11 @@ function closePayrollPanel(){
   document.body.classList.remove('sigaji-payroll-panel-open');
   if(!document.getElementById('slide-panel').classList.contains('show')){
     document.getElementById('panel-overlay').classList.remove('show');
-    try{if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);}catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
   }
+  try{
+    if(typeof sigajiApplyPanelDockForViewport==='function')sigajiApplyPanelDockForViewport();
+    else if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(false);
+  }catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
   cpNik=null;
 }
 function simpanPayrollPanel(){

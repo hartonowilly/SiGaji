@@ -8,6 +8,9 @@
   --sigaji-topbar-h: 58px;
   --content-pad-x: 1.65rem;
   --content-pad-y: 1.5rem;
+  /* Lebar panel samping (profil SDM / komponen gaji) — dipakai saat dock di layar lebar */
+  --sigaji-kar-panel-w: min(720px, 50vw);
+  --sigaji-payroll-panel-w: min(780px, 54vw);
 
   /* Base palette — nilai sumber (styles.css alias ke sini; jangan circular) */
   --wh: #ffffff;
