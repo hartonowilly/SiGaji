@@ -787,17 +787,37 @@ function exportBackup(){
   simpanRiwayatBackup(data._meta);
   var inf=document.getElementById('backup-info');
   if(inf)inf.textContent='Backup lengkap diunduh ('+DATA_KEYS.length+' jenis data, '+data._meta.totalKaryawan+' karyawan, snapshot '+(data._meta.snapshotPeriodeCount||0)+' periode / '+(data._meta.snapshotRowCount||0)+' baris): '+filename;
-  toast('Backup lengkap diunduh');
-  jsonBackupSaveToCloud(data).then(function(ok){
-    if(ok){
-      if(inf)inf.textContent=(inf.textContent||'')+' — salinan JSON juga di cloud.';
-      toast('Salinan JSON tersimpan di cloud');
-      renderBackupRiwayat();
+  toast('Backup lengkap diunduh ke komputer');
+}
+async function exportBackupJsonCloud(){
+  var inf=document.getElementById('backup-info');
+  var btn=document.getElementById('btn-json-cloud-save');
+  try{
+    if(!sigajiIsAdminOrHrd()){toast('Hanya Admin/HRD');return;}
+    if(!window.sigajiSupabase){
+      toast('Login cloud dulu (email Supabase)');
+      if(inf)inf.textContent='Cloud belum siap — login email, lalu coba lagi.';
+      return;
     }
-  }).catch(function(e){
-    console.warn('jsonBackupSaveToCloud', e);
-    toast('JSON diunduh, tapi gagal simpan ke cloud: '+(e&&e.message?e.message:e));
-  });
+    if(btn){btn.disabled=true;btn.textContent='Menyimpan ke cloud…';}
+    if(inf)inf.textContent='Menyimpan JSON ke cloud…';
+    var data=buildExportData();
+    var ok=await jsonBackupSaveToCloud(data);
+    if(!ok){
+      toast('Gagal: login cloud (email Supabase) dulu');
+      if(inf)inf.textContent='Belum ada sesi cloud.';
+      return;
+    }
+    if(inf)inf.textContent='JSON tersimpan di cloud ('+DATA_KEYS.length+' jenis data, '+(data._meta&&data._meta.totalKaryawan||0)+' karyawan). Lihat Riwayat di bawah.';
+    toast('JSON tersimpan di cloud — lihat Riwayat backup');
+    renderBackupRiwayat();
+  }catch(e){
+    console.warn('exportBackupJsonCloud', e);
+    toast('Gagal simpan JSON ke cloud: '+(e&&e.message?e.message:e));
+    if(inf)inf.textContent='Gagal simpan JSON ke cloud: '+(e&&e.message?e.message:e);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='&#9729; Simpan JSON ke cloud';}
+  }
 }
 async function jsonBackupSaveToCloud(data){
   if(!sigajiIsAdminOrHrd())return false;
@@ -899,8 +919,10 @@ function sigajiCloudBackupAvailable(){
 function sigajiUpdateCloudBackupUi(){
   var staff=sigajiIsAdminOrHrd();
   var btn=document.getElementById('btn-cloud-db-export');
+  var jsonBtn=document.getElementById('btn-json-cloud-save');
   var wrap=document.getElementById('backup-exclude-logo-wrap');
   if(btn)btn.style.display=staff?'inline-block':'none';
+  if(jsonBtn)jsonBtn.style.display=staff?'inline-block':'none';
   if(wrap)wrap.style.display=staff?'flex':'none';
 }
 async function exportCloudDatabaseBackup(){
@@ -978,6 +1000,7 @@ async function exportCloudDatabaseBackup(){
 }
 if(typeof window!=='undefined'){
   window.exportCloudDatabaseBackup=exportCloudDatabaseBackup;
+  window.exportBackupJsonCloud=exportBackupJsonCloud;
   window.jsonBackupUnduhDariCloud=jsonBackupUnduhDariCloud;
   window.jsonBackupPakaiImport=jsonBackupPakaiImport;
   window.jsonBackupSaveToCloud=jsonBackupSaveToCloud;

@@ -59,6 +59,7 @@ assert('isi template gaji utuh di backup', data.gajiTemplates[0].nama === 'Opera
 assert('file backup berisi cabang', Array.isArray(data.cabang) && data.cabang[0].id === 'c-sumbawa');
 assert('checklist backup punya Template gaji', sandbox.DATA_LABELS.gajiTemplates === 'Template gaji');
 assert('export JSON bisa disimpan ke cloud', typeof sandbox.jsonBackupSaveToCloud === 'function');
+assert('ada tombol Simpan JSON ke cloud', typeof sandbox.exportBackupJsonCloud === 'function');
 assert(
   'logo bisa dihapus dari salinan cloud',
   sandbox.jsonBackupStripLogo({ perusahaan: { logo: 'data:image/png;base64,xx' } }).perusahaan.logo === ''
