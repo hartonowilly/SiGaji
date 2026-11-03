@@ -711,8 +711,8 @@ function renderPeriodeSelects(){
     } else el.value = String(aktif);
   });
 }
-var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels','tunjVarColumns','karSnapshot','auditLog'];
-var DATA_LABELS={karyawan:'Karyawan',periodes:'Periode',hariLibur:'Hari Libur',masterCuti:'Setting Cuti',absensi:'Absensi',lembur:'Lembur',prorata:'Pro-Rata',approvals:'Approval',notifikasi:'Notifikasi',perusahaan:'Perusahaan',users:'Users',roles:'Roles',thrManual:'THR Manual',tunjVarBulan:'Tunjangan variabel per periode',tunjVarLabels:'Label kolom tunj. variabel',tunjVarColumns:'Definisi kolom tunj. variabel',karSnapshot:'Snapshot karyawan per periode',auditLog:'Audit trail payroll'};
+var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels','tunjVarColumns','karSnapshot','auditLog','cabang','gajiTemplates'];
+var DATA_LABELS={karyawan:'Karyawan',periodes:'Periode',hariLibur:'Hari Libur',masterCuti:'Setting Cuti',absensi:'Absensi',lembur:'Lembur',prorata:'Pro-Rata',approvals:'Approval',notifikasi:'Notifikasi',perusahaan:'Perusahaan',users:'Users',roles:'Roles',thrManual:'THR Manual',tunjVarBulan:'Tunjangan variabel per periode',tunjVarLabels:'Label kolom tunj. variabel',tunjVarColumns:'Definisi kolom tunj. variabel',karSnapshot:'Snapshot karyawan per periode',auditLog:'Audit trail payroll',cabang:'Daftar cabang',gajiTemplates:'Template gaji'};
 /** Salinan dalam memori agar backup identik dengan data tersimpan & tidak ada field yang terpotong */
 function sigajiDeepClone(o){try{if(o===undefined)return undefined;return JSON.parse(JSON.stringify(o));}catch(e){console.warn('sigajiDeepClone',e);return o;}}
 function buildExportData(){
@@ -750,7 +750,9 @@ function buildExportData(){
     tunjVarLabels:sigajiDeepClone(tunjVarLabels),
     tunjVarColumns:sigajiDeepClone(tunjVarColumns),
     karSnapshot:sigajiDeepClone(karSnapshot||{}),
-    auditLog:sigajiDeepClone(auditLog||[])
+    auditLog:sigajiDeepClone(auditLog||[]),
+    cabang:sigajiDeepClone(typeof cabang!=='undefined'&&Array.isArray(cabang)?cabang:[]),
+    gajiTemplates:sigajiDeepClone(typeof gajiTemplates!=='undefined'&&Array.isArray(gajiTemplates)?gajiTemplates:[])
   };
 }
 function exportBackup(){var data=buildExportData();var json=JSON.stringify(data,null,2);var blob=new Blob([json],{type:'application/json;charset=utf-8'});var a=document.createElement('a');var fn=((document.getElementById('backup-filename')&&document.getElementById('backup-filename').value)||'SiGaji_Backup').trim();var tgl=new Date().toISOString().split('T')[0];a.href=URL.createObjectURL(blob);a.download=fn+'_'+tgl+'.json';a.click();simpanRiwayatBackup(data._meta);var inf=document.getElementById('backup-info');if(inf)inf.textContent='Backup lengkap diunduh ('+DATA_KEYS.length+' jenis data, '+data._meta.totalKaryawan+' karyawan, snapshot '+(data._meta.snapshotPeriodeCount||0)+' periode / '+(data._meta.snapshotRowCount||0)+' baris): '+a.download;toast('Backup lengkap diunduh');}
@@ -919,7 +921,7 @@ function readImportFile(input){var f=input.files[0];if(!f)return;var r=new FileR
 function normalisasiData(key,val){
   var v=sigajiDeepClone(val);
   if(v===undefined)return v;
-  if(key==='karyawan')return Array.isArray(v)?v:[];
+  if(key==='karyawan'||key==='gajiTemplates'||key==='cabang')return Array.isArray(v)?v:[];
   return v;
 }
 function eksekusiImport(){
@@ -935,13 +937,15 @@ function eksekusiImport(){
       if(k==='karyawan'){var ex=karyawan.map(function(x){return x.nik;});var baru=val.filter(function(x){return !ex.includes(x.nik);});var upd=val.filter(function(x){return ex.includes(x.nik);});var baruAktif=baru.filter(function(x){return !String((x&&x.tgl_berhenti)||'').trim();});if(typeof sigajiCanAddActiveEmployees==='function'){var chk=sigajiCanAddActiveEmployees(baruAktif.length);if(!chk.ok){toast(chk.message);return;}}upd.forEach(function(nk){var i=karyawan.findIndex(function(x){return x.nik===nk.nik;});if(i>=0)karyawan[i]=Object.assign({},karyawan[i],nk);});karyawan.push.apply(karyawan,baru);if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan);}
       else if(k==='periodes'){var en=periodes.map(function(x){return x.nama;});periodes.push.apply(periodes,val.filter(function(x){return !en.includes(x.nama);}));}
       else if(k==='hariLibur'){var et=hariLibur.map(function(x){return x.tgl;});hariLibur.push.apply(hariLibur,val.filter(function(x){return !et.includes(x.tgl);}));}
+      else if(k==='cabang'){if(!Array.isArray(cabang))cabang=[];(val||[]).forEach(function(c){if(!c||!c.id){if(c)cabang.push(c);return;}var i=cabang.findIndex(function(x){return x&&x.id===c.id;});if(i>=0)cabang[i]=Object.assign({},cabang[i],c);else cabang.push(c);});}
+      else if(k==='gajiTemplates'){if(!Array.isArray(gajiTemplates))gajiTemplates=[];(val||[]).forEach(function(t){if(!t||!t.id){if(t)gajiTemplates.push(t);return;}var i=gajiTemplates.findIndex(function(x){return x&&x.id===t.id;});if(i>=0)gajiTemplates[i]=t;else gajiTemplates.push(t);});}
       else if(k==='absensi'||k==='lembur'||k==='prorata'){var cur=k==='absensi'?absensi:k==='lembur'?lembur:prorata;Object.keys(val).forEach(function(n){if(!cur[n])cur[n]=val[n];else Object.assign(cur[n],val[n]);});}
       else if(k==='karSnapshot'){if(!karSnapshot)karSnapshot={};Object.keys(val||{}).forEach(function(pn){if(!karSnapshot[pn])karSnapshot[pn]={};Object.assign(karSnapshot[pn],val[pn]||{});});}
       else if(k==='auditLog'){if(!auditLog)auditLog=[];auditLog=(auditLog||[]).concat(val||[]).slice(0,3000);}
       else if(k==='tunjVarColumns'&&Array.isArray(val))tunjVarColumns=val;
       else if(typeof val==='object'&&!Array.isArray(val)){var cur2=k==='masterCuti'?masterCuti:k==='perusahaan'?perusahaan:k==='roles'?roles:k==='tunjVarBulan'?tunjVarBulan:k==='tunjVarLabels'?tunjVarLabels:{};Object.assign(cur2,val);}
     }else{
-      if(k==='karyawan')karyawan=val;else if(k==='periodes')periodes=val;else if(k==='hariLibur')hariLibur=val;else if(k==='masterCuti')masterCuti=val;else if(k==='absensi')absensi=val;else if(k==='lembur')lembur=val;else if(k==='prorata')prorata=val;else if(k==='approvals')approvals=val;else if(k==='notifikasi')notifikasi=val;else if(k==='perusahaan')perusahaan=val;else if(k==='users')users=val;else if(k==='roles')roles=val;else if(k==='thrManual')thrManual=val;else if(k==='tunjVarBulan')tunjVarBulan=val;else if(k==='tunjVarLabels')tunjVarLabels=val;else if(k==='tunjVarColumns')tunjVarColumns=val;else if(k==='karSnapshot')karSnapshot=val||{};else if(k==='auditLog')auditLog=val||[];
+      if(k==='karyawan')karyawan=val;else if(k==='periodes')periodes=val;else if(k==='hariLibur')hariLibur=val;else if(k==='masterCuti')masterCuti=val;else if(k==='absensi')absensi=val;else if(k==='lembur')lembur=val;else if(k==='prorata')prorata=val;else if(k==='approvals')approvals=val;else if(k==='notifikasi')notifikasi=val;else if(k==='perusahaan')perusahaan=val;else if(k==='users')users=val;else if(k==='roles')roles=val;else if(k==='thrManual')thrManual=val;else if(k==='tunjVarBulan')tunjVarBulan=val;else if(k==='tunjVarLabels')tunjVarLabels=val;else if(k==='tunjVarColumns')tunjVarColumns=val;else if(k==='karSnapshot')karSnapshot=val||{};else if(k==='auditLog')auditLog=val||[];else if(k==='cabang')cabang=Array.isArray(val)?val:[];else if(k==='gajiTemplates')gajiTemplates=Array.isArray(val)?val:[];
     }
   });
   if(dipilih.indexOf('roles')>=0&&typeof window.sigajiMigrateRolePerms==='function')window.sigajiMigrateRolePerms(roles);
