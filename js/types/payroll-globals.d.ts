@@ -134,7 +134,9 @@ declare var CU: SigajiUser | null | undefined;
 declare function sigajiCatchWarn(where: string, err: unknown): void;
 declare function cariGajiTemplate(jabatan?: string, grade?: string, list?: GajiTemplate[]): GajiTemplate | null;
 declare function terapkanGajiTemplate(k: KaryawanPayroll, tpl: GajiTemplate): KaryawanPayroll;
+declare function gajiTplGapokUntukKaryawan(tpl: GajiTemplate, k?: KaryawanPayroll): Rupiah;
 declare function gajiTplPerluKonfirmasi(k: KaryawanPayroll): boolean;
+declare function onGajiTplGapokDariChange(): void;
 declare function maybeApplyGajiTplOnSave(k: KaryawanPayroll, jabatanBaru: string, gradeBaru: string): Promise<boolean> | boolean;
 declare function populateGajiTplDatalists(): void;
 declare function refreshSpGajiTplHint(): void;
@@ -458,6 +460,8 @@ interface GajiTemplate {
   nama?: string;
   jabatan?: string;
   grade?: string;
+  /** umk_cabang = gaji pokok dari UMK lokasi karyawan; nominal = angka tetap di template. */
+  gapok_dari?: 'umk_cabang' | 'nominal';
   gapok?: Rupiah;
   siklus_gaji?: string;
   tunjangan?: KaryawanPayroll['tunjangan'];

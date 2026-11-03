@@ -27,6 +27,28 @@ function gajiTplRp(n) {
   var x = Number(n);
   return isFinite(x) ? Math.round(x) : 0;
 }
+function gajiTplGapokDariUmk(tpl) {
+  return !!(tpl && tpl.gapok_dari === 'umk_cabang');
+}
+function gajiTplResolveKarCabang(k) {
+  if (k && typeof cpNik !== 'undefined' && k.nik && k.nik === cpNik) {
+    var cabEl = typeof document !== 'undefined' ? document.getElementById('sp-cabang-f') : null;
+    if (cabEl && cabEl.value) return cabEl.value;
+  }
+  if (typeof sigajiKarCabangId === 'function') return sigajiKarCabangId(k);
+  return String((k && (k.cabangId || k.cabang)) || 'utama');
+}
+/** Gaji pokok dari UMK cabang karyawan, atau nominal tetap di template. */
+function gajiTplGapokUntukKaryawan(tpl, k) {
+  if (gajiTplGapokDariUmk(tpl)) {
+    var cid = gajiTplResolveKarCabang(k);
+    var umk = typeof sigajiCabangUmk === 'function' ? sigajiCabangUmk(cid) : 0;
+    umk = gajiTplRp(umk);
+    if (umk > 0) return umk;
+    return k ? gajiTplRp(k.gapok) : 0;
+  }
+  return gajiTplRp(tpl && tpl.gapok);
+}
 function gajiTplNormSiklus(v) {
   if (typeof sigajiNormalizeSiklusGaji === 'function') return sigajiNormalizeSiklusGaji(v);
   var s = String(v == null ? '' : v).toLowerCase();
@@ -82,7 +104,7 @@ function cariGajiTemplate(jabatan, grade, list) {
 /** Salin gapok/tunjangan/potongan/siklus ke karyawan. BPJS, natura, PPh return tidak diubah. */
 function terapkanGajiTemplate(k, tpl) {
   if (!k || !tpl) return k;
-  k.gapok = gajiTplRp(tpl.gapok);
+  k.gapok = gajiTplGapokUntukKaryawan(tpl, k);
   var sik = gajiTplNormSiklus(tpl.siklus_gaji);
   if (sik) k.siklus_gaji = sik;
   k.tunjangan = gajiTplCloneTunj(tpl.tunjangan);
@@ -123,8 +145,11 @@ function gajiTplKunciLabel(tpl) {
 function gajiTplNamaHint(tpl) {
   if (!tpl) return '';
   var nTunj = (tpl.tunjangan || []).length;
-  var gap =
-    typeof fmt === 'function' ? fmt(gajiTplRp(tpl.gapok)) : 'Rp ' + String(gajiTplRp(tpl.gapok));
+  var gap = gajiTplGapokDariUmk(tpl)
+    ? 'UMK cabang'
+    : typeof fmt === 'function'
+      ? fmt(gajiTplRp(tpl.gapok))
+      : 'Rp ' + String(gajiTplRp(tpl.gapok));
   return (
     'Template: ' +
     (tpl.nama || gajiTplKunciLabel(tpl)) +
@@ -342,6 +367,18 @@ function gajiTplReadPotFromForm() {
   return out;
 }
 
+function onGajiTplGapokDariChange() {
+  var sel = document.getElementById('gaji-tpl-gapok-dari');
+  var wrap = document.getElementById('gaji-tpl-gapok-wrap');
+  var hint = document.getElementById('gaji-tpl-gapok-dari-hint');
+  var umk = !sel || sel.value !== 'nominal';
+  if (wrap) wrap.classList.toggle('u-hidden', umk);
+  if (hint) {
+    hint.textContent = umk
+      ? 'Mengikuti Master UMK lokasi karyawan. Tidak perlu isi angka.'
+      : 'Angka yang sama untuk semua cabang.';
+  }
+}
 function gajiTplFillForm(tpl) {
   tpl = tpl || {};
   __gajiTplEditId = tpl.id || '';
@@ -354,8 +391,13 @@ function gajiTplFillForm(tpl) {
   set('gaji-tpl-nama', tpl.nama || '');
   set('gaji-tpl-jabatan', tpl.jabatan || '');
   set('gaji-tpl-grade', tpl.grade || '');
+  set(
+    'gaji-tpl-gapok-dari',
+    tpl.gapok_dari === 'nominal' ? 'nominal' : tpl.gapok_dari === 'umk_cabang' || !tpl.id ? 'umk_cabang' : 'nominal'
+  );
   set('gaji-tpl-gapok', tpl.gapok != null ? tpl.gapok : '');
   set('gaji-tpl-siklus', tpl.siklus_gaji || '');
+  onGajiTplGapokDariChange();
   var tunjWrap = document.getElementById('gaji-tpl-tunj-list');
   var potWrap = document.getElementById('gaji-tpl-pot-list');
   if (tunjWrap) tunjWrap.replaceChildren();
@@ -424,13 +466,16 @@ function simpanGajiTemplate() {
     toast('Isi jabatan, grade, atau keduanya');
     return;
   }
-  var gapok = gajiTplRp((document.getElementById('gaji-tpl-gapok') || {}).value);
+  var gapokDari = String((document.getElementById('gaji-tpl-gapok-dari') || {}).value || 'umk_cabang');
+  if (gapokDari !== 'nominal') gapokDari = 'umk_cabang';
+  var gapok = gapokDari === 'nominal' ? gajiTplRp((document.getElementById('gaji-tpl-gapok') || {}).value) : 0;
   var siklus = String((document.getElementById('gaji-tpl-siklus') || {}).value || '').trim();
   var tpl = {
     id: __gajiTplEditId || gajiTplNewId(),
     nama: String(nama).trim() || gajiTplKunciLabel({ jabatan: jabatan, grade: grade }),
     jabatan: jabatan,
     grade: grade,
+    gapok_dari: gapokDari,
     gapok: gapok,
     siklus_gaji: siklus ? gajiTplNormSiklus(siklus) : '',
     tunjangan: gajiTplReadTunjFromForm(),
@@ -520,11 +565,15 @@ function gajiTplDariKaryawan() {
   }
   var nama = String(k.jabatan || k.nama || 'Template').trim();
   if (k.grade) nama += ' Grade ' + k.grade;
+  var cid = typeof sigajiKarCabangId === 'function' ? sigajiKarCabangId(k) : k.cabangId || k.cabang;
+  var umk = typeof sigajiCabangUmk === 'function' ? gajiTplRp(sigajiCabangUmk(cid)) : 0;
+  var gapokKar = gajiTplRp(k.gapok);
   gajiTplFillForm({
     id: '',
     nama: nama,
     jabatan: k.jabatan || '',
     grade: k.grade || '',
+    gapok_dari: umk > 0 && gapokKar === umk ? 'umk_cabang' : 'nominal',
     gapok: k.gapok || 0,
     siklus_gaji: k.siklus_gaji || '',
     tunjangan: k.tunjangan || [],
@@ -583,7 +632,11 @@ function renderGajiTplMaster() {
             '</strong></td><td>' +
             escapeHtml(gajiTplKunciLabel(t)) +
             '</td><td class="num cell-money">' +
-            (typeof fmt === 'function' ? fmt(gajiTplRp(t.gapok)) : gajiTplRp(t.gapok)) +
+            (gajiTplGapokDariUmk(t)
+              ? 'UMK cabang'
+              : typeof fmt === 'function'
+                ? fmt(gajiTplRp(t.gapok))
+                : gajiTplRp(t.gapok)) +
             '</td><td>' +
             nTunj +
             ' item</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="editGajiTemplate" data-arg="' +
@@ -626,4 +679,7 @@ if (typeof window !== 'undefined') {
   window.hapusGajiTplPotRow = hapusGajiTplPotRow;
   window.terapkanGajiTplKeKaryawan = terapkanGajiTplKeKaryawan;
   window.gajiTplDariKaryawan = gajiTplDariKaryawan;
+  window.onGajiTplGapokDariChange = onGajiTplGapokDariChange;
+  window.gajiTplGapokUntukKaryawan = gajiTplGapokUntukKaryawan;
+  window.gajiTplGapokDariUmk = gajiTplGapokDariUmk;
 }
