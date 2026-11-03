@@ -755,7 +755,138 @@ function buildExportData(){
     gajiTemplates:sigajiDeepClone(typeof gajiTemplates!=='undefined'&&Array.isArray(gajiTemplates)?gajiTemplates:[])
   };
 }
-function exportBackup(){var data=buildExportData();var json=JSON.stringify(data,null,2);var blob=new Blob([json],{type:'application/json;charset=utf-8'});var a=document.createElement('a');var fn=((document.getElementById('backup-filename')&&document.getElementById('backup-filename').value)||'SiGaji_Backup').trim();var tgl=new Date().toISOString().split('T')[0];a.href=URL.createObjectURL(blob);a.download=fn+'_'+tgl+'.json';a.click();simpanRiwayatBackup(data._meta);var inf=document.getElementById('backup-info');if(inf)inf.textContent='Backup lengkap diunduh ('+DATA_KEYS.length+' jenis data, '+data._meta.totalKaryawan+' karyawan, snapshot '+(data._meta.snapshotPeriodeCount||0)+' periode / '+(data._meta.snapshotRowCount||0)+' baris): '+a.download;toast('Backup lengkap diunduh');}
+var JSON_BACKUP_PREFIX='jsonBackup:';
+var JSON_BACKUP_INDEX_KEY='jsonBackupIndex';
+var JSON_BACKUP_KEEP=5;
+function jsonBackupTenantKey(){
+  return (window.SIGAJI_TENANT_KEY&&String(window.SIGAJI_TENANT_KEY).trim())||'main';
+}
+function jsonBackupStripLogo(data){
+  var o=sigajiDeepClone(data);
+  if(o&&o.perusahaan&&o.perusahaan.logo)o.perusahaan.logo='';
+  return o;
+}
+function jsonBackupDownloadFile(data, filename){
+  var json=JSON.stringify(data,null,2);
+  var blob=new Blob([json],{type:'application/json;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  return json.length;
+}
+function exportBackup(){
+  var data=buildExportData();
+  var fn=((document.getElementById('backup-filename')&&document.getElementById('backup-filename').value)||'SiGaji_Backup').trim();
+  var tgl=new Date().toISOString().split('T')[0];
+  var filename=fn+'_'+tgl+'.json';
+  jsonBackupDownloadFile(data, filename);
+  simpanRiwayatBackup(data._meta);
+  var inf=document.getElementById('backup-info');
+  if(inf)inf.textContent='Backup lengkap diunduh ('+DATA_KEYS.length+' jenis data, '+data._meta.totalKaryawan+' karyawan, snapshot '+(data._meta.snapshotPeriodeCount||0)+' periode / '+(data._meta.snapshotRowCount||0)+' baris): '+filename;
+  toast('Backup lengkap diunduh');
+  jsonBackupSaveToCloud(data).then(function(ok){
+    if(ok){
+      if(inf)inf.textContent=(inf.textContent||'')+' — salinan JSON juga di cloud.';
+      toast('Salinan JSON tersimpan di cloud');
+      renderBackupRiwayat();
+    }
+  }).catch(function(e){
+    console.warn('jsonBackupSaveToCloud', e);
+    toast('JSON diunduh, tapi gagal simpan ke cloud: '+(e&&e.message?e.message:e));
+  });
+}
+async function jsonBackupSaveToCloud(data){
+  if(!sigajiIsAdminOrHrd())return false;
+  if(!window.sigajiSupabase)return false;
+  var sess=await window.sigajiSupabase.auth.getSession();
+  if(!sess.data||!sess.data.session)return false;
+  var ex=document.getElementById('backup-exclude-logo');
+  var payload=(ex&&ex.checked)?jsonBackupStripLogo(data):sigajiDeepClone(data);
+  var id=Date.now().toString(36);
+  var storeKey=JSON_BACKUP_PREFIX+id;
+  var tk=jsonBackupTenantKey();
+  var bytes=JSON.stringify(payload).length;
+  var meta={
+    id:id,
+    store_key:storeKey,
+    tanggal:(payload._meta&&payload._meta.tanggal)||new Date().toISOString(),
+    tanggalDisplay:new Date().toLocaleString('id-ID'),
+    totalKaryawan:(payload._meta&&payload._meta.totalKaryawan)||0,
+    catatan:(payload._meta&&payload._meta.catatan)||'',
+    bytes:bytes,
+    excludeLogo:!!(ex&&ex.checked)
+  };
+  var row={tenant_key:tk, store_key:storeKey, data:payload, updated_at:new Date().toISOString()};
+  var up=await window.sigajiSupabase.from('sigaji_store').upsert(row,{onConflict:'tenant_key,store_key'});
+  if(up.error)throw up.error;
+  var idxRes=await window.sigajiSupabase.from('sigaji_store').select('data').eq('tenant_key',tk).eq('store_key',JSON_BACKUP_INDEX_KEY).maybeSingle();
+  if(idxRes.error)throw idxRes.error;
+  var items=((idxRes.data&&idxRes.data.data&&idxRes.data.data.items)||[]).slice();
+  items.unshift(meta);
+  var drop=items.slice(JSON_BACKUP_KEEP);
+  items=items.slice(0,JSON_BACKUP_KEEP);
+  var idxUp=await window.sigajiSupabase.from('sigaji_store').upsert(
+    {tenant_key:tk, store_key:JSON_BACKUP_INDEX_KEY, data:{items:items}, updated_at:new Date().toISOString()},
+    {onConflict:'tenant_key,store_key'}
+  );
+  if(idxUp.error)throw idxUp.error;
+  for(var i=0;i<drop.length;i++){
+    if(!drop[i]||!drop[i].store_key)continue;
+    await window.sigajiSupabase.from('sigaji_store').delete().eq('tenant_key',tk).eq('store_key',drop[i].store_key);
+  }
+  return true;
+}
+async function jsonBackupLoadIndex(){
+  if(!window.sigajiSupabase)return [];
+  var tk=jsonBackupTenantKey();
+  var r=await window.sigajiSupabase.from('sigaji_store').select('data').eq('tenant_key',tk).eq('store_key',JSON_BACKUP_INDEX_KEY).maybeSingle();
+  if(r.error||!r.data||!r.data.data)return [];
+  return Array.isArray(r.data.data.items)?r.data.data.items:[];
+}
+async function jsonBackupFetchPayload(id){
+  var tk=jsonBackupTenantKey();
+  var key=id&&String(id).indexOf(JSON_BACKUP_PREFIX)===0?id:JSON_BACKUP_PREFIX+id;
+  var r=await window.sigajiSupabase.from('sigaji_store').select('data').eq('tenant_key',tk).eq('store_key',key).maybeSingle();
+  if(r.error)throw r.error;
+  if(!r.data||!r.data.data)throw new Error('Salinan JSON tidak ditemukan');
+  return r.data.data;
+}
+async function jsonBackupUnduhDariCloud(id){
+  try{
+    var data=await jsonBackupFetchPayload(id);
+    var tgl=new Date().toISOString().split('T')[0];
+    jsonBackupDownloadFile(data, 'SiGaji_Backup_cloud_'+tgl+'.json');
+    toast('JSON cloud diunduh');
+  }catch(e){
+    toast('Gagal unduh JSON cloud: '+(e.message||e));
+  }
+}
+async function jsonBackupPakaiImport(id){
+  try{
+    var data=await jsonBackupFetchPayload(id);
+    importData=data;
+    var meta=data._meta||{};
+    var el=document.getElementById('import-info');
+    if(el)el.innerHTML='<strong>Dari cloud:</strong> '+escapeHtml(meta.versi||'SiGaji')+' - '+String((data.karyawan||[]).length)+' karyawan';
+    var cl=document.getElementById('import-checklist');
+    if(cl){
+      cl.innerHTML=DATA_KEYS.map(function(k){
+        var ada=data[k]!==undefined;
+        return '<label class="fl items-center gap-xs font-12" style="cursor:'+(ada?'pointer':'default')+'; opacity:'+(ada?1:.4)+'"><input class="chk-brand" type="checkbox" id="imp-'+escapeAttr(k)+'" '+(ada?'checked':'')+' '+(ada?'':'disabled')+'> '+escapeHtml(DATA_LABELS[k]||k)+'</label>';
+      }).join('');
+    }
+    var prev=document.getElementById('import-preview');
+    if(prev)prev.style.display='block';
+    if(prev&&prev.scrollIntoView)prev.scrollIntoView({block:'start',behavior:'smooth'});
+    toast('Salinan cloud siap di-import — pilih komponen lalu Import');
+  }catch(e){
+    toast('Gagal buka JSON cloud: '+(e.message||e));
+  }
+}
 function sigajiIsAdminOrHrd(){
   return !!(CU&&(CU.role==='Admin'||CU.role==='HRD'));
 }
@@ -845,9 +976,34 @@ async function exportCloudDatabaseBackup(){
     if(btn){btn.disabled=false;btn.innerHTML='&#9729; Unduh backup database (cloud)';}
   }
 }
-if(typeof window!=='undefined')window.exportCloudDatabaseBackup=exportCloudDatabaseBackup;
+if(typeof window!=='undefined'){
+  window.exportCloudDatabaseBackup=exportCloudDatabaseBackup;
+  window.jsonBackupUnduhDariCloud=jsonBackupUnduhDariCloud;
+  window.jsonBackupPakaiImport=jsonBackupPakaiImport;
+  window.jsonBackupSaveToCloud=jsonBackupSaveToCloud;
+}
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}}
-function renderBackupRiwayat(){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');var el=document.getElementById('backup-riwayat');if(!el)return;el.innerHTML=r.length?r.map(function(x,i){return '<div class="border-default'+(i===0?' backup-latest-row':'')+'"><div><div class="fw-700">'+escapeHtml(x.tanggalDisplay||x.tanggal)+'</div><div class="u-muted-10">'+escapeHtml(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+escapeHtml(x.catatan)+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada.</div>';}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}}
+function renderBackupRiwayat(){
+  var el=document.getElementById('backup-riwayat');
+  if(!el)return;
+  try{
+    var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');
+    el.innerHTML=r.length?r.map(function(x,i){return '<div class="border-default'+(i===0?' backup-latest-row':'')+'"><div><div class="fw-700">'+escapeHtml(x.tanggalDisplay||x.tanggal)+'</div><div class="u-muted-10">Unduh komputer — '+escapeHtml(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+escapeHtml(x.catatan)+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada unduhan di komputer ini.</div>';
+  }catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}
+  if(!window.sigajiSupabase)return;
+  jsonBackupLoadIndex().then(function(items){
+    if(!el)return;
+    if(!items||!items.length){
+      el.innerHTML+='<div class="font-11 text-muted mt1">Belum ada salinan JSON di cloud. Klik Download .json saat login cloud.</div>';
+      return;
+    }
+    var html='<div class="stit mt1">Salinan JSON di cloud</div>'+items.map(function(x){
+      var kb=x.bytes?Math.round(x.bytes/1024)+' KB':'';
+      return '<div class="border-default"><div><div class="fw-700">'+escapeHtml(x.tanggalDisplay||x.tanggal||'')+'</div><div class="u-muted-10">'+(x.totalKaryawan||'?')+' karyawan'+(kb?' · '+kb:'')+(x.catatan?' — '+escapeHtml(x.catatan):'')+'</div></div><div class="fl gap1"><button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="jsonBackupUnduhDariCloud" data-arg="'+escapeAttr(x.id||x.store_key||'')+'">Unduh</button><button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="jsonBackupPakaiImport" data-arg="'+escapeAttr(x.id||x.store_key||'')+'">Import</button></div></div>';
+    }).join('');
+    el.innerHTML+=html;
+  }).catch(function(e){sigajiCatchWarn("js/modules/app-master.js",e);});
+}
 function renderAuditLog(){
   var wrap=document.getElementById('audit-log');
   var sel=document.getElementById('audit-periode');

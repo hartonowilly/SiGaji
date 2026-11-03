@@ -363,4 +363,24 @@ function lastWrites(sb, from) {
   assert('isi template gaji utuh', mem.gajiTemplates[0].nama === 'Operator' && mem.gajiTemplates[0].gapok === 3400000);
 }
 
+// ── salinan JSON backup di store tidak ikut dimuat ke memori aplikasi ──
+{
+  const db = seedDb();
+  db.sigaji_store.push({
+    tenant_key: 'main',
+    store_key: 'jsonBackup:abc',
+    data: { _meta: { type: 'backup' }, karyawan: [{ nik: 'Z999' }] },
+  });
+  db.sigaji_store.push({
+    tenant_key: 'main',
+    store_key: 'jsonBackupIndex',
+    data: { items: [{ id: 'abc' }] },
+  });
+  const sb = fakeSupabase(db);
+  const app = makeApp();
+  const mem = await loadInto(app, sb);
+  assert('payload boot tidak menelan jsonBackup sebagai karyawan', mem.karyawan.every((k) => k.nik !== 'Z999'));
+  assert('kunci jsonBackup tidak jadi field payload', mem.jsonBackupIndex == null && mem['jsonBackup:abc'] == null);
+}
+
 console.log('\nSemua tes cloud-tables delta lulus.');
