@@ -58,5 +58,10 @@ assert('file backup berisi array gajiTemplates', Array.isArray(data.gajiTemplate
 assert('isi template gaji utuh di backup', data.gajiTemplates[0].nama === 'Operator' && data.gajiTemplates[0].gapok === 3000000);
 assert('file backup berisi cabang', Array.isArray(data.cabang) && data.cabang[0].id === 'c-sumbawa');
 assert('checklist backup punya Template gaji', sandbox.DATA_LABELS.gajiTemplates === 'Template gaji');
+assert('export JSON bisa disimpan ke cloud', typeof sandbox.jsonBackupSaveToCloud === 'function');
+assert(
+  'logo bisa dihapus dari salinan cloud',
+  sandbox.jsonBackupStripLogo({ perusahaan: { logo: 'data:image/png;base64,xx' } }).perusahaan.logo === ''
+);
 
 console.log('\nBackup export: semua tes lulus.');

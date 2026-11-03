@@ -603,11 +603,14 @@
   }
 
   async function loadStoreChunks(sb, withItems) {
+    var keys = STORE_KEYS.filter(function (k) {
+      return !withItems || ITEM_STORE_KEYS.indexOf(k) === -1;
+    });
     var q = sb
       .from('sigaji_store')
       .select(withItems ? 'store_key,data,version' : 'store_key,data')
-      .eq('tenant_key', TK);
-    if (withItems) q = q.not('store_key', 'in', '(' + ITEM_STORE_KEYS.join(',') + ')');
+      .eq('tenant_key', TK)
+      .in('store_key', keys);
     var res = await q;
     if (res.error) throw res.error;
     return res.data || [];
