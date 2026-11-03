@@ -349,4 +349,18 @@ function lastWrites(sb, from) {
   assert('2.501 sel tunjangan termuat semua (bertahap per 1.000)', Object.keys(mem.tunjVarBulan['Okt 2026']).length === 2501);
 }
 
+// ── template gaji ikut ter-muat dari sigaji_store (jangan sampai hilang saat refresh) ──
+{
+  const db = seedDb();
+  const tpl = [{ id: 'gt-1', nama: 'Operator', jabatan: 'Operator', gapok: 3400000, tunjangan: [] }];
+  const row = db.sigaji_store.find((r) => r.store_key === 'gajiTemplates');
+  if (row) row.data = tpl;
+  else db.sigaji_store.push({ tenant_key: 'main', store_key: 'gajiTemplates', data: tpl });
+  const sb = fakeSupabase(db);
+  const app = makeApp();
+  const mem = await loadInto(app, sb);
+  assert('muat awan menyalin gajiTemplates', Array.isArray(mem.gajiTemplates) && mem.gajiTemplates.length === 1);
+  assert('isi template gaji utuh', mem.gajiTemplates[0].nama === 'Operator' && mem.gajiTemplates[0].gapok === 3400000);
+}
+
 console.log('\nSemua tes cloud-tables delta lulus.');

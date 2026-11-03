@@ -603,7 +603,9 @@ function assignDbToMemory(o){
   if(Array.isArray(o.auditLog))auditLog=o.auditLog;
   if(o.bentoLayouts&&typeof o.bentoLayouts==='object')bentoLayouts=o.bentoLayouts;
   if(Array.isArray(o.cabang))cabang=o.cabang;
-  if(Array.isArray(o.gajiTemplates))gajiTemplates=o.gajiTemplates;
+  if(Array.isArray(o.gajiTemplates)){
+    if(o.gajiTemplates.length>0||!((gajiTemplates||[]).length>0))gajiTemplates=o.gajiTemplates;
+  }
   if(o.license&&typeof o.license==='object'){
     tenantLicense.maxEmployees=parseInt(o.license.maxEmployees,10)>0?parseInt(o.license.maxEmployees,10):0;
     tenantLicense.planLabel=String(o.license.planLabel||'').trim();

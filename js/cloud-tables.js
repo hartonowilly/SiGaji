@@ -1109,6 +1109,7 @@
       auditLog: store.auditLog || [],
       bentoLayouts: store.bentoLayouts || {},
       cabang: Array.isArray(store.cabang) ? store.cabang : [],
+      gajiTemplates: Array.isArray(store.gajiTemplates) ? store.gajiTemplates : [],
     };
     scopePayloadForBranch(payload);
     if (!access.hq) {
@@ -1238,6 +1239,7 @@
     auditLog: 'Log audit',
     bentoLayouts: 'Tata letak dashboard',
     cabang: 'Cabang',
+    gajiTemplates: 'Template gaji',
   };
 
   function entityLabel(e, data) {
