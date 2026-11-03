@@ -1102,26 +1102,40 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 }
 .ab-month-sel { max-width: 180px; }
 
-/* ── Panel dock (layar lebar) ── */
+/* ── Panel dock (layar lebar) ──
+ * Panel tertutup: kolom utama full width (tanpa cadangan kosong di kanan).
+ * Panel terbuka: .main-column (flex, tanpa width:100%) menyusut sebesar lebar panel.
+ * Margin di .content tidak dipakai — .content punya width/max-width 100% jadi
+ * margin-right hanya membuat overflow, tabel tetap tertutup panel. */
 @media (min-width: 1200px) {
+  .main-column {
+    transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  body.sigaji-kar-panel-open #panel-overlay,
+  body.sigaji-payroll-panel-open #panel-overlay,
   body.sigaji-panel-docked #panel-overlay {
     display: none !important;
   }
+  body.sigaji-kar-panel-open #slide-panel.show,
   body.sigaji-panel-docked #slide-panel.show {
-    width: min(720px, 50vw);
+    width: var(--sigaji-kar-panel-w, min(720px, 50vw));
     box-shadow: -2px 0 20px rgba(0, 0, 0, 0.08);
   }
+  body.sigaji-payroll-panel-open #slide-panel-payroll.show,
   body.sigaji-panel-docked #slide-panel-payroll.show {
-    width: min(780px, 54vw);
+    width: var(--sigaji-payroll-panel-w, min(780px, 54vw));
     box-shadow: -2px 0 20px rgba(0, 0, 0, 0.08);
   }
-  body.sigaji-panel-docked.sigaji-kar-panel-open .content {
-    margin-right: min(720px, 50vw);
-    transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  body.sigaji-kar-panel-open .main-column {
+    margin-right: var(--sigaji-kar-panel-w, min(720px, 50vw));
   }
-  body.sigaji-panel-docked.sigaji-payroll-panel-open .content {
-    margin-right: min(780px, 54vw);
-    transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  body.sigaji-payroll-panel-open .main-column {
+    margin-right: var(--sigaji-payroll-panel-w, min(780px, 54vw));
+  }
+}
+@media (min-width: 1200px) and (prefers-reduced-motion: reduce) {
+  .main-column {
+    transition: none;
   }
 }
 
@@ -1172,6 +1186,7 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
 }
 /* Docked (≥720px panel) atau overlay lebar: 2 kolom agar form tidak terlalu panjang */
 @media (min-width: 1200px) {
+  body.sigaji-kar-panel-open #slide-panel .sp-kar-grid,
   body.sigaji-panel-docked #slide-panel .sp-kar-grid {
     grid-template-columns: 1fr 1fr;
   }

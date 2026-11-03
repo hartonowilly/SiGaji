@@ -783,10 +783,12 @@ button:focus-visible,
   }
 }
 
-@media (min-width: 1200px) {
-  .content > .pg {
-    max-width: 1280px;
-  }
+/* Halaman memakai lebar penuh kolom utama.
+ * Panel kanan (profil / komponen gaji) tidak boleh menyisakan kolom kosong:
+ * layar penuh saat tertutup, mengecil hanya saat panel terbuka (lihat dock CSS). */
+.content > .pg {
+  width: 100%;
+  max-width: none;
 }
 
 /* Header halaman (judul + aksi) */

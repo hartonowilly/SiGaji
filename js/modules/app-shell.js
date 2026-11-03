@@ -35,13 +35,16 @@ function sigajiSyncViewportVars(){
 function sigajiApplyPanelDockForViewport(){
   try{
     var wide=window.matchMedia('(min-width:1200px)').matches;
-    var karOpen=document.body.classList.contains('sigaji-kar-panel-open');
-    var payOpen=document.body.classList.contains('sigaji-payroll-panel-open');
-    var panelOpen=karOpen||payOpen;
+    var karEl=document.getElementById('slide-panel');
+    var payEl=document.getElementById('slide-panel-payroll');
+    var karOpen=document.body.classList.contains('sigaji-kar-panel-open')&&karEl&&karEl.classList.contains('show');
+    var payOpen=document.body.classList.contains('sigaji-payroll-panel-open')&&payEl&&payEl.classList.contains('show');
+    var panelOpen=!!(karOpen||payOpen);
     if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(!!(panelOpen&&wide));
     var ov=document.getElementById('panel-overlay');
-    if(ov&&panelOpen){
-      if(wide&&document.body.classList.contains('sigaji-panel-docked'))ov.classList.remove('show');
+    if(ov){
+      if(!panelOpen)ov.classList.remove('show');
+      else if(wide&&document.body.classList.contains('sigaji-panel-docked'))ov.classList.remove('show');
       else ov.classList.add('show');
     }
   }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
