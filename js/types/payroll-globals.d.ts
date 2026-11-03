@@ -136,7 +136,8 @@ declare function cariGajiTemplate(jabatan?: string, grade?: string, list?: GajiT
 declare function terapkanGajiTemplate(k: KaryawanPayroll, tpl: GajiTemplate): KaryawanPayroll;
 declare function gajiTplGapokUntukKaryawan(tpl: GajiTemplate, k?: KaryawanPayroll): Rupiah;
 declare function gajiTplPerluKonfirmasi(k: KaryawanPayroll): boolean;
-declare function onGajiTplGapokDariChange(): void;
+declare function onGajiTplUmkCabangChange(): void;
+declare function gajiTplUmkAngka(cabangId?: string): Rupiah;
 declare function maybeApplyGajiTplOnSave(k: KaryawanPayroll, jabatanBaru: string, gradeBaru: string): Promise<boolean> | boolean;
 declare function populateGajiTplDatalists(): void;
 declare function refreshSpGajiTplHint(): void;

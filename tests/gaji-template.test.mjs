@@ -45,7 +45,7 @@ function load() {
     },
     cabang: [
       { id: 'utama', nama: 'Kantor Pusat', umk: 5000000 },
-      { id: 'c-sumbawa', nama: 'Sumbawa', umk: 3400000 },
+      { id: 'c-sumbawa', nama: 'Sumbawa', umk: 3000000 },
     ],
     sigajiKarCabangId: function (k) {
       return String((k && (k.cabangId || k.cabang)) || 'utama');
@@ -156,7 +156,7 @@ assert('tunjangan tetap tersalin walau gapok dari UMK', kPusat.tunjangan.length 
 
 const kSumbawa = { nik: 'K0003', cabangId: 'c-sumbawa', gapok: 5000000, tunjangan: [], potongan: [] };
 px.terapkanGajiTemplate(kSumbawa, tplUmk);
-assert('UMK Sumbawa jadi gapok (bukan angka pusat)', kSumbawa.gapok === 3400000);
+assert('UMK Sumbawa jadi gapok (bukan angka pusat)', kSumbawa.gapok === 3000000);
 
 const kNominal = { nik: 'K0004', cabangId: 'c-sumbawa', gapok: 1, tunjangan: [], potongan: [] };
 px.terapkanGajiTemplate(kNominal, { gapok: 8000000, tunjangan: [], potongan: [] });
@@ -165,5 +165,16 @@ assert('template lama tanpa gapok_dari tetap pakai nominal', kNominal.gapok === 
 const kNoUmk = { nik: 'K0005', cabangId: 'c-tidak-ada', gapok: 123456, tunjangan: [], potongan: [] };
 px.terapkanGajiTemplate(kNoUmk, tplUmk);
 assert('UMK cabang kosong tidak menimpa gapok jadi 0', kNoUmk.gapok === 123456);
+
+assert('form auto-isi angka UMK Sumbawa 3.000.000', px.gajiTplUmkAngka('c-sumbawa') === 3000000);
+assert('form auto-isi angka UMK pusat', px.gajiTplUmkAngka('utama') === 5000000);
+assert(
+  'tampilan template baru pakai angka bukan label UMK',
+  px.gajiTplGapokTampil({ gapok: 3000000, gapok_dari: 'nominal' }) === 3000000
+);
+
+const kAngka = { nik: 'K0006', cabangId: 'c-sumbawa', gapok: 1, tunjangan: [], potongan: [] };
+px.terapkanGajiTemplate(kAngka, { gapok: 3000000, gapok_dari: 'nominal', tunjangan: [], potongan: [] });
+assert('template angka 3.000.000 langsung jadi gapok', kAngka.gapok === 3000000);
 
 console.log('\nTemplate gaji: semua tes lulus.');

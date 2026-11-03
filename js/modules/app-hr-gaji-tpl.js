@@ -142,19 +142,74 @@ function gajiTplKunciLabel(tpl) {
   if (j) return j;
   return '—';
 }
+function gajiTplFmtRpInput(n) {
+  if (typeof formatRpInputNum === 'function') return formatRpInputNum(n);
+  var v = Math.max(0, Math.round(Number(n) || 0));
+  return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function gajiTplFmtRpTampil(n) {
+  var v = gajiTplRp(n);
+  if (typeof fmt === 'function') return fmt(v);
+  return 'Rp ' + gajiTplFmtRpInput(v);
+}
+function gajiTplDefaultCabangId() {
+  try {
+    if (typeof CU !== 'undefined' && CU && CU.role === 'HRD' && CU.cabangId) return String(CU.cabangId);
+  } catch (e) {
+    /* abaikan */
+  }
+  if (typeof sigajiGetCabangFilter === 'function') {
+    var f = sigajiGetCabangFilter();
+    if (f) return String(f);
+  }
+  return 'utama';
+}
+function gajiTplCabangList() {
+  try {
+    if (typeof sigajiEnsureCabangDefault === 'function') {
+      return (sigajiEnsureCabangDefault() || []).filter(function (c) {
+        return c && c.aktif !== false;
+      });
+    }
+    if (typeof cabang !== 'undefined' && Array.isArray(cabang)) {
+      return cabang.filter(function (c) {
+        return c && c.aktif !== false;
+      });
+    }
+  } catch (e) {
+    /* abaikan */
+  }
+  return [];
+}
+function gajiTplUmkAngka(cabangId) {
+  try {
+    var cid = cabangId || gajiTplDefaultCabangId();
+    var umk = typeof sigajiCabangUmk === 'function' ? gajiTplRp(sigajiCabangUmk(cid)) : 0;
+    if (umk > 0) return umk;
+    if (typeof perusahaan !== 'undefined' && perusahaan && perusahaan.umk) {
+      var y = String(new Date().getFullYear());
+      return gajiTplRp(perusahaan.umk[y]);
+    }
+  } catch (e) {
+    /* abaikan */
+  }
+  return 0;
+}
+function gajiTplGapokTampil(tpl) {
+  if (gajiTplGapokDariUmk(tpl)) {
+    var n = gajiTplUmkAngka(gajiTplDefaultCabangId());
+    return n > 0 ? n : gajiTplRp(tpl && tpl.gapok);
+  }
+  return gajiTplRp(tpl && tpl.gapok);
+}
 function gajiTplNamaHint(tpl) {
   if (!tpl) return '';
   var nTunj = (tpl.tunjangan || []).length;
-  var gap = gajiTplGapokDariUmk(tpl)
-    ? 'UMK cabang'
-    : typeof fmt === 'function'
-      ? fmt(gajiTplRp(tpl.gapok))
-      : 'Rp ' + String(gajiTplRp(tpl.gapok));
   return (
     'Template: ' +
     (tpl.nama || gajiTplKunciLabel(tpl)) +
     ' — gapok ' +
-    gap +
+    gajiTplFmtRpTampil(gajiTplGapokTampil(tpl)) +
     (nTunj ? ' + ' + nTunj + ' tunjangan' : '')
   );
 }
@@ -367,17 +422,62 @@ function gajiTplReadPotFromForm() {
   return out;
 }
 
-function onGajiTplGapokDariChange() {
-  var sel = document.getElementById('gaji-tpl-gapok-dari');
-  var wrap = document.getElementById('gaji-tpl-gapok-wrap');
-  var hint = document.getElementById('gaji-tpl-gapok-dari-hint');
-  var umk = !sel || sel.value !== 'nominal';
-  if (wrap) wrap.classList.toggle('u-hidden', umk);
-  if (hint) {
-    hint.textContent = umk
-      ? 'Mengikuti Master UMK lokasi karyawan. Tidak perlu isi angka.'
-      : 'Angka yang sama untuk semua cabang.';
+function gajiTplSetGapokInput(n) {
+  var el = document.getElementById('gaji-tpl-gapok');
+  if (!el) return;
+  var v = gajiTplRp(n);
+  el.value = v ? gajiTplFmtRpInput(v) : '';
+}
+function gajiTplRefreshGapokHint(cabangId) {
+  var hint = document.getElementById('gaji-tpl-gapok-hint');
+  if (!hint) return;
+  var sel = document.getElementById('gaji-tpl-umk-cabang');
+  var cid = cabangId || (sel && sel.value) || gajiTplDefaultCabangId();
+  var umk = gajiTplUmkAngka(cid);
+  var c = typeof sigajiCabangById === 'function' ? sigajiCabangById(cid) : null;
+  var nama = (c && c.nama) || cid;
+  if (umk > 0) {
+    hint.textContent = 'Terisi dari UMK ' + nama + ' (' + gajiTplFmtRpInput(umk) + '). Boleh diubah.';
+  } else {
+    hint.textContent = 'UMK cabang belum diisi di Master. Ketik angka gaji pokok.';
   }
+}
+function gajiTplFillCabangSelect(selectedId) {
+  var sel = document.getElementById('gaji-tpl-umk-cabang');
+  var wrap = document.getElementById('gaji-tpl-umk-cabang-wrap');
+  var list = gajiTplCabangList();
+  var multi = list.length > 1;
+  if (wrap) wrap.classList.toggle('u-hidden', !multi);
+  if (!sel) return;
+  var sid = selectedId || gajiTplDefaultCabangId();
+  var escA = typeof escapeAttr === 'function' ? escapeAttr : String;
+  var escH = typeof escapeHtml === 'function' ? escapeHtml : String;
+  sel.innerHTML = list
+    .map(function (c) {
+      var umk = gajiTplUmkAngka(c.id);
+      var label = (c.nama || c.id) + (umk ? ' · ' + gajiTplFmtRpInput(umk) : '');
+      return (
+        '<option value="' +
+        escA(c.id) +
+        '"' +
+        (c.id === sid ? ' selected' : '') +
+        '>' +
+        escH(label) +
+        '</option>'
+      );
+    })
+    .join('');
+  if (list.length && !list.some(function (c) { return c.id === sid; })) {
+    sel.value = list[0].id;
+  } else if (list.some(function (c) { return c.id === sid; })) {
+    sel.value = sid;
+  }
+}
+function onGajiTplUmkCabangChange() {
+  var sel = document.getElementById('gaji-tpl-umk-cabang');
+  var cid = sel && sel.value ? sel.value : gajiTplDefaultCabangId();
+  gajiTplSetGapokInput(gajiTplUmkAngka(cid));
+  gajiTplRefreshGapokHint(cid);
 }
 function gajiTplFillForm(tpl) {
   tpl = tpl || {};
@@ -391,13 +491,15 @@ function gajiTplFillForm(tpl) {
   set('gaji-tpl-nama', tpl.nama || '');
   set('gaji-tpl-jabatan', tpl.jabatan || '');
   set('gaji-tpl-grade', tpl.grade || '');
-  set(
-    'gaji-tpl-gapok-dari',
-    tpl.gapok_dari === 'nominal' ? 'nominal' : tpl.gapok_dari === 'umk_cabang' || !tpl.id ? 'umk_cabang' : 'nominal'
-  );
-  set('gaji-tpl-gapok', tpl.gapok != null ? tpl.gapok : '');
+  var cid = gajiTplDefaultCabangId();
+  gajiTplFillCabangSelect(cid);
+  var punyaAngka = gajiTplRp(tpl.gapok) > 0;
+  var isiDariUmk = gajiTplGapokDariUmk(tpl) || (!tpl.id && !punyaAngka);
+  var gapokVal = isiDariUmk ? gajiTplUmkAngka(cid) : tpl.gapok;
+  if (isiDariUmk && !gapokVal && punyaAngka) gapokVal = tpl.gapok;
+  gajiTplSetGapokInput(gapokVal);
+  gajiTplRefreshGapokHint(cid);
   set('gaji-tpl-siklus', tpl.siklus_gaji || '');
-  onGajiTplGapokDariChange();
   var tunjWrap = document.getElementById('gaji-tpl-tunj-list');
   var potWrap = document.getElementById('gaji-tpl-pot-list');
   if (tunjWrap) tunjWrap.replaceChildren();
@@ -466,16 +568,14 @@ function simpanGajiTemplate() {
     toast('Isi jabatan, grade, atau keduanya');
     return;
   }
-  var gapokDari = String((document.getElementById('gaji-tpl-gapok-dari') || {}).value || 'umk_cabang');
-  if (gapokDari !== 'nominal') gapokDari = 'umk_cabang';
-  var gapok = gapokDari === 'nominal' ? gajiTplRp((document.getElementById('gaji-tpl-gapok') || {}).value) : 0;
+  var gapok = gajiTplRp((document.getElementById('gaji-tpl-gapok') || {}).value);
   var siklus = String((document.getElementById('gaji-tpl-siklus') || {}).value || '').trim();
   var tpl = {
     id: __gajiTplEditId || gajiTplNewId(),
     nama: String(nama).trim() || gajiTplKunciLabel({ jabatan: jabatan, grade: grade }),
     jabatan: jabatan,
     grade: grade,
-    gapok_dari: gapokDari,
+    gapok_dari: 'nominal',
     gapok: gapok,
     siklus_gaji: siklus ? gajiTplNormSiklus(siklus) : '',
     tunjangan: gajiTplReadTunjFromForm(),
@@ -565,15 +665,12 @@ function gajiTplDariKaryawan() {
   }
   var nama = String(k.jabatan || k.nama || 'Template').trim();
   if (k.grade) nama += ' Grade ' + k.grade;
-  var cid = typeof sigajiKarCabangId === 'function' ? sigajiKarCabangId(k) : k.cabangId || k.cabang;
-  var umk = typeof sigajiCabangUmk === 'function' ? gajiTplRp(sigajiCabangUmk(cid)) : 0;
-  var gapokKar = gajiTplRp(k.gapok);
   gajiTplFillForm({
     id: '',
     nama: nama,
     jabatan: k.jabatan || '',
     grade: k.grade || '',
-    gapok_dari: umk > 0 && gapokKar === umk ? 'umk_cabang' : 'nominal',
+    gapok_dari: 'nominal',
     gapok: k.gapok || 0,
     siklus_gaji: k.siklus_gaji || '',
     tunjangan: k.tunjangan || [],
@@ -632,11 +729,7 @@ function renderGajiTplMaster() {
             '</strong></td><td>' +
             escapeHtml(gajiTplKunciLabel(t)) +
             '</td><td class="num cell-money">' +
-            (gajiTplGapokDariUmk(t)
-              ? 'UMK cabang'
-              : typeof fmt === 'function'
-                ? fmt(gajiTplRp(t.gapok))
-                : gajiTplRp(t.gapok)) +
+            gajiTplFmtRpTampil(gajiTplGapokTampil(t)) +
             '</td><td>' +
             nTunj +
             ' item</td><td><div class="fl gap1"><button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="editGajiTemplate" data-arg="' +
@@ -679,7 +772,10 @@ if (typeof window !== 'undefined') {
   window.hapusGajiTplPotRow = hapusGajiTplPotRow;
   window.terapkanGajiTplKeKaryawan = terapkanGajiTplKeKaryawan;
   window.gajiTplDariKaryawan = gajiTplDariKaryawan;
-  window.onGajiTplGapokDariChange = onGajiTplGapokDariChange;
+  window.onGajiTplUmkCabangChange = onGajiTplUmkCabangChange;
   window.gajiTplGapokUntukKaryawan = gajiTplGapokUntukKaryawan;
   window.gajiTplGapokDariUmk = gajiTplGapokDariUmk;
+  window.gajiTplUmkAngka = gajiTplUmkAngka;
+  window.gajiTplDefaultCabangId = gajiTplDefaultCabangId;
+  window.gajiTplGapokTampil = gajiTplGapokTampil;
 }
