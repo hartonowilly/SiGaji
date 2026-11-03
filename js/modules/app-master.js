@@ -988,8 +988,7 @@ function renderBackupRiwayat(){
   if(!el)return;
   try{
     var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');
-    var lokal=r.length?r.map(function(x,i){return '<div class="border-default'+(i===0?' backup-latest-row':'')+'"><div><div class="fw-700">'+escapeHtml(x.tanggalDisplay||x.tanggal)+'</div><div class="u-muted-10">Unduh komputer — '+escapeHtml(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+escapeHtml(x.catatan)+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'';
-    el.innerHTML=lokal||'<div class="font-12 text-muted p-empty-sm">Belum ada unduhan di komputer ini.</div>';
+    el.innerHTML=r.length?r.map(function(x,i){return '<div class="border-default'+(i===0?' backup-latest-row':'')+'"><div><div class="fw-700">'+escapeHtml(x.tanggalDisplay||x.tanggal)+'</div><div class="u-muted-10">Unduh komputer — '+escapeHtml(x.versi||'SiGaji')+' - '+(x.totalKaryawan||'?')+' karyawan'+(x.catatan?' - "'+escapeHtml(x.catatan)+'"':'')+'</div></div>'+(i===0?'<span class="bdg b-ok">Terakhir</span>':'')+'</div>';}).join(''):'<div class="font-12 text-muted p-empty-sm">Belum ada unduhan di komputer ini.</div>';
   }catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}
   if(!window.sigajiSupabase)return;
   jsonBackupLoadIndex().then(function(items){
