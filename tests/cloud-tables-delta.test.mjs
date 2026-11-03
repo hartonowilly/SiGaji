@@ -125,6 +125,7 @@ const STORE_FILL = {
   auditLog: [],
   bentoLayouts: {},
   cabang: [],
+  gajiTemplates: [],
 };
 
 function seedDb() {

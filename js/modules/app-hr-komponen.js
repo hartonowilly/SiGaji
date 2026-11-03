@@ -79,7 +79,7 @@ function openNewKar(tipe){
   if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1))return;
   tipe=(tipe==='tidak_tetap')?'tidak_tetap':'tetap';
   var cf=typeof sigajiGetCabangFilter==='function'?sigajiGetCabangFilter():'';
-  var sk=typeof sigajiNewKaryawanSkeleton==='function'?sigajiNewKaryawanSkeleton(tipe,cf||'utama'):{nik:nextNikOtomatis(tipe),tipe_kerja:tipe,nama:'Karyawan Baru',status:'Tetap',dept:'Operasional',jabatan:'Staff',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{},natura:[],pph_return:{nilai:0,ket:''},_new:true};
+  var sk=typeof sigajiNewKaryawanSkeleton==='function'?sigajiNewKaryawanSkeleton(tipe,cf||'utama'):{nik:nextNikOtomatis(tipe),tipe_kerja:tipe,nama:'Karyawan Baru',status:'Tetap',dept:'Operasional',jabatan:'Staff',grade:'',masuk:new Date().toISOString().split('T')[0],ptkp:'TK0',gapok:5000000,tunjangan:[],potongan:[],bpjs_aktif:{},natura:[],pph_return:{nilai:0,ket:''},_new:true,_gajiTplFresh:true};
   if(cf)sk.cabangId=cf;
   karyawan.push(sk);
   saveAll();renderKar();populateSelects();openPanel(sk.nik);
@@ -105,7 +105,8 @@ function openPanel(nik){
   syncSiklusGajiLabels(k);
   sv('sp-ktp-f',isNew?'':k.ktp);sv('sp-npwp-f',isNew?'':k.npwp);sv('sp-bpjs-kpj-f',isNew?'':k.bpjs_kpj);sv('sp-bpjs-kes-f',isNew?'':k.bpjs_kes_kartu);sv('sp-hp-f',isNew?'':k.hp);sv('sp-email-f',isNew?'':k.email);sv('sp-alamat-f',isNew?'':k.alamat);
   try{if(typeof sigajiRefreshSpTaxIdHint==='function')sigajiRefreshSpTaxIdHint();}catch(eTax){sigajiCatchWarn("js/modules/app-hr.js",eTax);}
-  sv('sp-dept-f',k.dept);sv('sp-jabatan-f',isNew?'':k.jabatan);sv('sp-status-f',k.status);sv('sp-masuk-f',isNew?'':k.masuk);sv('sp-berhenti-f',k.tgl_berhenti||'');
+  sv('sp-dept-f',k.dept);sv('sp-jabatan-f',isNew?'':k.jabatan);sv('sp-grade-f',isNew?'':(k.grade||''));sv('sp-status-f',k.status);sv('sp-masuk-f',isNew?'':k.masuk);sv('sp-berhenti-f',k.tgl_berhenti||'');
+  try{if(typeof populateGajiTplDatalists==='function')populateGajiTplDatalists();if(typeof refreshSpGajiTplHint==='function')refreshSpGajiTplHint();}catch(eGt){sigajiCatchWarn("js/modules/app-hr-komponen.js",eGt);}
   try{if(typeof sigajiPopulateKarCabangSelect==='function')sigajiPopulateKarCabangSelect();}catch(eCb){sigajiCatchWarn("js/modules/app-hr.js",eCb);}
   var cabEl=document.getElementById('sp-cabang-f');if(cabEl&&typeof sigajiKarCabangId==='function')cabEl.value=sigajiKarCabangId(k);
   populatePhkAlasanSelect();
@@ -384,7 +385,19 @@ async function simpanKarPanel(){
     }
   }
   if(oldPtkp!==newPtkp&&typeof sigajiCatatPtkpKaryawan==='function')sigajiCatatPtkpKaryawan(k,newPtkp);
-  Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,siklus_gaji:siklusGaji,hari_gaji:hariGaji,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:gv('sp-jabatan-f'),status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:newPtkp,atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:jk,agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),bpjs_kpj:gv('sp-bpjs-kpj-f'),bpjs_kes_kartu:gv('sp-bpjs-kes-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
+  var jabatanBaru=gv('sp-jabatan-f');
+  var gradeBaru=gv('sp-grade-f');
+  var appliedTpl=false;
+  try{
+    if(typeof maybeApplyGajiTplOnSave==='function')appliedTpl=!!(await maybeApplyGajiTplOnSave(k,jabatanBaru,gradeBaru));
+  }catch(eTpl){sigajiCatchWarn("js/modules/app-hr-komponen.js",eTpl);}
+  if(appliedTpl&&k.siklus_gaji){
+    siklusGaji=karSiklusGajiOf(k);
+    var sikEl=document.getElementById('sp-siklus-gaji-f');
+    if(sikEl)sikEl.value=siklusGaji;
+  }
+  Object.assign(k,{nik:newNik,tipe_kerja:tipeKerja,siklus_gaji:siklusGaji,hari_gaji:hariGaji,nama:gv('sp-nama-f'),dept:gv('sp-dept-f'),jabatan:jabatanBaru,grade:gradeBaru,status:gv('sp-status-f'),masuk:gv('sp-masuk-f'),tgl_berhenti:tbh||undefined,ptkp:newPtkp,atasan:gv('sp-atasan-f'),lokasi:gv('sp-lokasi-f'),bank:gv('sp-bank-f'),norek:gv('sp-norek-f'),reknam:gv('sp-reknam-f'),jk:jk,agama:gv('sp-agama-f'),ktp:gv('sp-ktp-f'),npwp:gv('sp-npwp-f'),bpjs_kpj:gv('sp-bpjs-kpj-f'),bpjs_kes_kartu:gv('sp-bpjs-kes-f'),hp:gv('sp-hp-f'),email:gv('sp-email-f'),alamat:gv('sp-alamat-f')});
+  delete k._gajiTplFresh;
   if(typeof sigajiMultiBranchEnabled==='function'&&sigajiMultiBranchEnabled()&&typeof sigajiCanAssignCabang==='function'&&sigajiCanAssignCabang()){
     var cabInp=document.getElementById('sp-cabang-f');
     if(cabInp)k.cabangId=cabInp.value||'utama';
@@ -399,7 +412,7 @@ async function simpanKarPanel(){
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
   try{if(typeof syncProrataDariResign==='function')syncProrataDariResign(k);}catch(eSync){sigajiCatchWarn("js/modules/app-hr.js",eSync);}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
-  renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();if(typeof renderAbsensi==='function')renderAbsensi();populateSelects();toast('Profil '+k.nama+' disimpan');
+  renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();if(typeof renderAbsensi==='function')renderAbsensi();populateSelects();toast('Profil '+k.nama+' disimpan'+(appliedTpl?' — komponen gaji dari template':''));
   /* Resign: tawarkan putus tautan Telegram (tidak otomatis — harus konfirmasi). */
   if(tbh&&typeof telegramGetLinkStatus==='function'&&typeof telegramUnlinkNik==='function'){
     try{

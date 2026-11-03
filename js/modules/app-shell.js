@@ -520,7 +520,7 @@ function applyAbsensiSubtabVisibility(){
   if(first&&first.dataset.abpanel)switchAbTab(first,first.dataset.abpanel);
   else toast('Tidak ada sub-tab Absensi yang diizinkan untuk role ini.');
 }
-var MASTER_TAB_PANEL_IDS=['m-prs','m-periode','m-umk','m-libur','m-potongan','m-ter','m-saldo-pph','m-cabang'];
+var MASTER_TAB_PANEL_IDS=['m-prs','m-periode','m-umk','m-gaji-tpl','m-libur','m-potongan','m-ter','m-saldo-pph','m-cabang'];
 function hideAllMasterTabPanels(){
   MASTER_TAB_PANEL_IDS.forEach(function(id){
     var d=document.getElementById(id);
@@ -540,7 +540,7 @@ function showMasterTabPanel(tid){
   d.classList.add('master-tab-panel-active');
 }
 function switchMasterTab(el,tid){
-  var masterSubs={'m-prs':'prs','m-periode':'periode','m-umk':'umk','m-libur':'libur','m-potongan':'potongan','m-ter':'ter','m-saldo-pph':'saldo-pph','m-cabang':'cabang'};
+  var masterSubs={'m-prs':'prs','m-periode':'periode','m-umk':'umk','m-gaji-tpl':'gaji-tpl','m-libur':'libur','m-potongan':'potongan','m-ter':'ter','m-saldo-pph':'saldo-pph','m-cabang':'cabang'};
   if(tid==='m-lanjut'){
     if(!canAccessSubTab('master','potongan')&&!canAccessSubTab('master','ter')){toast('Tidak punya akses ke pengaturan lanjutan');return;}
   }else if(masterSubs[tid]&&!canAccessSubTab('master',masterSubs[tid])){toast('Tidak punya akses ke tab ini');return;}
@@ -561,6 +561,7 @@ function switchMasterTab(el,tid){
   if(tid==='m-potongan')loadAturanPotongan();
   if(tid==='m-ter'){renderPTKPForm();renderTERTable();}
   if(tid==='m-umk')renderUmkPanel();
+  if(tid==='m-gaji-tpl'){try{if(typeof renderGajiTplMaster==='function')renderGajiTplMaster();}catch(eGt){sigajiCatchWarn("js/modules/app-shell.js",eGt);}}
   if(tid==='m-libur'){initLibnasYearSelect();renderHariLibur();renderCutiRekap();}
   if(tid==='m-prs'){try{if(typeof loadPrsForm==='function')loadPrsForm();}catch(ePrs){sigajiCatchWarn("js/modules/app-shell.js",ePrs);}}
   if(tid==='m-cabang'){try{if(typeof sigajiRenderCabangMasterTab==='function')sigajiRenderCabangMasterTab();}catch(eCab3){sigajiCatchWarn("js/modules/app-shell.js",eCab3);}}
@@ -650,10 +651,10 @@ function openResetModal(){
   setTimeout(function(){var p=document.getElementById('reset-pw');if(p)p.focus();},80);
 }
 function runResetAllData(){
-  karyawan=[];periodes=[];hariLibur=[];masterCuti={kuota:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
+  karyawan=[];periodes=[];hariLibur=[];gajiTemplates=[];masterCuti={kuota:12,carryover:'no',cbPotong:true};absensi={};lembur={};prorata={};approvals=[];notifikasi=[];
   perusahaan={nama:'',npwp:'',alamat:'',telp:'',email:'',web:'',logo:'',hariKerja:6,umk:{},aturan_potongan:{cuti_dalam_kuota:{mode:'tidak_dipotong',nilai:0},cuti_luar_kuota:{mode:'prorata',nilai:0},izin:{mode:'prorata',nilai:0},sakit:{mode:'prorata',nilai:0},setengah_sakit:{mode:'prorata_setengah',nilai:0},setengah_ijin:{mode:'prorata_setengah',nilai:0},alpha:{mode:'prorata',nilai:0}}};
   users=[{username:'admin',password:'admin123',role:'Admin',nama:'Administrator',nik:null,aktif:true},{username:'hrd',password:'hrd123',role:'HRD',nama:'Budi HR',nik:null,aktif:true},{username:'karyawan',password:'kar123',role:'Karyawan',nama:'Sari Dewi',nik:null,aktif:true}];
-  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','absensi.lokasi','absensi.pengajuan','lembur','thr','master.prs','master.periode','master.umk','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','simulasi','slip','laporan','laporan.rekap','laporan.variance','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi'],Absen:[]};
+  roles={Admin:MODULES.map(function(m){return m.id;}),HRD:['dashboard','notifikasi','karyawan.info','kompgaji.tunjvar','kompgaji.bpjs','kompgaji.gaji','absensi.kalender','absensi.cuti','absensi.lokasi','absensi.pengajuan','lembur','thr','master.prs','master.periode','master.umk','master.gaji-tpl','master.libur','master.potongan','master.ter','pesangon','kompgaji','penggajian','simulasi','slip','laporan','laporan.rekap','laporan.variance','laporan.pph'],Karyawan:['myslip','mycuti','notifikasi'],Absen:[]};
   thrManual={};tunjVarBulan={};tunjVarLabels={v1:'Bonus',v2:'Uang Makan',v3:'Lain-lain'};tunjVarColumns=[{id:'v1',nama:'Bonus'},{id:'v2',nama:'Uang Makan'},{id:'v3',nama:'Lain-lain'}];localStorage.removeItem(DB_KEY);localStorage.removeItem('sigaji_universal');saveAll();closeModal('m-reset');renderSidebar();renderAll();updateNotifBadge();applyBranding();
   var inp=document.getElementById('reset-inp');
   var pwEl=document.getElementById('reset-pw');

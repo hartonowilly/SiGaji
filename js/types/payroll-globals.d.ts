@@ -120,6 +120,7 @@ declare var thrManual: Record<string, Record<string, { aktif?: boolean; nilai?: 
 declare var lembur: Record<string, Array<{ tanggal?: string; jam?: string | number }>>;
 declare var karSnapshot: Record<string, Record<string, KarSnapshot>>;
 declare var karyawan: KaryawanPayroll[];
+declare var gajiTemplates: GajiTemplate[];
 declare var tunjVarBulan: Record<string, Record<string, Record<string, Rupiah>>>;
 declare var tunjVarLabels: Record<string, string>;
 declare var tunjVarColumns: Array<{ id: string; nama?: string }>;
@@ -131,6 +132,14 @@ declare var cpNik: string | null;
 declare var CU: SigajiUser | null | undefined;
 
 declare function sigajiCatchWarn(where: string, err: unknown): void;
+declare function cariGajiTemplate(jabatan?: string, grade?: string, list?: GajiTemplate[]): GajiTemplate | null;
+declare function terapkanGajiTemplate(k: KaryawanPayroll, tpl: GajiTemplate): KaryawanPayroll;
+declare function gajiTplPerluKonfirmasi(k: KaryawanPayroll): boolean;
+declare function maybeApplyGajiTplOnSave(k: KaryawanPayroll, jabatanBaru: string, gradeBaru: string): Promise<boolean> | boolean;
+declare function populateGajiTplDatalists(): void;
+declare function refreshSpGajiTplHint(): void;
+declare function renderGajiTplMaster(): void;
+declare function onSpJabatanGradeInput(): void;
 declare function sigajiSortKaryawanByNik(list: KaryawanPayroll[]): KaryawanPayroll[];
 declare function sigajiNextNik(list: KaryawanPayroll[]): string;
 declare function sigajiFilterKaryawanByCabang(list: KaryawanPayroll[]): KaryawanPayroll[];
@@ -444,6 +453,17 @@ interface RincianCuti {
   total: number;
 }
 
+interface GajiTemplate {
+  id: string;
+  nama?: string;
+  jabatan?: string;
+  grade?: string;
+  gapok?: Rupiah;
+  siklus_gaji?: string;
+  tunjangan?: KaryawanPayroll['tunjangan'];
+  potongan?: KaryawanPayroll['potongan'];
+}
+
 interface KaryawanPayroll {
   nik: string;
   nama?: string;
@@ -477,6 +497,8 @@ interface KaryawanPayroll {
   tipe_kerja?: string;
   dept?: string;
   jabatan?: string;
+  /** Golongan/grade opsional — kunci template gaji bersama jabatan. */
+  grade?: string;
   status?: string;
   agama?: string;
   alamat?: string;
@@ -487,6 +509,10 @@ interface KaryawanPayroll {
   reknam?: string;
   /** Baris baru di form karyawan yang belum disimpan. */
   _new?: boolean;
+  /** Karyawan baru: isi komponen dari template tanpa konfirmasi. */
+  _gajiTplFresh?: boolean;
+  /** Id template gaji yang terakhir diterapkan. */
+  _gajiTplId?: string;
   mutasi_riwayat?: Array<Record<string, any>>;
   tunjangan?: Array<{
     nama: string;

@@ -24,6 +24,7 @@
     'auditLog',
     'bentoLayouts',
     'cabang',
+    'gajiTemplates',
   ];
 
   var STORE_DEFAULTS = {
@@ -43,6 +44,7 @@
     auditLog: [],
     bentoLayouts: {},
     cabang: [],
+    gajiTemplates: [],
   };
 
   /** JSON dengan kunci terurut — jsonb Postgres mengurutkan ulang kunci, jadi perbandingan harus kanonik. */
@@ -212,7 +214,7 @@
       if (opts.items && ITEM_KINDS.indexOf(key) !== -1) return;
       var v = p[key];
       if (v === undefined) v = STORE_DEFAULTS[key];
-      if (key === 'cabang' && !Array.isArray(v)) v = [];
+      if ((key === 'cabang' || key === 'gajiTemplates') && !Array.isArray(v)) v = [];
       out.push(ent('S', { store_key: key }, v));
     });
     if (opts.items) {
