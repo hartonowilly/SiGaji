@@ -43,6 +43,20 @@ function load() {
     fmt: function (n) {
       return 'Rp ' + String(Math.round(n || 0));
     },
+    cabang: [
+      { id: 'utama', nama: 'Kantor Pusat', umk: 5000000 },
+      { id: 'c-sumbawa', nama: 'Sumbawa', umk: 3400000 },
+    ],
+    sigajiKarCabangId: function (k) {
+      return String((k && (k.cabangId || k.cabang)) || 'utama');
+    },
+    sigajiCabangUmk: function (cabangId) {
+      var list = sandbox.cabang || [];
+      var c = list.find(function (x) {
+        return x.id === cabangId;
+      });
+      return c && c.umk ? c.umk : 0;
+    },
     escapeHtml: function (s) {
       return String(s);
     },
@@ -124,5 +138,32 @@ assert(
   'yang sudah punya tunjangan perlu konfirmasi',
   px.gajiTplPerluKonfirmasi({ gapok: 8000000, tunjangan: [{ nama: 'Jabatan', nilai: 1 }] }) === true
 );
+
+const tplUmk = {
+  id: 't-umk',
+  nama: 'Operator',
+  jabatan: 'Operator',
+  grade: '',
+  gapok_dari: 'umk_cabang',
+  gapok: 0,
+  tunjangan: [{ nama: 'Makan', nilai: 200000, tipe: 'tetap' }],
+  potongan: [],
+};
+const kPusat = { nik: 'K0002', cabangId: 'utama', gapok: 5000000, tunjangan: [], potongan: [] };
+px.terapkanGajiTemplate(kPusat, tplUmk);
+assert('UMK cabang pusat jadi gapok', kPusat.gapok === 5000000);
+assert('tunjangan tetap tersalin walau gapok dari UMK', kPusat.tunjangan.length === 1);
+
+const kSumbawa = { nik: 'K0003', cabangId: 'c-sumbawa', gapok: 5000000, tunjangan: [], potongan: [] };
+px.terapkanGajiTemplate(kSumbawa, tplUmk);
+assert('UMK Sumbawa jadi gapok (bukan angka pusat)', kSumbawa.gapok === 3400000);
+
+const kNominal = { nik: 'K0004', cabangId: 'c-sumbawa', gapok: 1, tunjangan: [], potongan: [] };
+px.terapkanGajiTemplate(kNominal, { gapok: 8000000, tunjangan: [], potongan: [] });
+assert('template lama tanpa gapok_dari tetap pakai nominal', kNominal.gapok === 8000000);
+
+const kNoUmk = { nik: 'K0005', cabangId: 'c-tidak-ada', gapok: 123456, tunjangan: [], potongan: [] };
+px.terapkanGajiTemplate(kNoUmk, tplUmk);
+assert('UMK cabang kosong tidak menimpa gapok jadi 0', kNoUmk.gapok === 123456);
 
 console.log('\nTemplate gaji: semua tes lulus.');
