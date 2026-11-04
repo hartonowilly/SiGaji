@@ -5,6 +5,7 @@ function migrasiPphTahunUi(){
   return parseInt(el.value,10)||new Date().getFullYear();
 }
 function parseMigrasiAngka(v){
+  if(typeof sigajiRp==='function')return Math.round(sigajiRp(v));
   if(v===null||v===undefined||v==='')return 0;
   if(typeof v==='number'&&!isNaN(v))return Math.round(v);
   var s=String(v).trim().replace(/\s/g,'');
@@ -14,6 +15,7 @@ function parseMigrasiAngka(v){
   return Math.round(parseFloat(s)||0);
 }
 function parseMigrasiTgl(v){
+  if(typeof sigajiExcelTanggal==='function')return sigajiExcelTanggal(v);
   var s=String(v||'').trim();
   if(!s||/^[-—]+$/.test(s))return '';
   if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
@@ -185,7 +187,7 @@ function importMigrasiPphExcel(inp){
         for(var r=1;r<rows.length;r++){
           var row=rows[r];
           if(!row||!row.length)continue;
-          var nik=String(row[nikIdx]||'').trim();
+          var nik=typeof sigajiExcelNik==='function'?sigajiExcelNik(row[nikIdx]):String(row[nikIdx]||'').trim();
           if(!nik||/^contoh/i.test(nik))continue;
           var bruto=brutoIdx>=0?parseMigrasiAngka(row[brutoIdx]):0;
           var pph=pphIdx>=0?parseMigrasiAngka(row[pphIdx]):0;
@@ -197,7 +199,7 @@ function importMigrasiPphExcel(inp){
           var status=statusIdx>=0?String(row[statusIdx]||'').trim():'';
           var tb=tbIdx>=0?parseMigrasiTgl(row[tbIdx]):'';
           var sd=sdIdx>=0?parseInt(row[sdIdx],10):0;
-          var k=byNik[nik];
+          var k=typeof sigajiCariByNik==='function'?sigajiCariByNik(byNik,nik):byNik[nik];
           if(!k){
             if(!allowNew){
               if(typeof sigajiAssertCanAddActiveEmployees==='function'&&!sigajiAssertCanAddActiveEmployees(1)){inp.value='';return;}

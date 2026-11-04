@@ -23,7 +23,7 @@ const sandbox = {
   console,
   document: { getElementById: () => ({ value: '' }), addEventListener: function () {} },
   karyawan: [{ nik: 'K1' }],
-  periodes: [{ nama: 'Okt' }],
+  periodes: [{ nama: 'Okt', snapshot_locked: true, hasil_gaji: { v: 1, byNik: { K1: { neto: 4500000 } } } }],
   hariLibur: [],
   masterCuti: {},
   absensi: {},
@@ -57,6 +57,10 @@ const data = vm.runInContext('buildExportData()', ctx);
 assert('file backup berisi array gajiTemplates', Array.isArray(data.gajiTemplates) && data.gajiTemplates.length === 1);
 assert('isi template gaji utuh di backup', data.gajiTemplates[0].nama === 'Operator' && data.gajiTemplates[0].gapok === 3000000);
 assert('file backup berisi cabang', Array.isArray(data.cabang) && data.cabang[0].id === 'c-sumbawa');
+assert(
+  'backup JSON memuat hasil beku periode',
+  data.periodes[0].hasil_gaji && data.periodes[0].hasil_gaji.byNik.K1.neto === 4500000
+);
 assert('checklist backup punya Template gaji', sandbox.DATA_LABELS.gajiTemplates === 'Template gaji');
 assert('export JSON bisa disimpan ke cloud', typeof sandbox.jsonBackupSaveToCloud === 'function');
 assert('ada tombol Simpan JSON ke cloud', typeof sandbox.exportBackupJsonCloud === 'function');

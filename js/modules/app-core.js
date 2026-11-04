@@ -1790,10 +1790,6 @@ function hitungGaji(k,pNama,opts){
   const ptkpHit=typeof ptkpStatusUntukTanggal==='function'?ptkpStatusUntukTanggal(k,tglAturan):(k.ptkp||'TK0');
   if(!opts.fresh&&p&&p.snapshot_locked&&k&&k.nik){
     var bekuHit=sigajiAmbilHasilBeku(p,k.nik);
-    if(!bekuHit&&!sigajiBekuDalam){
-      sigajiBekukanHasilPeriode(p);
-      bekuHit=sigajiAmbilHasilBeku(p,k.nik);
-    }
     if(bekuHit)return bekuHit;
   }
   if(!opts.skipResolve){

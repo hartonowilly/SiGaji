@@ -30,6 +30,48 @@ function sigajiRp(v){
   var n=parseRpInput(neg?s.slice(1):s);
   return neg?-n:n;
 }
+/** NIK dari sel Excel/CSV: angka tidak memakai notasi ilmiah; teks tetap utuh. */
+function sigajiExcelNik(v){
+  if(v==null||v==='')return '';
+  if(typeof v==='number'&&isFinite(v))return String(Math.round(v));
+  return String(v).trim();
+}
+/**
+ * Cari karyawan di peta NIK. Jika Excel menghilangkan nol di depan, cocokkan angka
+ * hanya bila tidak ambigu (satu NIK dengan nilai numerik yang sama).
+ */
+function sigajiCariByNik(map, nik){
+  if(!map)return null;
+  var key=sigajiExcelNik(nik);
+  if(!key)return null;
+  if(map[key])return map[key];
+  if(!/^\d+$/.test(key))return null;
+  var compact=String(Number(key));
+  var keys=Object.keys(map);
+  var hit=null;
+  for(var i=0;i<keys.length;i++){
+    if(!/^\d+$/.test(keys[i]))continue;
+    if(String(Number(keys[i]))!==compact)continue;
+    if(hit)return null;
+    hit=map[keys[i]];
+  }
+  return hit;
+}
+/** Tanggal dari Excel: ISO, dd/mm/yyyy, atau serial Excel. */
+function sigajiExcelTanggal(v){
+  if(v==null||v==='')return '';
+  if(typeof v==='object'&&v instanceof Date&&!isNaN(v.getTime()))return v.toISOString().slice(0,10);
+  if(typeof v==='number'&&isFinite(v)&&v>20000&&v<90000){
+    var d=new Date(Math.round((v-25569)*86400*1000));
+    if(!isNaN(d.getTime()))return d.toISOString().slice(0,10);
+  }
+  var s=String(v).trim();
+  if(!s||/^[-—]+$/.test(s))return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  var m=s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if(m)return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
+  return '';
+}
 /** Format angka untuk kotak input (pemisah ribuan titik). */
 function formatRpInputNum(n){
   var v=Math.max(0,Math.round(Number(n)||0));
@@ -193,4 +235,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Label aplikasi di judul tab, status sistem, dan meta backup. Tanpa nomor versi — versi deploy ada di SIGAJI_BUILD. */
 const SIGAJI_APP_LABEL='SiGaji';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.7.35';
+const SIGAJI_MODULES_CACHE='11.7.36';

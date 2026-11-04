@@ -578,6 +578,14 @@ async function sendSlipTelegramBatch(){
       skip++;
       continue;
     }
+    if (typeof isKarSampah === 'function' && isKarSampah(k)) {
+      skip++;
+      continue;
+    }
+    if (typeof karyawanInPeriode === 'function' && p && !karyawanInPeriode(k, p)) {
+      skip++;
+      continue;
+    }
     if (isThr) {
       try{
         if (!hitungTHRBruto(k, p.nama).eligible) {
@@ -862,6 +870,14 @@ async function sendSlipEmailBatch() {
       return x.nik === nik;
     });
     if (!k) {
+      skip++;
+      continue;
+    }
+    if (typeof isKarSampah === 'function' && isKarSampah(k)) {
+      skip++;
+      continue;
+    }
+    if (typeof karyawanInPeriode === 'function' && p && !karyawanInPeriode(k, p)) {
       skip++;
       continue;
     }

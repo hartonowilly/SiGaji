@@ -64,6 +64,15 @@ const header = ['NIK', 'Nama', 'Status', 'Tgl berhenti', 'S/d bulan', 'Bruto PPh
 
 {
   const kar = [{ nik: '001', nama: 'Lama', gapok: 5_000_000, ptkp: 'TK0' }];
+  const serial = Math.round(Date.UTC(2026, 2, 10) / 86400000 + 25569);
+  const { toasts, karyawan } = runImport([header, [1, '', 'Resign', serial, 4, '1.500.000', 0, 0, '', '']], kar);
+  assertEq('NIK Excel angka ketemu 001', toasts[0].indexOf('Gagal'), -1);
+  assertEq('bruto 1.500.000', karyawan[0].pph_ytd_awal['2026'].bruto, 1500000);
+  assertEq('tanggal serial Excel', karyawan[0].tgl_berhenti, '2026-03-10');
+}
+
+{
+  const kar = [{ nik: '001', nama: 'Lama', gapok: 5_000_000, ptkp: 'TK0' }];
   const { toasts, karyawan } = runImport([[...header, 'Tahun'], ['001', '', 'Aktif', '', 3, 18_000_000, 360_000, 500_000, '', '', 2025]], kar);
   assertEq('impor dengan kolom Tahun tidak crash', toasts[0].indexOf('Gagal'), -1);
   assertEq('kolom Tahun dipakai', Object.keys(karyawan[0].pph_ytd_awal), ['2025']);

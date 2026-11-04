@@ -238,4 +238,32 @@ const CLOUD = {
   assert('auditLog/notifikasi/bentoLayouts diabaikan', ls.getItem('sigaji_outbox') == null);
 }
 
+{
+  const ls = makeLocalStorage();
+  const a = boot(ls);
+  a.ctx.__cloud = structuredClone(CLOUD);
+  a.run('applyDbFromCloudPayload(__cloud);');
+  const now = Date.now();
+  ls.setItem(
+    'sigaji_outbox',
+    JSON.stringify([
+      {
+        id: 'I|hasilGaji|Oktober 2026|K0001',
+        t: 'I',
+        key: { kind: 'hasilGaji', item_key: 'Oktober 2026|K0001' },
+        nik: 'K0001',
+        d: { neto: 111 },
+        ts: now,
+        j: 'x',
+      },
+    ])
+  );
+  a.run('periodes[0].snapshot_locked=false;');
+  a.run('sigajiOutbox.putar()');
+  assert(
+    'outbox freeze tidak dipasang ke periode terbuka',
+    a.run('periodes[0].hasil_gaji') == null
+  );
+}
+
 console.log('\nOutbox: semua tes lulus.');
