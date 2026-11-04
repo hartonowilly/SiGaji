@@ -545,6 +545,44 @@ function rincianCutiTahun(nik,yr,opts){
   return{items:items,manual:manual,cb:cb,total:manual+cb};
 }
 const masaKerjaBulan=k=>Math.floor((Date.now()-new Date(k.masuk||'2020-01-01').getTime())/(86400000*30.44));
+/** Masa kerja kalender (bulan penuh) sampai tanggal acuan — untuk THR memakai hari raya, bukan hari ini. */
+function masaKerjaBulanSampai(k,sampaiIso){
+  if(!k)return 0;
+  var start=new Date(String(k.masuk||'2020-01-01').slice(0,10)+'T12:00:00');
+  var iso=String(sampaiIso||'').slice(0,10);
+  var end=/^\d{4}-\d{2}-\d{2}$/.test(iso)?new Date(iso+'T12:00:00'):new Date();
+  if(isNaN(start.getTime())||isNaN(end.getTime())||end<start)return 0;
+  var m=(end.getFullYear()-start.getFullYear())*12+(end.getMonth()-start.getMonth());
+  if(end.getDate()<start.getDate())m--;
+  return Math.max(0,m);
+}
+/** Jumlah bulan bekerja di tahun pajak (inklusif), max 12 — plafon biaya jabatan Rp500.000/bulan. */
+function bulanKerjaPajakTahun(k,thn,tglAkhirIso){
+  var y=parseInt(String(thn||''),10);
+  if(!y)y=new Date().getFullYear();
+  var y0=y+'-01-01';
+  var y1=y+'-12-31';
+  var masuk=toIsoDate(k&&k.masuk)||y0;
+  var stop=toIsoDate(k&&k.tgl_berhenti);
+  var akhir=toIsoDate(tglAkhirIso)||y1;
+  var start=masuk>y0?masuk:y0;
+  var end=akhir;
+  if(stop&&stop<end)end=stop;
+  if(end>y1)end=y1;
+  if(!start||!end||end<start)return 1;
+  var s=new Date(start+'T12:00:00');
+  var e=new Date(end+'T12:00:00');
+  var m=(e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth())+1;
+  return Math.max(1,Math.min(12,m));
+}
+/** Desember: tipe periode ATAU tanggal selesai/bayar di bulan 12 — agar rekonsiliasi tidak terlewat. */
+function periodePakaiRekonsiliasiTahunan(p){
+  if(!p)return false;
+  if(p.tipe_periode==='desember')return true;
+  var t=String(p.end||p.bayar||p.start||'').slice(0,10);
+  var m=parseInt(t.slice(5,7),10);
+  return m===12;
+}
 var __sigajiHkCache=new Map();
 function hariKerjaRange(s,e){
   var hl='';
@@ -643,13 +681,26 @@ function gapokEffDariSiklus(k,p,prF){
   }
   return{gapokEff:Math.round(rate*pf),siklus:siklus,units:1,pays:[]};
 }
-function upahPerJamDariSiklus(k){
+function jumlahTunjanganTetap(k){
+  return (k&&k.tunjangan||[]).filter(function(t){
+    var tp=t&&t.tipe;
+    return tp==='tetap'||tp==='tetap_no_bpjs';
+  }).reduce(function(s,t){return s+sigajiRp(t.nilai);},0);
+}
+/** Dasar upah lembur sebulan: gaji pokok + tunjangan tetap (PP 35/2021). Harian = upah sehari × 25. */
+function dasarUpahLemburSebulan(k){
   var siklus=normalizeSiklusGaji(k&&k.siklus_gaji);
-  var rate=sigajiRp(k&&k.gapok);
-  var hkMinggu=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
-  if(siklus==='harian')return rate/8;
-  if(siklus==='mingguan')return rate/(hkMinggu*8);
-  return rate/173;
+  var gapok=sigajiRp(k&&k.gapok);
+  var tetap=jumlahTunjanganTetap(k);
+  if(siklus==='harian')return Math.round(gapok*25+tetap);
+  if(siklus==='mingguan'){
+    var sebulan=typeof gapokKontrakSebulan==='function'?gapokKontrakSebulan(k,null,siklus):gapok;
+    return Math.round(sebulan+tetap);
+  }
+  return Math.round(gapok+tetap);
+}
+function upahPerJamDariSiklus(k){
+  return dasarUpahLemburSebulan(k)/173;
 }
 function lemburTanggalDalamPeriode(tgl,p){
   var t=toIsoDate(tgl);
@@ -823,11 +874,24 @@ function calcBPJS(k,gapokEff,tunjBPJS,tanggal){
   return{kes_prs:get('kes-prs'),kes_kar:get('kes-kar'),jht_prs:get('jht-prs'),jht_kar:get('jht-kar'),jp_prs:get('jp-prs'),jp_kar:get('jp-kar'),jkk_prs:get('jkk-prs'),jkm_prs:get('jkm-prs')};
 }
 // ── THR helper ───────────────────────────────────
-function hitungTHRBruto(k,pNama){
-  const mb=masaKerjaBulan(k);
-  if(mb<1)return{mb,nilai:0,eligible:false,pl:'<1bln',dasar:0,isManual:false};
+function dasarUpahTHR(k){
   const tTHR=(k.tunjangan||[]).filter(t=>(t.tipe==='tetap'||t.tipe==='tetap_no_bpjs')&&t.thr_ikut!==false).reduce((s,t)=>s+sigajiRp(t.nilai),0);
-  const dasar=sigajiRp(k.gapok)+tTHR;const pr=mb>=12?1:mb/12;const pl=mb>=12?'12/12':mb+'/12';
+  const siklus=typeof normalizeSiklusGaji==='function'?normalizeSiklusGaji(k&&k.siklus_gaji):'bulanan';
+  const gapok=sigajiRp(k&&k.gapok);
+  if(siklus==='harian')return Math.round(gapok*25+tTHR);
+  if(siklus==='mingguan'){
+    const sebulan=typeof gapokKontrakSebulan==='function'?gapokKontrakSebulan(k,null,siklus):gapok;
+    return Math.round(sebulan+tTHR);
+  }
+  return Math.round(gapok+tTHR);
+}
+function hitungTHRBruto(k,pNama){
+  /** @type {Periode|undefined} */
+  const p=periodes.find(x=>x.nama===pNama)||(typeof PA==='function'?PA():undefined);
+  const tglHR=(p&&(p.thr_hariraya||p.thr_bayar||p.end))||'';
+  const mb=masaKerjaBulanSampai(k,tglHR);
+  if(mb<1)return{mb,nilai:0,eligible:false,pl:'<1bln',dasar:0,isManual:false};
+  const dasar=dasarUpahTHR(k);const pr=mb>=12?1:mb/12;const pl=mb>=12?'12/12':mb+'/12';
   const nilaiOto=Math.round(dasar*pr);
   // Cek manual override
   const pKey=pNama||PA().nama;
@@ -886,14 +950,20 @@ function rateTerHasil(g,k,p){
  * @param {string} ptkpKey
  * @returns {number}
  */
-function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey,tanggal){
+function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey,tanggal,opts){
+  opts=opts||{};
   var buku=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tanggal):null;
   var prog=buku&&buku.progresif;
   var bjRate=prog&&prog.bjRate!=null?prog.bjRate:.05;
-  var bjCap=prog&&prog.bjCap!=null?prog.bjCap:6e6;
+  var bjCapTahun=prog&&prog.bjCap!=null?prog.bjCap:6e6;
+  var nBln=opts.bulanKerja;
+  if(!(nBln>0))nBln=12;
+  nBln=Math.max(1,Math.min(12,Math.round(nBln)));
+  var bjCap=Math.min(bjCapTahun,500000*nBln);
+  var iuranKar=Math.max(0,Math.round(opts.iuranJhtJpKar||0));
   const bj=Math.min(brutoTahunan*bjRate,bjCap);
   const pv=nilaiPTKP(ptkpKey,tanggal);
-  const pkp=Math.max(0,Math.floor((brutoTahunan-bj-pv)/1000)*1000);
+  const pkp=Math.max(0,Math.floor((brutoTahunan-bj-iuranKar-pv)/1000)*1000);
   var lapis=prog&&prog.lapis&&prog.lapis.length?prog.lapis:[{sampai:60e6,rate:.05},{sampai:250e6,rate:.15},{sampai:500e6,rate:.25},{sampai:Infinity,rate:.30}];
   var pph=0,prev=0;
   for(var i=0;i<lapis.length;i++){
@@ -956,13 +1026,13 @@ function setPphYtdAwal(k,thn,bruto,pph,sdBulan){
 /**
  * @param {KaryawanPayroll} k
  * @param {string} pNama
- * @returns {{ totalBruto: number, totalPPh: number, thn: number, saldoAwal: { bruto: number, pph: number, sd_bulan: number } }}
+ * @returns {{ totalBruto: number, totalPPh: number, totalJhtJpKar: number, thn: number, saldoAwal: { bruto: number, pph: number, sd_bulan: number } }}
  */
 function getBrutoYTD(k,pNama){
   const p=periodes.find(x=>x.nama===pNama)||PA();
   const thn=new Date(p.bayar||p.end||p.start).getFullYear();
   const saldo=getPphYtdAwal(k,thn);
-  let totalBruto=saldo.bruto,totalPPh=saldo.pph;
+  let totalBruto=saldo.bruto,totalPPh=saldo.pph,totalJhtJpKar=0;
   periodes.forEach(function(per){
     const perThn=new Date(per.bayar||per.end||per.start).getFullYear();
     if(perThn!==thn||per.nama===pNama)return;
@@ -971,8 +1041,9 @@ function getBrutoYTD(k,pNama){
     const g=hitungGaji(k,per.nama);
     totalBruto+=g.grossPPh;
     totalPPh+=g.pph;
+    totalJhtJpKar+=(g.bpjs&&g.bpjs.jht_kar||0)+(g.bpjs&&g.bpjs.jp_kar||0);
   });
-  return{totalBruto,totalPPh,thn,saldoAwal:saldo};
+  return{totalBruto,totalPPh,totalJhtJpKar,thn,saldoAwal:saldo};
 }
 // Tunjangan variabel per periode (bonus, uang makan, dll.) — input HR di Proses Gaji
 function getTunjVarColumnsResolved(){
@@ -1250,8 +1321,7 @@ function sigajiPotKehadiranUntukPeriodeNik(nik,p,idx){
   var pr=prorata[nik]&&prorata[nik][p.nama];
   var isPR=pr&&pr.enabled&&pr.hk>0;
   var prF=isPR?pr.hh/pr.hk:1;
-  var gapokEff=Math.round(sigajiRp(k.gapok)*prF);
-  return hitungPotonganKehadiran(nik,p,hkP,gapokEff,idx);
+  return hitungPotonganKehadiran(nik,p,hkP,Math.round(sigajiRp(k.gapok)),idx);
 }
 function sigajiCaptureAbsensiPotBaseline(p){
   if(!p)return;
@@ -1564,7 +1634,7 @@ function hitungGaji(k,pNama,opts){
   const gapokEff=siklusHit.gapokEff;
   const siklusGaji=siklusHit.siklus;
   const siklusUnits=siklusHit.units;
-  let tBPJS=0,tGross=0,tTH=0;const tItems=[];
+  let tBPJS=0,tBPJSFull=0,tGross=0,tTH=0;const tItems=[];
   var tunjGabungan=[].concat(k.tunjangan||[]).concat(getTunjVariabelForHitung(k.nik,pn));
   for(const t of tunjGabungan){
     const prMul=isPR&&t.prorata_ikut===false?1:prF;
@@ -1572,6 +1642,7 @@ function hitungGaji(k,pNama,opts){
     switch(t.tipe){
       case'tetap':
         tBPJS+=eff;
+        tBPJSFull+=Math.round(sigajiRp(t.nilai));
         tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tetap_no_bpjs':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
       case'tidak_tetap':tGross+=eff;tTH+=eff;tItems.push({...t,eff,inTH:true});break;
@@ -1633,35 +1704,44 @@ function hitungGaji(k,pNama,opts){
       }
     }
   }
-  // BPJS pada bulan resign/berhenti: basis hanya GAPOK FULL (tanpa tunjangan),
-  // walaupun take home prorata.
+  // BPJS: iuran sebulan penuh (tidak diprorata). Bulan resign: dasar gapok saja
+  // (tunjangan tetap tidak diikutkan — kebijakan perusahaan).
   const isBpjsFullMonth=!!(tglStopIso&&isStopInPeriode&&hasPhkAlasan);
   const gapokBpjs=siklusGaji==='bulanan'
-    ?(isBpjsFullMonth?Math.round(sigajiRp(k.gapok)):gapokEff)
+    ?Math.round(sigajiRp(k.gapok))
     :gapokKontrakSebulan(k,p,siklusGaji);
-  const tunjBpjs=isBpjsFullMonth?0:tBPJS;
+  const tunjBpjs=isBpjsFullMonth?0:tBPJSFull;
   const bpjs=calcBPJS(k,gapokBpjs,tunjBpjs,tglAturan);
   // BPJS Perusahaan (JKK+JKM+Kes) = natura kena pajak per PMK 168/2023
   const bpjsPrsNatKP=bpjs.jkk_prs+bpjs.jkm_prs+bpjs.kes_prs;
-  const grossPPhRegular=gapokEff+tGross+natKP+lb+bpjsPrsNatKP;
+  const skipPotHadir=siklusGaji==='harian'||siklusGaji==='mingguan';
+  const potKehadiran=skipPotHadir
+    ?{total:0,details:[],gajiHarian:Math.round(sigajiRp(k.gapok)),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
+    :hitungPotonganKehadiran(k.nik,p,hkP,Math.round(sigajiRp(k.gapok)),abIdx());
+  const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn,abIdx()):{total:0,details:[]};
+  const potHadirPph=Math.max(0,potKehadiran.total||0);
+  const grossPPhRegular=Math.max(0,gapokEff+tGross+natKP+lb+bpjsPrsNatKP-potHadirPph);
   const grossPPh=grossPPhRegular+thrBruto; // PPh dihitung termasuk THR
-  const brutoTH=gapokEff+tTH+natNKP+lb;   // Take Home TIDAK termasuk THR
+  const brutoTH=gapokEff+tTH+lb;   // Natura fasilitas, tidak ditransfer. THR terpisah.
   // Deteksi masa pajak terakhir per karyawan:
-  // - Desember: rekonsiliasi tahunan seluruh karyawan aktif di periode itu
+  // - Desember: rekonsiliasi tahunan (tipe periode ATAU tanggal selesai di bulan 12)
   // - Resign/PHK: otomatis di periode yang memuat tgl. berhenti (asal alasan PHK sudah diisi)
   const isMasaPajakTerakhir=
-    p.tipe_periode==='desember'||
+    periodePakaiRekonsiliasiTahunan(p)||
     (!!tglStopIso&&isStopInPeriode&&hasPhkAlasan);
   let pph,reconciliation=null;
   if(isMasaPajakTerakhir){
     const ytd=getBrutoYTD(k,pn);
     const brutoTahunan=ytd.totalBruto+grossPPh;
-    const pphTahunan=hitungPPhTahunanProgresif(brutoTahunan,ptkpHit,tglAturan);
+    const iuranTahun=(ytd.totalJhtJpKar||0)+(bpjs.jht_kar||0)+(bpjs.jp_kar||0);
+    const tglAkhirPajak=(tglStopIso&&isStopInPeriode)?tglStopIso:(p.end||p.bayar||tglAturan);
+    const nBlnBj=bulanKerjaPajakTahun(k,ytd.thn,tglAkhirPajak);
+    const pphTahunan=hitungPPhTahunanProgresif(brutoTahunan,ptkpHit,tglAturan,{bulanKerja:nBlnBj,iuranJhtJpKar:iuranTahun});
     const pphBulanIni=pphTahunan-ytd.totalPPh;
     pph=Math.max(0,pphBulanIni);
     const selisih=pphBulanIni; // negatif = lebih bayar
     const isStopReason=!!(tglStopIso&&isStopInPeriode);
-    const tipeLabel=(p.tipe_periode==='desember')?'desember':(p.tipe_periode==='resign'||isStopReason)?'resign':p.tipe_periode;
+    const tipeLabel=periodePakaiRekonsiliasiTahunan(p)?'desember':(p.tipe_periode==='resign'||isStopReason)?'resign':p.tipe_periode;
     reconciliation={
       brutoYTD:ytd.totalBruto,pphYTD:ytd.totalPPh,
       saldoAwalBruto:ytd.saldoAwal?ytd.saldoAwal.bruto:0,
@@ -1676,7 +1756,7 @@ function hitungGaji(k,pNama,opts){
       opsiLebihBayar:p.opsi_lebih_bayar||'refund', // 'refund' | 'carryover'
       isPajakTerakhir:true,
       tipePeriode:tipeLabel,
-      reason:isStopReason?'stop_in_period':(p.tipe_periode==='desember'?'desember':'other'),
+      reason:isStopReason?'stop_in_period':(periodePakaiRekonsiliasiTahunan(p)?'desember':'other'),
       tglBerhenti:isStopReason?tglStopIso:''
     };
     if(selisih<0&&(p.opsi_lebih_bayar||'refund')==='refund') pph=0; // lebih bayar → PPh bulan ini 0
@@ -1686,11 +1766,6 @@ function hitungGaji(k,pNama,opts){
   const pphTanpaThr=hitungPPhBln(grossPPhRegular,ptkpHit,tglAturan);
   const pphAtasThr=pph-pphTanpaThr;
   const potT=(k.potongan||[]).reduce((s,x)=>s+sigajiRp(x.nilai),0);
-  const skipPotHadir=siklusGaji==='harian'||siklusGaji==='mingguan';
-  const potKehadiran=skipPotHadir
-    ?{total:0,details:[],gajiHarian:Math.round(sigajiRp(k.gapok)),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
-    :hitungPotonganKehadiran(k.nik,p,hkP,gapokEff,abIdx());
-  const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn,abIdx()):{total:0,details:[]};
   const pphRet=sigajiRp(k.pph_return?.nilai);
   // Lebih bayar rekonsiliasi (resign/Desember, opsi refund) dikembalikan ke THP.
   // Carryover tidak masuk bulan ini. Default periode tanpa opsi = refund.

@@ -41,8 +41,9 @@
     }else if(opt.f===0||opt.uphOnly){
       upAuto=0;upmkAuto=0;
     }else if(opt.f!=null){
+      // PP 35/2021: faktor alasan PHK hanya untuk UP (Pasal 40). UPMK (Pasal 41) selalu 1×.
       upAuto=Math.round(bUp*dasar*opt.f);
-      upmkAuto=Math.round(bUpmk*dasar*opt.f);
+      upmkAuto=Math.round(bUpmk*dasar);
     }
     var up=(phk.up_manual!==undefined&&phk.up_manual!==null&&String(phk.up_manual).trim()!=='')?Math.round(sigajiRp(phk.up_manual)):upAuto;
     var upmk=(phk.upmk_manual!==undefined&&phk.upmk_manual!==null&&String(phk.upmk_manual).trim()!=='')?Math.round(sigajiRp(phk.upmk_manual)):upmkAuto;
@@ -106,7 +107,7 @@
     var bd=document.getElementById('psg-breakdown');if(!bd)return;
     var hb='';
     if(r.ok){
-      hb+='<div class="info-box info-amber font-11 leading-tight mb-md">Dasar upah = gaji pokok + tunjangan tetap yang ikut THR (sama logika kolom THR). UPH cuti: <strong>(dasar ÷ 25) × sisa cuti</strong>. UP/UPMK mengikuti <strong>PP 35/2021</strong> × faktor alasan. Verifikasi dengan HR/legal.</div>';
+      hb+='<div class="info-box info-amber font-11 leading-tight mb-md">Dasar upah = gaji pokok + tunjangan tetap yang ikut THR (sama logika kolom THR). UPH cuti: <strong>(dasar ÷ 25) × sisa cuti</strong>. Faktor alasan PHK hanya mengkali <strong>UP</strong> (PP 35/2021). UPMK selalu 1× bila berhak. Verifikasi dengan HR/legal.</div>';
       hb+='<table class="w-full font-12" style="border-collapse:collapse"><tbody>';
       hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Masa kerja</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+r.mk+' bln</td></tr>';
       hb+='<tr><td style="padding:6px;border-bottom:1px solid var(--bd)">Dasar upah</td><td class="text-right" style="padding:6px; border-bottom:1px solid var(--bd)">'+fmt(r.dasar)+'</td></tr>';

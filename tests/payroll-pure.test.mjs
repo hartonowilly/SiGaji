@@ -87,8 +87,31 @@ assertEq('BPJS Kes prs 4% cap 12jt', bpjs.kes_prs, 400_000);
 assertEq('BPJS Kes kar 1%', bpjs.kes_kar, 100_000);
 assertEq('BPJS JHT prs 3,7%', bpjs.jht_prs, 370_000);
 assertEq('BPJS JHT kar 2%', bpjs.jht_kar, 200_000);
-assertEq('BPJS JP prs 2% cap', bpjs.jp_prs, 191_192);
-assertEq('BPJS JP kar 1% cap', bpjs.jp_kar, 95_596);
+// Basis 10jt di bawah plafon Maret 2026 (Rp11.086.300)
+assertEq('BPJS JP prs 2% cap Maret 2026', bpjs.jp_prs, 200_000);
+assertEq('BPJS JP kar 1% cap Maret 2026', bpjs.jp_kar, 100_000);
+assertEq('plafon JP 2023', px.batasUpahJPUntukTanggal('2023-06-01'), 9_559_600);
+assertEq('plafon JP Maret 2025', px.batasUpahJPUntukTanggal('2025-03-01'), 10_547_400);
+assertEq('plafon JP Maret 2026', px.batasUpahJPUntukTanggal('2026-03-01'), 11_086_300);
+
+// Biaya jabatan 4 bulan × Rp500.000; iuran JHT+JP mengurangi neto
+// Bruto 120jt, BJ 2jt, iuran 0, PTKP TK0 54jt → PKP 64jt → 3jt + 0,6jt = 3,6jt
+assertEq(
+  'BJ dipotong 4 bulan kerja',
+  hitungPPhTahunanProgresif(120_000_000, 'TK0', '2026-04-30', { bulanKerja: 4 }),
+  3_600_000
+);
+assertEq(
+  'tanpa batas bulan BJ = 6jt → PKP 60jt',
+  hitungPPhTahunanProgresif(120_000_000, 'TK0', '2026-12-31'),
+  3_000_000
+);
+// Iuran 3.547.152 × 15% pada sisa PKP di atas 60jt: 64jt-3.547.152 → masih >60jt
+assertEq(
+  'JHT+JP karyawan mengurangi PPh tahunan',
+  hitungPPhTahunanProgresif(120_000_000, 'TK0', '2026-12-31', { iuranJhtJpKar: 3_547_152 }) < 3_000_000,
+  true
+);
 assertEq('BPJS JKK prs 0,24%', bpjs.jkk_prs, 24_000);
 assertEq('BPJS JKM prs 0,3%', bpjs.jkm_prs, 30_000);
 
@@ -98,4 +121,4 @@ const bpjsOff = calcBPJS(kOff, 5_000_000, 0);
 assertEq('BPJS mati → kes 0', bpjsOff.kes_prs, 0);
 assertEq('BPJS mati → kes kar 0', bpjsOff.kes_kar, 0);
 
-console.log('\nLapisan A: semua tes lulus (' + 24 + ' assert).');
+console.log('\nLapisan A: semua tes lulus.');

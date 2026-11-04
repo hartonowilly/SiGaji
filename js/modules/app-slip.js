@@ -57,7 +57,7 @@ function makeSlip(k,pNama){
   if(g.potKehadiran&&g.potKehadiran.details){g.potKehadiran.details.forEach(function(d){h+='<div class="sr indent slip-pot-warn"><span>'+d.label+'</span><span>- '+fmt(d.nilai)+'</span></div>';});}
   if(g.koreksiAbsensi&&g.koreksiAbsensi.details){g.koreksiAbsensi.details.forEach(function(d){h+='<div class="sr indent slip-pot-warn"><span>'+d.label+'</span><span>- '+fmt(d.nilai)+'</span></div>';});}
   h+='<div class="sr bold"><span>Total Potongan</span><span>- '+fmt(g.totalPot)+'</span></div>';
-  if(g.natNKP>0){h+='<div class="ssec">Natura Tidak KP</div>';(k.natura||[]).filter(function(n){return !n.kp;}).forEach(function(n){h+='<div class="sr"><span>'+n.nama+'</span><span>+ '+fmt(n.nilai)+'</span></div>';});}
+  if(g.natNKP>0||g.natKP>0){h+='<div class="ssec">Natura / fasilitas (tidak ditransfer)</div>';(k.natura||[]).forEach(function(n){h+='<div class="sr"><span>'+n.nama+(n.kp?' (kena pajak)':' (tidak kena pajak)')+'</span><span>'+fmt(n.nilai)+'</span></div>';});}
   if(g.pphRet>0)h+='<div class="ssec ct-success">Pengembalian PPh</div><div class="sr pph-return"><span>&#9312; '+((k.pph_return&&k.pph_return.ket)||'PPh Return')+'</span><span>+ '+fmt(g.pphRet)+'</span></div>';
   if(g.refundPph>0)h+='<div class="ssec ct-success">Pengembalian Lebih Bayar PPh</div><div class="sr pph-return"><span>Lebih bayar PPh 21 (rekonsiliasi '+(g.reconciliation&&g.reconciliation.tipePeriode==='resign'?'resign':'Desember')+')</span><span>+ '+fmt(g.refundPph)+'</span></div>';
   h+='<div class="ssec">Kontribusi Perusahaan</div>';
@@ -338,9 +338,9 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   if(g.potKehadiran&&g.potKehadiran.details)g.potKehadiran.details.forEach(function(d){rowM(d.label,d.nilai);});
   doc.setFont(undefined,'bold');rowM('Total Potongan',g.totalPot);doc.setFont(undefined,'normal');y+=2;
 
-  if(g.natNKP>0){
-    sec('Natura Tidak KP');
-    (k.natura||[]).filter(function(n){return !n.kp;}).forEach(function(n){rowP(n.nama,n.nilai);});
+  if(g.natNKP>0||g.natKP>0){
+    sec('Natura / fasilitas (tidak ditransfer)');
+    (k.natura||[]).forEach(function(n){rowL(n.nama+(n.kp?' (kena pajak)':' (tidak kena pajak)'),fmt(n.nilai));});
     y+=2;
   }
   if(g.pphRet>0){

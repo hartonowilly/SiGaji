@@ -747,8 +747,9 @@ function updateGajiSummary(){
   if(g.thrBruto>0)h+='<div class="gs-row ct-purple fw-700"><span>THR Bruto (digabung ke Gross PPh)</span><span>'+fmt(g.thrBruto)+'</span></div>';
   h+='<div class="gs-row gs-row-total"><span>Total Gross PPh 21</span><span>'+fmt(g.grossPPh)+'</span></div>';
   if(g.thrBruto>0)h+='<div class="thr-callout">THR sudah digabung ke Gross PPh. Take Home akhir bulan = gaji saja (THR dibayar full netto terpisah).</div>';
-  h+='<div class="stit">Take Home Bruto (akhir bulan)</div><div class="gs-row"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH-g.natNKP)+'</span></div>';
-  if(g.natNKP>0)h+='<div class="gs-row"><span>Natura Tidak KP</span><span>'+fmt(g.natNKP)+'</span></div>';
+  h+='<div class="stit">Take Home Bruto (akhir bulan)</div><div class="gs-row"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH)+'</span></div>';
+  if(g.natNKP>0)h+='<div class="gs-row text-muted"><span>Natura tidak kena pajak (fasilitas, tidak ditransfer)</span><span>'+fmt(g.natNKP)+'</span></div>';
+  if(g.natKP>0)h+='<div class="gs-row text-muted"><span>Natura kena pajak (fasilitas, tidak ditransfer)</span><span>'+fmt(g.natKP)+'</span></div>';
   h+='<div class="gs-row fw-700"><span>Total Take Home Bruto</span><span>'+fmt(g.brutoTH)+'</span></div>';
   h+='<div class="stit">Potongan</div><div class="gs-row"><span>PPh 21'+(g.thrBruto>0?' (incl. PPh THR '+fmt(g.pphAtasThr)+')':'')+'</span><span>&#8212; '+fmt(g.pph)+'</span></div>';
   h+='<div class="gs-row"><span>BPJS Kes Karyawan</span><span>&#8212; '+fmt(g.bpjs.kes_kar)+'</span></div>';

@@ -277,6 +277,16 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
       '<div class="fw-700 ct-purple mb-sm">&#127873; Periode ini ada THR - '+escapeHtml(p.thr_nama||'Hari Raya')+'</div>'+
       '<div class="font-12 text-purple">Tgl Bayar THR: <strong>'+escapeHtml(p.thr_bayar||'-')+'</strong> &nbsp;|&nbsp; PPh THR digabung ke PPh 21</div></div>':
       '';
+    var pakaiDes=typeof periodePakaiRekonsiliasiTahunan==='function'&&periodePakaiRekonsiliasiTahunan(p);
+    if(pakaiDes){
+      var lupaTipe=p.tipe_periode!=='desember';
+      html+=(lupaTipe
+        ?'<div class="info-box info-amber font-12 leading-tight mb-md">Periode ini jatuh di Desember. PPh 21 memakai <strong>rekonsiliasi tahunan</strong> otomatis (meski tipe masih Normal). Set tipe masa pajak ke Desember di Master Periode agar bukti potong A1 jelas.</div>'
+        :'<div class="info-box font-12 leading-tight mb-md">Masa pajak Desember: PPh 21 direkonsiliasi dengan tarif progresif Pasal 17 (bukan TER).</div>');
+    }else if(p.tipe_periode==='normal'||!p.tipe_periode||p.tipe_periode==='biasa'){
+      var tEnd=String(p.end||p.bayar||'').slice(5,7);
+      if(tEnd==='12')html+='<div class="info-box info-amber font-12 leading-tight mb-md">Tanggal periode Desember — cek tipe masa pajak.</div>';
+    }
     thrInfo.innerHTML=html;
   }
   let prAktif=0;
@@ -410,8 +420,8 @@ function detailGaji(nik,pNama){
   if(g.thrBruto>0)h+='<div class="cr ct-purple"><span>Porsi PPh atas THR</span><span>'+fmt(g.pphAtasThr)+'</span></div>';
   h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div></div>';
   h+='<div class="fl mt-lg flex-wrap" style="gap:.75rem">';
-  h+='<div class="flex-1"><div class="stit">Take Home Bruto</div><div class="pr-row-info"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH-g.natNKP)+'</span></div>';
-  if(g.natNKP>0)h+='<div class="pr-row-info"><span>Natura Tidak KP</span><span>'+fmt(g.natNKP)+'</span></div>';
+  h+='<div class="flex-1"><div class="stit">Take Home Bruto</div><div class="pr-row-info"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH)+'</span></div>';
+  if(g.natNKP>0)h+='<div class="pr-row-info text-muted"><span>Natura tidak kena pajak (fasilitas, tidak ditransfer)</span><span>'+fmt(g.natNKP)+'</span></div>';
   h+='<div class="pr-row-info fw-700 gs-divider"><span>Total Take Home Bruto</span><span>'+fmt(g.brutoTH)+'</span></div>';
   if(g.thrBruto>0)h+='<div class="font-10 text-purple">THR TIDAK masuk TH (dibayar terpisah)</div>';
   h+='</div>';
