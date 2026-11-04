@@ -2079,8 +2079,59 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   opacity: 1;
   pointer-events: auto;
 }
+.top-cari-orang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid var(--color-border-light, #e2e8f0);
+  border-radius: 999px;
+  background: var(--wh, #fff);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  max-width: 220px;
+}
+.top-cari-orang:hover {
+  border-color: var(--color-primary, #1a56a0);
+  color: var(--tx);
+}
+.top-cari-orang-lbl {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.top-cari-orang-kbd {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--table-head-bg, #f1f5f9);
+  color: var(--ink-subtle);
+}
+.sigaji-cmdk-orang {
+  cursor: default;
+}
+.sigaji-cmdk-orang-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sigaji-cmdk-orang-aksi {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.sigaji-cmdk-orang-aksi .btn {
+  white-space: nowrap;
+}
+tr.sigaji-orang-flash td {
+  background: rgba(26, 86, 160, 0.1);
+}
 .sigaji-cmdk-panel {
-  width: min(560px, 100%);
+  width: min(640px, 100%);
   background: var(--wh);
   border-radius: 14px;
   box-shadow: 0 24px 64px rgba(15, 23, 42, 0.22);

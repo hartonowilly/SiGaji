@@ -164,7 +164,7 @@ function renderAbsensiBody(){
   listKar.forEach(function(k,ki){
     var rowCls=ki%2===0?'ab-row-even':'ab-row-odd';
     var tStop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
-    html+='<tr class="'+rowCls+'"><td class="text-center fw-800 text-subtle ab-sticky-no">'+(ki+1)+'</td><td class="fw-700 ab-sticky-name"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1 min-w-0"><div class="font-12 fw-700 ab-kar-name">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle ab-kar-nik">'+escapeHtml(k.nik)+(tStop?' · resign '+fmtDate(tStop):'')+'</div></div></div></td><td class="font-11 text-muted ab-sticky-jab">'+escapeHtml(k.jabatan||'')+'</td>';
+    html+='<tr class="'+rowCls+'" data-nik="'+escapeAttr(k.nik)+'"><td class="text-center fw-800 text-subtle ab-sticky-no">'+(ki+1)+'</td><td class="fw-700 ab-sticky-name"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1 min-w-0"><div class="font-12 fw-700 ab-kar-name">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle ab-kar-nik">'+escapeHtml(k.nik)+(tStop?' · resign '+fmtDate(tStop):'')+'</div></div></div></td><td class="font-11 text-muted ab-sticky-jab">'+escapeHtml(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
       var isLN=isHL(x.date);

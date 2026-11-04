@@ -77,6 +77,17 @@ html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar > .tl:first-chil
   min-width: 0;
   padding-bottom: 0;
 }
+html.sigaji-mobile-nav .top-cari-orang {
+  max-width: 148px;
+  padding: 0.22rem 0.5rem;
+}
+html.sigaji-mobile-nav .top-cari-orang-kbd {
+  display: none;
+}
+html.sigaji-mobile-nav .sigaji-cmdk-orang-aksi {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 html.sigaji-mobile-nav .topbar-theme-wrap {
   display: flex;
   flex-wrap: nowrap;
