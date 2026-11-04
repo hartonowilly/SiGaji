@@ -606,6 +606,28 @@ function switchAbTab(el,tid){
     }
   });
 }
+function bindPayrollSpTabsOnce(){
+  var wrap=document.getElementById('payroll-spt-wrap');
+  if(!wrap||wrap.dataset.bound==='1')return;
+  wrap.dataset.bound='1';
+  wrap.addEventListener('click',function(ev){
+    var t=ev.target&&ev.target.closest?ev.target.closest('.spt[data-kgstab]'):null;
+    if(!t||!wrap.contains(t))return;
+    var map={gaji:'sp-gaji',bpjs:'sp-bpjs',natura:'sp-natura',pphret:'sp-pphret',ring:'sp-ring'};
+    var tid=map[t.getAttribute('data-kgstab')];
+    if(tid&&typeof switchPayrollSpTab==='function'){
+      ev.preventDefault();
+      switchPayrollSpTab(t,tid);
+    }
+  });
+  wrap.addEventListener('keydown',function(ev){
+    if(ev.key!=='Enter'&&ev.key!==' ')return;
+    var t=ev.target&&ev.target.closest?ev.target.closest('.spt[data-kgstab]'):null;
+    if(!t||!wrap.contains(t))return;
+    ev.preventDefault();
+    t.click();
+  });
+}
 function switchPayrollSpTab(el,tid){
   const tabMap={'sp-gaji':'gaji','sp-bpjs':'bpjs','sp-natura':'natura','sp-pphret':'pphret','sp-ring':'ring'};
   const subId=tabMap[tid];
@@ -623,7 +645,14 @@ function switchPayrollSpTab(el,tid){
   if(tid==='sp-natura'){var k3=getPayrollTargetByNik(cpNik,true);if(k3)renderNaturaPanel(k3);}
   if(tid==='sp-pphret'){var k4=getPayrollTargetByNik(cpNik,true);if(k4)renderPPhRetPanel(k4);}
 }
-if(typeof window!=='undefined')window.switchPayrollSpTab=switchPayrollSpTab;
+if(typeof window!=='undefined'){
+  window.switchPayrollSpTab=switchPayrollSpTab;
+  window.bindPayrollSpTabsOnce=bindPayrollSpTabsOnce;
+}
+if(typeof document!=='undefined'){
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindPayrollSpTabsOnce);
+  else bindPayrollSpTabsOnce();
+}
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 var tT;toast=function(msg){var t=document.getElementById('toast9');if(!t){try{console.warn(msg);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}return;}t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show');},3200);};
