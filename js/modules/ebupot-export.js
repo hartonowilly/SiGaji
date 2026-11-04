@@ -283,9 +283,10 @@ function ebupotBuildRows(periode) {
     if (!g) return;
     totalBruto += bruto;
     totalPph += pph;
+    var ptkpKey = typeof ptkpStatusHasil === 'function' ? ptkpStatusHasil(g, k) : g.ptkpStatus || k.ptkp;
     var terI =
       typeof terInfoForExport === 'function'
-        ? terInfoForExport(k.ptkp, bruto, typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(periode):'', g.terRate)
+        ? terInfoForExport(ptkpKey, bruto, typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(periode):'', g.terRate)
         : { lampiran: '', ratePct: 0 };
     var npwpKar = ebupotNpwp16(k.npwp);
     var nikKar = ebupotKarKtpNik16(k);
@@ -321,7 +322,7 @@ function ebupotBuildRows(periode) {
       namaPenerima: k.nama || '',
       jabatan: (k.jabatan || 'Staff').trim() || 'Staff',
       statusPegawai: 'Resident',
-      ptkp: ebupotPtkpSlash(k.ptkp),
+      ptkp: ebupotPtkpSlash(ptkpKey),
       kodeObjek: kode,
       kodeObjekLbl: ebupotKodeObjekLbl(kode),
       tipeKerja: tipeKerja,
@@ -370,7 +371,7 @@ function ebupotBuildRows(periode) {
         namaPenerima: k.nama || '',
         jabatan: (k.jabatan || 'Staff').trim() || 'Staff',
         statusPegawai: 'Resident',
-        ptkp: ebupotPtkpSlash(k.ptkp),
+        ptkp: ebupotPtkpSlash(ptkpKey),
         kodeObjek: '21-401-01',
         kodeObjekLbl: ebupotKodeObjekLbl('21-401-01'),
         tipeKerja: 'pesangon',

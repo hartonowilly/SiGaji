@@ -366,4 +366,23 @@ function karBase(extra) {
   );
 }
 
+{
+  const pxE = loadEbupotExport();
+  const kar = karBase({
+    nik: 'E-PTKP',
+    nama: 'Eko',
+    gapok: 8_000_000,
+    ptkp: 'K0',
+    ptkp_berlaku: '2026-07-01',
+    ptkp_riwayat: [{ berlakuMulai: '1970-01-01', ptkp: 'TK0' }],
+    npwp: '1234567890123456',
+    tipe_kerja: 'tetap',
+  });
+  pxE.karyawan = [kar];
+  assertEq('Maret hitung tetap TK0 meski profil K0', pxE.hitungGaji(kar, PERIODE).ptkpStatus, 'TK0');
+  const built = pxE.ebupotBuildRows(pxE.periodes[0]);
+  assert('e-Bupot baris terbuat', !!(built && built.ok && built.rows && built.rows[0]));
+  assertEq('e-Bupot StatusTaxExemption dari periode, bukan profil', built.rows[0].ptkp, 'TK/0');
+}
+
 console.log('Semua tes e-Bupot/cuti/mingguan lulus.');

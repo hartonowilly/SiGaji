@@ -350,9 +350,10 @@
         });
       }
 
+      var ptkpAnom = typeof ptkpStatusHasil === 'function' ? ptkpStatusHasil(g, k) : g.ptkpStatus || k.ptkp;
       var terPph =
-        typeof hitungPPhBln === 'function' && k.ptkp
-          ? hitungPPhBln(g.grossPPh, k.ptkp, typeof tglAturanDariPeriode === 'function' ? tglAturanDariPeriode(p) : '')
+        typeof hitungPPhBln === 'function' && ptkpAnom
+          ? hitungPPhBln(g.grossPPh, ptkpAnom, typeof tglAturanDariPeriode === 'function' ? tglAturanDariPeriode(p) : '')
           : 0;
       var pphRet = (k.pph_return && k.pph_return.nilai) || 0;
       var reconLebihBayar =

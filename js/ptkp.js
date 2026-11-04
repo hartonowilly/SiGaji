@@ -20,6 +20,11 @@ function ptkpStatusUntukTanggal(k, tanggal){
   });
   return ptkpLama||sekarang;
 }
+/** Status yang benar-benar dipakai hitung gaji periode ini (bukan profil saat ini). */
+function ptkpStatusHasil(g,k){
+  if(g&&g.ptkpStatus)return g.ptkpStatus;
+  return (k&&k.ptkp)||'TK0';
+}
 /** Tahun pajak dari periode Januari (nama atau tanggal mulai). */
 function sigajiTahunPtkpJanuari(p){
   if(!p)return '';
@@ -30,25 +35,38 @@ function sigajiTahunPtkpJanuari(p){
   if(src.length>=4&&src.slice(5,7)==='01')return src.slice(0,4);
   return '';
 }
-function sigajiTanggalMulaiPtkpBaru(){
+/** Tahun pajak periode (nama / akhir periode), untuk tanggal berlaku PTKP. */
+function sigajiTahunPajakPeriode(p){
+  if(!p&&typeof PA==='function')p=PA();
+  var jan=p?sigajiTahunPtkpJanuari(p):'';
+  if(jan)return jan;
+  var m=String(p&&p.nama||'').match(/(\d{4})/);
+  if(m)return m[1];
+  var src=String((p&&(p.end||p.start||p.bayar))||'');
+  if(src.length>=4)return src.slice(0,4);
+  return String(new Date().getFullYear());
+}
+/**
+ * Tanggal mulai status baru.
+ * Januari: 1 Jan tahun itu.
+ * Di luar Januari: 'koreksi' = 1 Jan tahun pajak ini; selain itu (perubahan keadaan) = 1 Jan tahun depan.
+ */
+function sigajiTanggalMulaiPtkpBaru(alasan){
   var p=typeof PA==='function'?PA():null;
-  var th=p?sigajiTahunPtkpJanuari(p):'';
-  if(th)return th+'-01-01';
-  if(p&&!p.snapshot_locked&&typeof sigajiTanggalAcuanPeriode==='function'){
-    var t=sigajiTanggalAcuanPeriode(p);
-    if(t)return t;
-  }
-  if(typeof sigajiTanggalHariIni==='function')return sigajiTanggalHariIni();
-  var d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  var thJan=p?sigajiTahunPtkpJanuari(p):'';
+  if(thJan)return thJan+'-01-01';
+  var n=parseInt(sigajiTahunPajakPeriode(p),10)||new Date().getFullYear();
+  if(alasan==='koreksi')return n+'-01-01';
+  return (n+1)+'-01-01';
 }
 /** Simpan status lama untuk tanggal sebelum periode perubahan. Status di profil menjadi status baru. */
-function sigajiCatatPtkpKaryawan(k, baru){
+function sigajiCatatPtkpKaryawan(k, baru, opts){
   if(!k)return;
   var lama=k.ptkp||'TK0';
   baru=baru||'TK0';
   if(lama===baru)return;
-  var mulai=sigajiTanggalMulaiPtkpBaru();
+  opts=opts||{};
+  var mulai=opts.berlakuMulai?String(opts.berlakuMulai).slice(0,10):sigajiTanggalMulaiPtkpBaru(opts.alasan);
   if(!k.ptkp_berlaku){
     k.ptkp_riwayat=[{berlakuMulai:'1970-01-01',ptkp:lama}];
     k.ptkp_berlaku=mulai;
@@ -139,7 +157,7 @@ function applyPtkpFieldState(){
   }else{
     sel.disabled=false;
     if(hint){
-      if(gate.reason==='admin'&&gate.needConfirm)hint.textContent='Di luar Januari: perubahan PTKP oleh Admin akan dikonfirmasi saat simpan.';
+      if(gate.reason==='admin'&&gate.needConfirm)hint.textContent='Di luar Januari: pilih koreksi (1 Jan tahun ini) atau perubahan keadaan (1 Jan tahun depan).';
       else if(allowFemaleOv)hint.textContent='Override Admin aktif — PTKP perempuan dapat diubah.';
       else hint.textContent='Periode Januari: status PTKP boleh diperbarui (awal tahun pajak).';
     }
@@ -170,6 +188,61 @@ function onJkChange(){
   applyPtkpFieldState();
 }
 
+function sigajiPilihAlasanPtkp(opts){
+  opts=opts||{};
+  if(typeof document==='undefined'||!document.body)return Promise.resolve(null);
+  return new Promise(function(resolve){
+    var old=document.getElementById('m-ptkp-alasan');
+    if(old)old.remove();
+    var wrap=document.createElement('div');
+    wrap.id='m-ptkp-alasan';
+    wrap.className='mbd show';
+    var modal=document.createElement('div');
+    modal.className='modal modal-sm';
+    modal.setAttribute('role','dialog');
+    modal.setAttribute('aria-modal','true');
+    var tit=document.createElement('div');
+    tit.className='mtit';
+    tit.textContent='Alasan ubah PTKP';
+    var body=document.createElement('p');
+    body.className='confirm-body';
+    var nama=opts.nama?String(opts.nama):'Karyawan';
+    var lama=opts.lama?String(opts.lama):'';
+    var baru=opts.baru?String(opts.baru):'';
+    body.appendChild(document.createTextNode(nama+(lama||baru?': ':'')+lama+(lama&&baru?' → ':'')+baru));
+    body.appendChild(document.createElement('br'));
+    body.appendChild(document.createElement('br'));
+    body.appendChild(document.createTextNode('Koreksi data salah input: berlaku 1 Januari tahun ini. Perubahan keadaan (menikah/anak): berlaku 1 Januari tahun depan.'));
+    var foot=document.createElement('div');
+    foot.className='mfoot fl gap1 justify-end flex-wrap';
+    function mkBtn(id,cls,label){
+      var b=document.createElement('button');
+      b.type='button';
+      b.id=id;
+      b.className=cls;
+      b.textContent=label;
+      return b;
+    }
+    foot.appendChild(mkBtn('ptkp-alasan-batal','btn btn-sm btn-out','Batal'));
+    foot.appendChild(mkBtn('ptkp-alasan-keadaan','btn btn-sm btn-out','Perubahan keadaan'));
+    foot.appendChild(mkBtn('ptkp-alasan-koreksi','btn btn-sm btn-p','Koreksi data'));
+    modal.appendChild(tit);
+    modal.appendChild(body);
+    modal.appendChild(foot);
+    wrap.appendChild(modal);
+    document.body.appendChild(wrap);
+    document.body.style.overflow='hidden';
+    function done(v){
+      wrap.remove();
+      document.body.style.overflow='';
+      resolve(v);
+    }
+    wrap.querySelector('#ptkp-alasan-batal').addEventListener('click',function(){done(null);});
+    wrap.querySelector('#ptkp-alasan-keadaan').addEventListener('click',function(){done('keadaan');});
+    wrap.querySelector('#ptkp-alasan-koreksi').addEventListener('click',function(){done('koreksi');});
+    wrap.addEventListener('click',function(e){if(e.target===wrap)done(null);});
+  });
+}
 function openPtkpJanuariModal(periodeNama){
   var modal=document.getElementById('m-ptkp-januari');
   if(!modal){if(typeof toast==='function')toast('Modal PTKP tidak ditemukan');return;}
@@ -177,10 +250,21 @@ function openPtkpJanuariModal(periodeNama){
   if(tit)tit.textContent='Update Status PTKP — '+(periodeNama||'Januari');
   var tb=document.getElementById('tb-ptkp-januari');
   if(!tb)return;
-  var listSrc=typeof karyawanSortedAll==='function'?karyawanSortedAll():(karyawan||[]);
-  var list=listSrc.filter(function(k){
-    return k&&k.nik&&!String(k.tgl_berhenti||'').trim();
-  });
+  var p=null;
+  if(periodeNama&&typeof periodes!=='undefined'&&Array.isArray(periodes)){
+    for(var i=0;i<periodes.length;i++){
+      if(periodes[i]&&periodes[i].nama===periodeNama){p=periodes[i];break;}
+    }
+  }
+  if(!p&&typeof PA==='function')p=PA();
+  var list;
+  if(p&&typeof karyawanListPeriode==='function')list=karyawanListPeriode(p)||[];
+  else{
+    var listSrc=typeof karyawanSortedAll==='function'?karyawanSortedAll():(karyawan||[]);
+    list=listSrc.filter(function(k){
+      return k&&k.nik&&!String(k.tgl_berhenti||'').trim();
+    });
+  }
   var esc=typeof escapeHtml==='function'?escapeHtml:function(s){return String(s||'');};
   var escA=typeof escapeAttr==='function'?escapeAttr:function(s){return String(s||'').replace(/"/g,'&quot;');};
   tb.innerHTML=list.map(function(k,i){
@@ -206,17 +290,22 @@ function simpanPtkpJanuari(){
     var v=isJkPerempuan(/** @type {string} */(k.jk))?'TK0':sel.value;
     if(k.ptkp!==v){if(typeof sigajiCatatPtkpKaryawan==='function')sigajiCatatPtkpKaryawan(k,v);k.ptkp=v;n++;}
   });
+  var pAktif=typeof PA==='function'?PA():null;
+  var th=pAktif?sigajiTahunPtkpJanuari(pAktif):'';
+  if(th&&typeof perusahaan==='object'&&perusahaan)perusahaan.ptkpJanuariTahun=th;
   if(typeof saveAll==='function')saveAll();
   if(typeof closeModal==='function')closeModal('m-ptkp-januari');
   if(typeof renderKar==='function')renderKar();
   if(typeof renderPenggajian==='function')renderPenggajian();
   if(typeof renderPPH==='function')renderPPH();
+  if(typeof renderDash==='function')renderDash();
   if(typeof toast==='function')toast(n?('PTKP diperbarui untuk '+n+' karyawan. Berlaku mulai 1 Januari. Bulan sebelumnya tetap status lama.'):'Tidak ada perubahan PTKP');
 }
 if(typeof window!=='undefined'){
   window.getPTKPTable=getPTKPTable;
   window.nilaiPTKP=nilaiPTKP;
   window.fmtPTKPVal=fmtPTKPVal;
+  window.ptkpStatusHasil=ptkpStatusHasil;
   window.isJkPerempuan=isJkPerempuan;
   window.isSigajiAdminUser=isSigajiAdminUser;
   window.canEditPtkpStatus=canEditPtkpStatus;
@@ -225,5 +314,8 @@ if(typeof window!=='undefined'){
   window.onJkChange=onJkChange;
   window.openPtkpJanuariModal=openPtkpJanuariModal;
   window.simpanPtkpJanuari=simpanPtkpJanuari;
+  window.sigajiPilihAlasanPtkp=sigajiPilihAlasanPtkp;
+  window.sigajiCatatPtkpKaryawan=sigajiCatatPtkpKaryawan;
+  window.sigajiTanggalMulaiPtkpBaru=sigajiTanggalMulaiPtkpBaru;
   window.isNamaPeriodeJanuari=isNamaPeriodeJanuari;
 }

@@ -417,7 +417,7 @@ function detailGaji(nik,pNama){
   h+='<div class="pph-calc-sec"><div class="pph-calc-tit">PPh 21 - TER PMK 168/2023</div>';
   h+='<div class="cr"><span>Penghasilan Bruto</span><span>'+fmt(g.grossPPh)+'</span></div>';
   if(g.thrBruto>0)h+='<div class="cr ct-purple"><span>Porsi PPh atas THR</span><span>'+fmt(g.pphAtasThr)+'</span></div>';
-  h+='<div class="cr result"><span>TER '+k.ptkp+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div></div>';
+  h+='<div class="cr result"><span>TER '+(g.ptkpStatus||k.ptkp)+': '+(rate*100).toFixed(2)+'% × '+fmt(g.grossPPh)+' = <strong>PPh 21 bulan ini</strong></span><span><strong>'+fmt(g.pph)+'</strong></span></div></div>';
   h+='<div class="fl mt-lg flex-wrap" style="gap:.75rem">';
   h+='<div class="flex-1"><div class="stit">Take Home Bruto</div><div class="pr-row-info"><span>Gaji + Tunjangan + Lembur</span><span>'+fmt(g.brutoTH)+'</span></div>';
   if(g.natNKP>0)h+='<div class="pr-row-info text-muted"><span>Natura tidak kena pajak (fasilitas, tidak ditransfer)</span><span>'+fmt(g.natNKP)+'</span></div>';

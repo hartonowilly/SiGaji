@@ -115,6 +115,32 @@
       }
     });
 
+    var janNama =
+      typeof isNamaPeriodeJanuari === 'function'
+        ? isNamaPeriodeJanuari(p.nama)
+        : /^januari\b/i.test(String(p.nama || '').trim());
+    var janStart = String(p.start || '').length >= 7 && String(p.start).substring(5, 7) === '01';
+    if (janNama || janStart) {
+      var thJan =
+        typeof sigajiTahunPtkpJanuari === 'function' ? sigajiTahunPtkpJanuari(p) : '';
+      if (!thJan) {
+        var ym = String(p.nama || '').match(/(\d{4})/);
+        thJan = ym ? ym[1] : String(p.start || '').slice(0, 4);
+      }
+      var prs = opts.perusahaan || (typeof perusahaan !== 'undefined' ? perusahaan : null);
+      var sudah = !!(prs && thJan && String(prs.ptkpJanuariTahun || '') === String(thJan));
+      if (thJan && !sudah) {
+        pushItem(out, {
+          id: 'ptkp-januari',
+          prio: 0,
+          text: 'Update status PTKP awal tahun ' + thJan + ' (karyawan di periode ini)',
+          btn: 'Buka formulir',
+          openPtkp: true,
+          periodeNama: p.nama,
+        });
+      }
+    }
+
     if (norekKosong.length) {
       pushItem(out, {
         id: 'norek',
@@ -330,6 +356,10 @@
 
   function goTindakanPage(item) {
     if (!item) return;
+    if (item.openPtkp && typeof openPtkpJanuariModal === 'function') {
+      openPtkpJanuariModal(item.periodeNama);
+      return;
+    }
     if (item.pg && typeof showPg === 'function') showPg(item.pg);
     if (item.abpanel) {
       var tab = document.querySelector('#pg-absensi .tab[data-abpanel="' + item.abpanel + '"]');
