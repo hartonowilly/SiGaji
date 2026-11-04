@@ -303,74 +303,122 @@
       '</button>';
   }
 
-  /* ── Command palette ── */
+  /* ── Command palette: cari orang dari mana saja ── */
+  window.sigajiCariKaryawanFilter = function (list, q) {
+    q = String(q || '')
+      .toLowerCase()
+      .trim();
+    if (!q) return [];
+    return (list || []).filter(function (k) {
+      if (!k || !k.nik) return false;
+      if (typeof isKarSampah === 'function' && isKarSampah(k)) return false;
+      var hay =
+        String(k.nama || '') +
+        ' ' +
+        String(k.nik || '') +
+        ' ' +
+        String(k.dept || '') +
+        ' ' +
+        String(k.jabatan || '');
+      return hay.toLowerCase().indexOf(q) >= 0;
+    });
+  };
+
+  function cmdkKarList() {
+    var p = typeof PA === 'function' ? PA() : null;
+    if (typeof karyawanListPeriode === 'function' && p) return karyawanListPeriode(p) || [];
+    return karyawan || [];
+  }
+
   function cmdkItems(q) {
     q = String(q || '')
       .toLowerCase()
       .trim();
+    if (!q) return [];
     var items = [];
+    window.sigajiCariKaryawanFilter(cmdkKarList(), q).slice(0, 12).forEach(function (k) {
+      items.push({
+        type: 'karyawan',
+        label: k.nama || k.nik,
+        sub: k.nik + ' · ' + (k.dept || '-') + (k.jabatan ? ' · ' + k.jabatan : ''),
+        icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon('karyawan') : '&#128100;',
+        act: 'payroll',
+        arg: String(k.nik),
+      });
+    });
     (MODULES || []).forEach(function (m) {
       if (m.sec === 'Saya') return;
       if (typeof canAccessModule === 'function' && !canAccessModule(m.id)) return;
+      var hay = (m.lbl + ' ' + m.id + ' ' + m.sec).toLowerCase();
+      if (hay.indexOf(q) < 0) return;
       items.push({
         type: 'modul',
         label: m.lbl,
         sub: m.sec,
-        icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon(m.id) : (m.icon || '&#9670;'),
+        icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon(m.id) : m.icon || '&#9670;',
         act: 'pg',
         arg: m.id,
-        hay: (m.lbl + ' ' + m.id + ' ' + m.sec).toLowerCase(),
       });
     });
-    (karyawan || []).slice(0, 200).forEach(function (k) {
-      if (!k || !k.nik) return;
-      var hay = (k.nama + ' ' + k.nik + ' ' + (k.dept || '') + ' ' + (k.jabatan || '')).toLowerCase();
-      items.push({
-        type: 'karyawan',
-        label: k.nama,
-        sub: k.nik + ' · ' + (k.dept || '-'),
-        icon: typeof sigajiNavIcon === 'function' ? sigajiNavIcon('karyawan') : '&#128100;',
-        act: 'panel',
-        arg: String(k.nik),
-        hay: hay,
-      });
-    });
-    [
-      { label: 'Finalisasi gaji', sub: 'Proses penggajian', arg: 'penggajian', hay: 'final gaji bayar' },
-      { label: 'Simulasi what-if', sub: 'Sandbox THR & pesangon', arg: 'simulasi', hay: 'simulasi thr pesangon' },
-      { label: 'Export e-Bupot', sub: 'Laporan PPh', arg: 'laporan', hay: 'ebupot pph coretax' },
-    ].forEach(function (x) {
-      items.push({
-        type: 'aksi',
-        label: x.label,
-        sub: x.sub,
-        icon: '&#9889;',
-        act: 'pg',
-        arg: x.arg,
-        hay: x.hay,
-      });
-    });
-    if (!q) return items.slice(0, 14);
-    return items
-      .filter(function (it) {
-        return it.hay.indexOf(q) >= 0;
-      })
-      .slice(0, 12);
+    return items.slice(0, 16);
   }
 
   function cmdkRender(q) {
     var box = document.getElementById('sigaji-cmdk-results');
     if (!box) return;
     var items = cmdkItems(q);
+    var html;
     if (!items.length) {
-      box.innerHTML = '<div class="sigaji-cmdk-empty">Tidak ada hasil</div>';
+      html = q
+        ? '<div class="sigaji-cmdk-empty">Tidak ada karyawan atau menu yang cocok</div>'
+        : '<div class="sigaji-cmdk-empty">Ketik nama atau NIK karyawan — lalu buka Gaji, Profil, atau Absensi</div>';
+      box.innerHTML = html;
       return;
     }
-    box.innerHTML = items
+    var canGaji = typeof canAccessModule !== 'function' || canAccessModule('kompgaji');
+    var canKar = typeof canAccessModule !== 'function' || canAccessModule('karyawan');
+    var canAbs = typeof canAccessModule !== 'function' || canAccessModule('absensi');
+    html = items
       .map(function (it, i) {
+        var on = i === 0 ? ' active' : '';
+        if (it.type === 'karyawan') {
+          var aksi =
+            (canGaji
+              ? '<button type="button" class="btn btn-xs btn-p" data-act="payroll" data-arg="' +
+                escapeAttr(it.arg) +
+                '">Gaji</button>'
+              : '') +
+            (canKar
+              ? '<button type="button" class="btn btn-xs btn-out" data-act="panel" data-arg="' +
+                escapeAttr(it.arg) +
+                '">Profil</button>'
+              : '') +
+            (canAbs
+              ? '<button type="button" class="btn btn-xs btn-out" data-act="absensi" data-arg="' +
+                escapeAttr(it.arg) +
+                '">Absensi</button>'
+              : '');
+          return (
+            '<div class="sigaji-cmdk-item sigaji-cmdk-orang' +
+            on +
+            '" data-act="' +
+            escapeAttr(it.act) +
+            '" data-arg="' +
+            escapeAttr(it.arg) +
+            '"><span class="sigaji-cmdk-icon">' +
+            it.icon +
+            '</span><span class="sigaji-cmdk-orang-info"><span class="sigaji-cmdk-lbl">' +
+            escapeHtml(it.label) +
+            '</span><span class="sigaji-cmdk-sub">' +
+            escapeHtml(it.sub) +
+            '</span></span><span class="sigaji-cmdk-orang-aksi">' +
+            aksi +
+            '</span></div>'
+          );
+        }
         return (
           '<button type="button" class="sigaji-cmdk-item' +
-          (i === 0 ? ' active' : '') +
+          on +
           '" data-act="' +
           escapeAttr(it.act) +
           '" data-arg="' +
@@ -387,6 +435,7 @@
         );
       })
       .join('');
+    box.innerHTML = html;
   }
 
   window.sigajiCmdkOpen = function () {
@@ -411,6 +460,37 @@
     ov.setAttribute('aria-hidden', 'true');
   };
 
+  window.sigajiGotoOrang = function (nik, mode) {
+    if (!nik) return;
+    if (mode === 'payroll') {
+      if (typeof showPg === 'function') showPg('kompgaji');
+      setTimeout(function () {
+        if (typeof openPayrollPanel === 'function') openPayrollPanel(nik);
+      }, 80);
+      return;
+    }
+    if (mode === 'absensi') {
+      if (typeof showPg === 'function') showPg('absensi');
+      var tab = document.querySelector('#pg-absensi .tab[data-abpanel="abt-kalender"]');
+      if (tab && typeof switchAbTab === 'function') switchAbTab(tab, 'abt-kalender');
+      setTimeout(function () {
+        var row = document.querySelector('#ab-grid-wrap tr[data-nik="' + String(nik).replace(/"/g, '') + '"]');
+        if (row && row.scrollIntoView) {
+          row.scrollIntoView({ block: 'center' });
+          row.classList.add('sigaji-orang-flash');
+          setTimeout(function () {
+            row.classList.remove('sigaji-orang-flash');
+          }, 2500);
+        }
+      }, 220);
+      return;
+    }
+    if (typeof showPg === 'function') showPg('karyawan');
+    setTimeout(function () {
+      if (typeof openPanel === 'function') openPanel(nik);
+    }, 80);
+  };
+
   /* Aksi palet dipetakan ke fungsi secara eksplisit — bukan string kode yang di-eval. */
   function cmdkRun(btn) {
     var act = btn && btn.getAttribute('data-act');
@@ -419,7 +499,7 @@
     if (!act) return;
     try {
       if (act === 'pg' && typeof showPg === 'function') showPg(arg);
-      else if (act === 'panel' && typeof openPanel === 'function') openPanel(arg);
+      else if (act === 'payroll' || act === 'panel' || act === 'absensi') window.sigajiGotoOrang(arg, act);
     } catch (e) {
       console.error(e);
     }
@@ -460,8 +540,8 @@
       }
     });
     ov.addEventListener('click', function (e) {
-      var btn = e.target.closest('.sigaji-cmdk-item');
-      if (btn) cmdkRun(btn);
+      var actEl = e.target.closest('[data-act]');
+      if (actEl && ov.contains(actEl)) cmdkRun(actEl);
     });
   }
 
