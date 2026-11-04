@@ -446,8 +446,8 @@ function detailGaji(nik,pNama){
     const isLebih=r.lebihBayar>0;
     h+='<div class="recon-panel '+(isLebih?'is-refund':'is-owe')+'">';
     h+='<div class="fw-800 mb-md recon-panel-title '+(isLebih?'is-refund':'is-owe')+'">&#9654; Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Masa Pajak Terakhir - Resign)':'(Desember - Progresif)')+'</div>';
-    if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
-      h+='<div class="cr ct-brand"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+' — bruto / PPh</span><span>'+fmt(r.saldoAwalBruto)+' / '+fmt(r.saldoAwalPph)+'</span></div>';
+    if(r.saldoAwalBruto>0||r.saldoAwalPph>0||r.saldoAwalIuran>0){
+      h+='<div class="cr ct-brand"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+' — bruto / PPh / iuran JHT+JP</span><span>'+fmt(r.saldoAwalBruto)+' / '+fmt(r.saldoAwalPph)+(r.saldoAwalIuran>0?' / '+fmt(r.saldoAwalIuran):'')+'</span></div>';
       if(r.brutoDariPeriode>0||r.pphDariPeriode>0)h+='<div class="cr"><span>+ Dari periode SiGaji (sebelum bulan ini)</span><span>'+fmt(r.brutoDariPeriode)+' / '+fmt(r.pphDariPeriode)+'</span></div>';
     }
     h+='<div class="cr"><span>Total Bruto YTD (kumulatif sebelum bulan ini)</span><span>'+fmt(r.brutoYTD)+'</span></div>';

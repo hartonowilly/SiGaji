@@ -105,14 +105,16 @@
   }
 
   /**
-   * Minggu pertama setelah tanggal masuk (bukan awal periode): upah hari kerja
-   * dari tgl masuk s.d. payday Jumat pertama.
+   * Minggu pertama setelah tanggal masuk: upah hari kerja dari tgl masuk s.d. payday
+   * Jumat pertama. Termasuk join di celah setelah payday sebelumnya (meski masuk ≤ awal periode).
    */
   function siklusBayarParsialMasuk(start, end, masuk, hariGaji, hariKerja, libur, rate, stop) {
     if (!masuk) return null;
     var masukIso = String(masuk).slice(0, 10);
     var startIso = String(start).slice(0, 10);
-    if (!masukIso || masukIso <= startIso) return null;
+    if (!masukIso) return null;
+    var prevPay = siklusPaydaySebelum(startIso, hariGaji, hariKerja, libur);
+    if (prevPay && masukIso <= prevPay) return null;
     var pays = siklusTanggalBayarMingguan(start, end, hariGaji, hariKerja, libur, masuk, stop);
     if (!pays.length) return null;
     var firstPay = pays[0];
@@ -175,11 +177,20 @@
     return mode || fallback;
   }
 
+  function siklusMingguanFaktorCuti(dalamKuota, aturan) {
+    var key = dalamKuota ? 'cuti_dalam_kuota' : 'cuti_luar_kuota';
+    var fallback = dalamKuota ? 'tidak_dipotong' : 'prorata';
+    var mode = siklusModePotongan(aturan, key, fallback);
+    if (mode === 'tidak_dipotong') return 0;
+    if (mode === 'prorata_setengah') return 0.5;
+    return 1;
+  }
+
   /** 0 = tetap dibayar, 1 = potong 1 hari, 0.5 = setengah. Cuti dalam kuota default tidak dipotong. */
   function siklusMingguanFaktorPotong(st, aturan) {
     aturan = aturan || siklusAturanPotongan();
     if (st === 'cuti') {
-      return siklusModePotongan(aturan, 'cuti_dalam_kuota', 'tidak_dipotong') === 'tidak_dipotong' ? 0 : 1;
+      return siklusMingguanFaktorCuti(true, aturan);
     }
     if (st === 'alpha') {
       return siklusModePotongan(aturan, 'alpha', 'prorata') === 'tidak_dipotong' ? 0 : 1;
@@ -203,18 +214,51 @@
     return 0;
   }
 
+  function siklusCutiTerpakaiSebelum(k, beforeIso, absensi) {
+    var batas = String(beforeIso || '').slice(0, 10);
+    if (!batas) return 0;
+    var yr = batas.slice(0, 4);
+    var n = 0;
+    var abs = absensi || {};
+    Object.keys(abs).forEach(function (d) {
+      if (abs[d] !== 'cuti') return;
+      if (d.slice(0, 4) !== yr) return;
+      if (d >= batas) return;
+      n++;
+    });
+    var sampai = isoAddDays(batas, -1);
+    var nik = k && k.nik;
+    if (typeof countCutiBersama === 'function') n += countCutiBersama(yr, nik, sampai) || 0;
+    return n;
+  }
+
   /** Jumlah hari kerja tidak dibayar di rentang minggu, mengikuti aturan potongan perusahaan. */
-  function siklusMingguanHariTidakDibayar(from, to, hariKerja, libur, masuk, stop, absensi, aturan) {
+  function siklusMingguanHariTidakDibayar(from, to, hariKerja, libur, masuk, stop, absensi, aturan, k) {
     var n = 0;
     var abs = absensi || {};
     var masukIso = masuk ? String(masuk).slice(0, 10) : '';
     var stopIso = stop ? String(stop).slice(0, 10) : '';
     aturan = aturan || siklusAturanPotongan();
+    var sisaKuota = null;
+    if (k) {
+      var yr = String(from || '').slice(0, 4);
+      var kuota = typeof kuotaCutiKaryawan === 'function' ? kuotaCutiKaryawan(k, yr) : 12;
+      sisaKuota = Math.max(0, kuota - siklusCutiTerpakaiSebelum(k, from, abs));
+    }
     eachDate(from, to, function (d) {
       if (masukIso && d < masukIso) return;
       if (stopIso && d >= stopIso) return;
       if (!siklusIsHariKerja(d, hariKerja, libur)) return;
       var st = abs[d] || 'hadir';
+      if (st === 'cuti' && sisaKuota != null) {
+        if (sisaKuota > 0) {
+          sisaKuota--;
+          n += siklusMingguanFaktorCuti(true, aturan);
+        } else {
+          n += siklusMingguanFaktorCuti(false, aturan);
+        }
+        return;
+      }
       n += siklusMingguanFaktorPotong(st, aturan);
     });
     return n;
@@ -376,7 +420,8 @@
           masuk,
           stop,
           absensi,
-          aturanPot
+          aturanPot,
+          k
         );
         var base = rate;
         var parsial = false;

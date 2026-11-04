@@ -219,6 +219,42 @@ function karBase(extra) {
 {
   const px = loadPayrollCore();
   const k = karBase({
+    nik: 'TES-MG-JOIN-GAP',
+    gapok: 1_200_000,
+    siklus_gaji: 'mingguan',
+    masuk: '2026-02-23',
+  });
+  const pays = px.siklusBuildPays(k, px.periodes[0], 6, {}, {});
+  assertEq('join Senin celah 23 Feb payday 27 Feb', pays[0].tgl, '2026-02-27');
+  assertEq('prorata 5/6 join sebelum awal periode', pays[0].upah, 1_000_000);
+}
+
+{
+  const px = loadPayrollCore({
+    masterCuti: { kuota: 1, cbPotong: false, hakBaru: 'langsung' },
+    perusahaan: {
+      hariKerja: 6,
+      aturan_potongan: {
+        cuti_dalam_kuota: { mode: 'tidak_dipotong', nilai: 0 },
+        cuti_luar_kuota: { mode: 'prorata', nilai: 0 },
+      },
+    },
+  });
+  const k = karBase({ nik: 'TES-MG-CLK', gapok: 1_200_000, siklus_gaji: 'mingguan' });
+  const full = px.siklusBuildPays(k, px.periodes[0], 6, {}, {});
+  const totFull = full.reduce(function (s, p) { return s + p.upah; }, 0);
+  const cuti3 = px.siklusBuildPays(k, px.periodes[0], 6, {}, {
+    '2026-03-02': 'cuti',
+    '2026-03-03': 'cuti',
+    '2026-03-04': 'cuti',
+  });
+  const totCuti3 = cuti3.reduce(function (s, p) { return s + p.upah; }, 0);
+  assertEq('3 cuti kuota 1: bayar 1 potong 2', totCuti3, totFull - 400_000);
+}
+
+{
+  const px = loadPayrollCore();
+  const k = karBase({
     nik: 'TES-HR-TT',
     gapok: 500_000,
     siklus_gaji: 'harian',

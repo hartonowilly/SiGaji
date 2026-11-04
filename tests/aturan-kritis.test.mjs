@@ -111,6 +111,17 @@ const thrPenuh = px.hitungTHRBruto(kHarian, 'Maret 2026');
 assertEq('THR harian 6 thn = 25 hari', thrPenuh.nilai, 3_750_000);
 assertEq('masa kerja THR ≥ 12', thrPenuh.mb >= 12, true);
 
+{
+  const px5 = loadPayrollCore({ perusahaan: { hariKerja: 5 } });
+  const thr5 = px5.hitungTHRBruto(
+    { nik: 'HR-THR5', gapok: 150_000, siklus_gaji: 'harian', masuk: '2020-01-01', tunjangan: [], potongan: [], natura: [] },
+    'Maret 2026'
+  );
+  assertEq('THR harian 5 hari kerja = 21 hari', thr5.nilai, 3_150_000);
+  const kLb5 = { nik: 'LB-H5', gapok: 150_000, siklus_gaji: 'harian', tunjangan: [] };
+  assertEq('upah/jam harian 5hk ×173 = 21 hari', Math.round(px5.upahPerJamDariSiklus(kLb5) * 173), 3_150_000);
+}
+
 const kBaru = {
   nik: 'THR-BARU',
   nama: 'Masuk Sep',

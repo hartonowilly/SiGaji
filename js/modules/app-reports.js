@@ -481,9 +481,10 @@ function exportExcelRekonResign(){
         if(lastG&&lastG.reconciliation){
           var r=lastG.reconciliation;
           rows.push(['RINGKASAN REKONSILIASI (bulan terakhir: '+(stopP.nama||'-')+')']);
-          if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
+          if(r.saldoAwalBruto>0||r.saldoAwalPph>0||r.saldoAwalIuran>0){
             rows.push(['Saldo migrasi (payroll manual)',Math.round(r.saldoAwalBruto)]);
             rows.push(['PPh saldo migrasi',Math.round(r.saldoAwalPph)]);
+            if(r.saldoAwalIuran>0)rows.push(['Iuran JHT+JP saldo migrasi',Math.round(r.saldoAwalIuran)]);
             if(r.saldoSdBulan)rows.push(['Saldo s/d bulan',r.saldoSdBulan]);
           }
           rows.push(['Total bruto YTD (kumulatif sebelum bulan terakhir)',Math.round(r.brutoYTD)]);

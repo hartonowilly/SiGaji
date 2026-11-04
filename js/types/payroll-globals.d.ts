@@ -551,5 +551,5 @@ interface KaryawanPayroll {
   bpjs_aktif?: Record<string, boolean>;
   bpjs_manual?: Record<string, Rupiah>;
   pph_return?: { nilai?: Rupiah; ket?: string };
-  pph_ytd_awal?: Record<string, { bruto?: number; pph?: number; sd_bulan?: number }>;
+  pph_ytd_awal?: Record<string, { bruto?: number; pph?: number; sd_bulan?: number; iuran_jht_jp?: number }>;
 }

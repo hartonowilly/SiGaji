@@ -68,4 +68,14 @@ const g = hitungGaji(k, 'November 2026');
 assertEq('THP termasuk koreksi absensi', (g.koreksiAbsensi && g.koreksiAbsensi.total) === kor.total, true);
 assertEq('neto turun karena koreksi', g.neto < g.brutoTH, true);
 
+const px0 = loadPayrollCore({
+  perusahaan: { hariKerja: 6, aturan_potongan: { alpha: { mode: 'prorata', nilai: 0 } } },
+  karyawan: px.karyawan,
+  periodes: px.periodes,
+  absensi: {},
+  karSnapshot: px.karSnapshot,
+});
+const g0 = px0.hitungGaji(px0.karyawan[0], 'November 2026');
+assertEq('koreksi turunkan dasar PPh', g.grossPPh, g0.grossPPh - kor.total);
+
 console.log('\nKoreksi absensi: semua tes lulus.');

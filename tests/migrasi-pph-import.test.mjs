@@ -48,20 +48,41 @@ function runImport(rows, karyawan) {
   return { toasts, karyawan: vm.runInContext('karyawan', ctx) };
 }
 
-const header = ['NIK', 'Nama', 'Status', 'Tgl berhenti', 'S/d bulan', 'Bruto PPh 21', 'PPh terpotong', 'PTKP', 'Gaji pokok'];
+const header = ['NIK', 'Nama', 'Status', 'Tgl berhenti', 'S/d bulan', 'Bruto PPh 21', 'PPh terpotong', 'Iuran JHT+JP kar kum.', 'PTKP', 'Gaji pokok'];
 
 {
   const kar = [{ nik: '001', nama: 'Lama', gapok: 5_000_000, ptkp: 'TK0' }];
-  const { toasts, karyawan } = runImport([header, ['001', '', 'Aktif', '', 4, '24.000.000', '480.000', '', '']], kar);
+  const { toasts, karyawan } = runImport([header, ['001', '', 'Aktif', '', 4, '24.000.000', '480.000', '800.000', '', '']], kar);
   assertEq('impor tanpa kolom Tahun tidak crash', toasts[0].indexOf('Gagal'), -1);
-  assertEq('saldo masuk ke tahun UI', karyawan[0].pph_ytd_awal['2026'], { bruto: 24_000_000, pph: 480_000, sd_bulan: 4 });
+  assertEq('saldo masuk ke tahun UI', karyawan[0].pph_ytd_awal['2026'], {
+    bruto: 24_000_000,
+    pph: 480_000,
+    sd_bulan: 4,
+    iuran_jht_jp: 800_000,
+  });
 }
 
 {
   const kar = [{ nik: '001', nama: 'Lama', gapok: 5_000_000, ptkp: 'TK0' }];
-  const { toasts, karyawan } = runImport([[...header, 'Tahun'], ['001', '', 'Aktif', '', 3, 18_000_000, 360_000, '', '', 2025]], kar);
+  const { toasts, karyawan } = runImport([[...header, 'Tahun'], ['001', '', 'Aktif', '', 3, 18_000_000, 360_000, 500_000, '', '', 2025]], kar);
   assertEq('impor dengan kolom Tahun tidak crash', toasts[0].indexOf('Gagal'), -1);
   assertEq('kolom Tahun dipakai', Object.keys(karyawan[0].pph_ytd_awal), ['2025']);
+}
+
+{
+  const px = loadPayrollCore({
+    karyawan: [
+      {
+        nik: '001',
+        nama: 'Lama',
+        gapok: 5_000_000,
+        ptkp: 'TK0',
+        pph_ytd_awal: { 2026: { bruto: 24_000_000, pph: 480_000, sd_bulan: 4, iuran_jht_jp: 800_000 } },
+      },
+    ],
+  });
+  const ytd = px.getBrutoYTD(px.karyawan[0], 'Maret 2026');
+  assertEq('YTD iuran JHT+JP dari saldo migrasi', ytd.totalJhtJpKar, 800_000);
 }
 
 console.log('\nImpor migrasi PPh: semua tes lulus.');

@@ -36,8 +36,8 @@ function makeSlip(k,pNama){
   h+='<div class="cr"><span>Penghasilan Bruto bulan ini</span><span>'+fmt(g.grossPPh)+'</span></div>';
   if(g.reconciliation){
     const r=g.reconciliation;
-    if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
-      h+='<div class="cr ct-brand"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+'</span><span>'+fmt(r.saldoAwalBruto)+' / PPh '+fmt(r.saldoAwalPph)+'</span></div>';
+    if(r.saldoAwalBruto>0||r.saldoAwalPph>0||r.saldoAwalIuran>0){
+      h+='<div class="cr ct-brand"><span>Saldo migrasi'+(r.saldoSdBulan?' (s/d bln '+r.saldoSdBulan+')':'')+'</span><span>'+fmt(r.saldoAwalBruto)+' / PPh '+fmt(r.saldoAwalPph)+(r.saldoAwalIuran>0?' / iuran '+fmt(r.saldoAwalIuran):'')+'</span></div>';
     }
     h+='<div class="cr"><span>Bruto YTD (kumulatif sebelum bulan ini)</span><span>'+fmt(r.brutoYTD)+'</span></div>';
     h+='<div class="cr bold"><span>Total Bruto Setahun</span><span>'+fmt(r.brutoTahunan)+'</span></div>';
@@ -316,8 +316,8 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   rowL('Penghasilan Bruto bulan ini',fmt(g.grossPPh));
   if(g.reconciliation){
     var r=g.reconciliation;
-    if(r.saldoAwalBruto>0||r.saldoAwalPph>0){
-      rowL('Saldo migrasi'+(r.saldoSdBulan?' s/d bln '+r.saldoSdBulan:''),fmt(r.saldoAwalBruto)+' (PPh '+fmt(r.saldoAwalPph)+')');
+    if(r.saldoAwalBruto>0||r.saldoAwalPph>0||r.saldoAwalIuran>0){
+      rowL('Saldo migrasi'+(r.saldoSdBulan?' s/d bln '+r.saldoSdBulan:''),fmt(r.saldoAwalBruto)+' (PPh '+fmt(r.saldoAwalPph)+(r.saldoAwalIuran>0?', iuran '+fmt(r.saldoAwalIuran):'')+')');
     }
     rowL('Bruto YTD (kumulatif sebelum bulan ini)',fmt(r.brutoYTD));
     rowL('Total Bruto Setahun',fmt(r.brutoTahunan),true);
@@ -642,7 +642,9 @@ function labelMasaPajak1721(bulanList,tahun){
   return{singkat,panjang,urutan:n};
 }
 function aggregatePajakTahun(k,tahun){
-  var bruto=0,pph=0,thrBruto=0,pphThr=0,pphRet=0;
+  var saldo=typeof getPphYtdAwal==='function'?getPphYtdAwal(k,tahun):{bruto:0,pph:0,sd_bulan:0,iuran_jht_jp:0};
+  var bruto=saldo.bruto||0,pph=saldo.pph||0,thrBruto=0,pphThr=0,pphRet=0;
+  var iuranJhtJp=saldo.iuran_jht_jp||0;
   var bulan=[];
   var tStop=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
   var sorted=(periodes||[]).slice().sort(function(a,b){return new Date(a.bayar||a.start||0).getTime()-new Date(b.bayar||b.start||0).getTime();});
@@ -653,11 +655,12 @@ function aggregatePajakTahun(k,tahun){
     if(typeof karyawanInPeriode==='function'&&!karyawanInPeriode(k,per))return;
     var g=hitungGaji(k,per.nama);
     bruto+=g.grossPPh;pph+=g.pph;thrBruto+=g.thrBruto||0;pphThr+=g.pphAtasThr||0;pphRet+=g.pphRet||0;
+    iuranJhtJp+=(g.bpjs&&g.bpjs.jht_kar||0)+(g.bpjs&&g.bpjs.jp_kar||0);
     bulan.push({nama:per.nama,tgl:bayarIso,bruto:Math.round(g.grossPPh),pph:Math.round(g.pph)});
     if(!lastBayarIso||bayarIso>lastBayarIso)lastBayarIso=bayarIso;
   });
   var masa=labelMasaPajak1721(bulan,tahun);
-  return{bruto,pph,thrBruto,pphThr,pphRet,bulan,masa,lastBayarIso,tglBerhentiFilter:!!tStop};
+  return{bruto,pph,thrBruto,pphThr,pphRet,iuranJhtJp,bulan,masa,lastBayarIso,tglBerhentiFilter:!!tStop,saldoBruto:saldo.bruto||0,saldoSd:saldo.sd_bulan||0};
 }
 /** Urutan nomor bukti potong A1 per tahun pajak (tersimpan di data perusahaan). */
 function nextBuktiA1Nomor(tahun){
@@ -720,7 +723,8 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
   doc.text('Nama : '+(k.nama||'-'),LM,y);y+=4.5;
   y=tx(doc.splitTextToSize('Alamat : '+(k.alamat||'-'),pw-2*m),LM,y);
   doc.text('Jabatan : '+(k.jabatan||'-')+'    |    Departemen : '+(k.dept||'-')+'    |    Status : '+(k.status||'-'),LM,y);y+=4.5;
-  doc.text('PTKP / Kelompok TER : '+(k.ptkp||'-')+' (PMK 168/2023)',LM,y);y+=6;
+  var ptkpA1=typeof ptkpStatusUntukTanggal==='function'?ptkpStatusUntukTanggal(k,String(tahun)+'-01-01'):(k.ptkp||'-');
+  doc.text('PTKP / Kelompok TER : '+ptkpA1+' (status 1 Jan '+tahun+', PMK 168/2023)',LM,y);y+=6;
 
   doc.setFont(undefined,'bold');doc.text('C. MASA PAJAK & TAHUN PAJAK',LM,y);y+=5;
   doc.setFont(undefined,'normal');
@@ -731,7 +735,12 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
   if(agg.tglBerhentiFilter)y=tx(doc.splitTextToSize('Catatan: Periode dibatasi sesuai Tgl. berhenti di profil karyawan (pegawai keluar tengah tahun).',pw-2*m),LM,y)+2;
 
   var bjTahun=agg.bulan.reduce(function(s,r){return s+Math.min(r.bruto*0.05,500000);},0);
-  var pkpRef=Math.max(0,Math.floor(agg.bruto-bjTahun-nilaiPTKP(k.ptkp,agg.lastBayarIso||((tahun||'')+'-12-31'))));
+  if(agg.saldoBruto>0)bjTahun+=Math.min(agg.saldoBruto*0.05,500000*(agg.saldoSd||12));
+  bjTahun=Math.min(bjTahun,6e6);
+  var tglPtkpA1=String(tahun)+'-01-01';
+  var ptkpKeyA1=typeof ptkpStatusUntukTanggal==='function'?ptkpStatusUntukTanggal(k,tglPtkpA1):(k.ptkp||'TK0');
+  var iuranA1=Math.max(0,Math.round(agg.iuranJhtJp||0));
+  var pkpRef=Math.max(0,Math.floor((agg.bruto-bjTahun-iuranA1-nilaiPTKP(ptkpKeyA1,tglPtkpA1))/1000)*1000);
   doc.setFont(undefined,'bold');doc.text('D. PENGHASILAN DAN PEMOTONGAN (rekap data SiGaji)',LM,y);y+=5;
   doc.setFont(undefined,'normal');
   var rowT=function(a,c,y0){doc.text(a,LM,y0);doc.text(c,RM,y0,{align:'right'});return y0+5;};
@@ -742,7 +751,7 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
   if(agg.pphRet>0)y=rowT('Pengembalian PPh ke pegawai',fmt(agg.pphRet),y);
   y+=3;
   doc.setFontSize(7.8);doc.setTextColor(70);
-  y=tx(doc.splitTextToSize('Referensi (bukan baris pemotongan resmi): biaya jabatan tahunan ~'+fmt(Math.round(bjTahun))+', PKP referensi ~'+fmt(pkpRef)+'. Metode TER: total kolom 3 mengikuti penjumlahan PPh bulanan di aplikasi.',pw-2*m),LM,y);
+  y=tx(doc.splitTextToSize('Referensi (bukan baris pemotongan resmi): biaya jabatan tahunan ~'+fmt(Math.round(bjTahun))+', iuran JHT+JP kar ~'+fmt(iuranA1)+', PKP referensi ~'+fmt(pkpRef)+' (pembulatan ribuan). Metode TER: total kolom 3 mengikuti penjumlahan PPh bulanan di aplikasi.',pw-2*m),LM,y);
   doc.setTextColor(0);y+=4;
   doc.setFontSize(7.5);
   y=tx(doc.splitTextToSize('Peringatan: Untuk pelaporan dan lampiran SPT ke DJP gunakan bukti potong resmi dari e-Bupot Unifikasi/Coretax. Dokumen ini untuk arsip internal berdasarkan data SiGaji.',pw-2*m),LM,y);
