@@ -250,7 +250,7 @@ if(typeof window!=='undefined')window.switchKarListTab=switchKarListTab;
 function karRowHtml(k,no){
   const yrKar=new Date().getFullYear();
   const t=cutiTerpakai(k.nik,yrKar);
-  const kuotaCut=masterCuti.kuota||12;
+  const kuotaCut=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,yrKar):(masterCuti.kuota||12);
   const s=kuotaCut-t;
   const sCls=s<=0?'b-err':s<=3?'b-warn':'b-teal';
   const sLbl=s+'/'+kuotaCut;

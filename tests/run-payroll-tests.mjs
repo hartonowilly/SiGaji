@@ -24,6 +24,7 @@ const suites = [
   'mutasi-cabang.test.mjs',
   'siklus-gaji.test.mjs',
   'siklus-bayar-dummy.test.mjs',
+  'ebupot-cuti-mingguan.test.mjs',
   'karyawan-in-periode.test.mjs',
   'gaji-template.test.mjs',
   'dash-brief.test.mjs',

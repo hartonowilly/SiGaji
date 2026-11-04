@@ -19,11 +19,11 @@ function ebupotDigitsOnly(s) {
   return String(s || '').replace(/\D/g, '');
 }
 
-/** NPWP 16 digit (tanpa titik/strip) — validasi minimal panjang */
+/** NPWP 16 digit (tanpa titik/strip) — DJP: 15 digit + 0 di depan, bukan di belakang. */
 function ebupotNpwp16(raw) {
   var d = ebupotDigitsOnly(raw);
   if (d.length === 16) return d;
-  if (d.length === 15) return d + '0';
+  if (d.length === 15) return '0' + d;
   return d;
 }
 
@@ -68,17 +68,58 @@ function ebupotMasaFromPeriode(p) {
   };
 }
 
-function ebupotKodeObjek(k) {
+function ebupotBrutoPerHari(k, g) {
+  var siklus =
+    typeof normalizeSiklusGaji === 'function'
+      ? normalizeSiklusGaji(k && k.siklus_gaji)
+      : String((k && k.siklus_gaji) || 'bulanan');
+  var hk =
+    typeof perusahaan !== 'undefined' && perusahaan && perusahaan.hariKerja === 5 ? 5 : 6;
+  var rate = Math.round(typeof sigajiRp === 'function' ? sigajiRp(k && k.gapok) : (k && k.gapok) || 0);
+  if (siklus === 'harian') return rate;
+  if (siklus === 'mingguan') return Math.round(rate / hk);
+  return Math.round((g && g.grossPPh) || 0);
+}
+
+function ebupotKodeObjek(k, g) {
   var tipe =
     typeof sigajiNormalizeKarTipe === 'function'
       ? sigajiNormalizeKarTipe(k.tipe_kerja, k)
       : 'tetap';
-  return tipe === 'tidak_tetap' ? '21-100-02' : '21-100-01';
+  if (tipe !== 'tidak_tetap') return '21-100-01';
+  var siklus =
+    typeof normalizeSiklusGaji === 'function'
+      ? normalizeSiklusGaji(k && k.siklus_gaji)
+      : String((k && k.siklus_gaji) || 'bulanan');
+  if (siklus === 'harian' || siklus === 'mingguan') {
+    return ebupotBrutoPerHari(k, g) > 2500000 ? '21-100-30' : '21-100-24';
+  }
+  return '21-100-35';
 }
 
 function ebupotKodeObjekLbl(kode) {
-  if (kode === '21-100-02') return 'Pegawai tidak tetap';
+  if (kode === '21-100-24') return 'Tidak tetap harian/mingguan ≤ Rp2,5jt/hari';
+  if (kode === '21-100-30') return 'Tidak tetap harian/mingguan > Rp2,5jt/hari';
+  if (kode === '21-100-35') return 'Tidak tetap dibayar bulanan';
+  if (kode === '21-401-01') return 'Pesangon sekaligus (PPh final)';
+  if (kode === '21-100-02') return 'Pensiun berkala (bukan tidak tetap)';
   return 'Pegawai tetap';
+}
+
+function ebupotStartPeriodMonth(k, masaTahun) {
+  var masuk = String((k && k.masuk) || '').slice(0, 10);
+  if (masuk && masuk.slice(0, 4) === String(masaTahun)) {
+    return parseInt(masuk.slice(5, 7), 10) || 1;
+  }
+  return 1;
+}
+
+function ebupotEndPeriodMonth(k, masa, g) {
+  var stop = String((k && k.tgl_berhenti) || (g && g.phk && g.phk.tgl) || '').slice(0, 10);
+  if (stop && stop.slice(0, 4) === String(masa.tahun)) {
+    return parseInt(stop.slice(5, 7), 10) || parseInt(masa.bulan, 10) || 12;
+  }
+  return parseInt(masa.bulan, 10) || 12;
 }
 
 /** NITKU / ID TKU 22 digit = NPWP 16 digit + 6 digit cabang */
@@ -211,9 +252,14 @@ function ebupotBuildRows(periode) {
           : 'NPWP kosong — NIK KTP juga kosong: ' + (k.nama || k.nik)
       );
     }
-    var kode = ebupotKodeObjek(k);
+    var kode = ebupotKodeObjek(k, g);
     var tipeKerja = ebupotKarTipe(k);
     var counterpartTin = ebupotCounterpartTin(k);
+    var masaTerakhir = !!(g && g.isMasaPajakTerakhir);
+    var rec = g && g.reconciliation;
+    var dokumen = masaTerakhir && tipeKerja !== 'tidak_tetap' ? 'BPA1' : tipeKerja === 'tidak_tetap' ? 'BP21' : 'BPMP';
+    if (masaTerakhir && dokumen === 'BPMP') dokumen = 'BPA1';
+    var rateXml = masaTerakhir ? 0 : terI.ratePct || 0;
     rows.push({
       no: idx + 1,
       masaYyyymm: masa.yyyymm,
@@ -237,17 +283,75 @@ function ebupotBuildRows(periode) {
       kodeObjek: kode,
       kodeObjekLbl: ebupotKodeObjekLbl(kode),
       tipeKerja: tipeKerja,
+      dokumen: dokumen,
+      masaPajakTerakhir: masaTerakhir,
+      startPeriod: ebupotStartPeriodMonth(k, masa.tahun),
+      endPeriod: ebupotEndPeriodMonth(k, masa, g),
+      brutoTahunan: rec ? Math.round(rec.brutoTahunan || 0) : bruto,
+      pphTahunan: rec ? Math.round(rec.pphTahunan || 0) : pph,
       penghasilanBruto: bruto,
       pphDipotong: pph,
-      tarifTerPct: terI.ratePct || 0,
+      tarifTerPct: rateXml,
       lampiranTer: terI.lampiran || '',
       fasilitas: 'N/A',
       thrBruto: Math.round(g.thrBruto || 0),
       periodeGaji: periode.nama,
       tglBayar: periode.bayar || '',
       withholdingDate: ebupotWithholdingDateIso(periode),
-      metode: g.reconciliation ? 'Rekonsiliasi' : 'TER PMK 168',
+      metode: g.reconciliation ? 'Rekonsiliasi Pasal 17 (BPA1)' : 'TER PMK 168',
     });
+    if (g.phk && g.phk.mode === 'phk' && Math.round(g.phk.bruto || 0) > 0) {
+      var brutoPsg = Math.round(g.phk.bruto);
+      var pphPsg = Math.round(g.phk.pphFinal || 0);
+      var ratePsg = brutoPsg ? Math.round((pphPsg / brutoPsg) * 10000) / 100 : 0;
+      warnings.push(
+        'PPh final pesangon ' +
+          (k.nama || k.nik) +
+          ' masuk XML BP21 (21-401-01). Periksa hasil impor Coretax.'
+      );
+      rows.push({
+        no: idx + 1,
+        masaYyyymm: masa.yyyymm,
+        masaLabel: masa.label,
+        masaBulan: parseInt(masa.bulan, 10) || '',
+        masaTahun: masa.tahun,
+        cabangNama: pm ? pm.cabangNama : '',
+        cabangId: pm ? pm.cabangId : 'utama',
+        npwpPemotong: npwpPemotong,
+        nitkuPemotong: nitku,
+        idTkuPemotong: idTkuPemotong,
+        idTkuPenerima: ebupotIdTku22(counterpartTin, '000000'),
+        namaPemotong: pm ? pm.nama : prs.nama || '',
+        npwpPenerima: npwpKar,
+        nikPenerima: nikKar,
+        counterpartTin: counterpartTin,
+        namaPenerima: k.nama || '',
+        jabatan: (k.jabatan || 'Staff').trim() || 'Staff',
+        statusPegawai: 'Resident',
+        ptkp: ebupotPtkpSlash(k.ptkp),
+        kodeObjek: '21-401-01',
+        kodeObjekLbl: ebupotKodeObjekLbl('21-401-01'),
+        tipeKerja: 'pesangon',
+        dokumen: 'BP21',
+        masaPajakTerakhir: false,
+        startPeriod: parseInt(masa.bulan, 10) || 12,
+        endPeriod: parseInt(masa.bulan, 10) || 12,
+        brutoTahunan: brutoPsg,
+        pphTahunan: pphPsg,
+        penghasilanBruto: brutoPsg,
+        pphDipotong: pphPsg,
+        tarifTerPct: ratePsg,
+        lampiranTer: '',
+        fasilitas: 'N/A',
+        thrBruto: 0,
+        periodeGaji: periode.nama,
+        tglBayar: periode.bayar || '',
+        withholdingDate: ebupotWithholdingDateIso(periode),
+        metode: 'PPh final pesangon PP 68/2009',
+      });
+      totalBruto += brutoPsg;
+      totalPph += pphPsg;
+    }
   });
 
   return {
@@ -312,6 +416,7 @@ function ebupotDataHeaders() {
     'Lampiran TER',
     'THR Bruto (periode)',
     'Metode PPh',
+    'Dokumen Coretax',
     'Periode Gaji SiGaji',
     'Tanggal Bayar Gaji',
   ];
@@ -340,6 +445,7 @@ function ebupotRowToArray(r) {
     r.lampiranTer,
     r.thrBruto,
     r.metode,
+    r.dokumen || '',
     r.periodeGaji,
     r.tglBayar,
   ];
@@ -360,7 +466,7 @@ function exportExcelEbupotBulanan() {
         [],
         ['1. File ini berisi data per karyawan dari periode gaji aktif di SiGaji.'],
         ['2. Untuk upload Coretax tanpa copy-paste: gunakan tombol "Unduh XML Coretax" di SiGaji.'],
-        ['3. XML mengikuti schema resmi DJP (BPMP pegawai tetap / BP21 tidak tetap).'],
+        ['3. XML: BPMP (tetap Jan–Nov), BPA1 (Desember/resign tetap), BP21 (tidak tetap + pesangon).'],
         ['4. File Excel ini opsional — acuan audit atau salin manual ke template DJP jika perlu.'],
         ['5. Upload XML di Coretax → e-Bupot → Impor Data.'],
         [],
@@ -377,9 +483,14 @@ function exportExcelEbupotBulanan() {
         ['Total PPh 21: ' + built.totalPph],
         ['Dicetak: ' + new Date().toISOString().split('T')[0]],
         [],
-        ['Kode objek default SiGaji:'],
-        ['  21-100-01 = Pegawai tetap'],
-        ['  21-100-02 = Pegawai tidak tetap'],
+        ['Kode objek Coretax (bukan 21-100-03 lama):'],
+        ['  21-100-01 = Pegawai tetap (BPMP/BPA1)'],
+        ['  21-100-24 = Tidak tetap harian/mingguan bruto/hari ≤ Rp2,5 juta'],
+        ['  21-100-30 = Tidak tetap harian/mingguan bruto/hari > Rp2,5 juta'],
+        ['  21-100-35 = Tidak tetap dibayar bulanan'],
+        ['  21-401-01 = Pesangon sekaligus (PPh final, BP21)'],
+        ['  21-100-02 = Pensiun berkala — jangan dipakai untuk tidak tetap'],
+        ['NPWP 15 digit diubah ke 16 dengan angka 0 di depan.'],
         ['Verifikasi kode di template DJP terbaru sebelum upload.'],
       ];
       var wsP = XLSX.utils.aoa_to_sheet(panduan);
@@ -461,7 +572,7 @@ function exportExcelEbupotBulanan() {
 
 function ebupotBuildMmPayrollXml(built) {
   var tetap = built.rows.filter(function (r) {
-    return r.tipeKerja !== 'tidak_tetap';
+    return r.tipeKerja !== 'tidak_tetap' && r.tipeKerja !== 'pesangon' && !r.masaPajakTerakhir;
   });
   if (!tetap.length) return { ok: false, error: 'Tidak ada pegawai tetap untuk BPMP' };
   var tin = tetap[0].npwpPemotong || built.npwpPemotong;
@@ -493,11 +604,48 @@ function ebupotBuildMmPayrollXml(built) {
   return { ok: true, xml: lines.join('\n'), count: tetap.length };
 }
 
+function ebupotBuildBpa1Xml(built) {
+  var rows = built.rows.filter(function (r) {
+    return r.masaPajakTerakhir && r.tipeKerja !== 'tidak_tetap' && r.tipeKerja !== 'pesangon';
+  });
+  if (!rows.length) return { ok: false, error: 'Tidak ada pegawai tetap masa pajak terakhir untuk BPA1' };
+  var tin = rows[0].npwpPemotong || built.npwpPemotong;
+  var lines = [
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<Bpa1Bulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
+    '\t<TIN>' + ebupotXmlEscape(tin) + '</TIN>',
+    '\t<ListOfBpa1>',
+  ];
+  rows.forEach(function (r) {
+    lines.push('\t\t<Bpa1>');
+    lines.push(ebupotXmlEl('TaxPeriodMonth', r.masaBulan));
+    lines.push(ebupotXmlEl('TaxPeriodYear', r.masaTahun));
+    lines.push(ebupotXmlEl('CounterpartOpt', r.statusPegawai));
+    lines.push('\t\t<CounterpartPassport xsi:nil="true"/>');
+    lines.push(ebupotXmlEl('CounterpartTin', r.counterpartTin));
+    lines.push(ebupotXmlEl('StatusTaxExemption', r.ptkp));
+    lines.push(ebupotXmlEl('Position', r.jabatan));
+    lines.push(ebupotXmlEl('TaxCertificate', r.fasilitas));
+    lines.push(ebupotXmlEl('TaxObjectCode', r.kodeObjek));
+    lines.push(ebupotXmlEl('StartPeriod', r.startPeriod || 1));
+    lines.push(ebupotXmlEl('EndPeriod', r.endPeriod || r.masaBulan));
+    lines.push(ebupotXmlEl('Income', r.brutoTahunan || r.penghasilanBruto));
+    lines.push(ebupotXmlEl('Tax', r.pphTahunan || r.pphDipotong));
+    lines.push('\t\t<Rate xsi:nil="true"/>');
+    lines.push(ebupotXmlEl('IDPlaceOfBusinessActivity', r.idTkuPemotong));
+    lines.push(ebupotXmlEl('WithholdingDate', r.withholdingDate));
+    lines.push('\t\t</Bpa1>');
+  });
+  lines.push('\t</ListOfBpa1>');
+  lines.push('</Bpa1Bulk>');
+  return { ok: true, xml: lines.join('\n'), count: rows.length };
+}
+
 function ebupotBuildBp21Xml(built) {
   var tt = built.rows.filter(function (r) {
-    return r.tipeKerja === 'tidak_tetap';
+    return r.tipeKerja === 'tidak_tetap' || r.tipeKerja === 'pesangon';
   });
-  if (!tt.length) return { ok: false, error: 'Tidak ada pegawai tidak tetap untuk BP21' };
+  if (!tt.length) return { ok: false, error: 'Tidak ada pegawai tidak tetap / pesangon untuk BP21' };
   var tin = tt[0].npwpPemotong || built.npwpPemotong;
   var lines = [
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
@@ -549,12 +697,14 @@ function exportXmlEbupotCoretax() {
   var downloaded = 0;
   var bpmpTotal = 0;
   var bp21Total = 0;
+  var bpa1Total = 0;
   var delay = 0;
 
   tkuKeys.forEach(function (tkuKey) {
     var subset = { rows: groups[tkuKey], npwpPemotong: built.npwpPemotong, periode: built.periode, masa: built.masa };
     var suf = ebupotTkuFileSuffix(groups[tkuKey]);
     var bpmp = ebupotBuildMmPayrollXml(subset);
+    var bpa1 = ebupotBuildBpa1Xml(subset);
     var bp21 = ebupotBuildBp21Xml(subset);
     if (bpmp.ok) {
       (function (xml, cnt, d) {
@@ -568,6 +718,19 @@ function exportXmlEbupotCoretax() {
       delay += 350;
       downloaded++;
       bpmpTotal += bpmp.count;
+    }
+    if (bpa1.ok) {
+      (function (xml, cnt, d) {
+        setTimeout(function () {
+          ebupotDownloadText(
+            'BPA1_SiGaji_' + built.masa.yyyymm + '_' + slug + '_TKU' + suf + '.xml',
+            xml
+          );
+        }, d);
+      })(bpa1.xml, bpa1.count, delay);
+      delay += 350;
+      downloaded++;
+      bpa1Total += bpa1.count;
     }
     if (bp21.ok) {
       (function (xml, cnt, d) {
@@ -591,8 +754,9 @@ function exportXmlEbupotCoretax() {
 
   var msg = 'XML Coretax diunduh';
   if (built.tkuCount > 1) msg += ' (' + built.tkuCount + ' TKU terpisah)';
-  if (bpmpTotal) msg += ' · BPMP ' + bpmpTotal + ' pegawai tetap';
-  if (bp21Total) msg += ' · BP21 ' + bp21Total + ' tidak tetap';
+  if (bpmpTotal) msg += ' · BPMP ' + bpmpTotal + ' tetap (bukan masa terakhir)';
+  if (bpa1Total) msg += ' · BPA1 ' + bpa1Total + ' rekonsiliasi Des/resign';
+  if (bp21Total) msg += ' · BP21 ' + bp21Total + ' tidak tetap/pesangon';
   msg += ' — upload per file TKU di e-Bupot → Impor Data';
   toast(msg);
 }
@@ -629,4 +793,9 @@ if (typeof window !== 'undefined') {
   window.exportExcelEbupotBulanan = exportExcelEbupotBulanan;
   window.exportCsvEbupotBulanan = exportCsvEbupotBulanan;
   window.exportXmlEbupotCoretax = exportXmlEbupotCoretax;
+  window.ebupotNpwp16 = ebupotNpwp16;
+  window.ebupotKodeObjek = ebupotKodeObjek;
+  window.ebupotBuildMmPayrollXml = ebupotBuildMmPayrollXml;
+  window.ebupotBuildBp21Xml = ebupotBuildBp21Xml;
+  window.ebupotBuildBpa1Xml = ebupotBuildBpa1Xml;
 }
