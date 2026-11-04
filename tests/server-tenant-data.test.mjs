@@ -26,6 +26,7 @@ const {
   assertHq,
   locationVisible,
   filterLocationsByScope,
+  fetchAll,
 } = await import(pathToFileURL(tmp).href);
 fs.unlinkSync(tmp);
 
@@ -263,6 +264,14 @@ function fakeSb(tables) {
       .map((l) => l.nama)
       .join() === 'A,Bersama'
   );
+}
+
+{
+  const rows = [];
+  for (let i = 0; i < 1205; i++) rows.push({ tenant_key: 't1', id: i });
+  const sb = fakeSb({ sigaji_item: rows });
+  const all = await fetchAll(() => sb.from('sigaji_item').select('id').eq('tenant_key', 't1'));
+  assert('fetchAll menembus batas 1.000 baris PostgREST', all.length === 1205);
 }
 
 console.log('\nSemua tes data tenant server lulus.');

@@ -53,6 +53,7 @@ const suites = [
   'aturan-kritis.test.mjs',
   'audit-payroll-fix.test.mjs',
   'audit-mobile-laporan.test.mjs',
+  'sync-alpha-page.test.mjs',
   'rekon-masa-pajak.test.mjs',
   'payroll-sp-tabs.test.mjs',
   'outbox.test.mjs',

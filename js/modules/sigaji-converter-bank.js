@@ -380,6 +380,7 @@
   window.sigajiConverterZipRead = zipRead;
   window.sigajiConverterZipWrite = zipWrite;
   window.sigajiConverterCollectThrRows = collectThrRows;
+  window.sigajiConverterHeaderFromCfg = headerFromCfg;
 
   /* ── Bagian yang butuh data SiGaji & DOM ─────── */
 
@@ -478,8 +479,8 @@
     return { rows: rows, lewat: lewat, catatan: catatan };
   }
 
-  function headerFromCfg(cfg, p, jumlahBaris) {
-    var iso = p.bayar || p.end || p.start;
+  function headerFromCfg(cfg, p, jumlahBaris, isoOverride) {
+    var iso = isoOverride || p.bayar || p.end || p.start;
     var my = monthYearFromIso(iso);
     var purpose = [cfg.purpose_prefix, my.bulan, cfg.purpose_suffix]
       .map(function (s) {
@@ -610,8 +611,8 @@
     /** @type {Record<string, string>} */
     var cfgHdr = Object.assign({}, cfg);
     if (isThr) cfgHdr.purpose_prefix = 'THR';
-    var header = headerFromCfg(cfgHdr, p, hasil.rows.length);
     var iso = isThr ? (p.thr_bayar || p.thr_hariraya || p.bayar || p.end || p.start) : (p.bayar || p.end || p.start);
+    var header = headerFromCfg(cfgHdr, p, hasil.rows.length, iso);
     var url = TEMPLATE_URL +
       (typeof SIGAJI_MODULES_CACHE !== 'undefined' ? '?v=' + SIGAJI_MODULES_CACHE : '');
     fetch(url)

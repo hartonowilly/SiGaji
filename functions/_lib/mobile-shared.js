@@ -10,6 +10,7 @@ import {
   saveCloudPayload,
   saveAbsensiChanges,
   getAbsensiStatus,
+  fetchAll,
 } from './tenant-data.js';
 
 export { loadCloudPayload, saveCloudPayload };
@@ -289,26 +290,29 @@ export async function syncAlphaFromMobileAttendance(sb, tenant, payload, dateFro
   const end = dateTo > today ? today : dateTo;
   if (end < dateFrom) return { marked: 0, dates: [] };
 
-  const { data: logs } = await sb
-    .from('sigaji_attendance_logs')
-    .select('nik,work_date,event_type,validation_status')
-    .eq('tenant_key', tenant)
-    .gte('work_date', dateFrom)
-    .lte('work_date', end)
-    .eq('event_type', 'check_in');
+  const logs = await fetchAll(() =>
+    sb
+      .from('sigaji_attendance_logs')
+      .select('nik,work_date,event_type,validation_status')
+      .eq('tenant_key', tenant)
+      .gte('work_date', dateFrom)
+      .lte('work_date', end)
+      .eq('event_type', 'check_in')
+      .order('work_date')
+      .order('nik')
+  );
   const cinMap = {};
-  (logs || []).forEach((r) => {
-    const k = r.nik + '|' + r.work_date;
-    cinMap[k] = r.validation_status;
-  });
-
-  const { data: everLogs } = await sb
-    .from('sigaji_attendance_logs')
-    .select('nik')
-    .eq('tenant_key', tenant)
-    .limit(10000);
   const mobileNiks = new Set();
-  (everLogs || []).forEach((r) => {
+  (logs || []).forEach((r) => {
+    if (!r || !r.nik) return;
+    const nik = String(r.nik).trim();
+    mobileNiks.add(nik);
+    cinMap[nik + '|' + r.work_date] = r.validation_status;
+  });
+  const assigns = await fetchAll(() =>
+    sb.from('sigaji_location_assignments').select('nik').eq('tenant_key', tenant)
+  );
+  (assigns || []).forEach((r) => {
     if (r && r.nik) mobileNiks.add(String(r.nik).trim());
   });
 
