@@ -213,7 +213,7 @@ assertEq('upah/jam termasuk tunj tetap', Math.round(px.upahPerJamDariSiklus(kLb)
 const kLbH = { nik: 'LB-H', gapok: 150_000, siklus_gaji: 'harian', tunjangan: [] };
 assertEq('upah/jam harian ×173 = 25 hari', Math.round(px.upahPerJamDariSiklus(kLbH) * 173), 3_750_000);
 
-// 13. Desember terdeteksi dari tanggal meski tipe Normal
+// 13. Desember terdeteksi dari tanggal bayar meski tipe Normal
 assertEq('Desember kalender = rekonsiliasi', px.periodePakaiRekonsiliasiTahunan(px.periodes[1]), true);
 const kDes = {
   nik: 'DES-AUTO',

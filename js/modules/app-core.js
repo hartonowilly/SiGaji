@@ -630,12 +630,13 @@ function bulanKerjaPajakTahun(k,thn,tglAkhirIso){
   var m=(e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth())+1;
   return Math.max(1,Math.min(12,m));
 }
-/** Desember: tipe periode ATAU tanggal selesai/bayar di bulan 12 — agar rekonsiliasi tidak terlewat. */
+/** Masa pajak Desember = bulan tanggal bayar (bukan tanggal selesai / tipe periode). */
 function periodePakaiRekonsiliasiTahunan(p){
   if(!p)return false;
-  if(p.tipe_periode==='desember')return true;
-  var t=String(p.end||p.bayar||p.start||'').slice(0,10);
-  var m=parseInt(t.slice(5,7),10);
+  var t=typeof sigajiTanggalAcuanPeriode==='function'
+    ?sigajiTanggalAcuanPeriode(p)
+    :String(p.bayar||p.end||p.start||'').slice(0,10);
+  var m=parseInt(String(t||'').slice(5,7),10);
   return m===12;
 }
 var __sigajiHkCache=new Map();
@@ -1803,7 +1804,7 @@ function hitungGaji(k,pNama,opts){
   const grossPPh=grossPPhRegular+thrBruto; // PPh dihitung termasuk THR
   const brutoTH=gapokEff+tTH+lb;   // Natura fasilitas, tidak ditransfer. THR terpisah.
   // Deteksi masa pajak terakhir per karyawan:
-  // - Desember: rekonsiliasi tahunan (tipe periode ATAU tanggal selesai di bulan 12)
+  // - Desember: rekonsiliasi tahunan jika tanggal bayar di bulan 12
   // - Resign/PHK: otomatis di periode yang memuat tgl. berhenti (asal alasan PHK sudah diisi)
   const isMasaPajakTerakhir=
     periodePakaiRekonsiliasiTahunan(p)||
@@ -1816,7 +1817,7 @@ function hitungGaji(k,pNama,opts){
     const ytd=getBrutoYTD(k,pn);
     const brutoTahunan=ytd.totalBruto+grossPPh;
     const iuranTahun=(ytd.totalJhtJpKar||0)+(bpjs.jht_kar||0)+(bpjs.jp_kar||0);
-    const tglAkhirPajak=(tglStopIso&&isStopInPeriode)?tglStopIso:(p.end||p.bayar||tglAturan);
+    const tglAkhirPajak=(tglStopIso&&isStopInPeriode)?tglStopIso:(p.bayar||p.end||tglAturan);
     const nBlnBj=bulanKerjaPajakTahun(k,ytd.thn,tglAkhirPajak);
     const pphTahunan=hitungPPhTahunanProgresif(brutoTahunan,ptkpHit,tglAturan,{bulanKerja:nBlnBj,iuranJhtJpKar:iuranTahun});
     const pphBulanIni=pphTahunan-ytd.totalPPh;
