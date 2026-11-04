@@ -181,16 +181,39 @@
     } else p.absensi_pot_baseline[nik] = data;
   }
 
-  function attachPayPrivacyFromItems(periodes, parts) {
+  function mergeByNikMaps(preferred, fallback, onlyNik) {
+    var out = {};
+    var a = isPlainObject(fallback) ? fallback : {};
+    var b = isPlainObject(preferred) ? preferred : {};
+    Object.keys(a).forEach(function (k) {
+      if (a[k] != null) out[k] = a[k];
+    });
+    Object.keys(b).forEach(function (k) {
+      if (b[k] != null) out[k] = b[k];
+    });
+    if (onlyNik) {
+      if (out[onlyNik] == null) return null;
+      var one = {};
+      one[onlyNik] = out[onlyNik];
+      return one;
+    }
+    return Object.keys(out).length ? out : null;
+  }
+
+  function attachPayPrivacyFromItems(periodes, parts, opts) {
     var hg = (parts && parts.hasilGaji) || {};
     var bl = (parts && parts.absensiPotBaseline) || {};
+    var onlyNik = opts && opts.onlyNik ? String(opts.onlyNik) : '';
     (periodes || []).forEach(function (p) {
       if (!p || !p.nama) return;
+      var leakedHg = p.hasil_gaji && isPlainObject(p.hasil_gaji.byNik) ? p.hasil_gaji.byNik : null;
+      var leakedBl = isPlainObject(p.absensi_pot_baseline) ? p.absensi_pot_baseline : null;
       delete p.hasil_gaji;
       delete p.absensi_pot_baseline;
-      var byNik = hg[p.nama];
-      if (isPlainObject(byNik) && Object.keys(byNik).length) p.hasil_gaji = { v: 1, byNik: byNik };
-      if (isPlainObject(bl[p.nama]) && Object.keys(bl[p.nama]).length) p.absensi_pot_baseline = bl[p.nama];
+      var byNik = mergeByNikMaps(hg[p.nama], leakedHg, onlyNik);
+      var base = mergeByNikMaps(bl[p.nama], leakedBl, onlyNik);
+      if (byNik) p.hasil_gaji = { v: 1, byNik: byNik };
+      if (base) p.absensi_pot_baseline = base;
     });
   }
 

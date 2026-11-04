@@ -165,6 +165,22 @@ assert('SQL cabang ketat bisa dijalankan dua kali', true);
   const d = (await rows(db, `select data from public.sigaji_periode where nama='Okt 2026'`))[0].data;
   assert('bersih: JSON periode tanpa hasil_gaji', !d.hasil_gaji);
   assert('bersih: JSON periode tanpa absensi_pot_baseline', !d.absensi_pot_baseline);
+  const hg = await rows(
+    db,
+    `select nik, data from public.sigaji_item where kind='hasilGaji' and item_key='Okt 2026|K2'`
+  );
+  const bl = await rows(
+    db,
+    `select nik, data from public.sigaji_item where kind='absensiPotBaseline' and item_key='Okt 2026|K2'`
+  );
+  assert('migrasi: hasilGaji K2 neto 999', hg[0] && hg[0].data && hg[0].data.neto === 999, hg);
+  assert('migrasi: absensiPotBaseline K2 total 1', bl[0] && bl[0].data && bl[0].data.total === 1, bl);
+  await db.exec(strip);
+  const hg2 = await rows(
+    db,
+    `select count(*)::int as n from public.sigaji_item where kind='hasilGaji' and item_key='Okt 2026|K2'`
+  );
+  assert('migrasi aman diulang', hg2[0].n === 1);
 }
 
 await as(db, 'hrdPusat', async () => {
@@ -190,7 +206,9 @@ await as(db, 'hrdPusat', async () => {
   const k = await rows(db, `select nik, cabang_id from public.sigaji_karyawan where tenant_key='main' order by nik`);
   assert('cabang_id karyawan dari data (cabangId / cabang / utama)', k.map((x) => x.cabang_id).join(',') === 'c2,utama,c2');
   const it = await rows(db, `select kind, item_key, nik, cabang_id, data from public.sigaji_item where tenant_key='main' order by kind, item_key`);
-  const keys = it.map((x) => x.kind + ':' + x.item_key);
+  const keys = it
+    .filter((x) => x.kind !== 'hasilGaji' && x.kind !== 'absensiPotBaseline')
+    .map((x) => x.kind + ':' + x.item_key);
   assert(
     'store dipecah ke sigaji_item (absensi per bulan, lembur kosong dilewati, THR periode|nik)',
     keys.join(' ') === 'absensi:K1|2026-09 absensi:K1|2026-10 absensi:K2|2026-10 lembur:K1 thrManual:Okt 2026|K3',
