@@ -27,6 +27,7 @@ const suites = [
   'karyawan-in-periode.test.mjs',
   'gaji-template.test.mjs',
   'dash-brief.test.mjs',
+  'payroll-komponen-diff.test.mjs',
   'backup-export.test.mjs',
   'timeline-tahun.test.mjs',
   'angka-teks.test.mjs',

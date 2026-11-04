@@ -6,6 +6,8 @@
     pph_zero: 'pajak 0 padahal seharusnya ada',
     neto_spike: 'gaji naik tajam dibanding bulan lalu',
     neto_drop: 'gaji turun tajam dibanding bulan lalu',
+    komp_naik: 'komponen gaji naik dibanding bulan lalu',
+    komp_turun: 'komponen gaji turun dibanding bulan lalu',
     neto_negative: 'gaji minus',
   };
 
@@ -180,7 +182,13 @@
       var sev = arr[0].severity === 'high' ? 1 : 4;
       var label = ANOMALI_LABEL[code] || arr[0].title || code;
       var first = arr[0];
-      var payroll = code === 'pph_zero' || code === 'neto_negative' || code === 'neto_spike' || code === 'neto_drop';
+      var payroll =
+        code === 'pph_zero' ||
+        code === 'neto_negative' ||
+        code === 'neto_spike' ||
+        code === 'neto_drop' ||
+        code === 'komp_naik' ||
+        code === 'komp_turun';
       pushItem(out, {
         id: 'anom-' + code,
         prio: sev,
