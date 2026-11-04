@@ -153,6 +153,8 @@ function karBase(extra) {
     ],
   });
   assert('pesangon masuk BP21', bp21.ok && bp21.xml.indexOf('21-401-01') >= 0);
+  assert('pesangon Rate nil (tarif berlapis Coretax)', bp21.xml.indexOf('Rate xsi:nil="true"') >= 0);
+  assert('pesangon bukan Rate 1.88', bp21.xml.indexOf('<Rate>1.88</Rate>') < 0);
 }
 
 {
@@ -180,6 +182,38 @@ function karBase(extra) {
   const totPot = pot.reduce(function (s, p) { return s + p.upah; }, 0);
   assertEq('mingguan tanpa alpha 4×1,5jt', totFull, 6_000_000);
   assertEq('dua hari alpha potong 2/6 minggu', totPot, 6_000_000 - 500_000);
+}
+
+{
+  const px = loadPayrollCore({
+    perusahaan: {
+      hariKerja: 6,
+      aturan_potongan: {
+        cuti_dalam_kuota: { mode: 'tidak_dipotong', nilai: 0 },
+        sakit: { mode: 'tidak_dipotong', nilai: 0 },
+        alpha: { mode: 'prorata', nilai: 0 },
+      },
+    },
+  });
+  const k = karBase({ nik: 'TES-MG-CUTI', gapok: 1_200_000, siklus_gaji: 'mingguan' });
+  const full = px.siklusBuildPays(k, px.periodes[0], 6, {}, {});
+  const totFull = full.reduce(function (s, p) { return s + p.upah; }, 0);
+  const cuti = px.siklusBuildPays(k, px.periodes[0], 6, {}, { '2026-03-02': 'cuti' });
+  const totCuti = cuti.reduce(function (s, p) { return s + p.upah; }, 0);
+  assertEq('cuti tahunan mingguan tetap dibayar', totCuti, totFull);
+  const sakit = px.siklusBuildPays(k, px.periodes[0], 6, {}, { '2026-03-02': 'sakit' });
+  const totSakit = sakit.reduce(function (s, p) { return s + p.upah; }, 0);
+  assertEq('sakit tidak_dipotong: mingguan tidak potong', totSakit, totFull);
+}
+
+{
+  const px = loadPayrollCore();
+  const k = karBase({ nik: 'TES-MG-GAP', gapok: 1_200_000, siklus_gaji: 'mingguan' });
+  const full = px.siklusBuildPays(k, px.periodes[0], 6, {}, {});
+  const totFull = full.reduce(function (s, p) { return s + p.upah; }, 0);
+  const gap = px.siklusBuildPays(k, px.periodes[0], 6, {}, { '2026-02-23': 'alpha' });
+  const totGap = gap.reduce(function (s, p) { return s + p.upah; }, 0);
+  assertEq('alpha celah 23 Feb potong Jumat 27 Feb', totGap, totFull - 200_000);
 }
 
 {

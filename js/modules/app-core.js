@@ -1803,16 +1803,17 @@ function hitungGaji(k,pNama,opts){
   const grossPPhRegular=Math.max(0,gapokEff+tGross+natKP+lb+bpjsPrsNatKP-potHadirPph);
   const grossPPh=grossPPhRegular+thrBruto; // PPh dihitung termasuk THR
   const brutoTH=gapokEff+tTH+lb;   // Natura fasilitas, tidak ditransfer. THR terpisah.
-  // Deteksi masa pajak terakhir per karyawan:
-  // - Desember: rekonsiliasi tahunan jika tanggal bayar di bulan 12
-  // - Resign/PHK: otomatis di periode yang memuat tgl. berhenti (asal alasan PHK sudah diisi)
-  const isMasaPajakTerakhir=
-    periodePakaiRekonsiliasiTahunan(p)||
-    (!!tglStopIso&&isStopInPeriode&&hasPhkAlasan);
-  let pph,reconciliation=null;
+  // Deteksi masa pajak terakhir: hanya pegawai tetap (BPA1 / Pasal 17).
+  // Tidak tetap tetap TER + BP21, termasuk Desember dan bulan resign.
   var terRateHarian=null;
   var tipeKerjaHit=typeof sigajiNormalizeKarTipe==='function'?sigajiNormalizeKarTipe(k.tipe_kerja,k):'tetap';
+  var isPegawaiTetap=tipeKerjaHit!=='tidak_tetap';
   var isHarianTidakTetap=siklusGaji==='harian'&&tipeKerjaHit==='tidak_tetap';
+  const isMasaPajakTerakhir=isPegawaiTetap&&(
+    periodePakaiRekonsiliasiTahunan(p)||
+    (!!tglStopIso&&isStopInPeriode&&hasPhkAlasan)
+  );
+  let pph,reconciliation=null;
   if(isMasaPajakTerakhir){
     const ytd=getBrutoYTD(k,pn);
     const brutoTahunan=ytd.totalBruto+grossPPh;

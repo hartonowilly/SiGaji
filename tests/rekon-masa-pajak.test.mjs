@@ -102,4 +102,64 @@ const pDesSameMonth = {
   assertEq('Des bayar Jan = PPh TER bukan 0', gDes.pph, terJan);
 }
 
+{
+  const pDes = {
+    id: 12,
+    nama: 'Desember 2026',
+    start: '2026-12-01',
+    end: '2026-12-31',
+    bayar: '2026-12-31',
+    status: 'aktif',
+    tipe_periode: 'desember',
+  };
+  const px = loadPayrollCore({ periodes: [pDes] });
+  const kH = {
+    nik: 'TT-HAR',
+    nama: 'Harian tidak tetap',
+    gapok: 500_000,
+    ptkp: 'TK0',
+    masuk: '2020-01-01',
+    siklus_gaji: 'harian',
+    tipe_kerja: 'tidak_tetap',
+    tunjangan: [],
+    potongan: [],
+    natura: [],
+    bpjs_aktif: bpjsOff,
+  };
+  const kB = {
+    nik: 'TT-BLN',
+    nama: 'Bulanan tidak tetap',
+    gapok: 12_000_000,
+    ptkp: 'TK0',
+    masuk: '2020-01-01',
+    siklus_gaji: 'bulanan',
+    tipe_kerja: 'tidak_tetap',
+    tunjangan: [],
+    potongan: [],
+    natura: [],
+    bpjs_aktif: bpjsOff,
+  };
+  const kT = {
+    nik: 'TETAP-DES',
+    nama: 'Tetap',
+    gapok: 8_000_000,
+    ptkp: 'TK0',
+    masuk: '2020-01-01',
+    tunjangan: [],
+    potongan: [],
+    natura: [],
+    bpjs_aktif: bpjsOff,
+  };
+  const gH = px.hitungGaji(kH, 'Desember 2026', { skipResolve: true });
+  const gB = px.hitungGaji(kB, 'Desember 2026', { skipResolve: true });
+  const gT = px.hitungGaji(kT, 'Desember 2026', { skipResolve: true });
+  const hk = px.hariKerjaRange('2026-12-01', '2026-12-31');
+  assertEq('tidak tetap harian Des bukan masa pajak terakhir', gH.isMasaPajakTerakhir, false);
+  assertEq('tidak tetap harian Des = TER 0,5%', gH.pph, Math.round(500_000 * 0.005) * hk);
+  assertEq('tidak tetap bulanan Des bukan rekonsiliasi', gB.isMasaPajakTerakhir, false);
+  assertEq('tidak tetap bulanan Des = TER', gB.pph, px.hitungPPhBln(gB.grossPPh, 'TK0', '2026-12-31'));
+  assert('tidak tetap bulanan PPh bukan 0', gB.pph > 0);
+  assertEq('tetap Des tetap rekonsiliasi', gT.isMasaPajakTerakhir, true);
+}
+
 console.log('Rekon masa pajak dari tanggal bayar: semua tes lulus.');
