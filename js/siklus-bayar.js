@@ -165,25 +165,77 @@
     return st === 'setengah_sakit' || st === 'setengah_ijin';
   }
 
-  function siklusStatusTidakDibayar(st) {
-    return st === 'alpha' || st === 'izin' || st === 'sakit' || st === 'cuti';
+  function siklusAturanPotongan() {
+    return (typeof perusahaan !== 'undefined' && perusahaan && perusahaan.aturan_potongan) || {};
   }
 
-  /** Jumlah hari kerja tidak dibayar (alpha/izin/sakit/cuti) di rentang minggu. */
-  function siklusMingguanHariTidakDibayar(from, to, hariKerja, libur, masuk, stop, absensi) {
+  function siklusModePotongan(aturan, key, fallback) {
+    var slot = (aturan || {})[key];
+    var mode = slot && slot.mode != null ? String(slot.mode) : '';
+    return mode || fallback;
+  }
+
+  /** 0 = tetap dibayar, 1 = potong 1 hari, 0.5 = setengah. Cuti dalam kuota default tidak dipotong. */
+  function siklusMingguanFaktorPotong(st, aturan) {
+    aturan = aturan || siklusAturanPotongan();
+    if (st === 'cuti') {
+      return siklusModePotongan(aturan, 'cuti_dalam_kuota', 'tidak_dipotong') === 'tidak_dipotong' ? 0 : 1;
+    }
+    if (st === 'alpha') {
+      return siklusModePotongan(aturan, 'alpha', 'prorata') === 'tidak_dipotong' ? 0 : 1;
+    }
+    if (st === 'izin') {
+      return siklusModePotongan(aturan, 'izin', 'prorata') === 'tidak_dipotong' ? 0 : 1;
+    }
+    if (st === 'sakit') {
+      return siklusModePotongan(aturan, 'sakit', 'prorata') === 'tidak_dipotong' ? 0 : 1;
+    }
+    if (st === 'setengah_sakit') {
+      var ms = siklusModePotongan(aturan, 'setengah_sakit', 'prorata_setengah');
+      if (ms === 'tidak_dipotong') return 0;
+      return 0.5;
+    }
+    if (st === 'setengah_ijin') {
+      var mi = siklusModePotongan(aturan, 'setengah_ijin', 'prorata_setengah');
+      if (mi === 'tidak_dipotong') return 0;
+      return 0.5;
+    }
+    return 0;
+  }
+
+  /** Jumlah hari kerja tidak dibayar di rentang minggu, mengikuti aturan potongan perusahaan. */
+  function siklusMingguanHariTidakDibayar(from, to, hariKerja, libur, masuk, stop, absensi, aturan) {
     var n = 0;
     var abs = absensi || {};
     var masukIso = masuk ? String(masuk).slice(0, 10) : '';
     var stopIso = stop ? String(stop).slice(0, 10) : '';
+    aturan = aturan || siklusAturanPotongan();
     eachDate(from, to, function (d) {
       if (masukIso && d < masukIso) return;
       if (stopIso && d >= stopIso) return;
       if (!siklusIsHariKerja(d, hariKerja, libur)) return;
       var st = abs[d] || 'hadir';
-      if (siklusStatusTidakDibayar(st)) n += 1;
-      else if (isSetengah(st)) n += 0.5;
+      n += siklusMingguanFaktorPotong(st, aturan);
     });
     return n;
+  }
+
+  /** Jumat gaji terakhir sebelum tanggal (untuk celah antar-periode). */
+  function siklusPaydaySebelum(beforeIso, hariGaji, hariKerja, libur) {
+    var batas = String(beforeIso || '').slice(0, 10);
+    if (!batas) return '';
+    hariGaji = normalizeHariGaji(hariGaji);
+    var d = isoAddDays(batas, -1);
+    var guard = 0;
+    while (d && guard < 21) {
+      if (isoDow(d) === hariGaji) {
+        var pay = siklusTanggalBayar(d, hariKerja, libur);
+        if (pay && pay < batas) return pay;
+      }
+      d = isoAddDays(d, -1);
+      guard++;
+    }
+    return '';
   }
 
   function siklusTanggalBayarHarian(start, end, hariKerja, libur, masuk, stop, absensi) {
@@ -307,8 +359,15 @@
         rate,
         stop
       );
+      var prevPay0 = siklusPaydaySebelum(startIso, hariGaji, hariKerja, libur);
+      var aturanPot = siklusAturanPotongan();
       var pays = dates.map(function (tgl, i) {
-        var from = i === 0 ? startIso : isoAddDays(dates[i - 1], 1);
+        var from;
+        if (i === 0) {
+          from = prevPay0 ? isoAddDays(prevPay0, 1) : startIso;
+        } else {
+          from = isoAddDays(dates[i - 1], 1);
+        }
         var unpaid = siklusMingguanHariTidakDibayar(
           from,
           tgl,
@@ -316,7 +375,8 @@
           libur,
           masuk,
           stop,
-          absensi
+          absensi,
+          aturanPot
         );
         var base = rate;
         var parsial = false;
@@ -357,6 +417,7 @@
     siklusTanggalBayar: siklusTanggalBayar,
     siklusTanggalBayarMingguan: siklusTanggalBayarMingguan,
     siklusTanggalBayarHarian: siklusTanggalBayarHarian,
+    siklusPaydaySebelum: siklusPaydaySebelum,
     siklusBayarParsialMasuk: siklusBayarParsialMasuk,
     siklusBayarParsialResign: siklusBayarParsialResign,
     siklusBpjsUpahSebulan: siklusBpjsUpahSebulan,

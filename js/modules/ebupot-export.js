@@ -255,10 +255,9 @@ function ebupotBuildRows(periode) {
     var kode = ebupotKodeObjek(k, g);
     var tipeKerja = ebupotKarTipe(k);
     var counterpartTin = ebupotCounterpartTin(k);
-    var masaTerakhir = !!(g && g.isMasaPajakTerakhir);
+    var masaTerakhir = !!(g && g.isMasaPajakTerakhir) && tipeKerja !== 'tidak_tetap';
     var rec = g && g.reconciliation;
-    var dokumen = masaTerakhir && tipeKerja !== 'tidak_tetap' ? 'BPA1' : tipeKerja === 'tidak_tetap' ? 'BP21' : 'BPMP';
-    if (masaTerakhir && dokumen === 'BPMP') dokumen = 'BPA1';
+    var dokumen = masaTerakhir ? 'BPA1' : tipeKerja === 'tidak_tetap' ? 'BP21' : 'BPMP';
     var rateXml = masaTerakhir ? 0 : terI.ratePct || 0;
     rows.push({
       no: idx + 1,
@@ -303,11 +302,11 @@ function ebupotBuildRows(periode) {
     if (g.phk && g.phk.mode === 'phk' && Math.round(g.phk.bruto || 0) > 0) {
       var brutoPsg = Math.round(g.phk.bruto);
       var pphPsg = Math.round(g.phk.pphFinal || 0);
-      var ratePsg = brutoPsg ? Math.round((pphPsg / brutoPsg) * 10000) / 100 : 0;
+      var ratePsg = 0;
       warnings.push(
         'PPh final pesangon ' +
           (k.nama || k.nik) +
-          ' masuk XML BP21 (21-401-01). Periksa hasil impor Coretax.'
+          ' masuk XML BP21 (21-401-01). Rate dikosongkan agar Coretax memakai tarif berlapis.'
       );
       rows.push({
         no: idx + 1,
@@ -666,7 +665,11 @@ function ebupotBuildBp21Xml(built) {
     lines.push(ebupotXmlEl('TaxObjectCode', r.kodeObjek));
     lines.push(ebupotXmlEl('Gross', r.penghasilanBruto));
     lines.push(ebupotXmlEl('Deemed', 100));
-    lines.push(ebupotXmlEl('Rate', r.tarifTerPct));
+    if (r.tipeKerja === 'pesangon' || r.kodeObjek === '21-401-01') {
+      lines.push('\t\t<Rate xsi:nil="true"/>');
+    } else {
+      lines.push(ebupotXmlEl('Rate', r.tarifTerPct));
+    }
     lines.push(ebupotXmlEl('Document', 'CommercialInvoice'));
     lines.push(ebupotXmlEl('DocumentNumber', r.periodeGaji + '-' + r.counterpartTin));
     lines.push(ebupotXmlEl('DocumentDate', r.withholdingDate));
