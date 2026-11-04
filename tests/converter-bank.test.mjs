@@ -162,6 +162,17 @@ const sheet = after.get('xl/worksheets/sheet2.xml').data.toString('utf8');
   assertEq('tanggal ringkas', px.sigajiConverterCompactDate('2026-08-31'), '20260831');
   assertEq('nama file THR', px.sigajiConverterFileName('2026-08-31', 'Cemerlang', 'thr'),
     'Converter EXCEL THR Agustus 2026 Cemerlang.xlsm');
+  const hdrThr = px.sigajiConverterHeaderFromCfg(
+    Object.assign({}, px.sigajiConverterDefaults, {
+      debit_account: '1610000863899',
+      purpose_prefix: 'THR',
+      purpose_suffix: 'Cemerlang',
+    }),
+    { bayar: '2026-04-30', end: '2026-04-30', start: '2026-04-01' },
+    3,
+    '2026-03-20'
+  );
+  assertEq('header THR memakai tanggal bayar THR, bukan gaji', hdrThr.date, '20260320');
 }
 
 // ── 6. Nomor rekening tak lazim tidak dipaksa jadi angka ──

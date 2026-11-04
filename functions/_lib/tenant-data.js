@@ -23,8 +23,8 @@ export async function itemsReady(sb, tenant) {
   return ok;
 }
 
-/** Semua baris (PostgREST membatasi jumlah baris per respons). */
-async function fetchAll(build) {
+/** Semua baris (PostgREST membatasi jumlah baris per respons, biasanya 1.000). */
+export async function fetchAll(build) {
   const out = [];
   for (let from = 0; ; ) {
     const { data, error } = await build().range(from, from + PAGE - 1);
