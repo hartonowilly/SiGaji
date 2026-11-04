@@ -44,8 +44,9 @@ const bpjsOff = {
   });
   const g0 = px.hitungGaji(k0, 'Januari 2027', { skipResolve: true });
   const g1 = px.hitungGaji(k1, 'Januari 2027', { skipResolve: true });
-  assertEq('kredit PPh Januari = 50rb', g1.kreditPphBawa, 50_000);
-  assertEq('PPh Januari berkurang 50rb', g1.pph, g0.pph - 50_000);
+  assertEq('PPh 21 Januari tidak berubah', g1.pph, g0.pph);
+  assertEq('lebih bayar tahun lalu cair di THP', g1.refundPphBawa, 50_000);
+  assertEq('THP Januari naik 50rb', g1.neto, g0.neto + 50_000);
 }
 
 {

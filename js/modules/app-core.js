@@ -1133,23 +1133,22 @@ function periodeTumpangSaldoMigrasi(k,per){
   var saldo=getPphYtdAwal(k,meta.thn);
   return !!(saldo.sd_bulan&&meta.bln<=saldo.sd_bulan&&(saldo.bruto>0||saldo.pph>0||saldo.iuran_jht_jp>0));
 }
-function sisaPphLebihBayarBawa(k,pNama){
+/** Carryover: cairkan lebih bayar tahun lalu ke THP di periode bayar Januari (sekali). Tidak mengubah PPh 21. */
+function pphLebihBayarCairDiPeriode(k,pNama){
   var slot=k&&k.pph_lebih_bayar_bawa;
   if(!slot||!(slot.nilai>0))return 0;
   var p=periodes.find(function(x){return x.nama===pNama;})||PA();
-  var thn=periodeBulanPajakBayar(p).thn;
-  if(thn!==Number(slot.tahun))return 0;
-  var sisa=Math.round(slot.nilai);
-  var batas=p.bayar||'';
-  (periodes||[]).slice().sort(function(a,b){return String(a.bayar||'').localeCompare(String(b.bayar||''));}).forEach(function(per){
-    if(!per||per.nama===pNama)return;
-    if(periodeBulanPajakBayar(per).thn!==thn)return;
-    if((per.bayar||'')>=batas)return;
-    var g=hitungGaji(k,per.nama,{skipKreditBawa:true,skipResolve:true,fresh:true});
-    var pakai=Math.min(Math.max(0,Math.round(g.pph||0)),sisa);
-    sisa-=pakai;
+  var meta=periodeBulanPajakBayar(p);
+  if(meta.thn!==Number(slot.tahun)||meta.bln!==1)return 0;
+  /** @type {any} */
+  var first=null;
+  (periodes||[]).forEach(function(per){
+    var m=periodeBulanPajakBayar(per);
+    if(m.thn!==meta.thn||m.bln!==1)return;
+    if(!first||String(per.bayar||'')<String(first.bayar||''))first=per;
   });
-  return Math.max(0,sisa);
+  if(first&&first.nama!==pNama)return 0;
+  return Math.round(slot.nilai);
 }
 function syncPphLebihBayarBawa(k,ytdThn,lebih,opsi){
   if(!k)return;
@@ -1919,21 +1918,13 @@ function hitungGaji(k,pNama,opts){
   } else {
     pph=hitungPPhBln(grossPPh,ptkpHit,tglAturan);
   }
-  var kreditPphBawa=0;
-  if(!opts.skipKreditBawa&&!isMasaPajakTerakhir){
-    var sisaKredit=sisaPphLebihBayarBawa(k,pn);
-    if(sisaKredit>0){
-      kreditPphBawa=Math.min(Math.max(0,pph),sisaKredit);
-      pph=Math.max(0,pph-kreditPphBawa);
-    }
-  }
   const pphTanpaThr=hitungPPhBln(grossPPhRegular,ptkpHit,tglAturan);
   const pphAtasThr=pph-pphTanpaThr;
   const potT=(k.potongan||[]).reduce((s,x)=>s+sigajiRp(x.nilai),0);
   const pphRet=sigajiRp(k.pph_return?.nilai);
-  // Lebih bayar rekonsiliasi (resign/Desember, opsi refund) dikembalikan ke THP.
-  // Carryover tidak masuk bulan ini. Default periode tanpa opsi = refund.
+  // Lebih bayar rekonsiliasi: refund = masuk THP bulan ini; carryover = cairkan di THP Januari tahun depan (PPh 21 Januari tetap).
   const refundPph=(reconciliation&&reconciliation.lebihBayar>0&&reconciliation.opsiLebihBayar==='refund')?reconciliation.lebihBayar:0;
+  const refundPphBawa=(!opts.skipKreditBawa)?pphLebihBayarCairDiPeriode(k,pn):0;
   var jadwalBayar=null;
   if(siklusGaji!=='bulanan'&&typeof pecahPotonganCadangan==='function'){
     var paysJadwal=(siklusHit&&siklusHit.pays)||[];
@@ -1942,14 +1933,14 @@ function hitungGaji(k,pNama,opts){
   }
   const sisaPotJadwal=(jadwalBayar&&jadwalBayar.sisaPotongan)||0;
   const totalPot=bpjs.kes_kar+bpjs.jht_kar+bpjs.jp_kar+potT+pph+potKehadiran.total+(koreksiAbsensi.total||0);
-  const netoRegular=brutoTH-totalPot+pphRet+refundPph+sisaPotJadwal;
+  const netoRegular=brutoTH-totalPot+pphRet+refundPph+refundPphBawa+sisaPotJadwal;
   const phkNet=(phkCtx&&phkCtx.mode==='phk')?(phkCtx.bruto-phkCtx.pphFinal):0;
   const neto=netoRegular+phkNet;
   const bebanPrs=bpjs.kes_prs+bpjs.jht_prs+bpjs.jp_prs+bpjs.jkk_prs+bpjs.jkm_prs;
   var bukuAturan=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tglAturan):null;
   var terRate=terRateHarian!=null?terRateHarian:tarifPPhBln(grossPPh,ptkpHit,tglAturan);
   var aturanId=bukuAturan&&bukuAturan.id?bukuAturan.id:'';
-  return{gapokEff,gapokFull:sigajiRp(k.gapok),gapokRate:Math.round(sigajiRp(k.gapok)),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,kreditPphBawa,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs,terRate,aturanId,ptkpStatus:ptkpHit};
+  return{gapokEff,gapokFull:sigajiRp(k.gapok),gapokRate:Math.round(sigajiRp(k.gapok)),siklusGaji,siklusUnits,tBPJS,tGross,tTH,tItems,natKP,natNKP,lb,bpjsPrsNatKP,grossPPhRegular,grossPPh,brutoTH,bpjs,pph,pphTanpaThr,pphAtasThr,potT,potKehadiran,koreksiAbsensi,pphRet,refundPph,refundPphBawa,totalPot,netoRegular,neto,bebanPrs,isPR,pr,thrBruto,thrObj,periodeAdaTHR,reconciliation,isMasaPajakTerakhir,phk:phkCtx,jadwalBayar,gapokBpjs,terRate,aturanId,ptkpStatus:ptkpHit};
 }
 function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff,idx){
   const ap=perusahaan.aturan_potongan||{};const gajiHarian=hkPeriode>0?Math.round(gapokEff/hkPeriode):0;

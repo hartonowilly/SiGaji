@@ -438,6 +438,7 @@ function detailGaji(nik,pNama){
   h+='<div class="pr-row-info fw-700 gs-divider"><span>Total Potongan</span><span>- '+fmt(g.totalPot)+'</span></div>';
   if(g.pphRet>0)h+='<div class="pr-row-info ct-success"><span>Return PPh</span><span>+ '+fmt(g.pphRet)+'</span></div>';
   if(g.refundPph>0)h+='<div class="pr-row-info ct-success"><span>Lebih bayar PPh (dikembalikan)</span><span>+ '+fmt(g.refundPph)+'</span></div>';
+  if(g.refundPphBawa>0)h+='<div class="pr-row-info ct-purple"><span>Pengembalian PPh tahun lalu (masuk THP)</span><span>+ '+fmt(g.refundPphBawa)+'</span></div>';
   h+='</div></div>';
   h+='<div class="rounded-sm p-inset-sm fl justify-between fw-800 mt-lg font-14 btn-email"><span>TAKE HOME PAY</span><span>'+fmt(g.neto)+'</span></div>';
   // Tambahkan reconciliation box untuk masa pajak terakhir
@@ -456,8 +457,7 @@ function detailGaji(nik,pNama){
     h+='<div class="cr mt-xs"><span>PPh Tahunan (Progresif Pasal 17)</span><span>'+fmt(r.pphTahunan)+'</span></div>';
     h+='<div class="cr"><span>PPh sudah dipotong (Jan s.d. bulan lalu)</span><span>- '+fmt(r.pphYTD)+'</span></div>';
     h+='<div class="cr bold recon-panel-amount '+(isLebih?'is-refund':'is-owe')+'"><span>'+(isLebih?'&#10003; Lebih Bayar (dikembalikan)':'&#9888; Kurang Bayar (dipotong)')+' </span><span>'+( isLebih?'+ ':'')+fmt(isLebih?r.lebihBayar:r.kurangBayar)+'</span></div>';
-    if(isLebih&&r.opsiLebihBayar==='carryover')h+='<div class="font-10 ct-purple mt-xs">&#8594; Lebih bayar disimpan: PPh Januari tahun depan dipotong sampai lunas</div>';
-    if(g.kreditPphBawa>0)h+='<div class="cr ct-purple"><span>Kredit lebih bayar tahun lalu</span><span>- '+fmt(g.kreditPphBawa)+'</span></div>';
+    if(isLebih&&r.opsiLebihBayar==='carryover')h+='<div class="font-10 ct-purple mt-xs">&#8594; Lebih bayar tidak masuk THP bulan ini; dibayarkan di take home Januari tahun depan (PPh 21 Januari tetap dihitung normal)</div>';
     if(isLebih&&r.opsiLebihBayar==='refund')h+='<div class="font-10 ct-success mt-xs">&#8594; Lebih bayar '+fmt(r.lebihBayar)+' ditambahkan ke take home bulan ini (PPh bulan ini = Rp 0)</div>';
     h+='</div>';
   }

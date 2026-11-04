@@ -60,6 +60,7 @@ function makeSlip(k,pNama){
   if(g.natNKP>0||g.natKP>0){h+='<div class="ssec">Natura / fasilitas (tidak ditransfer)</div>';(k.natura||[]).forEach(function(n){h+='<div class="sr"><span>'+n.nama+(n.kp?' (kena pajak)':' (tidak kena pajak)')+'</span><span>'+fmt(n.nilai)+'</span></div>';});}
   if(g.pphRet>0)h+='<div class="ssec ct-success">Pengembalian PPh</div><div class="sr pph-return"><span>&#9312; '+((k.pph_return&&k.pph_return.ket)||'PPh Return')+'</span><span>+ '+fmt(g.pphRet)+'</span></div>';
   if(g.refundPph>0)h+='<div class="ssec ct-success">Pengembalian Lebih Bayar PPh</div><div class="sr pph-return"><span>Lebih bayar PPh 21 (rekonsiliasi '+(g.reconciliation&&g.reconciliation.tipePeriode==='resign'?'resign':'Desember')+')</span><span>+ '+fmt(g.refundPph)+'</span></div>';
+  if(g.refundPphBawa>0)h+='<div class="ssec ct-success">Pengembalian PPh Tahun Lalu</div><div class="sr pph-return"><span>Lebih bayar PPh 21 tahun lalu (masuk take home, PPh 21 bulan ini tidak berubah)</span><span>+ '+fmt(g.refundPphBawa)+'</span></div>';
   h+='<div class="ssec">Kontribusi Perusahaan</div>';
   h+='<div class="sr"><span>BPJS Kes Prs (4%)</span><span>'+fmt(g.bpjs.kes_prs)+'</span></div>';
   h+='<div class="sr"><span>BPJS JHT+JP Prs</span><span>'+fmt(g.bpjs.jht_prs+g.bpjs.jp_prs)+'</span></div>';
@@ -79,7 +80,7 @@ function makeSlip(k,pNama){
     h+='<div class="rounded-sm p-inset-xs font-10 mt-xs '+(isLebih?'slip-recon-lebih':'slip-recon-kurang')+'">';
     h+='<strong>Rekonsiliasi PPh 21 '+(r.tipePeriode==='resign'?'(Resign)':'(Desember)')+':</strong> ';
     h+='PPh Tahunan Progresif: '+fmt(r.pphTahunan)+' | Sudah dipotong: '+fmt(r.pphYTD)+' | ';
-    h+=isLebih?'<strong class="ct-success">Lebih Bayar: +'+fmt(r.lebihBayar)+'</strong>'+(r.opsiLebihBayar==='refund'?' (sudah masuk take home)':' (carry over)'):'<strong class="ct-danger">Kurang Bayar: '+fmt(r.kurangBayar)+'</strong>';
+    h+=isLebih?'<strong class="ct-success">Lebih Bayar: +'+fmt(r.lebihBayar)+'</strong>'+(r.opsiLebihBayar==='refund'?' (sudah masuk take home)':' (dibayar Januari tahun depan)'):'<strong class="ct-danger">Kurang Bayar: '+fmt(r.kurangBayar)+'</strong>';
     h+='</div>';
   }
   h+='<div class="mt-lg font-10 text-muted text-center">Slip gaji elektronik - sah tanpa tanda tangan basah</div></div>';
@@ -351,6 +352,11 @@ function buildGajiSlipPDF(k,pNama,tglBayar){
   if(g.refundPph>0){
     sec('Pengembalian Lebih Bayar PPh');
     rowP('Lebih bayar PPh 21 (rekonsiliasi '+(g.reconciliation&&g.reconciliation.tipePeriode==='resign'?'resign':'Desember')+')',g.refundPph);
+    y+=2;
+  }
+  if(g.refundPphBawa>0){
+    sec('Pengembalian PPh Tahun Lalu');
+    rowP('Lebih bayar PPh 21 tahun lalu (masuk take home)',g.refundPphBawa);
     y+=2;
   }
 
