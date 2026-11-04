@@ -220,14 +220,21 @@
     var yr = batas.slice(0, 4);
     var n = 0;
     var abs = absensi || {};
-    Object.keys(abs).forEach(function (d) {
-      if (abs[d] !== 'cuti') return;
-      if (d.slice(0, 4) !== yr) return;
+    var nik = k && k.nik;
+    var masuk = k && k.masuk ? String(k.masuk).slice(0, 10) : '';
+    var stop = k && k.tgl_berhenti ? String(k.tgl_berhenti).slice(0, 10) : '';
+    Object.keys(abs).forEach(function (raw) {
+      if (abs[raw] !== 'cuti') return;
+      var d = typeof toIsoDate === 'function' ? toIsoDate(raw) : String(raw).slice(0, 10);
+      if (!d || d.slice(0, 4) !== yr) return;
       if (d >= batas) return;
+      if (masuk && d < masuk) return;
+      if (stop && d >= stop) return;
+      if (typeof isCutiBersamaPotongKuotaTgl === 'function' && isCutiBersamaPotongKuotaTgl(d)) return;
+      if (typeof cutiDalamMasaKerja === 'function' && nik && !cutiDalamMasaKerja(d, nik)) return;
       n++;
     });
     var sampai = isoAddDays(batas, -1);
-    var nik = k && k.nik;
     if (typeof countCutiBersama === 'function') n += countCutiBersama(yr, nik, sampai) || 0;
     return n;
   }
