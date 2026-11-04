@@ -1042,7 +1042,7 @@ function rateTerHasil(g,k,p){
  * @param {string} ptkpKey
  * @returns {number}
  */
-function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey,tanggal,opts){
+function hitungPkpTahunan(brutoTahunan,ptkpKey,tanggal,opts){
   opts=opts||{};
   var buku=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tanggal):null;
   var prog=buku&&buku.progresif;
@@ -1055,7 +1055,13 @@ function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey,tanggal,opts){
   var iuranKar=Math.max(0,Math.round(opts.iuranJhtJpKar||0));
   const bj=Math.min(brutoTahunan*bjRate,bjCap);
   const pv=nilaiPTKP(ptkpKey,tanggal);
-  const pkp=Math.max(0,Math.floor((brutoTahunan-bj-iuranKar-pv)/1000)*1000);
+  return Math.max(0,Math.floor((brutoTahunan-bj-iuranKar-pv)/1000)*1000);
+}
+function hitungPPhTahunanProgresif(brutoTahunan,ptkpKey,tanggal,opts){
+  opts=opts||{};
+  var buku=typeof aturanPajakUntukTanggal==='function'?aturanPajakUntukTanggal(tanggal):null;
+  var prog=buku&&buku.progresif;
+  const pkp=hitungPkpTahunan(brutoTahunan,ptkpKey,tanggal,opts);
   var lapis=prog&&prog.lapis&&prog.lapis.length?prog.lapis:[{sampai:60e6,rate:.05},{sampai:250e6,rate:.15},{sampai:500e6,rate:.25},{sampai:5e9,rate:.30},{sampai:Infinity,rate:.35}];
   var pph=0,prev=0;
   for(var i=0;i<lapis.length;i++){
@@ -1909,6 +1915,7 @@ function hitungGaji(k,pNama,opts){
     const tglAkhirPajak=(tglStopIso&&isStopInPeriode)?tglStopIso:(p.bayar||p.end||tglAturan);
     const nBlnBj=bulanKerjaPajakTahun(k,ytd.thn,tglAkhirPajak);
     const pphTahunan=hitungPPhTahunanProgresif(brutoTahunan,ptkpHit,tglAturan,{bulanKerja:nBlnBj,iuranJhtJpKar:iuranTahun});
+    const pkpTahunan=hitungPkpTahunan(brutoTahunan,ptkpHit,tglAturan,{bulanKerja:nBlnBj,iuranJhtJpKar:iuranTahun});
     const pphBulanIni=pphTahunan-ytd.totalPPh;
     pph=Math.max(0,pphBulanIni);
     const selisih=pphBulanIni; // negatif = lebih bayar
@@ -1922,7 +1929,7 @@ function hitungGaji(k,pNama,opts){
       saldoSdBulan:ytd.saldoAwal?ytd.saldoAwal.sd_bulan:0,
       brutoDariPeriode:Math.max(0,ytd.totalBruto-(ytd.saldoAwal?ytd.saldoAwal.bruto:0)),
       pphDariPeriode:Math.max(0,ytd.totalPPh-(ytd.saldoAwal?ytd.saldoAwal.pph:0)),
-      brutoTahunan,pphTahunan,
+      brutoTahunan,pphTahunan,pkpTahunan,iuranTahunan:iuranTahun,
       pphBulanIni:selisih,
       lebihBayar:selisih<0?Math.abs(selisih):0,
       kurangBayar:selisih>0?selisih:0,
@@ -1992,7 +1999,12 @@ function hitungPotonganKehadiran(nik,periode,hkPeriode,gapokEff,idx){
     const tgl=toIso(tglRaw);
     if(!tgl||tgl<pStart||tgl>pEnd)continue;
     if(tStop&&tgl>=tStop)continue; // setelah resign tidak dihitung potongan kehadiran
-    if(st==='resign')continue;
+    var tMasuk=toIso(kar&&kar.masuk);
+    if(tMasuk&&tgl<tMasuk)continue;
+    var dow=new Date(tgl+'T12:00:00').getDay();
+    if(typeof isHariLiburKerja==='function'&&isHariLiburKerja(dow))continue;
+    if(typeof isHL==='function'&&isHL(tgl))continue;
+    if(st==='resign'||st==='libur'||st==='libnas')continue;
     if(st==='izin')nIzin++;else if(st==='sakit')nSakit++;else if(st==='setengah_sakit')n05S++;else if(st==='setengah_ijin')n05I++;else if(st==='alpha')nAlpha++;else if(st==='cuti')nCuti++;
   }
   const end=new Date((periode&&periode.end?String(periode.end):'2026-12-31')+'T12:00:00');

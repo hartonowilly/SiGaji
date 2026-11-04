@@ -116,8 +116,7 @@ export async function onRequestPost({ request, env }) {
         .eq('nik', req.nik)
         .lte('date_from', req.date_to)
         .gte('date_to', req.date_from);
-      const worksSaturday =
-        (assigns || []).some((a) => a.works_saturday) || true;
+      const worksSaturday = (assigns || []).some((a) => a.works_saturday);
 
       const payload = await loadCloudPayload(sb, tenant);
 
@@ -205,7 +204,7 @@ export async function onRequestPost({ request, env }) {
         .eq('nik', ctx.nik)
         .lte('date_from', dateTo || dateFrom || '2099-12-31')
         .gte('date_to', dateFrom || '2000-01-01');
-      const worksSaturday = (assigns || []).some((a) => a.works_saturday) || true;
+      const worksSaturday = (assigns || []).some((a) => a.works_saturday);
 
       const pendingByYear = await sumPendingCutiDaysByYear(
         sb,
@@ -288,8 +287,7 @@ export async function onRequestPost({ request, env }) {
       .eq('nik', ctx.nik)
       .lte('date_from', dateTo)
       .gte('date_to', dateFrom);
-    const worksSaturdaySubmit =
-      (assignsSubmit || []).some((a) => a.works_saturday) || true;
+    const worksSaturdaySubmit = (assignsSubmit || []).some((a) => a.works_saturday);
 
     if (requestType === 'cuti') {
       const payload = await loadCloudPayload(sb, tenant);

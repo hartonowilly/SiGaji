@@ -233,7 +233,7 @@ export async function onRequestPost({ request, env }) {
         location_id: locationId,
         date_from: dateFrom,
         date_to: dateTo,
-        works_saturday: body.works_saturday !== false,
+        works_saturday: body.works_saturday === true,
         catatan: String(body.catatan || '').trim() || null,
         created_by: ctx.user.id,
         updated_at: new Date().toISOString(),

@@ -48,6 +48,13 @@ export function addDaysIso(iso, n) {
   return d.toISOString().substring(0, 10);
 }
 
+/** Sabtu hari kerja: penugasan lokasi, atau perusahaan 6 hari. Jangan default true. */
+export function payloadWorksSaturday(payload, assignedSaturday) {
+  if (assignedSaturday === true) return true;
+  const hk = (payload && payload.perusahaan && payload.perusahaan.hariKerja) || 6;
+  return hk === 6;
+}
+
 export function enumerateWorkDates(payload, dateFrom, dateTo, worksSaturday) {
   const hk = (payload && payload.perusahaan && payload.perusahaan.hariKerja) || 6;
   const hariLibur = (payload && payload.hariLibur) || [];
@@ -55,6 +62,7 @@ export function enumerateWorkDates(payload, dateFrom, dateTo, worksSaturday) {
   hariLibur.forEach((l) => {
     if (l && l.tgl) hlMap[String(l.tgl).substring(0, 10)] = l.tipe || '';
   });
+  const satOk = worksSaturday === true || hk === 6;
   const out = [];
   let cur = dateFrom;
   while (cur <= dateTo) {
@@ -63,15 +71,12 @@ export function enumerateWorkDates(payload, dateFrom, dateTo, worksSaturday) {
       cur = addDaysIso(cur, 1);
       continue;
     }
-    if (dow === 6) {
-      const satOk = worksSaturday === true || hk === 6;
-      if (!satOk) {
-        cur = addDaysIso(cur, 1);
-        continue;
-      }
+    if (dow === 6 && !satOk) {
+      cur = addDaysIso(cur, 1);
+      continue;
     }
-    const tipe = hlMap[cur];
-    if (tipe === 'libnas' || tipe === 'cuti-bersama') {
+    // Semua tipe di kalender libur (nasional, perusahaan, libnas, cuti-bersama).
+    if (Object.prototype.hasOwnProperty.call(hlMap, cur)) {
       cur = addDaysIso(cur, 1);
       continue;
     }
@@ -167,7 +172,7 @@ export async function resolveAllowedLocations(sb, tenant, nik, workDate) {
   const kantor = all.filter((l) => l.tipe === 'kantor');
   return {
     locations: kantor.length ? kantor : all,
-    worksSaturday: true,
+    worksSaturday: false,
   };
 }
 
@@ -297,13 +302,29 @@ export async function syncAlphaFromMobileAttendance(sb, tenant, payload, dateFro
     cinMap[k] = r.validation_status;
   });
 
+  const { data: everLogs } = await sb
+    .from('sigaji_attendance_logs')
+    .select('nik')
+    .eq('tenant_key', tenant)
+    .limit(10000);
+  const mobileNiks = new Set();
+  (everLogs || []).forEach((r) => {
+    if (r && r.nik) mobileNiks.add(String(r.nik).trim());
+  });
+
+  const satOk = payloadWorksSaturday(payload, false);
   const affectedDates = new Set();
   for (const k of karyawan) {
     if (!k || !k.nik || k.aktif === false) continue;
     const nik = String(k.nik).trim();
-    const dates = enumerateWorkDates(payload, dateFrom, end, true);
+    if (!mobileNiks.has(nik)) continue;
+    const masuk = k.masuk ? String(k.masuk).substring(0, 10) : '';
+    const stop = k.tgl_berhenti ? String(k.tgl_berhenti).substring(0, 10) : '';
+    const dates = enumerateWorkDates(payload, dateFrom, end, satOk);
     if (!absensi[nik]) absensi[nik] = {};
     for (const d of dates) {
+      if (masuk && d < masuk) continue;
+      if (stop && d >= stop) continue;
       const cur = absensi[nik][d];
       if (cur && cur !== 'alpha') continue;
       const st = cinMap[nik + '|' + d];
@@ -530,8 +551,35 @@ function yearsInRange(dateFrom, dateTo) {
   return [...ys];
 }
 
+function masaKerjaBulanSampaiMobile(k, sampaiIso) {
+  if (!k) return 0;
+  const start = new Date(String(k.masuk || '2020-01-01').substring(0, 10) + 'T12:00:00');
+  const iso = String(sampaiIso || '').substring(0, 10);
+  const end = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(iso + 'T12:00:00') : new Date();
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 0;
+  let m = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  if (end.getDate() < start.getDate()) m--;
+  return Math.max(0, m);
+}
+
+function kuotaCutiKaryawanMobile(payload, k, yr) {
+  const base = Math.max(0, parseInt(String((payload.masterCuti && payload.masterCuti.kuota) || 12), 10) || 12);
+  const mode = String((payload.masterCuti && payload.masterCuti.hakBaru) || 'langsung');
+  if (!k || mode === 'langsung') return base;
+  const y = parseInt(String(yr || ''), 10) || new Date().getFullYear();
+  let acuan = String(y) + '-12-31';
+  const stop = k.tgl_berhenti ? String(k.tgl_berhenti).substring(0, 10) : '';
+  if (stop && stop < acuan) acuan = stop;
+  const mb = masaKerjaBulanSampaiMobile(k, acuan);
+  if (mode === 'setelah_12bln') return mb >= 12 ? base : 0;
+  if (mode === 'prorata' && mb < 12) return Math.floor((base * mb) / 12);
+  return base;
+}
+
 export function computeCutiBalanceForYear(payload, nik, yr, extraPendingDays) {
-  const kuota = (payload.masterCuti && payload.masterCuti.kuota) || 12;
+  const list = (payload && payload.karyawan) || [];
+  const k = list.find((x) => x && String(x.nik) === String(nik));
+  const kuota = kuotaCutiKaryawanMobile(payload, k, yr);
   const manual = cutiManualTrackingYear(payload, nik, yr);
   const cb = countCutiBersamaTrackingYear(payload, yr, nik);
   const pending = extraPendingDays || 0;
@@ -565,7 +613,7 @@ export async function sumPendingCutiDaysByYear(sb, tenant, nik, payload, exclude
     const dt = parseDateOnly(row.date_to);
     if (!df || !dt) return;
     yearsInRange(df, dt).forEach((yr) => {
-      const n = countLeaveWorkDaysInYear(payload, df, dt, true, yr);
+      const n = countLeaveWorkDaysInYear(payload, df, dt, payloadWorksSaturday(payload, false), yr);
       byYear[yr] = (byYear[yr] || 0) + n;
     });
   });

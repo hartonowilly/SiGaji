@@ -364,10 +364,11 @@
   }
 
   /** 'Converter EXCEL Agustus 2026 Cemerlang.xlsm' — bulan & tahun ikut periode. */
-  function fileName(iso, label) {
+  function fileName(iso, label, kind) {
     var my = monthYearFromIso(iso);
     var tail = String(label || '').trim();
-    return 'Converter EXCEL ' + my.bulan + ' ' + my.tahun + (tail ? ' ' + tail : '') + '.xlsm';
+    var head = kind === 'thr' ? 'Converter EXCEL THR ' : 'Converter EXCEL ';
+    return head + my.bulan + ' ' + my.tahun + (tail ? ' ' + tail : '') + '.xlsm';
   }
 
   window.sigajiConverterBuildXlsm = buildXlsm;
@@ -378,6 +379,7 @@
   window.sigajiConverterDefaults = DEFAULTS;
   window.sigajiConverterZipRead = zipRead;
   window.sigajiConverterZipWrite = zipWrite;
+  window.sigajiConverterCollectThrRows = collectThrRows;
 
   /* ── Bagian yang butuh data SiGaji & DOM ─────── */
 
@@ -441,6 +443,37 @@
       items.forEach(function (jumlah) {
         rows.push({ rekening: rek, nama: nama, jumlah: jumlah });
       });
+    });
+    return { rows: rows, lewat: lewat, catatan: catatan };
+  }
+
+  /** THR dibayar full netto (PPh THR dipotong dari gaji). */
+  function collectThrRows(p) {
+    var list = typeof karyawanListPeriode === 'function' ? karyawanListPeriode(p) : [];
+    var rows = [];
+    var lewat = [];
+    var catatan = [];
+    list.forEach(function (k) {
+      var g = hitungGaji(k, p.nama);
+      var rek = String(k.norek || '').replace(/[^\d]/g, '');
+      var nama = String(k.reknam || k.nama || '').toUpperCase().trim();
+      if (!rek) {
+        lewat.push(k.nama + ' — no. rekening kosong');
+        return;
+      }
+      var jumlah = Math.round((g && g.thrBruto) || 0);
+      if (jumlah <= 0) {
+        lewat.push(k.nama + ' — THR nol');
+        return;
+      }
+      if (!isPlainAccount(rek)) {
+        catatan.push(k.nama + ' — no. rekening ' + rek + ' tidak lazim, cek manual');
+      }
+      var bank = String(k.bank || '').toUpperCase();
+      if (bank && bank.indexOf('MANDIRI') < 0) {
+        catatan.push(k.nama + ' — bank ' + bank + ', bukan Mandiri');
+      }
+      rows.push({ rekening: rek, nama: nama, jumlah: jumlah });
     });
     return { rows: rows, lewat: lewat, catatan: catatan };
   }
@@ -532,6 +565,8 @@
         }).join('') + '</ul></div>';
     }
     host.innerHTML = h;
+    var thrBtn = document.getElementById('btn-unduh-converter-thr');
+    if (thrBtn) thrBtn.style.display = p.thr_aktif ? '' : 'none';
     openModal('m-converter');
   };
 
@@ -544,7 +579,7 @@
     return cfg;
   }
 
-  window.unduhConverterBank = function () {
+  function unduhConverterXlsm(kind) {
     var p = typeof PA === 'function' ? PA() : null;
     if (!p || !p.nama) {
       toast('Tidak ada periode aktif');
@@ -559,14 +594,24 @@
       toast('Mitra ID wajib diisi');
       return;
     }
-    var hasil = collectRows(p);
+    var isThr = kind === 'thr';
+    if (isThr && !p.thr_aktif) {
+      toast('THR tidak aktif di periode ini');
+      return;
+    }
+    var hasil = isThr ? collectThrRows(p) : collectRows(p);
     if (!hasil.rows.length) {
-      toast('Tidak ada karyawan dengan no. rekening & THP > 0');
+      toast(isThr
+        ? 'Tidak ada karyawan dengan no. rekening & THR > 0'
+        : 'Tidak ada karyawan dengan no. rekening & THP > 0');
       return;
     }
     cfgSave(cfg);
-    var header = headerFromCfg(cfg, p, hasil.rows.length);
-    var iso = p.bayar || p.end || p.start;
+    /** @type {Record<string, string>} */
+    var cfgHdr = Object.assign({}, cfg);
+    if (isThr) cfgHdr.purpose_prefix = 'THR';
+    var header = headerFromCfg(cfgHdr, p, hasil.rows.length);
+    var iso = isThr ? (p.thr_bayar || p.thr_hariraya || p.bayar || p.end || p.start) : (p.bayar || p.end || p.start);
     var url = TEMPLATE_URL +
       (typeof SIGAJI_MODULES_CACHE !== 'undefined' ? '?v=' + SIGAJI_MODULES_CACHE : '');
     fetch(url)
@@ -581,7 +626,7 @@
         });
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = fileName(iso, cfg.label);
+        a.download = fileName(iso, cfg.label, isThr ? 'thr' : '');
         a.click();
         setTimeout(function () {
           URL.revokeObjectURL(a.href);
@@ -592,5 +637,12 @@
       .catch(function (e) {
         toast('Gagal: ' + (e && e.message ? e.message : e));
       });
+  }
+
+  window.unduhConverterBank = function () {
+    unduhConverterXlsm('gaji');
+  };
+  window.unduhConverterBankThr = function () {
+    unduhConverterXlsm('thr');
   };
 })();

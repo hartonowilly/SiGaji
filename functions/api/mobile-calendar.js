@@ -66,8 +66,8 @@ export async function onRequestPost({ request, env }) {
       if (!dateFrom || !dateTo || dateTo < dateFrom) {
         return jsonResponse(400, { ok: false, error: 'date_from / date_to invalid' }, request);
       }
-      const worksSaturday = body.works_saturday !== false;
       const payload = await loadCloudPayload(sb, tenant);
+      const worksSaturday = body.works_saturday === true;
       const dates = enumerateWorkDates(payload, dateFrom, dateTo, worksSaturday);
       return jsonResponse(200, { ok: true, dates, count: dates.length }, request);
     }
