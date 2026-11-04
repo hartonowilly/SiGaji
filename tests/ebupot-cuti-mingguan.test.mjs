@@ -253,6 +253,56 @@ function karBase(extra) {
 }
 
 {
+  const px = loadPayrollCore({
+    masterCuti: { kuota: 2, cbPotong: true, hakBaru: 'langsung' },
+    hariLibur: [{ tgl: '2026-02-16', nama: 'Cuti Bersama', tipe: 'cuti-bersama' }],
+    perusahaan: {
+      hariKerja: 6,
+      aturan_potongan: {
+        cuti_dalam_kuota: { mode: 'tidak_dipotong', nilai: 0 },
+        cuti_luar_kuota: { mode: 'prorata', nilai: 0 },
+      },
+    },
+  });
+  const k = karBase({ nik: 'TES-MG-CB-C', gapok: 1_200_000, siklus_gaji: 'mingguan' });
+  const full = px.siklusBuildPays(k, px.periodes[0], 6, {}, {});
+  const totFull = full.reduce(function (s, p) { return s + p.upah; }, 0);
+  const mixed = px.siklusBuildPays(k, px.periodes[0], 6, {}, {
+    '2026-02-16': 'cuti',
+    '2026-03-10': 'cuti',
+  });
+  const totMixed = mixed.reduce(function (s, p) { return s + p.upah; }, 0);
+  assertEq('C di cuti bersama tidak dobel kuota mingguan', totMixed, totFull);
+}
+
+{
+  const px = loadPayrollCore({
+    masterCuti: { kuota: 1, cbPotong: false, hakBaru: 'langsung' },
+    perusahaan: {
+      hariKerja: 6,
+      aturan_potongan: {
+        cuti_dalam_kuota: { mode: 'tidak_dipotong', nilai: 0 },
+        cuti_luar_kuota: { mode: 'prorata', nilai: 0 },
+      },
+    },
+  });
+  const k = karBase({
+    nik: 'TES-MG-CUTI-JOIN',
+    gapok: 1_200_000,
+    siklus_gaji: 'mingguan',
+    masuk: '2026-03-01',
+  });
+  const full = px.siklusBuildPays(k, px.periodes[0], 6, {}, {});
+  const totFull = full.reduce(function (s, p) { return s + p.upah; }, 0);
+  const mixed = px.siklusBuildPays(k, px.periodes[0], 6, {}, {
+    '2026-02-10': 'cuti',
+    '2026-03-10': 'cuti',
+  });
+  const totMixed = mixed.reduce(function (s, p) { return s + p.upah; }, 0);
+  assertEq('cuti sebelum masuk tidak makan kuota mingguan', totMixed, totFull);
+}
+
+{
   const px = loadPayrollCore();
   const k = karBase({
     nik: 'TES-HR-TT',
