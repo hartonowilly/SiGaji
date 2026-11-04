@@ -248,6 +248,20 @@ function toggleLockPeriode(id){
     try{
       if(typeof sigajiSimpanArsipRekap==='function')sigajiSimpanArsipRekap(p);
     }catch(eArsip){sigajiCatchWarn("js/modules/app-master.js",eArsip);}
+    try{
+      if(typeof auditPush==='function')auditPush({
+        ts:typeof nowIso==='function'?nowIso():new Date().toISOString(),
+        periode:p.nama||'',
+        nik:'',
+        nama:p.nama||'',
+        by:(typeof CU!=='undefined'&&CU&&(CU.nama||CU.username||CU.email))||'',
+        byEmail:(typeof CU!=='undefined'&&CU&&CU.email)||'',
+        role:(typeof CU!=='undefined'&&CU&&CU.role)||'',
+        cabangId:(typeof CU!=='undefined'&&CU&&CU.cabangId)||'',
+        action:'kunci_periode',
+        detail:'Snapshot dikunci'
+      });
+    }catch(eAud){sigajiCatchWarn('js/modules/app-master.js',eAud);}
     saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci (baseline absensi tersimpan)');
   }else{
     if(typeof sigajiNeedPeriodeData==='function'&&!sigajiNeedPeriodeData(p.nama)){toast('Data periode '+p.nama+' masih dimuat dari arsip — coba lagi sebentar lagi.');return;}
@@ -256,6 +270,20 @@ function toggleLockPeriode(id){
     delete p.hasil_gaji;
     delete p.arsip_rekap;
     delete p.absensi_pot_baseline;
+    try{
+      if(typeof auditPush==='function')auditPush({
+        ts:typeof nowIso==='function'?nowIso():new Date().toISOString(),
+        periode:p.nama||'',
+        nik:'',
+        nama:p.nama||'',
+        by:(typeof CU!=='undefined'&&CU&&(CU.nama||CU.username||CU.email))||'',
+        byEmail:(typeof CU!=='undefined'&&CU&&CU.email)||'',
+        role:(typeof CU!=='undefined'&&CU&&CU.role)||'',
+        cabangId:(typeof CU!=='undefined'&&CU&&CU.cabangId)||'',
+        action:'buka_kunci_periode',
+        detail:'Snapshot dibuka; hasil beku dihapus dari memori'
+      });
+    }catch(eAud2){sigajiCatchWarn('js/modules/app-master.js',eAud2);}
     saveAll();renderPeriodes();updatePeriodeSimpanButtonState();toast('Kunci periode dibuka');
   }
 }

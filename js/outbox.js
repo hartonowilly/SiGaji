@@ -250,6 +250,20 @@
             if (putarAbsensi(mem, en)) n++;
             return;
           }
+          if (
+            en.t === 'I' &&
+            en.key &&
+            (en.key.kind === 'hasilGaji' || en.key.kind === 'absensiPotBaseline')
+          ) {
+            var ik = String(en.key.item_key || '');
+            var sep = ik.lastIndexOf('|');
+            var pn = sep >= 0 ? ik.slice(0, sep) : '';
+            var per = null;
+            (mem.periodes || []).forEach(function (p) {
+              if (p && p.nama === pn) per = p;
+            });
+            if (!per || !per.snapshot_locked) return;
+          }
         }
         d.applyEntityToMemory(mem, en, en.d);
         n++;

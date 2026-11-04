@@ -99,6 +99,15 @@ px.sigajiDaftarAturanPajak({
 const marKunci = px.hitungGaji(k, 'Maret 2026');
 assertEq('periode terkunci mempertahankan PPh', marKunci.pph, marSetelah.pph);
 assertEq('periode terkunci mempertahankan Kes', marKunci.bpjs.kes_kar, marSetelah.bpjs.kes_kar);
+assertEq('slip memakai neto beku', px.hitungGaji(k, 'Maret 2026').neto, marKunci.neto);
+
+pMar.snapshot_locked = true;
+const bekuLama = pMar.hasil_gaji;
+delete pMar.hasil_gaji;
+const marTanpaBeku = px.hitungGaji(k, 'Maret 2026');
+assertEq('tanpa freeze: tidak menulis hasil_gaji diam-diam', pMar.hasil_gaji == null ? 1 : 0, 1);
+assertEq('hitung tanpa freeze tetap menghasilkan angka', !!(marTanpaBeku && marTanpaBeku.neto > 0), true);
+pMar.hasil_gaji = bekuLama;
 
 pMar.snapshot_locked = false;
 delete pMar.hasil_gaji;

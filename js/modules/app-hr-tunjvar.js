@@ -284,22 +284,25 @@ function importTunjVarExcel(inp) {
         if (!tunjVarBulan[pn]) tunjVarBulan[pn] = {};
         var nikSet = {};
         karyawan.forEach(function (k) {
-          nikSet[String(k.nik)] = k;
+          if (k && k.nik != null) nikSet[String(k.nik)] = k;
         });
         var ok = 0,
           skip = 0;
         for (var r = 1; r < rows.length; r++) {
           var row = rows[r];
           if (!row || !row.length) continue;
-          var nik = String(row[nikIdx] || '').trim();
-          if (!nik || !nikSet[nik]) {
+          var nikRaw = typeof sigajiExcelNik === 'function' ? sigajiExcelNik(row[nikIdx]) : String(row[nikIdx] || '').trim();
+          var kar = typeof sigajiCariByNik === 'function' ? sigajiCariByNik(nikSet, nikRaw) : nikSet[nikRaw];
+          if (!kar || !kar.nik) {
             skip++;
             continue;
           }
+          var nik = String(kar.nik);
           if (!tunjVarBulan[pn][nik]) tunjVarBulan[pn][nik] = {};
           colMap.forEach(function (cm) {
-            var v = parseFloat(row[cm.idx]);
-            if (!isNaN(v) && v !== 0) tunjVarBulan[pn][nik][cm.id] = Math.max(0, Math.round(v));
+            var cell = row[cm.idx];
+            var v = typeof sigajiRp === 'function' ? sigajiRp(cell) : Math.round(Number(cell) || 0);
+            if (v) tunjVarBulan[pn][nik][cm.id] = Math.max(0, Math.round(v));
           });
           ok++;
         }
