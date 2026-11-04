@@ -72,7 +72,7 @@ function renderMigrasiPphSaldo(){
   var withSaldo=0;
   list.forEach(function(k){
     var s=getPphYtdAwal(k,thn);
-    if(s.bruto>0||s.pph>0)withSaldo++;
+    if(s.bruto>0||s.pph>0||s.iuran_jht_jp>0)withSaldo++;
   });
   var sum=document.getElementById('migrasi-pph-ringkasan');
   if(sum)sum.textContent=withSaldo+' / '+list.length+' karyawan punya saldo '+thn;
@@ -90,12 +90,13 @@ function renderMigrasiPphSaldo(){
       +'<td>'+(tb?'<span class="bdg b-warn">'+escapeHtml(tb)+'</span>':'<span class="bdg b-ok">Aktif</span>')+'</td>'
       +'<td class="text-right">'+(s.bruto>0?fmt(s.bruto):'—')+'</td>'
       +'<td class="text-right">'+(s.pph>0?fmt(s.pph):'—')+'</td>'
+      +'<td class="text-right">'+(s.iuran_jht_jp>0?fmt(s.iuran_jht_jp):'—')+'</td>'
       +'<td class="u-muted-11">'+escapeHtml(sd)+'</td>'
       +'<td><button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil</button></td>'
       +'</tr>';
   }).join('');
   wrap.innerHTML='<table class="tbl font-12"><thead><tr>'
-    +'<th>NIK</th><th>Nama</th><th>Berhenti</th><th>Bruto PPh kum.</th><th>PPh terpotong kum.</th><th>Catatan</th><th></th>'
+    +'<th>NIK</th><th>Nama</th><th>Berhenti</th><th>Bruto PPh kum.</th><th>PPh terpotong kum.</th><th>Iuran JHT+JP kum.</th><th>Catatan</th><th></th>'
     +'</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function ensureXlsxMigrasi(cb){
@@ -106,15 +107,15 @@ function ensureXlsxMigrasi(cb){
 function exportMigrasiPphTemplate(){
   ensureXlsxMigrasi(function(){
     var thn=migrasiPphTahunUi();
-    var hdr=['NIK','Nama','Status','Tgl berhenti','S/d bulan','Bruto PPh kumulatif','PPh terpotong kumulatif','PTKP','Gaji pokok'];
+    var hdr=['NIK','Nama','Status','Tgl berhenti','S/d bulan','Bruto PPh kumulatif','PPh terpotong kumulatif','Iuran JHT+JP kar kum.','PTKP','Gaji pokok'];
     var aoa=[
       hdr,
-      ['K0001','Contoh Aktif','Aktif','',''+thn+'-04','48000000','1200000','TK/0','5000000'],
-      ['K0003','Contoh Budi','Resign',''+thn+'-03-31','3','36000000','900000','K/0','5500000']
+      ['K0001','Contoh Aktif','Aktif','',''+thn+'-04','48000000','1200000','800000','TK/0','5000000'],
+      ['K0003','Contoh Budi','Resign',''+thn+'-03-31','3','36000000','900000','600000','K/0','5500000']
     ];
     sortKaryawanByNik(karyawan||[]).forEach(function(k){
       var s=getPphYtdAwal(k,thn);
-      if(s.bruto<=0&&s.pph<=0&&!String(k.tgl_berhenti||'').trim())return;
+      if(s.bruto<=0&&s.pph<=0&&s.iuran_jht_jp<=0&&!String(k.tgl_berhenti||'').trim())return;
       aoa.push([
         k.nik,
         k.nama||'',
@@ -123,18 +124,19 @@ function exportMigrasiPphTemplate(){
         s.sd_bulan||'',
         s.bruto||'',
         s.pph||'',
+        s.iuran_jht_jp||'',
         k.ptkp||'',
         k.gapok||''
       ]);
     });
     var ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols']=[{wch:10},{wch:22},{wch:10},{wch:12},{wch:10},{wch:18},{wch:18},{wch:8},{wch:12}];
+    ws['!cols']=[{wch:10},{wch:22},{wch:10},{wch:12},{wch:10},{wch:18},{wch:18},{wch:20},{wch:8},{wch:12}];
     var wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Migrasi_PPh');
     var note=XLSX.utils.aoa_to_sheet([
       ['PETUNJUK MIGRASI SALDO PPh'],
       ['Tahun pajak: '+thn],
-      ['Isi total bruto PPh 21 dan PPh terpotong dari payroll manual (Jan s/d bulan di kolom S/d bulan).'],
+      ['Isi total bruto PPh 21, PPh terpotong, dan iuran JHT+JP karyawan dari payroll manual (Jan s/d bulan di kolom S/d bulan).'],
       ['Jangan buat periode gaji Jan-Apr di SiGaji jika memakai saldo ini (hindari double).'],
       ['Resign: isi Tgl berhenti — NIK sama seperti payroll lama, jangan buat karyawan baru.'],
       ['Status: Aktif atau Resign (opsional).']
@@ -164,7 +166,8 @@ function importMigrasiPphExcel(inp){
         var tbIdx=migrasiPphHeaderIdx(hdr,[function(h){return h.indexOf('tgl')>=0&&h.indexOf('berhenti')>=0;}]);
         var sdIdx=migrasiPphHeaderIdx(hdr,[function(h){return h.indexOf('s/d')>=0||h.indexOf('sd bulan')>=0||h==='s/d bulan';}]);
         var brutoIdx=migrasiPphHeaderIdx(hdr,[function(h){return h.indexOf('bruto')>=0;}]);
-        var pphIdx=migrasiPphHeaderIdx(hdr,[function(h){return h.indexOf('pph')>=0&&h.indexOf('bruto')<0;}]);
+        var pphIdx=migrasiPphHeaderIdx(hdr,[function(h){return h.indexOf('pph')>=0&&h.indexOf('bruto')<0&&h.indexOf('iuran')<0;}]);
+        var iuranIdx=migrasiPphHeaderIdx(hdr,[function(h){return h.indexOf('iuran')>=0||(h.indexOf('jht')>=0&&h.indexOf('jp')>=0);}]);
         var ptkpIdx=migrasiPphHeaderIdx(hdr,[function(h){return h==='ptkp';}]);
         var gapokIdx=migrasiPphHeaderIdx(hdr,[function(h){return h.indexOf('gaji')>=0||h.indexOf('gapok')>=0;}]);
         var tahunIdx=migrasiPphHeaderIdx(hdr,[function(h){return h==='tahun';}]);
@@ -181,7 +184,8 @@ function importMigrasiPphExcel(inp){
           if(!nik||/^contoh/i.test(nik))continue;
           var bruto=brutoIdx>=0?parseMigrasiAngka(row[brutoIdx]):0;
           var pph=pphIdx>=0?parseMigrasiAngka(row[pphIdx]):0;
-          if(bruto<=0&&pph<=0){skip++;continue;}
+          var iuran=iuranIdx>=0?parseMigrasiAngka(row[iuranIdx]):0;
+          if(bruto<=0&&pph<=0&&iuran<=0){skip++;continue;}
           var thn=tahunIdx>=0?parseInt(row[tahunIdx],10):thnDef;
           if(isNaN(thn)||thn<2000)thn=thnDef;
           var nama=namaIdx>=0?String(row[namaIdx]||'').trim():'';
@@ -214,7 +218,7 @@ function importMigrasiPphExcel(inp){
             if(!k.phk)k.phk={};
             if(!k.phk.alasan)k.phk.alasan='resign_30hr';
           }
-          setPphYtdAwal(k,thn,bruto,pph,sd||undefined);
+          setPphYtdAwal(k,thn,bruto,pph,sd||undefined,iuran);
           ok++;
         }
         saveAll();

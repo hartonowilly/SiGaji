@@ -743,12 +743,15 @@ function jumlahTunjanganTetap(k){
     return tp==='tetap'||tp==='tetap_no_bpjs';
   }).reduce(function(s,t){return s+sigajiRp(t.nilai);},0);
 }
-/** Dasar upah lembur sebulan: gaji pokok + tunjangan tetap (PP 35/2021). Harian = upah sehari × 25. */
+/** Dasar upah lembur sebulan: gaji pokok + tunjangan tetap (PP 35/2021). Harian = upah sehari ×25 (6 hari) atau ×21 (5 hari). */
 function dasarUpahLemburSebulan(k){
   var siklus=normalizeSiklusGaji(k&&k.siklus_gaji);
   var gapok=sigajiRp(k&&k.gapok);
   var tetap=jumlahTunjanganTetap(k);
-  if(siklus==='harian')return Math.round(gapok*25+tetap);
+  if(siklus==='harian'){
+    var hkL=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
+    return Math.round(gapok*(hkL===5?21:25)+tetap);
+  }
   if(siklus==='mingguan'){
     var sebulan=typeof gapokKontrakSebulan==='function'?gapokKontrakSebulan(k,null,siklus):gapok;
     return Math.round(sebulan+tetap);
@@ -934,7 +937,10 @@ function dasarUpahTHR(k){
   const tTHR=(k.tunjangan||[]).filter(t=>(t.tipe==='tetap'||t.tipe==='tetap_no_bpjs')&&t.thr_ikut!==false).reduce((s,t)=>s+sigajiRp(t.nilai),0);
   const siklus=typeof normalizeSiklusGaji==='function'?normalizeSiklusGaji(k&&k.siklus_gaji):'bulanan';
   const gapok=sigajiRp(k&&k.gapok);
-  if(siklus==='harian')return Math.round(gapok*25+tTHR);
+  if(siklus==='harian'){
+    var hkT=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
+    return Math.round(gapok*(hkT===5?21:25)+tTHR);
+  }
   if(siklus==='mingguan'){
     const sebulan=typeof gapokKontrakSebulan==='function'?gapokKontrakSebulan(k,null,siklus):gapok;
     return Math.round(sebulan+tTHR);
@@ -1082,37 +1088,42 @@ function hitungPPhFinalPesangon(bruto,tanggal){
   return Math.round(pph);
 }
 
-/** Saldo migrasi payroll manual (bruto PPh + PPh terpotong) per tahun — field k.pph_ytd_awal[tahun]. */
+/** Saldo migrasi payroll manual (bruto PPh + PPh terpotong + iuran JHT/JP kar) per tahun — field k.pph_ytd_awal[tahun]. */
 function getPphYtdAwal(k,thn){
   const aw=k&&k.pph_ytd_awal;
-  if(!aw||typeof aw!=='object')return{bruto:0,pph:0,sd_bulan:0};
+  if(!aw||typeof aw!=='object')return{bruto:0,pph:0,sd_bulan:0,iuran_jht_jp:0};
   const slot=aw[String(thn)];
-  if(!slot||typeof slot!=='object')return{bruto:0,pph:0,sd_bulan:0};
+  if(!slot||typeof slot!=='object')return{bruto:0,pph:0,sd_bulan:0,iuran_jht_jp:0};
   return{
     bruto:Math.round(slot.bruto||0),
     pph:Math.round(slot.pph||0),
-    sd_bulan:Math.min(12,Math.max(0,parseInt(slot.sd_bulan,10)||0))
+    sd_bulan:Math.min(12,Math.max(0,parseInt(slot.sd_bulan,10)||0)),
+    iuran_jht_jp:Math.max(0,Math.round(slot.iuran_jht_jp||slot.iuran||0))
   };
 }
-function setPphYtdAwal(k,thn,bruto,pph,sdBulan){
+function setPphYtdAwal(k,thn,bruto,pph,sdBulan,iuranJhtJp){
   if(!k)return;
   if(!k.pph_ytd_awal||typeof k.pph_ytd_awal!=='object')k.pph_ytd_awal={};
   const key=String(thn);
   const b=Math.round(bruto||0),p=Math.round(pph||0);
-  if(b<=0&&p<=0&&!sdBulan){delete k.pph_ytd_awal[key];if(!Object.keys(k.pph_ytd_awal).length)delete k.pph_ytd_awal;return;}
-  k.pph_ytd_awal[key]={bruto:b,pph:p,sd_bulan:sdBulan?Math.min(12,Math.max(1,parseInt(sdBulan,10)||0)):undefined};
+  const i=Math.max(0,Math.round(iuranJhtJp||0));
+  if(b<=0&&p<=0&&!i&&!sdBulan){delete k.pph_ytd_awal[key];if(!Object.keys(k.pph_ytd_awal).length)delete k.pph_ytd_awal;return;}
+  var slot={bruto:b,pph:p};
+  if(sdBulan)slot.sd_bulan=Math.min(12,Math.max(1,parseInt(sdBulan,10)||0));
+  if(i)slot.iuran_jht_jp=i;
+  k.pph_ytd_awal[key]=slot;
 }
 // Hitung total bruto karyawan dari saldo migrasi + periodes sebelumnya dalam tahun yg sama
 /**
  * @param {KaryawanPayroll} k
  * @param {string} pNama
- * @returns {{ totalBruto: number, totalPPh: number, totalJhtJpKar: number, thn: number, saldoAwal: { bruto: number, pph: number, sd_bulan: number } }}
+ * @returns {{ totalBruto: number, totalPPh: number, totalJhtJpKar: number, thn: number, saldoAwal: { bruto: number, pph: number, sd_bulan: number, iuran_jht_jp: number } }}
  */
 function getBrutoYTD(k,pNama){
   const p=periodes.find(x=>x.nama===pNama)||PA();
   const thn=new Date(p.bayar||p.end||p.start).getFullYear();
   const saldo=getPphYtdAwal(k,thn);
-  let totalBruto=saldo.bruto,totalPPh=saldo.pph,totalJhtJpKar=0;
+  let totalBruto=saldo.bruto,totalPPh=saldo.pph,totalJhtJpKar=saldo.iuran_jht_jp||0;
   periodes.forEach(function(per){
     const perThn=new Date(per.bayar||per.end||per.start).getFullYear();
     if(perThn!==thn||per.nama===pNama)return;
@@ -1799,7 +1810,7 @@ function hitungGaji(k,pNama,opts){
     ?{total:0,details:[],gajiHarian:Math.round(sigajiRp(k.gapok)),nIzin:0,nSakit:0,n05S:0,n05I:0,nAlpha:0,nCuti:0,cutiDalamKuota:0,cutiLuarKuota:0}
     :hitungPotonganKehadiran(k.nik,p,hkP,Math.round(sigajiRp(k.gapok)),abIdx());
   const koreksiAbsensi=typeof hitungKoreksiAbsensiBulanSebelumnya==='function'?hitungKoreksiAbsensiBulanSebelumnya(k.nik,pn,abIdx()):{total:0,details:[]};
-  const potHadirPph=Math.max(0,potKehadiran.total||0);
+  const potHadirPph=(potKehadiran.total||0)+(koreksiAbsensi.total||0);
   const grossPPhRegular=Math.max(0,gapokEff+tGross+natKP+lb+bpjsPrsNatKP-potHadirPph);
   const grossPPh=grossPPhRegular+thrBruto; // PPh dihitung termasuk THR
   const brutoTH=gapokEff+tTH+lb;   // Natura fasilitas, tidak ditransfer. THR terpisah.
@@ -1830,6 +1841,7 @@ function hitungGaji(k,pNama,opts){
       brutoYTD:ytd.totalBruto,pphYTD:ytd.totalPPh,
       saldoAwalBruto:ytd.saldoAwal?ytd.saldoAwal.bruto:0,
       saldoAwalPph:ytd.saldoAwal?ytd.saldoAwal.pph:0,
+      saldoAwalIuran:ytd.saldoAwal?ytd.saldoAwal.iuran_jht_jp:0,
       saldoSdBulan:ytd.saldoAwal?ytd.saldoAwal.sd_bulan:0,
       brutoDariPeriode:Math.max(0,ytd.totalBruto-(ytd.saldoAwal?ytd.saldoAwal.bruto:0)),
       pphDariPeriode:Math.max(0,ytd.totalPPh-(ytd.saldoAwal?ytd.saldoAwal.pph:0)),
