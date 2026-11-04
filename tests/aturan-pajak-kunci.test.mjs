@@ -133,4 +133,51 @@ assertEq('Februari tetap TK0', febSetelahStatus.ptkpStatus, 'TK0');
 assertEq('PPh Februari tidak berubah', febSetelahStatus.pph, febSebelumStatus.pph);
 assertEq('Januari memakai K3', janBaru.ptkpStatus, 'K3');
 
+px.periodes.forEach(function (p) {
+  p.status = 'tutup';
+});
+px.periodes.push({
+  id: 4,
+  nama: 'Juli 2026',
+  start: '2026-06-26',
+  end: '2026-07-25',
+  bayar: '2026-07-25',
+  status: 'aktif',
+  tipe_periode: 'biasa',
+});
+const k2 = {
+  nik: 'TES-PTKP-2',
+  nama: 'Budi Nikah',
+  gapok: 8_000_000,
+  ptkp: 'TK0',
+  masuk: '2020-01-01',
+  tunjangan: [],
+  potongan: [],
+  natura: [],
+  bpjs_aktif: k.bpjs_aktif,
+};
+px.karyawan.push(k2);
+px.sigajiCatatPtkpKaryawan(k2, 'K0', { alasan: 'keadaan' });
+k2.ptkp = 'K0';
+assertEq('menikah: berlaku 1 Jan tahun depan', k2.ptkp_berlaku, '2027-01-01');
+assertEq('Juli tetap TK0', px.hitungGaji(k2, 'Juli 2026').ptkpStatus, 'TK0');
+assertEq('Januari depan K0', px.hitungGaji(k2, 'Januari 2027').ptkpStatus, 'K0');
+
+const k3 = {
+  nik: 'TES-PTKP-3',
+  nama: 'Salah Input',
+  gapok: 8_000_000,
+  ptkp: 'TK0',
+  masuk: '2020-01-01',
+  tunjangan: [],
+  potongan: [],
+  natura: [],
+  bpjs_aktif: k.bpjs_aktif,
+};
+px.karyawan.push(k3);
+px.sigajiCatatPtkpKaryawan(k3, 'K0', { alasan: 'koreksi' });
+k3.ptkp = 'K0';
+assertEq('koreksi: berlaku 1 Jan tahun ini', k3.ptkp_berlaku, '2026-01-01');
+assertEq('Juli koreksi memakai K0', px.hitungGaji(k3, 'Juli 2026').ptkpStatus, 'K0');
+
 console.log('Kunci aturan pajak: semua tes lulus.');

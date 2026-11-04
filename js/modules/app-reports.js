@@ -126,7 +126,7 @@ function renderPPHBody(){
     if(tipeKerja!=='tidak_tetap'&&!(siklus==='harian'&&tipeKerja==='tidak_tetap')){
       if(rec&&rec.pkpTahunan!=null)pkp=Math.round(rec.pkpTahunan);
       else if(rec&&typeof hitungPkpTahunan==='function'){
-        pkp=hitungPkpTahunan(rec.brutoTahunan,k.ptkp,tglP,{bulanKerja:12,iuranJhtJpKar:rec.iuranTahunan||0});
+        pkp=hitungPkpTahunan(rec.brutoTahunan,(typeof ptkpStatusHasil==='function'?ptkpStatusHasil(g,k):g.ptkpStatus||k.ptkp),tglP,{bulanKerja:12,iuranJhtJpKar:rec.iuranTahunan||0});
       }
     }
     sums.gross+=g.grossPPh||0;
@@ -135,10 +135,11 @@ function renderPPHBody(){
     sums.pphY+=pphSetahun!=null?pphSetahun:(g.pph||0);
     sums.pphM+=g.pph||0;
     sums.pphRet+=g.pphRet||0;
+    var ptkpRow=typeof ptkpStatusHasil==='function'?ptkpStatusHasil(g,k):(g.ptkpStatus||k.ptkp||'');
     return '<tr><td class="text-center fw-700 text-muted sticky-no">'+(idx+1)+'</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+escapeHtml(k.nama)+'</div></div></td>'
-      +'<td><span class="bdg b-info">'+escapeHtml(k.ptkp)+'</span></td><td class="num cell-money">'+fmt(g.grossPPh)+'</td>'
+      +'<td><span class="bdg b-info">'+escapeHtml(ptkpRow)+'</span></td><td class="num cell-money">'+fmt(g.grossPPh)+'</td>'
       +'<td class="num cell-money">'+(g.thrBruto>0?'<span class="ct-purple fw-700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
-      +'<td class="num" title="TER '+escapeHtml(k.ptkp)+'">'+(rate*100).toFixed(2)+'%</td><td class="num cell-money">'+(pkp!=null?fmt(pkp):'&#8212;')+'</td><td class="num cell-money">'+(pphSetahun!=null?fmt(pphSetahun):'&#8212;')+'</td>'
+      +'<td class="num" title="TER '+escapeHtml(ptkpRow)+'">'+(rate*100).toFixed(2)+'%</td><td class="num cell-money">'+(pkp!=null?fmt(pkp):'&#8212;')+'</td><td class="num cell-money">'+(pphSetahun!=null?fmt(pphSetahun):'&#8212;')+'</td>'
       +'<td class="num cell-money"><strong>'+fmt(g.pph)+'</strong></td>'
       +'<td class="num cell-money">'+(g.pphRet>0?'<span class="ct-success fw-700">+ '+fmt(g.pphRet)+'</span>':'&#8212;')+'</td></tr>';
   });
@@ -464,7 +465,8 @@ function exportExcelRekonResign(){
         var rows=[];
         rows.push(['REKONSILIASI PPh 21 — MASA PAJAK TERAKHIR (RESIGN/PHK)']);
         rows.push(['Perusahaan: '+pt]);
-        rows.push(['Karyawan: '+(k.nama||'-')+' | NIK: '+k.nik+' | PTKP: '+(k.ptkp||'-')+' | NPWP: '+(k.npwp||'-')]);
+        var gA1=typeof hitungGaji==='function'?hitungGaji(k,stopP.nama):null;
+        rows.push(['Karyawan: '+(k.nama||'-')+' | NIK: '+k.nik+' | PTKP: '+((gA1&&gA1.ptkpStatus)||k.ptkp||'-')+' | NPWP: '+(k.npwp||'-')]);
         rows.push(['Tgl. berhenti: '+fmtDate(k.tgl_berhenti)+' | Alasan: '+phkAlasanLbl(k)]);
         rows.push(['Tahun pajak: '+thn+' | Periode terakhir: '+(stopP.nama||'-')+' | Bayar: '+fmtDate(stopP.bayar||'-')]);
         rows.push(['Dicetak: '+new Date().toISOString().split('T')[0]]);
@@ -591,7 +593,8 @@ function exportExcelKertasKerjaPPh(){
       list.forEach(function(k,idx){
         var g=hitungGaji(k,pNama);
         var pr=getPR(k.nik,pNama);
-        var terI=terInfoForExport(k.ptkp,g.grossPPh,typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(p):'',g.terRate);
+        var ptkpKw=typeof ptkpStatusHasil==='function'?ptkpStatusHasil(g,k):(g.ptkpStatus||k.ptkp);
+        var terI=terInfoForExport(ptkpKw,g.grossPPh,typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(p):'',g.terRate);
         var pk=potKhDetailCols(g.potKehadiran.details);
         var r=new Array(hdr.length).fill('');
         var j=0;
@@ -601,7 +604,7 @@ function exportExcelKertasKerjaPPh(){
           r[j++]=pmK.cabangNama||'';r[j++]=pmK.nitku||'';
         }
         r[j++]=k.dept||'';r[j++]=k.jabatan||'';r[j++]=k.status||'';
-        r[j++]=k.ptkp||'';r[j++]=k.npwp||'';r[j++]=g.isPR?'Ya':'Tidak';
+        r[j++]=ptkpKw||'';r[j++]=k.npwp||'';r[j++]=g.isPR?'Ya':'Tidak';
         r[j++]=g.isPR&&g.pr?g.pr.hk:'';r[j++]=g.isPR&&g.pr?g.pr.hh:'';
         r[j++]=Math.round(g.gapokEff);
         tunjCols.forEach(function(nm){

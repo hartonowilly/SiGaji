@@ -534,7 +534,7 @@
     if (g.thrBruto) steps.push({ lbl: 'THR bruto', val: g.thrBruto, type: 'up' });
     steps.push({ lbl: '= Gross PPh 21', val: g.grossPPh, type: 'sum' });
     steps.push({
-      lbl: 'PPh 21 (TER ' + k.ptkp + ' ' + (rate * 100).toFixed(2) + '%)',
+      lbl: 'PPh 21 (TER ' + (g.ptkpStatus || k.ptkp) + ' ' + (rate * 100).toFixed(2) + '%)',
       val: -g.pph,
       type: 'down',
       tip: 'PMK 168/2023 — tarif efektif rata-rata',

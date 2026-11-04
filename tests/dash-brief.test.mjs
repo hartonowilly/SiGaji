@@ -113,4 +113,35 @@ const empty = s.sigajiCollectDashTindakan({
 });
 assert('kosong jika beres', empty.length === 0);
 
+const janItems = s.sigajiCollectDashTindakan({
+  p: { nama: 'Januari 2026', start: '2025-12-26', bayar: '2026-01-25', snapshot_locked: false },
+  list: [{ nik: '9', nama: 'Cici', norek: '99', gapok: 4000000 }],
+  branchHrd: true,
+  pendingAp: 0,
+  anomalies: [],
+  deadlines: [],
+  perusahaan: {},
+});
+assert(
+  'Januari: reminder update PTKP',
+  janItems.some(function (x) {
+    return x.id === 'ptkp-januari' && x.openPtkp;
+  })
+);
+const janDone = s.sigajiCollectDashTindakan({
+  p: { nama: 'Januari 2026', start: '2025-12-26', bayar: '2026-01-25', snapshot_locked: false },
+  list: [{ nik: '9', nama: 'Cici', norek: '99', gapok: 4000000 }],
+  branchHrd: true,
+  pendingAp: 0,
+  anomalies: [],
+  deadlines: [],
+  perusahaan: { ptkpJanuariTahun: '2026' },
+});
+assert(
+  'setelah ditinjau reminder PTKP hilang',
+  !janDone.some(function (x) {
+    return x.id === 'ptkp-januari';
+  })
+);
+
 console.log('dash-brief.test.mjs: all passed');

@@ -377,21 +377,22 @@ async function simpanKarPanel(){
       if(ptkpSel){ptkpSel.value=oldPtkp;if(typeof applyPtkpFieldState==='function')applyPtkpFieldState();}
       return;
     }
-    if(gate.needConfirm&&typeof sigajiConfirm==='function'){
-      var okOv=await sigajiConfirm({
-        title:'Override PTKP (Admin)?',
-        message:'Status PTKP biasanya hanya diubah di Januari (awal tahun pajak).\n\n'+
-          (k.nama||'')+': '+oldPtkp+' → '+newPtkp+'\n\nLanjutkan override Admin?',
-        danger:true,
-        okText:'Ya, override'
-      });
-      if(!okOv){
+    if(gate.needConfirm){
+      var alasanOv=null;
+      if(typeof sigajiPilihAlasanPtkp==='function'){
+        alasanOv=await sigajiPilihAlasanPtkp({nama:k.nama,lama:oldPtkp,baru:newPtkp});
+      }
+      if(!alasanOv){
         if(ptkpSel){ptkpSel.value=oldPtkp;if(typeof applyPtkpFieldState==='function')applyPtkpFieldState();}
         return;
       }
+      if(typeof sigajiCatatPtkpKaryawan==='function')sigajiCatatPtkpKaryawan(k,newPtkp,{alasan:alasanOv});
+    }else if(typeof sigajiCatatPtkpKaryawan==='function'){
+      sigajiCatatPtkpKaryawan(k,newPtkp);
     }
+  }else if(oldPtkp!==newPtkp&&typeof sigajiCatatPtkpKaryawan==='function'){
+    sigajiCatatPtkpKaryawan(k,newPtkp);
   }
-  if(oldPtkp!==newPtkp&&typeof sigajiCatatPtkpKaryawan==='function')sigajiCatatPtkpKaryawan(k,newPtkp);
   var jabatanBaru=gv('sp-jabatan-f');
   var gradeBaru=gv('sp-grade-f');
   var appliedTpl=false;

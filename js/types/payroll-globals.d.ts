@@ -39,6 +39,8 @@ declare var perusahaan: {
   umk?: Record<string, Rupiah>;
   aturan_potongan?: Record<string, { mode?: string; nilai?: number }>;
   koreksi_absensi_otomatis?: boolean;
+  /** Tahun pajak yang sudah ditinjau di modal PTKP Januari. */
+  ptkpJanuariTahun?: string;
 };
 
 interface Periode {

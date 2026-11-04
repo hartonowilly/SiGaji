@@ -1032,7 +1032,8 @@ function hitungPPhTerHarianDariPays(pays,extraGross,ptkpKey,tanggal){
 }
 function rateTerHasil(g,k,p){
   if(g&&typeof g.terRate==='number')return g.terRate;
-  return tarifPPhBln((g&&g.grossPPh)||0,k&&k.ptkp,tglAturanDariPeriode(p));
+  var ptkpKey=typeof ptkpStatusHasil==='function'?ptkpStatusHasil(g,k):(g&&g.ptkpStatus)||(k&&k.ptkp);
+  return tarifPPhBln((g&&g.grossPPh)||0,ptkpKey,tglAturanDariPeriode(p));
 }
 // Fungsi progresif tahunan (untuk referensi / rekonsiliasi Desember)
 // Hitung PPh tahunan progresif dari bruto akumulasi setahun
