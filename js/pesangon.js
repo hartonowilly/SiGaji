@@ -14,7 +14,8 @@
     if(!nik||!tglBerhenti)return 0;
     var thn=new Date(tglBerhenti).getFullYear();
     var pakai=typeof cutiTerpakai==='function'?cutiTerpakai(nik,thn):0;
-    var kuota=(typeof masterCuti!=='undefined'&&masterCuti)?(masterCuti.kuota||12):12;
+    var k=(typeof karyawan!=='undefined'&&karyawan||[]).find(function(x){return x&&x.nik===nik;});
+    var kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,thn):((typeof masterCuti!=='undefined'&&masterCuti)?(masterCuti.kuota||12):12);
     return Math.max(0,kuota-pakai);
   }
   window.dasarUpahPesangon=dasarUpahPesangon;

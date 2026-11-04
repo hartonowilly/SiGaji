@@ -117,7 +117,13 @@ interface ProrataEntry {
 
 declare var periodes: Periode[];
 declare var hariLibur: Array<{ tgl: string; nama?: string; tipe?: string }>;
-declare var masterCuti: { cbPotong?: boolean; kuota?: number; carryover?: string };
+declare var masterCuti: {
+  cbPotong?: boolean;
+  kuota?: number;
+  carryover?: string;
+  /** Hak cuti karyawan baru: langsung | setelah_12bln | prorata */
+  hakBaru?: string;
+};
 declare var absensi: Record<string, Record<string, string>>;
 declare var prorata: Record<string, Record<string, ProrataEntry>>;
 declare var thrManual: Record<string, Record<string, { aktif?: boolean; nilai?: Rupiah }>>;
@@ -223,6 +229,7 @@ declare function aturanOverrideUntukTanggal(tanggal?: string): {
 declare function bpjsKomponenDef(key: string, tanggal?: string): { pct: number; basis: number | null; lbl?: string };
 declare function batasUpahJPUntukTanggal(tanggal?: string): number;
 declare function masaKerjaBulanSampai(k: KaryawanPayroll, sampaiIso?: string): number;
+declare function kuotaCutiKaryawan(k: KaryawanPayroll | null | undefined, yr?: number | string): number;
 declare function bulanKerjaPajakTahun(k: KaryawanPayroll, thn: number | string, tglAkhirIso?: string): number;
 declare function periodePakaiRekonsiliasiTahunan(p: Periode | null | undefined): boolean;
 declare function dasarUpahTHR(k: KaryawanPayroll): number;

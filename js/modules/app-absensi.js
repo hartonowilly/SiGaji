@@ -258,6 +258,7 @@ function renderCutiRekap(){
   const kuotaEl=document.getElementById('cuti-kuota');if(kuotaEl)kuotaEl.value=masterCuti.kuota;
   const coEl=document.getElementById('cuti-carryover');if(coEl)coEl.value=masterCuti.carryover;
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
+  const hakEl=document.getElementById('cuti-hak-baru');if(hakEl)hakEl.value=masterCuti.hakBaru||'langsung';
   const tb=document.getElementById('tb-cuti-rekap');if(!tb)return;
   // Tracking cuti = rekap tahunan (tidak terpengaruh periode gaji). Filter: karyawan aktif / belum berhenti sebelum tahun tsb.
   const yearStart=String(yr)+'-01-01';
@@ -271,7 +272,7 @@ function renderCutiRekap(){
   }
   tb.innerHTML=list.map(function(k,idx){
     const mb=masaKerjaBulan(k);const manual=cutiManualTrackingYear(k.nik,yr);const cb=countCutiBersamaTrackingYear(yr,k.nik);const total=manual+cb;
-    const kuota=masterCuti.kuota||12;
+    const kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,yr):(masterCuti.kuota||12);
     const sisa=kuota-total;
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
     const sisaCls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
@@ -294,7 +295,7 @@ function detailCuti(nik,yr,tracking){
   if(!k){toast('Karyawan tidak ditemukan');return;}
   var tahun=parseInt(yr,10)||new Date().getFullYear();
   var r=rincianCutiTahun(nik,tahun,{tracking:!!tracking});
-  var kuota=masterCuti.kuota||12;
+  var kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,tahun):(masterCuti.kuota||12);
   var sisa=kuota-r.total;
   var sisaCls=sisa<=0?'ct-danger':sisa<=3?'ct-warn':'ct-success';
   var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
@@ -346,6 +347,8 @@ function simpanMasterCuti(){
   masterCuti.kuota=parseInt(document.getElementById('cuti-kuota').value)||12;
   masterCuti.carryover=document.getElementById('cuti-carryover').value;
   masterCuti.cbPotong=!!(document.getElementById('cuti-cb-potong')&&document.getElementById('cuti-cb-potong').checked);
+  var hakEl=document.getElementById('cuti-hak-baru');
+  if(hakEl)masterCuti.hakBaru=hakEl.value||'langsung';
   saveAll();renderCutiRekap();renderKar();renderHariLibur();renderAbsensi();toast('Setting cuti disimpan');
 }
 // ── LEMBUR ───────────────────────────────────────

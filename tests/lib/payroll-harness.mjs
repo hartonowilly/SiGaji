@@ -78,3 +78,11 @@ export function loadPayrollCore(overrides = {}) {
   run('js/modules/app-core.js');
   return sandbox;
 }
+
+/** Muat payroll + ekspor e-Bupot (tanpa browser). */
+export function loadEbupotExport(overrides = {}) {
+  const sandbox = loadPayrollCore(overrides);
+  const file = path.join(ROOT, 'js/modules/ebupot-export.js');
+  vm.runInContext(fs.readFileSync(file, 'utf8'), sandbox, { filename: 'js/modules/ebupot-export.js' });
+  return sandbox;
+}

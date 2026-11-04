@@ -105,6 +105,29 @@
   }
 
   /**
+   * Minggu pertama setelah tanggal masuk (bukan awal periode): upah hari kerja
+   * dari tgl masuk s.d. payday Jumat pertama.
+   */
+  function siklusBayarParsialMasuk(start, end, masuk, hariGaji, hariKerja, libur, rate, stop) {
+    if (!masuk) return null;
+    var masukIso = String(masuk).slice(0, 10);
+    var startIso = String(start).slice(0, 10);
+    if (!masukIso || masukIso <= startIso) return null;
+    var pays = siklusTanggalBayarMingguan(start, end, hariGaji, hariKerja, libur, masuk, stop);
+    if (!pays.length) return null;
+    var firstPay = pays[0];
+    var hkM = hariKerja === 5 ? 5 : 6;
+    var days = siklusHariKerjaCount(masukIso, firstPay, hariKerja, libur, masuk, stop);
+    if (days <= 0 || days >= hkM) return null;
+    return {
+      tgl: firstPay,
+      upah: Math.round((Number(rate) || 0) / hkM * days),
+      hari: days,
+      parsial: true,
+    };
+  }
+
+  /**
    * Minggu resign: upah hari kerja setelah payday terakhir s.d. sehari sebelum tgl_berhenti.
    * tgl_berhenti = hari pertama tidak dibayar.
    */
@@ -140,6 +163,27 @@
 
   function isSetengah(st) {
     return st === 'setengah_sakit' || st === 'setengah_ijin';
+  }
+
+  function siklusStatusTidakDibayar(st) {
+    return st === 'alpha' || st === 'izin' || st === 'sakit' || st === 'cuti';
+  }
+
+  /** Jumlah hari kerja tidak dibayar (alpha/izin/sakit/cuti) di rentang minggu. */
+  function siklusMingguanHariTidakDibayar(from, to, hariKerja, libur, masuk, stop, absensi) {
+    var n = 0;
+    var abs = absensi || {};
+    var masukIso = masuk ? String(masuk).slice(0, 10) : '';
+    var stopIso = stop ? String(stop).slice(0, 10) : '';
+    eachDate(from, to, function (d) {
+      if (masukIso && d < masukIso) return;
+      if (stopIso && d >= stopIso) return;
+      if (!siklusIsHariKerja(d, hariKerja, libur)) return;
+      var st = abs[d] || 'hadir';
+      if (siklusStatusTidakDibayar(st)) n += 1;
+      else if (isSetengah(st)) n += 0.5;
+    });
+    return n;
   }
 
   function siklusTanggalBayarHarian(start, end, hariKerja, libur, masuk, stop, absensi) {
@@ -251,8 +295,39 @@
         masuk,
         stop
       );
-      var pays = dates.map(function (tgl) {
-        return { tgl: tgl, upah: rate, parsial: false };
+      var hkM = hariKerja === 5 ? 5 : 6;
+      var startIso = String(start || '').slice(0, 10);
+      var partMasuk = siklusBayarParsialMasuk(
+        start,
+        end,
+        masuk,
+        hariGaji,
+        hariKerja,
+        libur,
+        rate,
+        stop
+      );
+      var pays = dates.map(function (tgl, i) {
+        var from = i === 0 ? startIso : isoAddDays(dates[i - 1], 1);
+        var unpaid = siklusMingguanHariTidakDibayar(
+          from,
+          tgl,
+          hariKerja,
+          libur,
+          masuk,
+          stop,
+          absensi
+        );
+        var base = rate;
+        var parsial = false;
+        if (partMasuk && tgl === partMasuk.tgl) {
+          base = partMasuk.upah;
+          parsial = true;
+        }
+        var pot = Math.round((Number(rate) || 0) / hkM * unpaid);
+        var upah = Math.max(0, base - pot);
+        if (pot > 0) parsial = true;
+        return { tgl: tgl, upah: upah, parsial: parsial };
       });
       var part = siklusBayarParsialResign(
         start,
@@ -282,6 +357,7 @@
     siklusTanggalBayar: siklusTanggalBayar,
     siklusTanggalBayarMingguan: siklusTanggalBayarMingguan,
     siklusTanggalBayarHarian: siklusTanggalBayarHarian,
+    siklusBayarParsialMasuk: siklusBayarParsialMasuk,
     siklusBayarParsialResign: siklusBayarParsialResign,
     siklusBpjsUpahSebulan: siklusBpjsUpahSebulan,
     pecahPotonganCadangan: pecahPotonganCadangan,
