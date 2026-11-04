@@ -412,6 +412,7 @@ interface HitungGajiResult {
     pphYTD: number;
     saldoAwalBruto?: number;
     saldoAwalPph?: number;
+    saldoAwalIuran?: number;
     saldoSdBulan?: number;
     brutoDariPeriode?: number;
     pphDariPeriode?: number;
