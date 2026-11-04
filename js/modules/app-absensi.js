@@ -382,10 +382,8 @@ function updLembur(nik,i,f,v){
   var row=lembur[nik][i]||{};
   var tglLama=String(row.tanggal||'').trim();
   var tglBaru=f==='tanggal'?String(v||'').trim():tglLama;
-  if(CU&&CU.role!=='Admin'){
-    if(tglLama&&!canEditDataPadaTanggalIso(tglLama)){toast('Lembur di periode terkunci tidak dapat diubah.');renderLemburList();return;}
-    if(tglBaru&&!canEditDataPadaTanggalIso(tglBaru)){toast('Tanggal lembur termasuk periode yang snapshot-nya terkunci.');renderLemburList();return;}
-  }
+  if(tglLama&&!canEditDataPadaTanggalIso(tglLama)){toast('Lembur di periode terkunci tidak dapat diubah. Buka kunci periode dulu.');renderLemburList();return;}
+  if(tglBaru&&!canEditDataPadaTanggalIso(tglBaru)){toast('Tanggal lembur termasuk periode yang snapshot-nya terkunci.');renderLemburList();return;}
   lembur[nik][i][f]=v;saveAll();renderLemburList();
 }
 function delLembur(nik,i){

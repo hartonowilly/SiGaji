@@ -96,6 +96,8 @@ px.periodes[2].opsi_lebih_bayar = 'carryover';
 const gMarCo = px.hitungGaji(kResign, 'Mar 2026', { skipResolve: true });
 assertEq('Eko Mar carryover: refund tidak masuk THP', gMarCo.refundPph, 0);
 assertEq('Eko Mar carryover: neto tanpa pengembalian', gMarCo.neto, 9_640_000);
+assertEq('Eko Mar carryover tersimpan tahun 2027', kResign.pph_lebih_bayar_bawa && kResign.pph_lebih_bayar_bawa.tahun, 2027);
+assertEq('Eko Mar carryover nilai', kResign.pph_lebih_bayar_bawa && kResign.pph_lebih_bayar_bawa.nilai, 522_700);
 delete px.periodes[2].opsi_lebih_bayar;
 
 // ── Routing pajak PHK vs Resign atas pesangon/UPH/uang pisah ────────────

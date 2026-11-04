@@ -10,7 +10,8 @@ var SIGAJI_PROGRESIF_168 = [
   { sampai: 60e6, rate: 0.05 },
   { sampai: 250e6, rate: 0.15 },
   { sampai: 500e6, rate: 0.25 },
-  { sampai: Infinity, rate: 0.3 },
+  { sampai: 5e9, rate: 0.3 },
+  { sampai: Infinity, rate: 0.35 },
 ];
 var SIGAJI_PESANGON_68 = [
   { cap: 50e6, rate: 0 },

@@ -456,7 +456,8 @@ function detailGaji(nik,pNama){
     h+='<div class="cr mt-xs"><span>PPh Tahunan (Progresif Pasal 17)</span><span>'+fmt(r.pphTahunan)+'</span></div>';
     h+='<div class="cr"><span>PPh sudah dipotong (Jan s.d. bulan lalu)</span><span>- '+fmt(r.pphYTD)+'</span></div>';
     h+='<div class="cr bold recon-panel-amount '+(isLebih?'is-refund':'is-owe')+'"><span>'+(isLebih?'&#10003; Lebih Bayar (dikembalikan)':'&#9888; Kurang Bayar (dipotong)')+' </span><span>'+( isLebih?'+ ':'')+fmt(isLebih?r.lebihBayar:r.kurangBayar)+'</span></div>';
-    if(isLebih&&r.opsiLebihBayar==='carryover')h+='<div class="font-10 ct-purple mt-xs">&#8594; Lebih bayar di-carry over ke Januari tahun depan</div>';
+    if(isLebih&&r.opsiLebihBayar==='carryover')h+='<div class="font-10 ct-purple mt-xs">&#8594; Lebih bayar disimpan: PPh Januari tahun depan dipotong sampai lunas</div>';
+    if(g.kreditPphBawa>0)h+='<div class="cr ct-purple"><span>Kredit lebih bayar tahun lalu</span><span>- '+fmt(g.kreditPphBawa)+'</span></div>';
     if(isLebih&&r.opsiLebihBayar==='refund')h+='<div class="font-10 ct-success mt-xs">&#8594; Lebih bayar '+fmt(r.lebihBayar)+' ditambahkan ke take home bulan ini (PPh bulan ini = Rp 0)</div>';
     h+='</div>';
   }

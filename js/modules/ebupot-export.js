@@ -184,18 +184,32 @@ function ebupotBuildRows(periode) {
   if (!periode || !periode.nama) {
     return { ok: false, error: 'Periode gaji aktif tidak ditemukan' };
   }
-  var list =
-    typeof karyawanListPeriode === 'function'
-      ? karyawanListPeriode(periode)
-      : (karyawan || []).filter(function (k) {
-          return k && k.aktif !== false;
-        });
+  var masa = ebupotMasaFromPeriode(periode);
+  var periodesMasa = [periode];
+  (typeof periodes !== 'undefined' && periodes ? periodes : []).forEach(function (p) {
+    if (!p || p.nama === periode.nama) return;
+    if (ebupotMasaFromPeriode(p).yyyymm === masa.yyyymm) periodesMasa.push(p);
+  });
+  var seenNik = {};
+  var list = [];
+  periodesMasa.forEach(function (per) {
+    var ls =
+      typeof karyawanListPeriode === 'function'
+        ? karyawanListPeriode(per)
+        : (karyawan || []).filter(function (k) {
+            return k && k.aktif !== false;
+          });
+    (ls || []).forEach(function (k) {
+      if (!k || !k.nik || seenNik[k.nik]) return;
+      seenNik[k.nik] = true;
+      list.push(k);
+    });
+  });
   if (!list.length) return { ok: false, error: 'Tidak ada karyawan di periode ini' };
 
   var prs = perusahaan || {};
   var npwpPusat = ebupotNpwp16(prs.npwp);
   var nitkuPusat = String(prs.nitku || '').trim();
-  var masa = ebupotMasaFromPeriode(periode);
   var warnings = [];
   var multiBr =
     typeof sigajiMultiBranchEnabled === 'function' && sigajiMultiBranchEnabled();
@@ -204,6 +218,20 @@ function ebupotBuildRows(periode) {
   }
   if (!multiBr && !nitkuPusat) {
     warnings.push('NITKU belum diisi — wajib untuk impor Coretax.');
+  }
+  if (periodesMasa.length > 1) {
+    warnings.push(
+      'Masa ' +
+        masa.label +
+        ' menggabungkan ' +
+        periodesMasa.length +
+        ' periode: ' +
+        periodesMasa
+          .map(function (p) {
+            return p.nama;
+          })
+          .join(', ')
+    );
   }
 
   var rows = [];
@@ -234,14 +262,30 @@ function ebupotBuildRows(periode) {
           ' — isi di Master Cabang.'
       );
     }
-    var g = hitungGaji(k, periode.nama);
-    var bruto = Math.round(g.grossPPh || 0);
-    var pph = Math.round(g.pph || 0);
+    /** @type {any} */
+    var g = null;
+    var bruto = 0;
+    var pph = 0;
+    var thrSum = 0;
+    /** @type {any} */
+    var rec = null;
+    var masaTerakhir = false;
+    periodesMasa.forEach(function (per) {
+      if (typeof karyawanInPeriode === 'function' && !karyawanInPeriode(k, per)) return;
+      var gx = hitungGaji(k, per.nama);
+      g = gx;
+      bruto += Math.round(gx.grossPPh || 0);
+      pph += Math.round(gx.pph || 0);
+      thrSum += Math.round(gx.thrBruto || 0);
+      if (gx.reconciliation) rec = gx.reconciliation;
+      if (gx.isMasaPajakTerakhir) masaTerakhir = true;
+    });
+    if (!g) return;
     totalBruto += bruto;
     totalPph += pph;
     var terI =
       typeof terInfoForExport === 'function'
-        ? terInfoForExport(k.ptkp, g.grossPPh, typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(periode):'', g.terRate)
+        ? terInfoForExport(k.ptkp, bruto, typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(periode):'', g.terRate)
         : { lampiran: '', ratePct: 0 };
     var npwpKar = ebupotNpwp16(k.npwp);
     var nikKar = ebupotKarKtpNik16(k);
@@ -255,8 +299,7 @@ function ebupotBuildRows(periode) {
     var kode = ebupotKodeObjek(k, g);
     var tipeKerja = ebupotKarTipe(k);
     var counterpartTin = ebupotCounterpartTin(k);
-    var masaTerakhir = !!(g && g.isMasaPajakTerakhir) && tipeKerja !== 'tidak_tetap';
-    var rec = g && g.reconciliation;
+    masaTerakhir = masaTerakhir && tipeKerja !== 'tidak_tetap';
     var dokumen = masaTerakhir ? 'BPA1' : tipeKerja === 'tidak_tetap' ? 'BP21' : 'BPMP';
     var rateXml = masaTerakhir ? 0 : terI.ratePct || 0;
     rows.push({
@@ -293,7 +336,7 @@ function ebupotBuildRows(periode) {
       tarifTerPct: rateXml,
       lampiranTer: terI.lampiran || '',
       fasilitas: 'N/A',
-      thrBruto: Math.round(g.thrBruto || 0),
+      thrBruto: thrSum,
       periodeGaji: periode.nama,
       tglBayar: periode.bayar || '',
       withholdingDate: ebupotWithholdingDateIso(periode),

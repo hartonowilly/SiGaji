@@ -649,6 +649,8 @@ function aggregatePajakTahun(k,tahun){
   var tStop=k.tgl_berhenti?String(k.tgl_berhenti).trim():'';
   var sorted=(periodes||[]).slice().sort(function(a,b){return new Date(a.bayar||a.start||0).getTime()-new Date(b.bayar||b.start||0).getTime();});
   var lastBayarIso=null;
+  /** @type {any} */
+  var recon=null;
   sorted.forEach(function(per){
     if(new Date(per.bayar||per.end||per.start).getFullYear()!==tahun)return;
     var bayarIso=per.bayar||per.end||per.start;
@@ -658,9 +660,14 @@ function aggregatePajakTahun(k,tahun){
     iuranJhtJp+=(g.bpjs&&g.bpjs.jht_kar||0)+(g.bpjs&&g.bpjs.jp_kar||0);
     bulan.push({nama:per.nama,tgl:bayarIso,bruto:Math.round(g.grossPPh),pph:Math.round(g.pph)});
     if(!lastBayarIso||bayarIso>lastBayarIso)lastBayarIso=bayarIso;
+    if(g.reconciliation)recon=g.reconciliation;
   });
+  if(recon){
+    bruto=Math.round(recon.brutoTahunan||bruto);
+    pph=Math.round(recon.pphTahunan||pph);
+  }
   var masa=labelMasaPajak1721(bulan,tahun);
-  return{bruto,pph,thrBruto,pphThr,pphRet,iuranJhtJp,bulan,masa,lastBayarIso,tglBerhentiFilter:!!tStop,saldoBruto:saldo.bruto||0,saldoSd:saldo.sd_bulan||0};
+  return{bruto,pph,thrBruto,pphThr,pphRet,iuranJhtJp,bulan,masa,lastBayarIso,tglBerhentiFilter:!!tStop,saldoBruto:saldo.bruto||0,saldoSd:saldo.sd_bulan||0,pakaiRecon:!!recon};
 }
 /** Urutan nomor bukti potong A1 per tahun pajak (tersimpan di data perusahaan). */
 function nextBuktiA1Nomor(tahun){
@@ -746,12 +753,12 @@ function build1721A1PDF(k,tahun,agg,nomorBukti){
   var rowT=function(a,c,y0){doc.text(a,LM,y0);doc.text(c,RM,y0,{align:'right'});return y0+5;};
   y=rowT('Penghasilan bruto dalam tahun pajak (jumlah bruto per periode)',fmt(agg.bruto),y);
   if(agg.thrBruto>0)y=rowT('  Termasuk bagian THR (bruto)',fmt(agg.thrBruto),y);
-  y=rowT('PPh Pasal 21 yang dipotong (jumlah TER per bulan)',fmt(agg.pph),y);
+  y=rowT(agg.pakaiRecon?'PPh Pasal 21 yang dipotong (Pasal 17 setahun)':'PPh Pasal 21 yang dipotong (jumlah per periode)',fmt(agg.pph),y);
   if(agg.pphThr>0)y=rowT('  Referensi porsi PPh terkait THR (estimasi)',fmt(agg.pphThr),y);
   if(agg.pphRet>0)y=rowT('Pengembalian PPh ke pegawai',fmt(agg.pphRet),y);
   y+=3;
   doc.setFontSize(7.8);doc.setTextColor(70);
-  y=tx(doc.splitTextToSize('Referensi (bukan baris pemotongan resmi): biaya jabatan tahunan ~'+fmt(Math.round(bjTahun))+', iuran JHT+JP kar ~'+fmt(iuranA1)+', PKP referensi ~'+fmt(pkpRef)+' (pembulatan ribuan). Metode TER: total kolom 3 mengikuti penjumlahan PPh bulanan di aplikasi.',pw-2*m),LM,y);
+  y=tx(doc.splitTextToSize('Referensi (bukan baris pemotongan resmi): biaya jabatan tahunan ~'+fmt(Math.round(bjTahun))+', iuran JHT+JP kar ~'+fmt(iuranA1)+', PKP referensi ~'+fmt(pkpRef)+' (pembulatan ribuan). '+(agg.pakaiRecon?'PPh mengikuti rekonsiliasi Pasal 17 (sama dengan BPA1).':'PPh mengikuti penjumlahan per periode.')+' XML Coretax resmi menunggu template DJP.',pw-2*m),LM,y);
   doc.setTextColor(0);y+=4;
   doc.setFontSize(7.5);
   y=tx(doc.splitTextToSize('Peringatan: Untuk pelaporan dan lampiran SPT ke DJP gunakan bukti potong resmi dari e-Bupot Unifikasi/Coretax. Dokumen ini untuk arsip internal berdasarkan data SiGaji.',pw-2*m),LM,y);
