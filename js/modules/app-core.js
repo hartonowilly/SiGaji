@@ -651,6 +651,55 @@ function upahPerJamDariSiklus(k){
   if(siklus==='mingguan')return rate/(hkMinggu*8);
   return rate/173;
 }
+function lemburTanggalDalamPeriode(tgl,p){
+  var t=toIsoDate(tgl);
+  var ps=toIsoDate(p&&p.start);
+  var pe=toIsoDate(p&&p.end);
+  if(!t||!ps||!pe)return false;
+  return t>=ps&&t<=pe;
+}
+function lemburHariLiburAtauIstirahat(tgl){
+  var t=toIsoDate(tgl);
+  if(!t)return false;
+  if(typeof isHL==='function'&&isHL(t))return true;
+  var dt=new Date(t+'T12:00:00');
+  if(isNaN(dt.getTime()))return false;
+  return isHariLiburKerja(dt.getDay());
+}
+/**
+ * Uang lembur satu entri.
+ * Hari kerja: jam ke-1 = 1,5×, jam berikutnya 2×.
+ * Hari istirahat/libur resmi (PP 35/2021): 2× untuk 7 jam pertama (6 hari kerja/minggu) atau 8 jam (5 hari),
+ * jam berikutnya 3× lalu 4×.
+ */
+function uangLemburEntri(jam,upj,tgl){
+  var j=parseFloat(String(jam))||0;
+  if(j<=0||!(upj>0))return 0;
+  var h=0;
+  if(tgl&&lemburHariLiburAtauIstirahat(tgl)){
+    var hkMinggu=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja)||6;
+    var n2=hkMinggu<=5?8:7;
+    var a=Math.min(j,n2);
+    h+=a*upj*2;
+    if(j>n2)h+=Math.min(j-n2,1)*upj*3;
+    if(j>n2+1)h+=(j-n2-1)*upj*4;
+  }else{
+    if(j>=1)h+=upj*1.5;
+    if(j>=2)h+=upj*2*(j-1);
+  }
+  return Math.round(h);
+}
+function uangLemburKaryawanPeriode(nik,k,p){
+  var upj=upahPerJamDariSiklus(k);
+  var list=(typeof lembur!=='undefined'&&lembur&&lembur[nik])||[];
+  var s=0,i,r;
+  for(i=0;i<list.length;i++){
+    r=list[i];
+    if(!lemburTanggalDalamPeriode(r&&r.tanggal,p))continue;
+    s+=uangLemburEntri(r.jam,upj,r.tanggal);
+  }
+  return s;
+}
 /**
  * HK = hari kerja seluruh periode.
  * HH = hari kerja sejak tanggal masuk (atau awal periode) sampai akhir periode,
@@ -1532,8 +1581,7 @@ function hitungGaji(k,pNama,opts){
   }
   const natKP=(k.natura||[]).filter(n=>n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);
   const natNKP=(k.natura||[]).filter(n=>!n.kp).reduce((s,n)=>s+sigajiRp(n.nilai),0);
-  const upj=upahPerJamDariSiklus(k);
-  const lb=(lembur[k.nik]||[]).reduce((s,r)=>{const j=parseFloat(String(r.jam))||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);return s+Math.round(h);},0);
+  const lb=uangLemburKaryawanPeriode(k.nik,k,p);
   // THR: jika periode aktif ada THR, gabung ke gross PPh
   const periodeAdaTHR=!!p.thr_aktif;
   const thrObj=periodeAdaTHR?hitungTHRBruto(k,pNama):null;
