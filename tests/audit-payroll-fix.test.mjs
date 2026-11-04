@@ -52,6 +52,49 @@ const bpjsOff = {
 {
   const px = loadPayrollCore({
     periodes: [
+      {
+        id: 1, nama: 'Des 2026', start: '2026-12-01', end: '2026-12-31', bayar: '2026-12-25',
+        status: 'aktif', tipe_periode: 'desember', opsi_lebih_bayar: 'carryover',
+      },
+      {
+        id: 2, nama: 'Jan 2027', start: '2027-01-01', end: '2027-01-31', bayar: '2027-01-28',
+        status: 'aktif',
+      },
+    ],
+    karyawan: [],
+    karSnapshot: {},
+  });
+  const k = {
+    nik: 'CR-P', nama: 'Carry persist', gapok: 8_000_000, ptkp: 'TK0', masuk: '2020-01-01',
+    tunjangan: [], potongan: [], natura: [], bpjs_aktif: bpjsOff,
+    pph_ytd_awal: { 2026: { bruto: 88_000_000, pph: 2_675_850, sd_bulan: 11 } },
+  };
+  px.karyawan.push(k);
+  const gDes = px.hitungGaji(k, 'Des 2026');
+  const lebih = gDes.reconciliation && gDes.reconciliation.lebihBayar;
+  assert('Desember ada lebih bayar', lebih > 0);
+  assertEq('Desember carryover tidak masuk THP', gDes.refundPph, 0);
+  const slot = px.karyawan[0].pph_lebih_bayar_bawa;
+  assertEq('saldo tersimpan di karyawan asli', slot && slot.tahun, 2027);
+  assertEq('nilai carryover = lebih bayar Desember', slot && slot.nilai, lebih);
+  const kJan = {
+    nik: 'CR-JAN0', nama: 'Tanpa bawa', gapok: 8_000_000, ptkp: 'TK0', masuk: '2020-01-01',
+    tunjangan: [], potongan: [], natura: [], bpjs_aktif: bpjsOff,
+  };
+  const g0 = px.hitungGaji(kJan, 'Jan 2027', { skipResolve: true });
+  const g1 = px.hitungGaji(k, 'Jan 2027');
+  assertEq('PPh 21 Januari tidak diubah carryover', g1.pph, g0.pph);
+  assertEq('Januari cair ke THP', g1.refundPphBawa, lebih);
+  assertEq('THP Januari + lebih bayar', g1.neto, g0.neto + lebih);
+  const copy = Object.assign({}, k);
+  delete copy.pph_lebih_bayar_bawa;
+  const gCopy = px.hitungGaji(copy, 'Jan 2027', { skipResolve: true });
+  assertEq('salinan periode tetap cair dari master', gCopy.refundPphBawa, lebih);
+}
+
+{
+  const px = loadPayrollCore({
+    periodes: [
       { id: 1, nama: 'April 2026', start: '2026-04-01', end: '2026-04-30', bayar: '2026-04-25', status: 'tutup' },
       { id: 2, nama: 'Mei 2026', start: '2026-05-01', end: '2026-05-31', bayar: '2026-05-25', status: 'tutup' },
       { id: 3, nama: 'Desember 2026', start: '2026-12-01', end: '2026-12-31', bayar: '2026-12-25', status: 'aktif' },
