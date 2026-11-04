@@ -196,6 +196,13 @@ function simpanPeriode(){
   if(!nama||!start||!end||!bayar){toast('Wajib diisi');return;}
   if(isNamaPeriodeBaru(nama)&&!guardCanBuatPeriodeBaru(nama))return;
   var tipeP=(document.getElementById('p-tipe-periode')&&document.getElementById('p-tipe-periode').value)||'normal';
+  var blnEnd=parseInt(String(end||bayar||'').slice(5,7),10);
+  if(blnEnd===12&&tipeP==='normal'){
+    tipeP='desember';
+    var selTipe=document.getElementById('p-tipe-periode');
+    if(selTipe)selTipe.value='desember';
+    if(typeof toggleOpsiLebihBayar==='function')toggleOpsiLebihBayar();
+  }
   var opsiLB=(document.getElementById('p-opsi-lebih-bayar')&&document.getElementById('p-opsi-lebih-bayar').value)||'refund';
   var thrAktif=!!(document.getElementById('p-thr-aktif')&&document.getElementById('p-thr-aktif').checked);
   var thrNama=thrAktif&&document.getElementById('p-thr-nama')?document.getElementById('p-thr-nama').value:'';

@@ -221,6 +221,13 @@ declare function aturanOverrideUntukTanggal(tanggal?: string): {
   ptkp_nilai?: Record<string, number> | null;
 };
 declare function bpjsKomponenDef(key: string, tanggal?: string): { pct: number; basis: number | null; lbl?: string };
+declare function batasUpahJPUntukTanggal(tanggal?: string): number;
+declare function masaKerjaBulanSampai(k: KaryawanPayroll, sampaiIso?: string): number;
+declare function bulanKerjaPajakTahun(k: KaryawanPayroll, thn: number | string, tglAkhirIso?: string): number;
+declare function periodePakaiRekonsiliasiTahunan(p: Periode | null | undefined): boolean;
+declare function dasarUpahTHR(k: KaryawanPayroll): number;
+declare function dasarUpahLemburSebulan(k: KaryawanPayroll): number;
+declare function jumlahTunjanganTetap(k: KaryawanPayroll): number;
 declare function sigajiKunciEraOverrideLama(): string;
 declare function sigajiPesanBerlakuOverride(): string;
 declare function sigajiTanggalHariIni(): string;

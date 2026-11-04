@@ -85,14 +85,15 @@ const g2 = hitungGaji(kSiti, 'Maret 2026', { skipResolve: true });
 assertEq('Siti gapok efektif prorata', g2.gapokEff, 7_500_000);
 assertEq('Siti flag prorata', g2.isPR, true);
 
-// Gross PPh ≈ 7.500.000 + BPJS prs pada basis prorata
-// kes_prs 300.000 + JKK 18.000 + JKM 22.500 = 340.500 → 7.840.500
-assertEq('Siti grossPPh prorata', g2.grossPPh, 7_840_500);
+// Iuran BPJS sebulan penuh (bukan prorata). Basis 11jt.
+// kes_prs 440.000 + JKK 26.400 + JKM 33.000 = 499.400 → gross 7.999.400
+assertEq('Siti grossPPh prorata', g2.grossPPh, 7_999_400);
+assertEq('Siti BPJS tidak diprorata', g2.gapokBpjs, 11_000_000);
 
-// TER 1,5% pada 7.840.500 → 117.608 (pembulatan)
-assertEq('Siti PPh prorata', g2.pph, 117_608);
+// TER 1,5% pada 7.999.400 → 119.991
+assertEq('Siti PPh prorata', g2.pph, 119_991);
 
-// THP prorata: 7.500.000 − 300.000 (BPJS kar) − 117.608 = 7.082.392
-assertEq('Siti neto prorata', g2.neto, 7_082_392);
+// THP: 7.500.000 − (kes 110rb + JHT 220rb + JP 110rb) − 119.991 = 6.940.009
+assertEq('Siti neto prorata', g2.neto, 6_940_009);
 
 console.log('\nLapisan B: semua tes lulus (' + 10 + ' assert).');

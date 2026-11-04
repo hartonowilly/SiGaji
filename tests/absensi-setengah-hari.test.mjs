@@ -163,9 +163,9 @@ function setup(absensiNik, aturanPotongan) {
   const gDengan = pxDengan.hitungGaji(kar, PERIODE.nama, { skipResolve: true });
   assertEq('tanpa 1/2 izin: potongan absen nol', gTanpa.potKehadiran.total, 0);
   assertEq(
-    'THP turun sebesar potongan 1/2 izin',
+    'THP turun sebesar potongan 1/2 izin dikurangi hemat PPh',
     gTanpa.neto - gDengan.neto,
-    gDengan.potKehadiran.total
+    gDengan.potKehadiran.total - ((gTanpa.pph || 0) - (gDengan.pph || 0))
   );
   assertEq('potongan 1/2 izin > 0', gDengan.potKehadiran.total > 0, true);
 }

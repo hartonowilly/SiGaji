@@ -104,7 +104,8 @@ function terbilangRupiah(n){
 const DEFAULT_PTKP={TK0:54e6,TK1:58.5e6,TK2:63e6,TK3:67.5e6,K0:58.5e6,K1:63e6,K2:67.5e6,K3:72e6};
 const PTKP_KEYS=['TK0','TK1','TK2','TK3','K0','K1','K2','K3'];
 const PTKP_LBL={TK0:'TK/0',TK1:'TK/1',TK2:'TK/2',TK3:'TK/3',K0:'K/0',K1:'K/1',K2:'K/2',K3:'K/3'};
-const BPJS_DEF={'kes-prs':{pct:4,basis:12e6,lbl:'BPJS Kes Perusahaan (4%)'},'kes-kar':{pct:1,basis:12e6,lbl:'BPJS Kes Karyawan (1%)'},'jht-prs':{pct:3.7,basis:null,lbl:'JHT Perusahaan (3,7%)'},'jht-kar':{pct:2,basis:null,lbl:'JHT Karyawan (2%)'},'jp-prs':{pct:2,basis:9559600,lbl:'JP Perusahaan (2%)'},'jp-kar':{pct:1,basis:9559600,lbl:'JP Karyawan (1%)'},'jkk-prs':{pct:0.24,basis:null,lbl:'JKK Perusahaan (0,24%)'},'jkm-prs':{pct:0.3,basis:null,lbl:'JKM Perusahaan (0,3%)'}};
+/** Fallback tampilan. Plafon JP aktual per tanggal ada di SIGAJI_BATAS_UPAH_JP (pajak-aturan.js). */
+const BPJS_DEF={'kes-prs':{pct:4,basis:12e6,lbl:'BPJS Kes Perusahaan (4%)'},'kes-kar':{pct:1,basis:12e6,lbl:'BPJS Kes Karyawan (1%)'},'jht-prs':{pct:3.7,basis:null,lbl:'JHT Perusahaan (3,7%)'},'jht-kar':{pct:2,basis:null,lbl:'JHT Karyawan (2%)'},'jp-prs':{pct:2,basis:11086300,lbl:'JP Perusahaan (2%)'},'jp-kar':{pct:1,basis:11086300,lbl:'JP Karyawan (1%)'},'jkk-prs':{pct:0.24,basis:null,lbl:'JKK Perusahaan (0,24%)'},'jkm-prs':{pct:0.3,basis:null,lbl:'JKM Perusahaan (0,3%)'}};
 const TUNJ_TYPES={tetap:'Tetap (BPJS+THR+PPh+TH)',tetap_no_bpjs:'Tetap Excl.BPJS',tidak_tetap:'Tidak Tetap',harian_exclude:'Harian Excl.TH'};
 // Sub-tab permissions: moduleId.subtabId
 const SUBTABS={
@@ -154,7 +155,7 @@ const TER_A=[[5400000,0],[5650000,.0025],[5950000,.005],[6300000,.0075],[6750000
 const TER_B=[[6200000,0],[6500000,.0025],[6850000,.005],[7300000,.0075],[9200000,.01],[10750000,.015],[11250000,.02],[11600000,.025],[12600000,.03],[13600000,.04],[14950000,.05],[16400000,.06],[18450000,.07],[21850000,.08],[26000000,.09],[27700000,.10],[29350000,.11],[31450000,.12],[33950000,.13],[37100000,.14],[41100000,.15],[45800000,.16],[49500000,.17],[53800000,.18],[58500000,.19],[64000000,.20],[71000000,.21],[80000000,.22],[93000000,.23],[109000000,.24],[129000000,.25],[163000000,.26],[211000000,.27],[374000000,.28],[459000000,.29],[555000000,.30],[704000000,.31],[957000000,.32],[1405000000,.33],[Infinity,.34]];
 // Lampiran C: K/3 (72jt)
 const TER_C=[[6600000,0],[6950000,.0025],[7350000,.005],[7800000,.0075],[8850000,.01],[9800000,.0125],[10950000,.015],[11200000,.0175],[12050000,.02],[12950000,.03],[14150000,.04],[15550000,.05],[17050000,.06],[19500000,.07],[22700000,.08],[26600000,.09],[28100000,.10],[30100000,.11],[32600000,.12],[35400000,.13],[38900000,.14],[43000000,.15],[47400000,.16],[51200000,.17],[55800000,.18],[60400000,.19],[66700000,.20],[74500000,.21],[83200000,.22],[95600000,.23],[110000000,.24],[134000000,.25],[169000000,.26],[221000000,.27],[390000000,.28],[463000000,.29],[561000000,.30],[709000000,.31],[965000000,.32],[1419000000,.33],[Infinity,.34]];
-/** Opsi alasan PHK — faktor pengali UP+UPMK (PP 35/2021 Pasal 50). Resign sukarela: 0 (tidak ada UP/UPMK). */
+/** Opsi alasan PHK — faktor pengali hanya untuk UP (PP 35/2021). UPMK selalu 1× bila berhak. Resign sukarela: 0. */
 const PHK_ALASAN_OPTS=[
   {id:'',lbl:'— Belum dipilih —',f:null,uphOnly:false,manual:false},
   {id:'resign_30hr',lbl:'Mengundurkan diri — sudah pemberitahuan >=30 hari',f:0,uphOnly:true,manual:false},
@@ -192,4 +193,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Label aplikasi di judul tab, status sistem, dan meta backup. Tanpa nomor versi — versi deploy ada di SIGAJI_BUILD. */
 const SIGAJI_APP_LABEL='SiGaji';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.7.21';
+const SIGAJI_MODULES_CACHE='11.7.22';

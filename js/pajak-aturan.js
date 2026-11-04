@@ -112,11 +112,33 @@ function aturanPajakUntukTanggal(tanggal) {
   return pick || SIGAJI_ATURAN_PAJAK[0] || null;
 }
 
+/** Plafon upah Jaminan Pensiun (PP 45/2015, diumumkan BPJS TK tiap Maret). */
+var SIGAJI_BATAS_UPAH_JP = [
+  { berlakuMulai: '1970-01-01', basis: 9559600 },
+  { berlakuMulai: '2024-03-01', basis: 10042300 },
+  { berlakuMulai: '2025-03-01', basis: 10547400 },
+  { berlakuMulai: '2026-03-01', basis: 11086300 },
+];
+
+function batasUpahJPUntukTanggal(tanggal) {
+  var t = String(tanggal || '').slice(0, 10);
+  if (!t) t = sigajiTanggalHariIni();
+  var pick = SIGAJI_BATAS_UPAH_JP[0];
+  SIGAJI_BATAS_UPAH_JP.forEach(function (b) {
+    if (b.berlakuMulai && b.berlakuMulai <= t) pick = b;
+  });
+  return pick && pick.basis ? pick.basis : 9559600;
+}
+
 function bpjsKomponenDef(key, tanggal) {
   var buku = aturanPajakUntukTanggal(tanggal);
   var def = buku && buku.bpjs && buku.bpjs[key];
-  if (def) return def;
-  return typeof BPJS_DEF !== 'undefined' ? BPJS_DEF[key] : { pct: 0, basis: null };
+  if (!def && typeof BPJS_DEF !== 'undefined') def = BPJS_DEF[key];
+  if (!def) def = { pct: 0, basis: null };
+  if (key === 'jp-prs' || key === 'jp-kar') {
+    return { pct: def.pct, basis: batasUpahJPUntukTanggal(tanggal), lbl: def.lbl };
+  }
+  return def;
 }
 
 /**
