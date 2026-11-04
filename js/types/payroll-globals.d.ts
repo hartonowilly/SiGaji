@@ -109,6 +109,10 @@ interface ProrataEntry {
   autoResign?: boolean;
   /** User mematikan prorata resign secara manual — jangan dinyalakan ulang otomatis. */
   resignPrOff?: boolean;
+  /** Diaktifkan otomatis karena tanggal masuk di tengah periode. */
+  autoMasuk?: boolean;
+  /** User mematikan prorata karyawan baru — jangan dinyalakan ulang otomatis. */
+  masukPrOff?: boolean;
 }
 
 declare var periodes: Periode[];

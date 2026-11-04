@@ -45,4 +45,26 @@ assertEq('manual HH tidak ditimpa', (function () {
   return pr.hh;
 })(), 10);
 
+px.karyawan = [baru, penuh];
+px.prorata = {};
+px.syncProrataDariMasuk(baru);
+assertEq('masuk tengah bulan: pro-rata nyala', px.getPR(baru.nik, p.nama).enabled, true);
+assertEq('masuk tengah bulan: HH < HK', px.getPR(baru.nik, p.nama).hh < px.getPR(baru.nik, p.nama).hk, true);
+px.syncProrataDariMasuk(penuh);
+assertEq('karyawan lama: pro-rata tetap mati', px.getPR(penuh.nik, p.nama).enabled, false);
+
+px.prorata[baru.nik][p.nama].enabled = false;
+px.prorata[baru.nik][p.nama].masukPrOff = true;
+px.syncProrataDariMasuk(baru);
+assertEq('user matikan: tidak dinyalakan ulang', px.getPR(baru.nik, p.nama).enabled, false);
+
+px.prorata = {};
+px.ensureProrataMasukUntukPeriode(baru, p);
+assertEq('ensure periode aktif menyalakan joiner', px.getPR(baru.nik, p.nama).enabled, true);
+
+const hariPertama = { nik: 'DAY1', nama: 'Masuk 1 Okt', masuk: '2026-10-01' };
+px.prorata = {};
+px.syncProrataDariMasuk(hariPertama);
+assertEq('masuk tanggal 1: tidak auto pro-rata', px.getPR(hariPertama.nik, p.nama).enabled, false);
+
 console.log('\nProrata masuk: semua tes lulus.');
