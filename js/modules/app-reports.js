@@ -118,17 +118,20 @@ function renderPPHBody(){
     const g=hitungGaji(k);
     const tglP=typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(PA()):'';
     const rate=typeof rateTerHasil==='function'?rateTerHasil(g,k,PA()):0;
-    const bj=Math.min(g.grossPPh*12*.05,6e6);const pv=nilaiPTKP(k.ptkp,tglP);const pkp=Math.max(0,g.grossPPh*12-bj-pv);
+    const rec=g.reconciliation;
+    const pphSetahun=rec?Math.round(rec.pphTahunan||0):null;
+    const brutoTahun=rec?Math.round(rec.brutoTahunan||0):(g.grossPPh||0);
+    const bj=Math.min(brutoTahun*.05,6e6);const pv=nilaiPTKP(k.ptkp,tglP);const pkp=rec?Math.max(0,Math.floor((brutoTahun-bj-pv)/1000)*1000):Math.max(0,g.grossPPh*12-bj-pv);
     sums.gross+=g.grossPPh||0;
     sums.thr+=g.thrBruto||0;
     sums.pkp+=pkp;
-    sums.pphY+=g.pph*12||0;
+    sums.pphY+=pphSetahun!=null?pphSetahun:(g.pph||0);
     sums.pphM+=g.pph||0;
     sums.pphRet+=g.pphRet||0;
     return '<tr><td class="text-center fw-700 text-muted sticky-no">'+(idx+1)+'</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+escapeHtml(k.nama)+'</div></div></td>'
       +'<td><span class="bdg b-info">'+escapeHtml(k.ptkp)+'</span></td><td class="num cell-money">'+fmt(g.grossPPh)+'</td>'
       +'<td class="num cell-money">'+(g.thrBruto>0?'<span class="ct-purple fw-700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
-      +'<td class="num" title="TER '+escapeHtml(k.ptkp)+'">'+(rate*100).toFixed(2)+'%</td><td class="num cell-money">'+fmt(pkp)+'</td><td class="num cell-money">'+fmt(g.pph*12)+'</td>'
+      +'<td class="num" title="TER '+escapeHtml(k.ptkp)+'">'+(rate*100).toFixed(2)+'%</td><td class="num cell-money">'+fmt(pkp)+'</td><td class="num cell-money">'+(pphSetahun!=null?fmt(pphSetahun):'&#8212;')+'</td>'
       +'<td class="num cell-money"><strong>'+fmt(g.pph)+'</strong></td>'
       +'<td class="num cell-money">'+(g.pphRet>0?'<span class="ct-success fw-700">+ '+fmt(g.pphRet)+'</span>':'&#8212;')+'</td></tr>';
   });
@@ -655,6 +658,8 @@ function exportExcelKertasKerjaPPh(){
 // ── THR RENDER ───────────────────────────────────
 function setTHRManual(el){
   var nik=el.dataset.nik;var pNama=el.dataset.pnama;var aktif=el.dataset.aktif==='1';
+  var pThr=(typeof periodes!=='undefined'&&periodes||[]).find(function(x){return x.nama===pNama;});
+  if(pThr&&pThr.snapshot_locked){toast('Periode terkunci. Buka kunci dulu untuk mengubah THR manual.');return;}
   if(!thrManual[pNama])thrManual[pNama]={};
   if(!thrManual[pNama][nik])thrManual[pNama][nik]={aktif:false,nilai:0};
   thrManual[pNama][nik].aktif=aktif;
@@ -663,6 +668,8 @@ function setTHRManual(el){
 }
 function simpanTHRManualEl(el){
   var nik=el.dataset.nik;var pNama=el.dataset.pnama;
+  var pThr=(typeof periodes!=='undefined'&&periodes||[]).find(function(x){return x.nama===pNama;});
+  if(pThr&&pThr.snapshot_locked){toast('Periode terkunci. Buka kunci dulu untuk mengubah THR manual.');return;}
   var v=parseInt(String(el.value).replace(/[^0-9]/g,''))||0;
   if(!thrManual[pNama])thrManual[pNama]={};
   thrManual[pNama][nik]={aktif:true,nilai:v};

@@ -84,6 +84,11 @@ function renderMigrasiPphSaldo(){
     var s=getPphYtdAwal(k,thn);
     var tb=String(k.tgl_berhenti||'').trim();
     var sd=s.sd_bulan?('s/d bln '+s.sd_bulan):'';
+    var tumpang=0;
+    (periodes||[]).forEach(function(per){
+      if(typeof periodeTumpangSaldoMigrasi==='function'&&periodeTumpangSaldoMigrasi(k,per))tumpang++;
+    });
+    if(tumpang)sd+=(sd?' · ':'')+'peringatan: '+tumpang+' periode SiGaji tumpang saldo (YTD memakai saldo, bukan gaji periode itu)';
     return '<tr>'
       +'<td class="fw-600">'+escapeHtml(k.nik)+'</td>'
       +'<td>'+escapeHtml(k.nama||'')+'</td>'

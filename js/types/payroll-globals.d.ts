@@ -401,6 +401,7 @@ interface HitungGajiResult {
   ptkpStatus?: string;
   pphTanpaThr: number;
   pphAtasThr: number;
+  kreditPphBawa?: number;
   neto: number;
   netoRegular: number;
   thrBruto: number;
@@ -553,4 +554,5 @@ interface KaryawanPayroll {
   bpjs_manual?: Record<string, Rupiah>;
   pph_return?: { nilai?: Rupiah; ket?: string };
   pph_ytd_awal?: Record<string, { bruto?: number; pph?: number; sd_bulan?: number; iuran_jht_jp?: number }>;
+  pph_lebih_bayar_bawa?: { tahun?: number; nilai?: number; sumberTahun?: number };
 }

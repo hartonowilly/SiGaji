@@ -51,6 +51,7 @@ const suites = [
   'tunjvar-grid.test.mjs',
   'lembur-periode.test.mjs',
   'aturan-kritis.test.mjs',
+  'audit-payroll-fix.test.mjs',
   'rekon-masa-pajak.test.mjs',
   'payroll-sp-tabs.test.mjs',
   'outbox.test.mjs',

@@ -242,7 +242,7 @@ function toggleLockPeriode(id){
       if(typeof sigajiBekukanHasilPeriode==='function')sigajiBekukanHasilPeriode(p,{skipSave:true});
     }catch(eBeku){sigajiCatchWarn("js/modules/app-master.js",eBeku);}
     try{
-      if(typeof sigajiCaptureAbsensiPotBaseline==='function')sigajiCaptureAbsensiPotBaseline(p);
+      if(typeof sigajiCaptureAbsensiPotBaseline==='function')sigajiCaptureAbsensiPotBaseline(p,true);
       if(typeof sigajiRebaselinePriorLockedAbsensiPot==='function')sigajiRebaselinePriorLockedAbsensiPot(p);
     }catch(eAbsBase){sigajiCatchWarn("js/modules/app-master.js",eAbsBase);}
     try{
@@ -255,6 +255,7 @@ function toggleLockPeriode(id){
     p.snapshot_locked=false;
     delete p.hasil_gaji;
     delete p.arsip_rekap;
+    delete p.absensi_pot_baseline;
     saveAll();renderPeriodes();updatePeriodeSimpanButtonState();toast('Kunci periode dibuka');
   }
 }

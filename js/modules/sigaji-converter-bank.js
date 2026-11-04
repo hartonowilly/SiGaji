@@ -407,14 +407,27 @@
     var catatan = [];
     list.forEach(function (k) {
       var g = hitungGaji(k, p.nama);
-      var jumlah = Math.round(g.neto || 0);
       var rek = String(k.norek || '').replace(/[^\d]/g, '');
       var nama = String(k.reknam || k.nama || '').toUpperCase().trim();
       if (!rek) {
         lewat.push(k.nama + ' — no. rekening kosong');
         return;
       }
-      if (jumlah <= 0) {
+      var items = [];
+      var jadwal = g.jadwalBayar && g.jadwalBayar.items;
+      if (jadwal && jadwal.length > 1) {
+        jadwal.forEach(function (it) {
+          var dib = Math.round(it.dibayar || 0);
+          if (dib > 0) items.push(dib);
+        });
+        var sumJ = items.reduce(function (s, n) { return s + n; }, 0);
+        var sisaN = Math.round(g.neto || 0) - sumJ;
+        if (sisaN > 0) items.push(sisaN);
+      } else {
+        var jumlah = Math.round(g.neto || 0);
+        if (jumlah > 0) items.push(jumlah);
+      }
+      if (!items.length) {
         lewat.push(k.nama + ' — THP nol');
         return;
       }
@@ -425,7 +438,9 @@
       if (bank && bank.indexOf('MANDIRI') < 0) {
         catatan.push(k.nama + ' — bank ' + bank + ', bukan Mandiri');
       }
-      rows.push({ rekening: rek, nama: nama, jumlah: jumlah });
+      items.forEach(function (jumlah) {
+        rows.push({ rekening: rek, nama: nama, jumlah: jumlah });
+      });
     });
     return { rows: rows, lewat: lewat, catatan: catatan };
   }

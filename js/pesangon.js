@@ -13,7 +13,14 @@
   function sisaCutiOtomatis(nik,tglBerhenti){
     if(!nik||!tglBerhenti)return 0;
     var thn=new Date(tglBerhenti).getFullYear();
-    var pakai=typeof cutiTerpakai==='function'?cutiTerpakai(nik,thn):0;
+    var sampai=String(tglBerhenti).slice(0,10);
+    var pakai=0;
+    if(typeof cutiManualUntukTahunDanPeriode==='function'){
+      pakai=cutiManualUntukTahunDanPeriode(nik,thn,{start:thn+'-01-01',end:sampai});
+      if(typeof countCutiBersama==='function')pakai+=countCutiBersama(thn,nik,sampai)||0;
+    }else if(typeof cutiTerpakai==='function'){
+      pakai=cutiTerpakai(nik,thn);
+    }
     var k=(typeof karyawan!=='undefined'&&karyawan||[]).find(function(x){return x&&x.nik===nik;});
     var kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,thn):((typeof masterCuti!=='undefined'&&masterCuti)?(masterCuti.kuota||12):12);
     return Math.max(0,kuota-pakai);
@@ -34,7 +41,8 @@
     if(phk.sisa_cuti_hari!==undefined&&phk.sisa_cuti_hari!==null&&String(phk.sisa_cuti_hari).trim()!==''){
       sisaCuti=Math.max(0,parseFloat(String(phk.sisa_cuti_hari))||0);
     }
-    var uphCuti=Math.round(dasar/25*Math.max(0,sisaCuti));
+    var kaliHari=(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hariKerja===5)?21:25;
+    var uphCuti=Math.round(dasar/kaliHari*Math.max(0,sisaCuti));
     var upAuto=0,upmkAuto=0;
     if(opt.manual){
       upAuto=Math.round(sigajiRp(phk.up_manual)||0);
