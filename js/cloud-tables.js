@@ -1042,7 +1042,7 @@
       var d = r.data && typeof r.data === 'object' ? r.data : {};
       if (!d.nama) d.nama = r.nama;
       rememberLoaded(loaded, 'P', { nama: r.nama, data: d, version: r.version });
-      return D.sanitizePeriodeForCloud(d);
+      return Object.assign({}, d);
     });
 
     var tunjVarColumns = (kolRes.data || []).map(function (r) {
@@ -1933,12 +1933,13 @@
     };
 
     var periodesOwn = (perRes.data || []).map(function (r) {
-      var d = D.sanitizePeriodeForCloud(r.data || {});
+      var raw = r.data && typeof r.data === 'object' ? r.data : {};
+      var d = Object.assign({}, raw);
       if (!d.nama && r.nama) d.nama = r.nama;
       return d;
     });
-    if (ownItems && typeof D.attachPayPrivacyFromItems === 'function') {
-      D.attachPayPrivacyFromItems(periodesOwn, ownItems);
+    if (typeof D.attachPayPrivacyFromItems === 'function') {
+      D.attachPayPrivacyFromItems(periodesOwn, ownItems || {}, { onlyNik: nik });
     }
     return {
       schemaVersion: 10,

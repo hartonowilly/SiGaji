@@ -240,6 +240,27 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   D.attachPayPrivacyFromItems(restored, parts);
   assert('item hasilGaji dipasang kembali ke periode di memori', restored[0].hasil_gaji.byNik.K001.neto === 4500000);
   assert('item baseline dipasang kembali', restored[0].absensi_pot_baseline.K001.total === 0);
+
+  const leaked = [
+    {
+      nama: 'Okt 2026',
+      hasil_gaji: { v: 1, byNik: { K001: { neto: 111 }, K002: { neto: 222 } } },
+      absensi_pot_baseline: { K001: { total: 3 }, K002: { total: 4 } },
+    },
+  ];
+  D.attachPayPrivacyFromItems(leaked, {}, { onlyNik: 'K001' });
+  assert('tanpa item: JSON beku K001 tetap dipakai', leaked[0].hasil_gaji.byNik.K001.neto === 111);
+  assert('karyawan tidak melihat gaji NIK lain dari JSON periode', !leaked[0].hasil_gaji.byNik.K002);
+  assert('baseline hanya NIK sendiri', leaked[0].absensi_pot_baseline.K001.total === 3 && !leaked[0].absensi_pot_baseline.K002);
+
+  const prefer = [
+    {
+      nama: 'Okt 2026',
+      hasil_gaji: { v: 1, byNik: { K001: { neto: 111 } } },
+    },
+  ];
+  D.attachPayPrivacyFromItems(prefer, { hasilGaji: { 'Okt 2026': { K001: { neto: 4500000 } } } });
+  assert('item menang atas JSON beku lama', prefer[0].hasil_gaji.byNik.K001.neto === 4500000);
 }
 
 console.log('\nSemua tes sinkron delta lulus.');
