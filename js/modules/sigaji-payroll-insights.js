@@ -129,6 +129,63 @@
     }
   };
 
+  /** Komponen gaji yang dibanding antar periode — tanpa PPh (selalu berubah). */
+  window.sigajiPayrollKomponenMap = function (k, g) {
+    g = g || {};
+    k = k || {};
+    var m = {};
+    function add(key, label, val) {
+      var n = Math.round(Number(val) || 0);
+      if (!m[key]) m[key] = { key: key, label: label, val: 0 };
+      m[key].val += n;
+    }
+    add('gapok', 'Gaji pokok', g.gapokFull != null ? g.gapokFull : k.gapok);
+    (g.tItems || []).forEach(function (t) {
+      if (!t) return;
+      var nama = String(t.nama || 'Tunjangan').trim() || 'Tunjangan';
+      add('t:' + nama.toLowerCase(), nama, t.eff != null ? t.eff : t.nilai);
+    });
+    add('potongan', 'Potongan', g.potT);
+    add('lembur', 'Lembur', g.lb);
+    add('thr', 'THR', g.thrBruto);
+    add('natura', 'Natura', g.natKP);
+    return m;
+  };
+
+  window.sigajiPayrollKomponenDiff = function (prevMap, nowMap) {
+    prevMap = prevMap || {};
+    nowMap = nowMap || {};
+    var keys = {};
+    Object.keys(prevMap).forEach(function (k) {
+      keys[k] = 1;
+    });
+    Object.keys(nowMap).forEach(function (k) {
+      keys[k] = 1;
+    });
+    var out = [];
+    Object.keys(keys).forEach(function (k) {
+      var a = prevMap[k] ? prevMap[k].val : 0;
+      var b = nowMap[k] ? nowMap[k].val : 0;
+      if (Math.abs(b - a) < 1000) return;
+      var label = (nowMap[k] && nowMap[k].label) || (prevMap[k] && prevMap[k].label) || k;
+      out.push({ key: k, label: label, from: a, to: b, delta: b - a });
+    });
+    out.sort(function (x, y) {
+      return Math.abs(y.delta) - Math.abs(x.delta);
+    });
+    return out;
+  };
+
+  window.sigajiFmtKomponenDiff = function (diffs) {
+    return (diffs || [])
+      .map(function (d) {
+        var a = typeof fmt === 'function' ? fmt(d.from) : String(d.from);
+        var b = typeof fmt === 'function' ? fmt(d.to) : String(d.to);
+        return d.label + ' ' + a + ' → ' + b;
+      })
+      .join(' · ');
+  };
+
   window.sigajiPayrollCompKey = function (k, pNama) {
     if (!k) return '';
     var row = k;
@@ -319,50 +376,26 @@
 
       if (prev) {
         var gPrev = hitungGaji(k, prev.nama);
-        if (gPrev.neto > 0) {
-          var pct = (g.neto - gPrev.neto) / gPrev.neto;
-          var compNow = sigajiPayrollCompKey(k, p.nama);
-          var compPrev = sigajiPayrollCompKey(k, prev.nama);
-          if (pct > 0.4 && compNow === compPrev) {
-            out.push({
-              severity: 'high',
-              nik: k.nik,
-              nama: nama,
-              code: 'neto_spike',
-              title: 'Neto naik >40% tanpa ubah komponen',
-              desc:
-                prev.nama +
-                ': ' +
-                fmt(gPrev.neto) +
-                ' → ' +
-                p.nama +
-                ': ' +
-                fmt(g.neto) +
-                ' (+' +
-                Math.round(pct * 100) +
-                '%)',
-            });
-          }
-          if (pct < -0.4 && compNow === compPrev) {
-            out.push({
-              severity: 'warn',
-              nik: k.nik,
-              nama: nama,
-              code: 'neto_drop',
-              title: 'Neto turun >40% tanpa ubah komponen',
-              desc:
-                prev.nama +
-                ': ' +
-                fmt(gPrev.neto) +
-                ' → ' +
-                p.nama +
-                ': ' +
-                fmt(g.neto) +
-                ' (' +
-                Math.round(pct * 100) +
-                '%)',
-            });
-          }
+        var diffs = window.sigajiPayrollKomponenDiff(
+          window.sigajiPayrollKomponenMap(k, gPrev),
+          window.sigajiPayrollKomponenMap(k, g)
+        );
+        var actionable = diffs.filter(function (d) {
+          return d.key !== 'thr';
+        });
+        if (actionable.length) {
+          var net = actionable.reduce(function (s, d) {
+            return s + d.delta;
+          }, 0);
+          var naik = net >= 0;
+          out.push({
+            severity: 'warn',
+            nik: k.nik,
+            nama: nama,
+            code: naik ? 'komp_naik' : 'komp_turun',
+            title: naik ? 'Komponen gaji naik' : 'Komponen gaji turun',
+            desc: window.sigajiFmtKomponenDiff(actionable),
+          });
         }
       }
 
