@@ -417,6 +417,7 @@ async function simpanKarPanel(){
   }catch(eSk){sigajiCatchWarn("js/modules/app-hr.js",eSk);}
   if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
   try{if(typeof syncProrataDariResign==='function')syncProrataDariResign(k);}catch(eSync){sigajiCatchWarn("js/modules/app-hr.js",eSync);}
+  try{if(typeof syncProrataDariMasuk==='function')syncProrataDariMasuk(k);}catch(eMas){sigajiCatchWarn("js/modules/app-hr.js",eMas);}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
   renderKar();renderKompgaji();renderDash();renderPenggajian();renderPPH();if(typeof renderPesangon==='function')renderPesangon();if(typeof renderAbsensi==='function')renderAbsensi();populateSelects();toast('Profil '+k.nama+' disimpan'+(appliedTpl?' — komponen gaji dari template':''));
   /* Resign: tawarkan putus tautan Telegram (tidak otomatis — harus konfirmasi). */

@@ -70,11 +70,13 @@ function hitungUlangPenggajian(){
       ensureKarSnapshotPeriode(p.nama,karyawanListPeriode(p));
     }
   }catch(eEns){sigajiCatchWarn("js/modules/app-hr.js",eEns);}
-  /* Sinkron ulang pro-rata + absensi resign dari tgl. berhenti (jika ada). */
+  /* Sinkron ulang pro-rata resign / karyawan baru dari tanggal. */
   try{
-    if(!locked&&typeof syncProrataDariResign==='function'){
+    if(!locked){
       karyawanListPeriode(p).forEach(function(k){
-        if(k&&String(k.tgl_berhenti||'').trim())syncProrataDariResign(k);
+        if(!k)return;
+        if(String(k.tgl_berhenti||'').trim()&&typeof syncProrataDariResign==='function')syncProrataDariResign(k);
+        if(typeof syncProrataDariMasuk==='function')syncProrataDariMasuk(k);
       });
     }
   }catch(eRes){sigajiCatchWarn("js/modules/app-hr.js",eRes);}
@@ -83,7 +85,7 @@ function hitungUlangPenggajian(){
   if(locked){
     toast('Perhitungan diperbarui (pro-rata, absensi, lembur, tunj. variabel). Periode terkunci: komponen gaji dari snapshot.');
   }else{
-    toast('Perhitungan diperbarui. Gapok/tunjangan periode aktif tidak diubah. Resign: pro-rata & absensi R otomatis dari tgl. berhenti.');
+    toast('Perhitungan diperbarui. Gapok/tunjangan periode aktif tidak diubah. Resign & karyawan baru: pro-rata otomatis dari tanggal.');
   }
 }
 /** Opsional: timpa snapshot periode aktif dari Master (aksi berbahaya — konfirmasi eksplisit). */
@@ -120,8 +122,9 @@ function sigajiRestorePgScroll(s){
   if(s.wrap)s.wrap.scrollLeft=s.left;
 }
 function segarkanProrataBaris(k,p){
-  if(!k||!p||typeof ensureProrataResignUntukPeriode!=='function')return null;
-  var pr=ensureProrataResignUntukPeriode(k,p);
+  if(!k||!p)return null;
+  var pr=typeof ensureProrataResignUntukPeriode==='function'?ensureProrataResignUntukPeriode(k,p):null;
+  if(typeof ensureProrataMasukUntukPeriode==='function')pr=ensureProrataMasukUntukPeriode(k,p);
   if(!pr||pr.manual||typeof prorataHkHhOtomatis!=='function')return pr;
   var stop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
   var ps=typeof toIsoDate==='function'?toIsoDate(p.start):p.start;

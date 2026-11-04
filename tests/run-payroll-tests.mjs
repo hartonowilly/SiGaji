@@ -47,6 +47,7 @@ const suites = [
   'bpjs-upah.test.mjs',
   'aturan-pajak-kunci.test.mjs',
   'prorata-masuk.test.mjs',
+  'tunjvar-grid.test.mjs',
   'outbox.test.mjs',
   'no-inline-handlers.test.mjs',
   'build-banner.test.mjs',

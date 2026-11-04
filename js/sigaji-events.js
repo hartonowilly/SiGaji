@@ -174,14 +174,14 @@
         if (colId && typeof hapusTunjVarColumn === 'function') hapusTunjVarColumn(colId);
         return true;
       case 'tunjvar-commit': {
-        var inpEl = el.tagName === 'INPUT' ? el : el.previousElementSibling;
+        var inpEl = el.tagName === 'INPUT' ? el : el.querySelector && el.querySelector('input.tunjvar-inp');
         var val = inpEl ? inpEl.value : '';
         if (nik && colId && typeof tunjVarCommitCell === 'function') tunjVarCommitCell(nik, colId, val);
+        if (ev && ev.type === 'keydown' && ev.key === 'Enter' && inpEl && typeof tunjVarFocusNextRow === 'function') {
+          tunjVarFocusNextRow(inpEl);
+        }
         return true;
       }
-      case 'tunjvar-unlock':
-        if (nik && colId && typeof tunjVarUnlockCell === 'function') tunjVarUnlockCell(nik, colId);
-        return true;
       case 'thr-manual':
         if (typeof setTHRManual === 'function') setTHRManual(el);
         return true;

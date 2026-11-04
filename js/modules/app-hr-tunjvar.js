@@ -1,24 +1,42 @@
 /* SiGaji — tunjangan variabel bulanan (dipisah dari app-hr.js) */
-var __tunjVarEditCells = {};
-function tunjVarCellKey(nik, colId) {
-  return String(nik) + '|' + String(colId);
-}
-function tunjVarUnlockCell(nik, colId) {
-  __tunjVarEditCells[tunjVarCellKey(nik, colId)] = true;
-  renderTunjVariabelBulan();
+function tunjVarAktifInp() {
+  var a = typeof document !== 'undefined' ? document.activeElement : null;
+  if (!a || !a.classList || !a.classList.contains('tunjvar-inp')) return null;
+  return a;
 }
 function tunjVarCommitCell(nik, colId, rawVal) {
   setTunjVarNilai(nik, colId, rawVal);
 }
+function tunjVarFocusNextRow(inp) {
+  if (!inp || !inp.closest) return;
+  var td = inp.closest('td');
+  var tr = inp.closest('tr');
+  if (!td || !tr || !tr.parentElement) return;
+  var col = Array.prototype.indexOf.call(tr.children, td);
+  var next = tr.nextElementSibling;
+  if (!next) return;
+  var nextTd = next.children[col];
+  var nextInp = nextTd && nextTd.querySelector('input.tunjvar-inp');
+  if (nextInp) {
+    try {
+      nextInp.focus();
+    } catch (eF) {
+      void eF;
+    }
+  }
+}
 function sigajiTunjVarCellIsEditing(nik, colId) {
-  return !!__tunjVarEditCells[tunjVarCellKey(nik, colId)];
+  var a = tunjVarAktifInp();
+  if (!a) return false;
+  return String(a.getAttribute('data-nik') || '') === String(nik) && String(a.getAttribute('data-col-id') || '') === String(colId);
 }
 function sigajiTunjVarIsEditingAny() {
-  return Object.keys(__tunjVarEditCells).length > 0;
+  return !!tunjVarAktifInp();
 }
 if (typeof window !== 'undefined') {
   window.sigajiTunjVarCellIsEditing = sigajiTunjVarCellIsEditing;
   window.sigajiTunjVarIsEditingAny = sigajiTunjVarIsEditingAny;
+  window.tunjVarFocusNextRow = tunjVarFocusNextRow;
 }
 function renderTunjVarColEditor() {
   var wrap = document.getElementById('tunjvar-col-editor');
@@ -128,16 +146,30 @@ function refreshTunjVarTotals() {
       '</strong>';
   }
 }
+var __tunjVarPgTimer = null;
+function tunjVarJadwalHitungGaji() {
+  if (__tunjVarPgTimer) clearTimeout(__tunjVarPgTimer);
+  __tunjVarPgTimer = setTimeout(function () {
+    __tunjVarPgTimer = null;
+    if (typeof renderPenggajian === 'function') renderPenggajian(true);
+  }, 400);
+}
 function setTunjVarNilai(nik, vKey, val) {
-  var pn = PA().nama;
+  var p = typeof PA === 'function' ? PA() : null;
+  var pn = p && p.nama;
+  if (!pn) return;
+  if (typeof isPeriodeLocked === 'function' && isPeriodeLocked(pn)) return;
   if (!tunjVarBulan[pn]) tunjVarBulan[pn] = {};
   if (!tunjVarBulan[pn][nik]) tunjVarBulan[pn][nik] = {};
-  tunjVarBulan[pn][nik][vKey] = Math.max(0, parseRpInput(val));
-  delete __tunjVarEditCells[tunjVarCellKey(nik, vKey)];
+  var n = Math.max(0, parseRpInput(val));
+  if (tunjVarBulan[pn][nik][vKey] === n) {
+    refreshTunjVarTotals();
+    return;
+  }
+  tunjVarBulan[pn][nik][vKey] = n;
   saveAll();
   refreshTunjVarTotals();
-  renderPenggajian(true);
-  renderTunjVariabelBulan();
+  tunjVarJadwalHitungGaji();
 }
 function salinTunjVarDariPeriodeLalu() {
   var pn = PA().nama;
@@ -271,7 +303,6 @@ function importTunjVarExcel(inp) {
           });
           ok++;
         }
-        __tunjVarEditCells = {};
         saveAll();
         renderTunjVariabelBulan();
         renderPenggajian(true);
@@ -332,6 +363,7 @@ function renderTunjVariabelBulan() {
     return;
   }
   if (!tunjVarBulan[pn]) tunjVarBulan[pn] = {};
+  var locked = typeof isPeriodeLocked === 'function' && isPeriodeLocked(pn);
   var thead =
     '<th class="text-center sticky-no" style="min-width:42px">No</th><th class="sticky-name">Karyawan</th>' +
     cols
@@ -348,28 +380,14 @@ function renderTunjVariabelBulan() {
         var v = sigajiRp(r[c.id]);
         if (isNaN(v)) v = 0;
         sum += v;
-        var cellKey = tunjVarCellKey(k.nik, c.id);
-        if (__tunjVarEditCells[cellKey]) {
-          return (
-            '<td><div class="fl gap1 items-center tunjvar-cell-wrap">' +
-            '<input type="text" class="tunjvar-inp inp-rp tunjvar-inp-narrow" value="' +
-            formatRpInputNum(v) +
-            '" data-rp="1"' +
-            sigajiDataAction('tunjvar-commit', { nik: k.nik, 'col-id': c.id }) +
-            '>' +
-            '<button type="button" class="btn btn-xs btn-g"' +
-            sigajiDataAction('tunjvar-commit', { nik: k.nik, 'col-id': c.id }) +
-            '>Simpan</button></div></td>'
-          );
-        }
         return (
-          '<td><div class="fl gap1 items-center tunjvar-cell-wrap">' +
-          '<span class="font-12 fw-600 tunjvar-val">' +
+          '<td><div class="tunjvar-cell-wrap">' +
+          '<input type="text" class="tunjvar-inp inp-rp tunjvar-inp-narrow" value="' +
           formatRpInputNum(v) +
-          '</span>' +
-          '<button type="button" class="btn btn-xs btn-out"' +
-          sigajiDataAction('tunjvar-unlock', { nik: k.nik, 'col-id': c.id }) +
-          '>Edit</button></div></td>'
+          '" data-rp="1"' +
+          (locked ? ' disabled' : '') +
+          sigajiDataAction('tunjvar-commit', { nik: k.nik, 'col-id': c.id }) +
+          '></div></td>'
         );
       })
       .join('');

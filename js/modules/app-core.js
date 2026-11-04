@@ -233,6 +233,59 @@ function syncProrataDariResign(k){
     pr.manual=false;
   });
 }
+/** true jika tanggal masuk jatuh di periode dan HH < HK (belum sebulan penuh). */
+function karyawanMasukDiTengahPeriode(k,p){
+  var masuk=toIsoDate(k&&k.masuk);
+  var ps=toIsoDate(p&&p.start);
+  var pe=toIsoDate(p&&p.end);
+  if(!masuk||!ps||!pe||masuk<ps||masuk>pe)return false;
+  var auto=prorataHkHhOtomatis(k,p);
+  return auto.hk>0&&auto.hh<auto.hk;
+}
+/**
+ * Aktifkan pro-rata otomatis di periode yang memuat tanggal masuk (tengah bulan).
+ * Tidak menimpa pro-rata resign, HH/HK manual, atau jika user mematikan pro-rata.
+ */
+function syncProrataDariMasuk(k){
+  if(!k||!k.nik)return;
+  var masuk=toIsoDate(k.masuk);
+  if(!masuk){
+    if(prorata[k.nik]){
+      Object.keys(prorata[k.nik]).forEach(function(pn){
+        var pr=prorata[k.nik][pn];
+        if(pr&&pr.autoMasuk){
+          if(!pr.autoResign&&!pr.manual)pr.enabled=false;
+          delete pr.autoMasuk;
+        }
+      });
+    }
+    return;
+  }
+  (periodes||[]).forEach(function(p){
+    if(!p||!p.nama||!p.start||!p.end)return;
+    var pr=getPR(k.nik,p.nama);
+    if(pr.manual||pr.masukPrOff)return;
+    if(!karyawanMasukDiTengahPeriode(k,p)){
+      if(pr.autoMasuk&&!pr.autoResign){
+        pr.enabled=false;
+        delete pr.autoMasuk;
+        if(!pr.manual){
+          var autoOut=prorataHkHhOtomatis(k,p);
+          pr.hk=autoOut.hk;
+          pr.hh=autoOut.hh;
+        }
+      }
+      return;
+    }
+    var auto=prorataHkHhOtomatis(k,p);
+    pr.hk=auto.hk;
+    pr.hh=auto.hh;
+    if(pr.autoResign)return;
+    pr.enabled=true;
+    pr.autoMasuk=true;
+    pr.manual=false;
+  });
+}
 /** Tanggal masuk karyawan (ISO). Kosong = data lama, cuti bersama tetap dihitung semua. */
 function tglMasukKarIso(nik){
   if(!nik)return '';
@@ -639,9 +692,12 @@ function getPR(nik,pN){if(!prorata[nik])prorata[nik]={};if(!prorata[nik][pN]){va
 function setPREnabled(nik,pN,v){
   var pr=getPR(nik,pN);
   pr.enabled=!!v;
-  if(!v)pr.resignPrOff=true;
-  else {
+  if(!v){
+    pr.resignPrOff=true;
+    pr.masukPrOff=true;
+  } else {
     delete pr.resignPrOff;
+    delete pr.masukPrOff;
     sigajiRefreshProrataOtomatis(nik,pN);
   }
   saveAll();
@@ -655,6 +711,7 @@ function setPRField(nik,pN,f,v){
   else pr[f]=v;
   pr.manual=true;
   delete pr.autoResign;
+  delete pr.autoMasuk;
   saveAll();
   if(typeof renderPenggajian==='function')renderPenggajian(false,{instant:true,keepScroll:true});
 }
@@ -672,6 +729,20 @@ function ensureProrataResignUntukPeriode(k,p){
     pr.hh=autoStop.hh;
     pr.autoResign=true;
   }
+  pr.enabled=true;
+  return pr;
+}
+/** Nyalakan pro-rata karyawan masuk tengah periode (kecuali user mematikan/manual/resign). */
+function ensureProrataMasukUntukPeriode(k,p){
+  if(!k||!p||!p.nama)return getPR(k&&k.nik,p&&p.nama);
+  var pr=getPR(k.nik,p.nama);
+  if(pr.masukPrOff||pr.manual)return pr;
+  if(!karyawanMasukDiTengahPeriode(k,p))return pr;
+  var autoMasuk=prorataHkHhOtomatis(k,p);
+  pr.hk=autoMasuk.hk;
+  pr.hh=autoMasuk.hh;
+  if(pr.autoResign)return pr;
+  pr.autoMasuk=true;
   pr.enabled=true;
   return pr;
 }
