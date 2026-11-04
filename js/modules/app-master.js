@@ -196,11 +196,15 @@ function simpanPeriode(){
   if(!nama||!start||!end||!bayar){toast('Wajib diisi');return;}
   if(isNamaPeriodeBaru(nama)&&!guardCanBuatPeriodeBaru(nama))return;
   var tipeP=(document.getElementById('p-tipe-periode')&&document.getElementById('p-tipe-periode').value)||'normal';
-  var blnEnd=parseInt(String(end||bayar||'').slice(5,7),10);
-  if(blnEnd===12&&tipeP==='normal'){
+  var selTipe=document.getElementById('p-tipe-periode');
+  var blnBayar=parseInt(String(bayar||end||'').slice(5,7),10);
+  if(blnBayar===12&&(tipeP==='normal'||tipeP==='biasa'||!tipeP)){
     tipeP='desember';
-    var selTipe=document.getElementById('p-tipe-periode');
     if(selTipe)selTipe.value='desember';
+    if(typeof toggleOpsiLebihBayar==='function')toggleOpsiLebihBayar();
+  }else if(blnBayar!==12&&tipeP==='desember'){
+    tipeP='normal';
+    if(selTipe)selTipe.value='normal';
     if(typeof toggleOpsiLebihBayar==='function')toggleOpsiLebihBayar();
   }
   var opsiLB=(document.getElementById('p-opsi-lebih-bayar')&&document.getElementById('p-opsi-lebih-bayar').value)||'refund';

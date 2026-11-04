@@ -281,11 +281,10 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
     if(pakaiDes){
       var lupaTipe=p.tipe_periode!=='desember';
       html+=(lupaTipe
-        ?'<div class="info-box info-amber font-12 leading-tight mb-md">Periode ini jatuh di Desember. PPh 21 memakai <strong>rekonsiliasi tahunan</strong> otomatis (meski tipe masih Normal). Set tipe masa pajak ke Desember di Master Periode agar bukti potong A1 jelas.</div>'
-        :'<div class="info-box font-12 leading-tight mb-md">Masa pajak Desember: PPh 21 direkonsiliasi dengan tarif progresif Pasal 17 (bukan TER).</div>');
-    }else if(p.tipe_periode==='normal'||!p.tipe_periode||p.tipe_periode==='biasa'){
-      var tEnd=String(p.end||p.bayar||'').slice(5,7);
-      if(tEnd==='12')html+='<div class="info-box info-amber font-12 leading-tight mb-md">Tanggal periode Desember — cek tipe masa pajak.</div>';
+        ?'<div class="info-box info-amber font-12 leading-tight mb-md">Tanggal <strong>bayar</strong> di Desember — PPh 21 memakai <strong>rekonsiliasi tahunan</strong> (masa pajak Desember, bukan tanggal selesai periode). Set tipe ke Desember di Master Periode agar bukti potong A1 jelas.</div>'
+        :'<div class="info-box font-12 leading-tight mb-md">Masa pajak Desember (tanggal bayar): PPh 21 direkonsiliasi dengan tarif progresif Pasal 17 (bukan TER).</div>');
+    }else if(p.tipe_periode==='desember'){
+      html+='<div class="info-box info-amber font-12 leading-tight mb-md">Tipe periode masih Desember, tetapi tanggal bayar bukan Desember — PPh memakai TER. Simpan ulang periode agar tipe mengikuti tanggal bayar.</div>';
     }
     thrInfo.innerHTML=html;
   }
