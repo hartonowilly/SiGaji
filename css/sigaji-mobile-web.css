@@ -432,6 +432,11 @@ html.sigaji-mobile-nav .spt {
     width: 100%;
     max-width: 100%;
   }
+  .dash-tindakan-orang-modal {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
   .mfoot {
     flex-wrap: wrap;
   }

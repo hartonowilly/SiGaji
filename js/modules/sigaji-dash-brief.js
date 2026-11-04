@@ -381,13 +381,13 @@
           eh(p.nik) +
           (p.hint ? ' · ' + eh(p.hint) : '') +
           '</div></div>' +
-          '<button type="button" class="btn btn-xs btn-p" data-sigaji-action="invoke" data-fn="sigajiDashOpenOrang" data-arg="' +
+          '<span class="dash-tindakan-orang-aksi"><button type="button" class="btn btn-xs btn-p" data-sigaji-action="invoke" data-fn="sigajiDashOpenOrang" data-arg="' +
           eh(p.nik) +
           '" data-arg2="' +
           mode +
           '">' +
           eh(btnLbl) +
-          '</button></li>'
+          '</button></span></li>'
         );
       })
       .join('');
@@ -395,7 +395,7 @@
     wrap.id = 'm-dash-tindakan-orang';
     wrap.className = 'mbd show';
     var html =
-      '<div class="modal modal-sm">' +
+      '<div class="modal dash-tindakan-orang-modal">' +
       '<div class="modal-head"><strong>' +
       eh(item.text) +
       '</strong></div>' +
