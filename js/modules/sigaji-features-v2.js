@@ -331,7 +331,7 @@
     var rows = list.map(function (k, idx) {
       var g0 = hitungGaji(k, p.nama);
       var kSim = sigajiApplySimToKar(k, p.nama, sim);
-      var g1 = hitungGaji(kSim, p.nama, { skipResolve: true });
+      var g1 = hitungGaji(kSim, p.nama, { skipResolve: true, skipKreditBawa: true });
       totNow.bruto += g0.grossPPh || 0;
       totNow.pph += g0.pph || 0;
       totNow.neto += g0.neto || 0;

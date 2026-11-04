@@ -1133,9 +1133,32 @@ function periodeTumpangSaldoMigrasi(k,per){
   var saldo=getPphYtdAwal(k,meta.thn);
   return !!(saldo.sd_bulan&&meta.bln<=saldo.sd_bulan&&(saldo.bruto>0||saldo.pph>0||saldo.iuran_jht_jp>0));
 }
+/** Karyawan master (bukan salinan resolveKarForPeriode) — tempat saldo carryover disimpan. */
+function pphLebihBayarKarAsli(k){
+  if(!k)return null;
+  if(typeof sigajiKarByNik==='function'&&k.nik){
+    var master=sigajiKarByNik(k.nik);
+    if(master)return master;
+  }
+  return k;
+}
+function pphLebihBayarSlotKar(k){
+  var asli=pphLebihBayarKarAsli(k);
+  if(asli&&asli.pph_lebih_bayar_bawa)return asli.pph_lebih_bayar_bawa;
+  return k&&k.pph_lebih_bayar_bawa;
+}
+var __sigajiPphBawaSaveTimer=null;
+function sigajiSimpanPphLebihBayarBawa(){
+  if(__sigajiPphBawaSaveTimer)return;
+  if(typeof saveAll!=='function')return;
+  __sigajiPphBawaSaveTimer=setTimeout(function(){
+    __sigajiPphBawaSaveTimer=null;
+    saveAll();
+  },0);
+}
 /** Carryover: cairkan lebih bayar tahun lalu ke THP di periode bayar Januari (sekali). Tidak mengubah PPh 21. */
 function pphLebihBayarCairDiPeriode(k,pNama){
-  var slot=k&&k.pph_lebih_bayar_bawa;
+  var slot=pphLebihBayarSlotKar(k);
   if(!slot||!(slot.nilai>0))return 0;
   var p=periodes.find(function(x){return x.nama===pNama;})||PA();
   var meta=periodeBulanPajakBayar(p);
@@ -1152,12 +1175,19 @@ function pphLebihBayarCairDiPeriode(k,pNama){
 }
 function syncPphLebihBayarBawa(k,ytdThn,lebih,opsi){
   if(!k)return;
+  var target=pphLebihBayarKarAsli(k);
   var next=Number(ytdThn)+1;
+  var before=target.pph_lebih_bayar_bawa?JSON.stringify(target.pph_lebih_bayar_bawa):'';
   if(opsi==='carryover'&&lebih>0){
-    k.pph_lebih_bayar_bawa={tahun:next,nilai:Math.round(lebih),sumberTahun:Number(ytdThn)};
-    return;
+    var slot={tahun:next,nilai:Math.round(lebih),sumberTahun:Number(ytdThn)};
+    target.pph_lebih_bayar_bawa=slot;
+    if(k!==target)k.pph_lebih_bayar_bawa=slot;
+  }else if(target.pph_lebih_bayar_bawa&&Number(target.pph_lebih_bayar_bawa.sumberTahun)===Number(ytdThn)){
+    delete target.pph_lebih_bayar_bawa;
+    if(k!==target)delete k.pph_lebih_bayar_bawa;
   }
-  if(k.pph_lebih_bayar_bawa&&Number(k.pph_lebih_bayar_bawa.sumberTahun)===Number(ytdThn))delete k.pph_lebih_bayar_bawa;
+  var after=target.pph_lebih_bayar_bawa?JSON.stringify(target.pph_lebih_bayar_bawa):'';
+  if(before!==after)sigajiSimpanPphLebihBayarBawa();
 }
 // Hitung total bruto karyawan dari saldo migrasi + periodes sebelumnya dalam tahun yg sama
 /**
