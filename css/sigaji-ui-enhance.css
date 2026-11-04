@@ -1528,6 +1528,23 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   flex: 1;
   min-width: 0;
 }
+.dash-tindakan-orang-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+.dash-tindakan-orang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--color-surface-muted, #f1f5f9);
+}
+.dash-tindakan-orang-row:last-child { border-bottom: 0; }
+.dash-tindakan-orang-meta { min-width: 0; }
 .dash-kpi3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
