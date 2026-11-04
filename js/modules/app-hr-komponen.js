@@ -303,6 +303,7 @@ function openPayrollPanel(nik){
     if(typeof sigajiApplyPanelDockForViewport==='function')sigajiApplyPanelDockForViewport();
     else if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(window.matchMedia('(min-width:1200px)').matches);
   }catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
+  if(typeof bindPayrollSpTabsOnce==='function')bindPayrollSpTabsOnce();
   if(!applyPayrollSlideTabsVisibility()){closePayrollPanel();return;}
   setSpPayrollView('periode');
   syncPphReturnFieldState();

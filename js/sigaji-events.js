@@ -67,6 +67,20 @@
         return true;
       case 'call-value':
         return invokeValue(el);
+      case 'payroll-sp-tab': {
+        var payrollSub = el.getAttribute('data-kgstab');
+        var payrollMap = {
+          gaji: 'sp-gaji',
+          bpjs: 'sp-bpjs',
+          natura: 'sp-natura',
+          pphret: 'sp-pphret',
+          ring: 'sp-ring',
+        };
+        if (payrollSub && payrollMap[payrollSub] && typeof switchPayrollSpTab === 'function') {
+          switchPayrollSpTab(el, payrollMap[payrollSub]);
+        }
+        return true;
+      }
       case 'bento-hide': {
         var wid = el.getAttribute('data-id');
         if (wid && typeof sigajiHideBentoWidget === 'function') sigajiHideBentoWidget(wid);
@@ -505,8 +519,8 @@
         return;
       }
 
-      var sp = t.closest('#slide-panel-payroll .spt[data-kgstab]');
-      if (sp && typeof switchPayrollSpTab === 'function') {
+      var sp = t.closest('.spt[data-kgstab]');
+      if (sp && sp.closest('#slide-panel-payroll') && typeof switchPayrollSpTab === 'function') {
         var spMap = {
           gaji: 'sp-gaji',
           bpjs: 'sp-bpjs',

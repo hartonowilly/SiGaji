@@ -49,6 +49,7 @@ const suites = [
   'prorata-masuk.test.mjs',
   'tunjvar-grid.test.mjs',
   'lembur-periode.test.mjs',
+  'payroll-sp-tabs.test.mjs',
   'outbox.test.mjs',
   'no-inline-handlers.test.mjs',
   'build-banner.test.mjs',

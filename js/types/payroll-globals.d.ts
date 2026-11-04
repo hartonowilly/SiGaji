@@ -160,6 +160,8 @@ declare function loadBPJSPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function renderNaturaPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function renderPPhRetPanel(k: KaryawanPayroll | KarSnapshot): void;
 declare function updateGajiSummary(): void;
+declare function bindPayrollSpTabsOnce(): void;
+declare function switchPayrollSpTab(el: Element | null, tid: string): void;
 declare function sigajiMultiBranchEnabled(): boolean;
 declare function sigajiKarCabangPemotongMeta(k: KaryawanPayroll): {
   nama?: string;
