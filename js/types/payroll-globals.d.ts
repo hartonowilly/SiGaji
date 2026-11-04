@@ -421,6 +421,8 @@ interface HitungGajiResult {
     isPajakTerakhir?: boolean;
     brutoTahunan: number;
     pphTahunan: number;
+    pkpTahunan?: number;
+    iuranTahunan?: number;
     pphBulanIni?: number;
     lebihBayar: number;
     kurangBayar: number;

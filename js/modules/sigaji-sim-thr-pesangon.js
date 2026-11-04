@@ -40,12 +40,18 @@
         : deepCloneKar(k);
     if (sim.mkBulan !== '' && sim.mkBulan != null && !isNaN(parseFloat(sim.mkBulan))) {
       var months = Math.max(0, parseFloat(sim.mkBulan));
-      var d = new Date();
+      var p = typeof periodes !== 'undefined' && periodes
+        ? periodes.find(function (x) { return x && x.nama === pNama; })
+        : null;
+      if (!p && typeof PA === 'function') p = PA();
+      var acuan = String((p && (p.thr_hariraya || p.thr_bayar || p.end)) || '').slice(0, 10);
+      var d = /^\d{4}-\d{2}-\d{2}$/.test(acuan) ? new Date(acuan + 'T12:00:00') : new Date();
       d.setMonth(d.getMonth() - Math.floor(months));
-      out.masuk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+      out.masuk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
     return out;
   }
+  window.sigajiSimKarForThr = simKarForThr;
 
   function simKarForPesangon(k, sim) {
     if (!k) return null;

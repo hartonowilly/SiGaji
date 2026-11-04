@@ -160,6 +160,8 @@ const sheet = after.get('xl/worksheets/sheet2.xml').data.toString('utf8');
   assertEq('tanpa label', px.sigajiConverterFileName('2026-12-24', ''),
     'Converter EXCEL Desember 2026.xlsm');
   assertEq('tanggal ringkas', px.sigajiConverterCompactDate('2026-08-31'), '20260831');
+  assertEq('nama file THR', px.sigajiConverterFileName('2026-08-31', 'Cemerlang', 'thr'),
+    'Converter EXCEL THR Agustus 2026 Cemerlang.xlsm');
 }
 
 // ── 6. Nomor rekening tak lazim tidak dipaksa jadi angka ──

@@ -120,18 +120,25 @@ function renderPPHBody(){
     const rate=typeof rateTerHasil==='function'?rateTerHasil(g,k,PA()):0;
     const rec=g.reconciliation;
     const pphSetahun=rec?Math.round(rec.pphTahunan||0):null;
-    const brutoTahun=rec?Math.round(rec.brutoTahunan||0):(g.grossPPh||0);
-    const bj=Math.min(brutoTahun*.05,6e6);const pv=nilaiPTKP(k.ptkp,tglP);const pkp=rec?Math.max(0,Math.floor((brutoTahun-bj-pv)/1000)*1000):Math.max(0,g.grossPPh*12-bj-pv);
+    var tipeKerja=typeof sigajiNormalizeKarTipe==='function'?sigajiNormalizeKarTipe(k.tipe_kerja,k):'tetap';
+    var siklus=typeof normalizeSiklusGaji==='function'?normalizeSiklusGaji(k.siklus_gaji):'bulanan';
+    var pkp=null;
+    if(tipeKerja!=='tidak_tetap'&&!(siklus==='harian'&&tipeKerja==='tidak_tetap')){
+      if(rec&&rec.pkpTahunan!=null)pkp=Math.round(rec.pkpTahunan);
+      else if(rec&&typeof hitungPkpTahunan==='function'){
+        pkp=hitungPkpTahunan(rec.brutoTahunan,k.ptkp,tglP,{bulanKerja:12,iuranJhtJpKar:rec.iuranTahunan||0});
+      }
+    }
     sums.gross+=g.grossPPh||0;
     sums.thr+=g.thrBruto||0;
-    sums.pkp+=pkp;
+    if(pkp!=null)sums.pkp+=pkp;
     sums.pphY+=pphSetahun!=null?pphSetahun:(g.pph||0);
     sums.pphM+=g.pph||0;
     sums.pphRet+=g.pphRet||0;
     return '<tr><td class="text-center fw-700 text-muted sticky-no">'+(idx+1)+'</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+escapeHtml(k.nama)+'</div></div></td>'
       +'<td><span class="bdg b-info">'+escapeHtml(k.ptkp)+'</span></td><td class="num cell-money">'+fmt(g.grossPPh)+'</td>'
       +'<td class="num cell-money">'+(g.thrBruto>0?'<span class="ct-purple fw-700">'+fmt(g.thrBruto)+'</span>':'&#8212;')+'</td>'
-      +'<td class="num" title="TER '+escapeHtml(k.ptkp)+'">'+(rate*100).toFixed(2)+'%</td><td class="num cell-money">'+fmt(pkp)+'</td><td class="num cell-money">'+(pphSetahun!=null?fmt(pphSetahun):'&#8212;')+'</td>'
+      +'<td class="num" title="TER '+escapeHtml(k.ptkp)+'">'+(rate*100).toFixed(2)+'%</td><td class="num cell-money">'+(pkp!=null?fmt(pkp):'&#8212;')+'</td><td class="num cell-money">'+(pphSetahun!=null?fmt(pphSetahun):'&#8212;')+'</td>'
       +'<td class="num cell-money"><strong>'+fmt(g.pph)+'</strong></td>'
       +'<td class="num cell-money">'+(g.pphRet>0?'<span class="ct-success fw-700">+ '+fmt(g.pphRet)+'</span>':'&#8212;')+'</td></tr>';
   });
