@@ -1042,7 +1042,7 @@
       var d = r.data && typeof r.data === 'object' ? r.data : {};
       if (!d.nama) d.nama = r.nama;
       rememberLoaded(loaded, 'P', { nama: r.nama, data: d, version: r.version });
-      return d;
+      return D.sanitizePeriodeForCloud(d);
     });
 
     var tunjVarColumns = (kolRes.data || []).map(function (r) {
@@ -1067,6 +1067,7 @@
       ITEM_STORE_KEYS.forEach(function (k) {
         store[k] = parts[k];
       });
+      D.attachPayPrivacyFromItems(periodes, parts);
     }
 
     var licFromMeta = {
@@ -1931,13 +1932,19 @@
           : 1,
     };
 
+    var periodesOwn = (perRes.data || []).map(function (r) {
+      var d = D.sanitizePeriodeForCloud(r.data || {});
+      if (!d.nama && r.nama) d.nama = r.nama;
+      return d;
+    });
+    if (ownItems && typeof D.attachPayPrivacyFromItems === 'function') {
+      D.attachPayPrivacyFromItems(periodesOwn, ownItems);
+    }
     return {
       schemaVersion: 10,
       license: lic,
       karyawan: karRes.data && karRes.data.data ? [karRes.data.data] : [],
-      periodes: (perRes.data || []).map(function (r) {
-        return r.data || {};
-      }),
+      periodes: periodesOwn,
       hariLibur: store.hariLibur || [],
       masterCuti: store.masterCuti || { kuota: 12, carryover: 'no', cbPotong: true },
       absensi: absensi,

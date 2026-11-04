@@ -5,7 +5,8 @@
  */
 (function (root) {
   /** Kunci store yang punya tabel baris sendiri (sigaji_item) setelah SQL v12. */
-  var ITEM_KINDS = ['absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot'];
+  var ITEM_KINDS = ['absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline'];
+  var PAY_PRIVACY_KINDS = { hasilGaji: true, absensiPotBaseline: true };
 
   var STORE_KEYS = [
     'perusahaan',
@@ -120,8 +121,77 @@
 
   function itemKeyFor(kind, nik, sub) {
     if (kind === 'absensi') return nik + '|' + sub;
-    if (kind === 'thrManual' || kind === 'karSnapshot') return sub + '|' + nik;
+    if (kind === 'thrManual' || kind === 'karSnapshot' || PAY_PRIVACY_KINDS[kind]) return sub + '|' + nik;
     return nik;
+  }
+
+  /** Jangan simpan gaji per orang di baris periode (bisa dibaca semua anggota tenant). */
+  function sanitizePeriodeForCloud(x) {
+    if (!x || typeof x !== 'object') return x;
+    var o = {};
+    Object.keys(x).forEach(function (k) {
+      if (k === 'hasil_gaji' || k === 'absensi_pot_baseline') return;
+      o[k] = x[k];
+    });
+    return o;
+  }
+
+  function explodePayPrivacyFromPeriode(x, pushUnique) {
+    if (!x || !x.nama) return;
+    var pn = String(x.nama);
+    var hg = x.hasil_gaji && x.hasil_gaji.byNik;
+    if (isPlainObject(hg)) {
+      Object.keys(hg).forEach(function (nik) {
+        if (hg[nik] == null) return;
+        pushUnique(ent('I', { kind: 'hasilGaji', item_key: itemKeyFor('hasilGaji', nik, pn) }, hg[nik], nik));
+      });
+    }
+    var bl = x.absensi_pot_baseline;
+    if (isPlainObject(bl)) {
+      Object.keys(bl).forEach(function (nik) {
+        if (bl[nik] == null) return;
+        pushUnique(ent('I', { kind: 'absensiPotBaseline', item_key: itemKeyFor('absensiPotBaseline', nik, pn) }, bl[nik], nik));
+      });
+    }
+  }
+
+  function applyPayPrivacyToPeriode(periodes, kind, pNama, nik, data) {
+    if (!pNama || !nik) return;
+    var p = null;
+    for (var i = 0; i < (periodes || []).length; i++) {
+      if (periodes[i] && String(periodes[i].nama) === String(pNama)) {
+        p = periodes[i];
+        break;
+      }
+    }
+    if (!p) return;
+    if (kind === 'hasilGaji') {
+      if (!p.hasil_gaji || p.hasil_gaji.v !== 1) p.hasil_gaji = { v: 1, byNik: (p.hasil_gaji && p.hasil_gaji.byNik) || {} };
+      if (!p.hasil_gaji.byNik) p.hasil_gaji.byNik = {};
+      if (data == null) {
+        delete p.hasil_gaji.byNik[nik];
+        if (!Object.keys(p.hasil_gaji.byNik).length) delete p.hasil_gaji;
+      } else p.hasil_gaji.byNik[nik] = data;
+      return;
+    }
+    if (!p.absensi_pot_baseline) p.absensi_pot_baseline = {};
+    if (data == null) {
+      delete p.absensi_pot_baseline[nik];
+      if (!Object.keys(p.absensi_pot_baseline).length) delete p.absensi_pot_baseline;
+    } else p.absensi_pot_baseline[nik] = data;
+  }
+
+  function attachPayPrivacyFromItems(periodes, parts) {
+    var hg = (parts && parts.hasilGaji) || {};
+    var bl = (parts && parts.absensiPotBaseline) || {};
+    (periodes || []).forEach(function (p) {
+      if (!p || !p.nama) return;
+      delete p.hasil_gaji;
+      delete p.absensi_pot_baseline;
+      var byNik = hg[p.nama];
+      if (isPlainObject(byNik) && Object.keys(byNik).length) p.hasil_gaji = { v: 1, byNik: byNik };
+      if (isPlainObject(bl[p.nama]) && Object.keys(bl[p.nama]).length) p.absensi_pot_baseline = bl[p.nama];
+    });
   }
 
   /** Pecah satu kind (absensi, lembur, …) menjadi entitas sigaji_item. */
@@ -208,7 +278,8 @@
     });
     (Array.isArray(p.periodes) ? p.periodes : []).forEach(function (x) {
       if (!x || !x.nama) return;
-      pushUnique(ent('P', { nama: String(x.nama) }, x));
+      pushUnique(ent('P', { nama: String(x.nama) }, sanitizePeriodeForCloud(x)));
+      if (opts.items) explodePayPrivacyFromPeriode(x, pushUnique);
     });
     STORE_KEYS.forEach(function (key) {
       if (opts.items && ITEM_KINDS.indexOf(key) !== -1) return;
@@ -530,8 +601,15 @@
         for (i = 0; i < pl.length; i++) if (pl[i] && String(pl[i].nama) === e.key.nama) break;
         if (data == null) {
           if (i < pl.length) pl.splice(i, 1);
-        } else if (i < pl.length) pl[i] = data;
-        else pl.push(data);
+        } else {
+          var keepHg = i < pl.length ? pl[i].hasil_gaji : null;
+          var keepBl = i < pl.length ? pl[i].absensi_pot_baseline : null;
+          var nextP = sanitizePeriodeForCloud(data);
+          if (i < pl.length) pl[i] = nextP;
+          else pl.push(nextP);
+          if (keepHg && !nextP.hasil_gaji) nextP.hasil_gaji = keepHg;
+          if (keepBl && !nextP.absensi_pot_baseline) nextP.absensi_pot_baseline = keepBl;
+        }
         return;
       }
       case 'S': {
@@ -592,16 +670,20 @@
     var ik = String(e.key.item_key);
     var nik = e.nik != null ? String(e.nik) : '';
     if (e.key.kind === 'absensi') return ik.slice(nik.length + 1);
-    if (e.key.kind === 'thrManual' || e.key.kind === 'karSnapshot') return ik.slice(0, ik.length - nik.length - 1);
+    if (e.key.kind === 'thrManual' || e.key.kind === 'karSnapshot' || PAY_PRIVACY_KINDS[e.key.kind])
+      return ik.slice(0, ik.length - nik.length - 1);
     return '';
   }
 
   function applyItemToMemory(mem, e, data) {
     var kind = e.key.kind;
     var nik = e.nik != null ? String(e.nik) : '';
+    var sub = itemSubKey(e);
+    if (PAY_PRIVACY_KINDS[kind] && Array.isArray(mem.periodes)) {
+      applyPayPrivacyToPeriode(mem.periodes, kind, sub, nik, data);
+    }
     var store = mem[kind];
     if (!isPlainObject(store) || !nik) return;
-    var sub = itemSubKey(e);
     if (kind === 'absensi') {
       var days = store[nik] || (store[nik] = {});
       Object.keys(days).forEach(function (d) {
@@ -629,7 +711,15 @@
 
   /** Susun bagian payload dari baris sigaji_item (saat muat). */
   function itemsToPayloadParts(rows) {
-    var parts = { absensi: {}, lembur: {}, prorata: {}, thrManual: {}, karSnapshot: {} };
+    var parts = {
+      absensi: {},
+      lembur: {},
+      prorata: {},
+      thrManual: {},
+      karSnapshot: {},
+      hasilGaji: {},
+      absensiPotBaseline: {},
+    };
     (rows || []).forEach(function (row) {
       var e = entityFromRow('I', row);
       if (ITEM_KINDS.indexOf(e.key.kind) === -1) return;
@@ -654,6 +744,8 @@
     mergeEntity: mergeEntity,
     applyEntityToMemory: applyEntityToMemory,
     itemsToPayloadParts: itemsToPayloadParts,
+    sanitizePeriodeForCloud: sanitizePeriodeForCloud,
+    attachPayPrivacyFromItems: attachPayPrivacyFromItems,
     normalizeTunjVarColumns: normalizeTunjVarColumns,
   };
 

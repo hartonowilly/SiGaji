@@ -149,6 +149,21 @@ export async function enforceRateLimit(request, opts) {
 }
 
 export async function loadUsersForAuth(sb, tenant) {
+  const { data: roles, error: roleErr } = await sb
+    .from('sigaji_user_roles')
+    .select('role,nik,email,username,aktif,cabang_id,auth_uid')
+    .eq('tenant_key', tenant);
+  if (!roleErr && Array.isArray(roles) && roles.length) {
+    return roles.map((r) => ({
+      role: r.role,
+      nik: r.nik,
+      email: r.email,
+      username: r.username,
+      aktif: r.aktif !== false,
+      cabangId: r.cabang_id || '',
+      auth_uid: r.auth_uid,
+    }));
+  }
   const { data: storeRow, error: se } = await sb
     .from('sigaji_store')
     .select('data')

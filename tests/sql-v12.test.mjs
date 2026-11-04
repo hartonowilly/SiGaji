@@ -157,6 +157,31 @@ await db.exec(sqlKetat);
 assert('SQL cabang ketat bisa dijalankan dua kali', true);
 
 {
+  await db.exec(
+    `update public.sigaji_periode set data = data || '{"hasil_gaji":{"v":1,"byNik":{"K2":{"neto":999}}},"absensi_pot_baseline":{"K2":{"total":1}}}'::jsonb where nama='Okt 2026'`
+  );
+  const strip = readFileSync(join(root, 'sql/supabase_strip_periode_gaji.sql'), 'utf8');
+  await db.exec(strip);
+  const d = (await rows(db, `select data from public.sigaji_periode where nama='Okt 2026'`))[0].data;
+  assert('bersih: JSON periode tanpa hasil_gaji', !d.hasil_gaji);
+  assert('bersih: JSON periode tanpa absensi_pot_baseline', !d.absensi_pot_baseline);
+}
+
+await as(db, 'hrdPusat', async () => {
+  const blocked = await fails(
+    db,
+    `select public.sigaji_sync_user_roles('main', $1::jsonb)`,
+    [
+      JSON.stringify([
+        { username: 'admin', role: 'Admin', email: 'admin@pt.co' },
+        { username: 'hrd', role: 'Admin', email: 'hrd@pt.co' },
+      ]),
+    ]
+  );
+  assert('HRD pusat tidak boleh mengangkat Admin', blocked);
+});
+
+{
   const r = await rows(db, `select username, role, cabang_id, aktif from public.sigaji_user_roles where tenant_key='main' order by username`);
   const by = Object.fromEntries(r.map((x) => [x.username, x]));
   assert('peta role diisi lewat email (huruf besar diabaikan)', by.admin && by.admin.role === 'Admin', r);

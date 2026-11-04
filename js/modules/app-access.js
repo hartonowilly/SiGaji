@@ -82,8 +82,10 @@ function sigajiBuildUserRoleOptions(selectedRole){
   var seen={};
   var order=['Admin','HRD','Karyawan'];
   var html='';
+  var canGrantAdmin=typeof CU!=='undefined'&&CU&&CU.role==='Admin';
   order.forEach(function(r){
     if(!roles[r])return;
+    if(r==='Admin'&&!canGrantAdmin&&pick!=='Admin')return;
     seen[r]=1;
     var lbl=SIGAJI_USER_ROLE_LABELS[r]||r;
     html+='<option value="'+escapeAttr(r)+'">'+escapeHtml(lbl)+'</option>';
@@ -184,6 +186,10 @@ function simpanUser(){
   if(apkOnly&&role!=='Admin'&&role!=='HRD'){
     if(!nik){toast('Untuk login APK Android, wajib tautkan NIK karyawan');return;}
     role='Absen';
+  }
+  if(role==='Admin'&&(!CU||CU.role!=='Admin')){
+    toast('Hanya Admin yang boleh memberi peran Admin');
+    return;
   }
   if(cloud){
     if(!emailRaw){toast('Mode cloud: isi Email Supabase untuk tiap user yang boleh login.');return;}

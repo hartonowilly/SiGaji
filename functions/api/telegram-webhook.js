@@ -15,12 +15,17 @@ export async function onRequestOptions({ request }) {
 export async function onRequestPost({ request, env }) {
   try {
     const token = requireEnv(env, 'SIGAJI_TELEGRAM_BOT_TOKEN');
-    const secret = envStr(env, 'SIGAJI_TELEGRAM_WEBHOOK_SECRET', '');
-    if (secret) {
-      const hdr = request.headers.get('x-telegram-bot-api-secret-token');
-      if (!hdr || String(hdr) !== String(secret)) {
-        return jsonResponse(401, { ok: false, error: 'Invalid secret token' }, request);
-      }
+    const secret = String(envStr(env, 'SIGAJI_TELEGRAM_WEBHOOK_SECRET', '') || '').trim();
+    if (!secret) {
+      return jsonResponse(
+        503,
+        { ok: false, error: 'SIGAJI_TELEGRAM_WEBHOOK_SECRET wajib diisi di Cloudflare' },
+        request
+      );
+    }
+    const hdr = request.headers.get('x-telegram-bot-api-secret-token');
+    if (!hdr || String(hdr) !== secret) {
+      return jsonResponse(401, { ok: false, error: 'Invalid secret token' }, request);
     }
 
     const tenant = getTenantKey(env);

@@ -196,7 +196,7 @@ alter table public.sigaji_tunj_var_kolom
 
 create table if not exists public.sigaji_item (
   tenant_key text not null default 'main',
-  kind text not null check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot')),
+  kind text not null check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline')),
   item_key text not null,
   nik text not null default '',
   cabang_id text not null default 'utama',
@@ -574,6 +574,22 @@ begin
     x
   from jsonb_array_elements(case when jsonb_typeof(p_users) = 'array' then p_users else '[]'::jsonb end) x;
 
+  if exists (
+    select 1
+    from sigaji_sync_src s
+    where s.uid is not null
+      and coalesce(nullif(btrim(s.e ->> 'role'), ''), 'Karyawan') = 'Admin'
+      and not exists (
+        select 1 from public.sigaji_user_roles r
+        where r.tenant_key = p_tenant and r.auth_uid = s.uid and r.role = 'Admin'
+      )
+  ) and not exists (
+    select 1 from public.sigaji_user_roles r
+    where r.auth_uid = me and r.tenant_key = p_tenant and r.aktif and r.role = 'Admin'
+  ) then
+    raise exception 'Hanya Admin yang boleh memberi peran Admin' using errcode = '42501';
+  end if;
+
   select coalesce(jsonb_agg(coalesce(e ->> 'username', e ->> 'email')), '[]'::jsonb) into unmatched
   from sigaji_sync_src
   where uid is null and coalesce(e ->> 'aktif', 'true') <> 'false' and coalesce(btrim(e ->> 'email'), '') <> '';
@@ -759,6 +775,16 @@ grant select, insert, update, delete on table public.sigaji_deleted to service_r
 grant usage, select on sequence public.sigaji_deleted_id_seq to service_role;
 grant select, insert, update, delete on table public.sigaji_user_roles to authenticated;
 grant select, insert, update, delete on table public.sigaji_user_roles to service_role;
+
+alter table public.sigaji_item drop constraint if exists sigaji_item_kind_check;
+alter table public.sigaji_item add constraint sigaji_item_kind_check
+  check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline'));
+
+-- Gaji per orang tidak boleh tinggal di JSON periode (RLS periode = semua anggota tenant).
+update public.sigaji_periode
+set data = data - 'hasil_gaji' - 'absensi_pot_baseline'
+where jsonb_typeof(data) = 'object'
+  and (data ? 'hasil_gaji' or data ? 'absensi_pot_baseline');
 
 update public.sigaji_tenant_meta set schema_version = greatest(coalesce(schema_version, 0), 12), updated_at = now();
 
