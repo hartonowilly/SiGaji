@@ -554,6 +554,7 @@
       });
     if (g.pphRet) steps.push({ lbl: 'Pengembalian PPh', val: g.pphRet, type: 'up' });
     if (g.refundPph) steps.push({ lbl: 'Lebih bayar PPh (dikembalikan)', val: g.refundPph, type: 'up' });
+    if (g.refundPphBawa) steps.push({ lbl: 'Pengembalian PPh tahun lalu', val: g.refundPphBawa, type: 'up' });
     steps.push({ lbl: 'Take Home Pay', val: g.neto, type: 'final' });
 
     var maxAbs = Math.max.apply(

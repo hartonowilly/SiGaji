@@ -401,7 +401,7 @@ interface HitungGajiResult {
   ptkpStatus?: string;
   pphTanpaThr: number;
   pphAtasThr: number;
-  kreditPphBawa?: number;
+  refundPphBawa?: number;
   neto: number;
   netoRegular: number;
   thrBruto: number;
