@@ -219,4 +219,27 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   );
 }
 
+{
+  const p = payload();
+  p.periodes[0].hasil_gaji = { v: 1, byNik: { K001: { neto: 4500000, pph: 100000 }, K002: { neto: 6000000 } } };
+  p.periodes[0].absensi_pot_baseline = { K001: { total: 0 } };
+  const entsPay = D.explodePayload(p, { items: true });
+  const per = entsPay.find((e) => e.t === 'P' && e.key.nama === 'Okt 2026');
+  assert('baris periode tidak berisi hasil_gaji', per && !per.data.hasil_gaji);
+  assert('baris periode tidak berisi absensi_pot_baseline', per && !per.data.absensi_pot_baseline);
+  assert(
+    'hasil gaji jadi item per NIK',
+    entsPay.some((e) => e.t === 'I' && e.key.kind === 'hasilGaji' && e.key.item_key === 'Okt 2026|K001' && e.data.neto === 4500000)
+  );
+  const parts = D.itemsToPayloadParts(
+    entsPay
+      .filter((e) => e.t === 'I')
+      .map((e) => ({ kind: e.key.kind, item_key: e.key.item_key, nik: e.nik, data: e.data }))
+  );
+  const restored = [D.sanitizePeriodeForCloud(p.periodes[0])];
+  D.attachPayPrivacyFromItems(restored, parts);
+  assert('item hasilGaji dipasang kembali ke periode di memori', restored[0].hasil_gaji.byNik.K001.neto === 4500000);
+  assert('item baseline dipasang kembali', restored[0].absensi_pot_baseline.K001.total === 0);
+}
+
 console.log('\nSemua tes sinkron delta lulus.');

@@ -14,6 +14,7 @@ import {
   isCloudflareSmtpBlocked,
   smtpFixHint,
 } from '../_lib/cf-shared.js';
+import { assertNikInScope, tablesReady, loadCloudPayload } from '../_lib/tenant-data.js';
 
 function smtpFromAddress(env) {
   const from = envStr(env, 'SIGAJI_SMTP_FROM', '');
@@ -134,19 +135,42 @@ export async function onRequestPost({ request, env }) {
 
     const auth = request.headers.get('authorization') || '';
     const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
+    const caller = await assertCallerIsHrdOrAdmin(sb, jwt, tenant);
 
     const body = await request.json().catch(() => ({}));
-    const to = String(body.to || '').trim().toLowerCase();
+    const nik = String(body.nik || '').trim();
+    if (!nik) return jsonResponse(400, { ok: false, error: 'nik wajib' }, request);
+    await assertNikInScope(sb, tenant, caller.me, nik);
+
+    let kar = null;
+    if (await tablesReady(sb, tenant)) {
+      const { data, error } = await sb
+        .from('sigaji_karyawan')
+        .select('data')
+        .eq('tenant_key', tenant)
+        .eq('nik', nik)
+        .maybeSingle();
+      if (error) throw error;
+      kar = data && data.data;
+    } else {
+      kar = ((await loadCloudPayload(sb, tenant)).karyawan || []).find(
+        (x) => x && String(x.nik) === nik
+      );
+    }
+    if (!kar) return jsonResponse(404, { ok: false, error: 'Karyawan tidak ditemukan' }, request);
+    const to = String(kar.email || '').trim().toLowerCase();
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      return jsonResponse(400, { ok: false, error: 'Email karyawan belum tercatat di master' }, request);
+    }
+    const asked = String(body.to || '').trim().toLowerCase();
+    if (asked && asked !== to) {
+      return jsonResponse(400, { ok: false, error: 'Alamat email harus sama dengan data karyawan' }, request);
+    }
+
     const subject = String(body.subject || 'Slip gaji').trim() || 'Slip gaji';
     const text = String(body.text || body.bodyText || '').trim();
     const filename = String(body.filename || 'Slip.pdf').trim() || 'Slip.pdf';
     const pdfBase64 = String(body.pdfBase64 || '');
-    const nik = String(body.nik || '').trim();
-
-    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
-      return jsonResponse(400, { ok: false, error: 'Alamat email penerima tidak valid' }, request);
-    }
     if (!pdfBase64) return jsonResponse(400, { ok: false, error: 'pdfBase64 required' }, request);
 
     const payload = { to, subject, text, filename, pdfBase64, nik: nik || undefined };
