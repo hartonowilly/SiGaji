@@ -355,20 +355,23 @@ function renderLemburList(){
   var num=0;
   var listLem=sortKaryawanByNik(karyawan||[]);
   el.innerHTML=listLem.map(function(k){
-    const ld=lembur[k.nik]||[];const upj=sigajiRp(k.gapok)/173;if(!ld.length)return'';
+    const ld=lembur[k.nik]||[];const upj=typeof upahPerJamDariSiklus==='function'?upahPerJamDariSiklus(k):sigajiRp(k.gapok)/173;if(!ld.length)return'';
     num++;
+    var pAktif=typeof PA==='function'?PA():null;
     return '<div class="tabs-spaced-lg"><div class="fw-700 font-12 ct-brand mb-xs">'+escapeHtml(k.nama)+' <span class="text-muted">#'+num+'</span></div>'
-      +ld.map(function(r,i){const j=parseFloat(String(r.jam))||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);
+      +ld.map(function(r,i){const j=parseFloat(String(r.jam))||0;var h=typeof uangLemburEntri==='function'?uangLemburEntri(r.jam,upj,r.tanggal):0;
+        var luarPer=r.tanggal&&pAktif&&typeof lemburTanggalDalamPeriode==='function'&&!lemburTanggalDalamPeriode(r.tanggal,pAktif);
         var lr=r.tanggal&&periodeSnapshotLockedUntukTanggal(r.tanggal);
         var lemRo=CU&&CU.role!=='Admin'&&lr;
         return '<div class="fl gap1 mb1 items-center flex-wrap">'
           +'<input type="date" class="comp-inp lembur-inp-date" value="'+(r.tanggal||'')+'" '+(lemRo?'disabled ':'')+'data-sigaji-action="upd-lembur" data-nik="'+escapeAttr(k.nik)+'" data-i="'+i+'" data-f="tanggal">'
           +'<input type="number" class="comp-inp lembur-inp-jam" placeholder="Jam" value="'+(r.jam||'')+'" '+(lemRo?'disabled ':'')+'min="1" max="12" data-sigaji-action="upd-lembur" data-nik="'+escapeAttr(k.nik)+'" data-i="'+i+'" data-f="jam">'
-          +'<span class="font-11 text-muted lembur-inp-amt">'+(j>0?fmt(Math.round(h)):'')+'</span>'
+          +'<span class="font-11 text-muted lembur-inp-amt">'+(j>0?fmt(h):'')+'</span>'
+          +(luarPer?'<span class="u-muted-10">di luar periode — tidak dibayar bulan ini</span>':'')
           +(lemRo?'':'<button class="btn btn-sm btn-r"'+sigajiDataAction('del-lembur',{nik:k.nik,i:i})+'>&#10007;</button>')+'</div>';
       }).join('')+'</div>';
   }).join('')||(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#9203;',title:'Belum ada lembur',desc:'Pilih karyawan lalu tambah baris lembur per tanggal.',btnLabel:'+ Tambah lembur',btnAction:'addLemburForKar'}):'<div class="text-subtle font-12">Belum ada.</div>');
-  let tot=0;karyawan.forEach(function(k){const upj=sigajiRp(k.gapok)/173;(lembur[k.nik]||[]).forEach(function(r){const j=parseFloat(String(r.jam))||0;let h=0;if(j>=1)h+=upj*1.5;if(j>=2)h+=upj*2*(j-1);tot+=Math.round(h);});});
+  let tot=0;var pRek=typeof PA==='function'?PA():null;karyawan.forEach(function(k){if(typeof uangLemburKaryawanPeriode==='function'&&pRek){tot+=uangLemburKaryawanPeriode(k.nik,k,pRek);return;}const upj=sigajiRp(k.gapok)/173;(lembur[k.nik]||[]).forEach(function(r){tot+=(typeof uangLemburEntri==='function'?uangLemburEntri(r.jam,upj,r.tanggal):0);});});
   const re=document.getElementById('lembur-result');if(re)re.innerHTML=tot>0?'<div class="pph-box"><div class="pph-box-tit"><span>Total Lembur</span><span>'+fmt(tot)+'</span></div></div>':(typeof sigajiEmptyState==='function'?sigajiEmptyState({icon:'&#128200;',title:'Rekap kosong',desc:'Total lembur muncul setelah ada input jam.'}):'<div class="text-subtle font-12">Belum ada.</div>');
 }
 function updLembur(nik,i,f,v){

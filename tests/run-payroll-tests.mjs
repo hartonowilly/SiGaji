@@ -48,6 +48,7 @@ const suites = [
   'aturan-pajak-kunci.test.mjs',
   'prorata-masuk.test.mjs',
   'tunjvar-grid.test.mjs',
+  'lembur-periode.test.mjs',
   'outbox.test.mjs',
   'no-inline-handlers.test.mjs',
   'build-banner.test.mjs',
