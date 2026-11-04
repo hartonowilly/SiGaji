@@ -44,6 +44,19 @@
     return names.join(', ') + (more > 0 ? ' +' + more + ' lain' : '');
   }
 
+  function peopleFrom(arr) {
+    return (arr || [])
+      .map(function (x) {
+        if (!x || !x.nik) return null;
+        return {
+          nik: String(x.nik),
+          nama: x.nama || x.nik,
+          hint: x.desc || x.hint || '',
+        };
+      })
+      .filter(Boolean);
+  }
+
   function pushItem(out, item) {
     if (!item || !item.id) return;
     out.push(item);
@@ -106,11 +119,13 @@
         prio: 1,
         text:
           norekKosong.length +
-          ' karyawan belum punya nomor rekening' +
-          (norekKosong.length <= 3 ? ' (' + sampleNames(norekKosong, 3) + ')' : ''),
-        btn: norekKosong.length === 1 ? 'Buka profil' : 'Buka karyawan',
+          ' karyawan belum punya nomor rekening (' +
+          sampleNames(norekKosong, 3) +
+          ')',
+        btn: norekKosong.length === 1 ? 'Buka profil' : 'Lihat siapa',
         pg: 'karyawan',
         nik: norekKosong[0].nik,
+        people: peopleFrom(norekKosong),
       });
     }
     if (gapokKosong.length) {
@@ -119,12 +134,14 @@
         prio: 1,
         text:
           gapokKosong.length +
-          ' karyawan gaji pokok masih 0' +
-          (gapokKosong.length <= 3 ? ' (' + sampleNames(gapokKosong, 3) + ')' : ''),
-        btn: 'Isi gaji',
+          ' karyawan gaji pokok masih 0 (' +
+          sampleNames(gapokKosong, 3) +
+          ')',
+        btn: gapokKosong.length === 1 ? 'Isi gaji' : 'Lihat siapa',
         pg: 'karyawan',
         nik: gapokKosong[0].nik,
         openPayroll: true,
+        people: peopleFrom(gapokKosong),
       });
     }
 
@@ -163,17 +180,19 @@
       var sev = arr[0].severity === 'high' ? 1 : 4;
       var label = ANOMALI_LABEL[code] || arr[0].title || code;
       var first = arr[0];
+      var payroll = code === 'pph_zero' || code === 'neto_negative' || code === 'neto_spike' || code === 'neto_drop';
       pushItem(out, {
         id: 'anom-' + code,
         prio: sev,
         text:
           arr.length === 1
             ? (first.nama || first.nik) + ' ' + label
-            : arr.length + ' karyawan ' + label,
-        btn: arr.length === 1 ? 'Buka' : 'Cek karyawan',
-        pg: 'karyawan',
+            : arr.length + ' karyawan ' + label + ' (' + sampleNames(arr, 3) + ')',
+        btn: arr.length === 1 ? 'Buka' : 'Lihat siapa',
+        pg: payroll ? 'kompgaji' : 'karyawan',
         nik: first.nik,
-        openPayroll: code === 'pph_zero' || code === 'neto_negative' || code === 'neto_spike' || code === 'neto_drop',
+        openPayroll: payroll,
+        people: peopleFrom(arr),
       });
     });
 
@@ -201,9 +220,10 @@
         pushItem(out, {
           id: 'makan',
           prio: 4,
-          text: empty.length + ' karyawan belum diisi uang makan',
-          btn: 'Isi uang makan',
+          text: empty.length + ' karyawan belum diisi uang makan (' + sampleNames(empty, 3) + ')',
+          btn: empty.length === 1 ? 'Isi uang makan' : 'Lihat siapa',
           pg: 'kompgaji',
+          people: peopleFrom(empty),
         });
       }
     }
@@ -212,10 +232,11 @@
       pushItem(out, {
         id: 'absen',
         prio: 4,
-        text: absenKosong.length + ' karyawan belum ada absensi di periode ini',
-        btn: 'Buka absensi',
+        text: absenKosong.length + ' karyawan belum ada absensi di periode ini (' + sampleNames(absenKosong, 3) + ')',
+        btn: absenKosong.length === 1 ? 'Buka absensi' : 'Lihat siapa',
         pg: 'absensi',
         abpanel: 'abt-kalender',
+        people: peopleFrom(absenKosong),
       });
     }
 
@@ -291,15 +312,15 @@
     else applyDashMode();
   };
 
-  window.sigajiDashGoTindakan = function (id) {
+  function findTindakan(id) {
     var items = window.__sigajiDashTindakan || [];
-    var item = null;
     for (var i = 0; i < items.length; i++) {
-      if (items[i].id === id) {
-        item = items[i];
-        break;
-      }
+      if (items[i].id === id) return items[i];
     }
+    return null;
+  }
+
+  function goTindakanPage(item) {
     if (!item) return;
     if (item.pg && typeof showPg === 'function') showPg(item.pg);
     if (item.abpanel) {
@@ -313,6 +334,86 @@
         else if (typeof openPanel === 'function') openPanel(nik);
       }, 80);
     }
+  }
+
+  window.sigajiDashCloseTindakanOrang = function () {
+    var m = document.getElementById('m-dash-tindakan-orang');
+    if (m) m.remove();
+    if (document.body) document.body.style.overflow = '';
+  };
+
+  window.sigajiDashOpenOrang = function (nik, mode) {
+    window.sigajiDashCloseTindakanOrang();
+    if (!nik) return;
+    if (mode === 'payroll') {
+      if (typeof showPg === 'function') showPg('kompgaji');
+      setTimeout(function () {
+        if (typeof openPayrollPanel === 'function') openPayrollPanel(nik);
+      }, 80);
+      return;
+    }
+    if (typeof showPg === 'function') showPg('karyawan');
+    setTimeout(function () {
+      if (typeof openPanel === 'function') openPanel(nik);
+    }, 80);
+  };
+
+  window.sigajiDashShowTindakanOrang = function (item) {
+    if (!item || !item.people || !item.people.length) return;
+    window.sigajiDashCloseTindakanOrang();
+    var mode = item.openPayroll ? 'payroll' : 'profil';
+    var btnLbl = item.openPayroll ? 'Buka gaji' : 'Buka profil';
+    var rows = item.people
+      .map(function (p) {
+        return (
+          '<li class="dash-tindakan-orang-row">' +
+          '<div class="dash-tindakan-orang-meta"><strong>' +
+          eh(p.nama) +
+          '</strong><div class="u-muted-10">' +
+          eh(p.nik) +
+          (p.hint ? ' · ' + eh(p.hint) : '') +
+          '</div></div>' +
+          '<button type="button" class="btn btn-xs btn-p" data-sigaji-action="invoke" data-fn="sigajiDashOpenOrang" data-arg="' +
+          eh(p.nik) +
+          '" data-arg2="' +
+          mode +
+          '">' +
+          eh(btnLbl) +
+          '</button></li>'
+        );
+      })
+      .join('');
+    var wrap = document.createElement('div');
+    wrap.id = 'm-dash-tindakan-orang';
+    wrap.className = 'mbd show';
+    var html =
+      '<div class="modal modal-sm">' +
+      '<div class="modal-head"><strong>' +
+      eh(item.text) +
+      '</strong></div>' +
+      '<p class="font-11 text-muted mt-0 mb-md">Ini orangnya — buka satu per satu.</p>' +
+      '<ul class="dash-tindakan-orang-list">' +
+      rows +
+      '</ul>' +
+      '<div class="mfoot mt-lg">' +
+      '<button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="sigajiDashCloseTindakanOrang">Tutup</button>' +
+      '</div></div>';
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap);
+    document.body.style.overflow = 'hidden';
+    wrap.addEventListener('click', function (ev) {
+      if (ev.target === wrap) window.sigajiDashCloseTindakanOrang();
+    });
+  };
+
+  window.sigajiDashGoTindakan = function (id) {
+    var item = findTindakan(id);
+    if (!item) return;
+    if (item.people && item.people.length > 1) {
+      window.sigajiDashShowTindakanOrang(item);
+      return;
+    }
+    goTindakanPage(item);
   };
 
   window.sigajiRenderDashBrief = function (ctx) {

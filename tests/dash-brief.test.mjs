@@ -86,6 +86,18 @@ assert('ada cuti pending', ids.indexOf('cuti') >= 0);
 assert('anomali NPWP digabung', items.some(function (x) {
   return x.id === 'anom-no_tax_id' && /2 karyawan/.test(x.text) && /NPWP/.test(x.text);
 }));
+const anomNpwp = items.filter(function (x) {
+  return x.id === 'anom-no_tax_id';
+})[0];
+assert(
+  'anomali menyimpan nama orang',
+  anomNpwp &&
+    anomNpwp.people &&
+    anomNpwp.people.length === 2 &&
+    anomNpwp.people[0].nama === 'Ani' &&
+    anomNpwp.people[1].nama === 'Budi'
+);
+assert('ringkasan memuat nama', /Ani/.test(anomNpwp.text) && /Budi/.test(anomNpwp.text));
 assert('HRD cabang tidak kebanjiran BPJS HQ', ids.indexOf('dl-0') < 0);
 assert('deadline bayar gaji tetap muncul', items.some(function (x) {
   return /Bayar gaji/.test(x.text);
