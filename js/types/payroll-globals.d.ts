@@ -253,7 +253,7 @@ declare function jumlahTunjanganTetap(k: KaryawanPayroll): number;
 declare function sigajiKunciEraOverrideLama(): string;
 declare function sigajiPesanBerlakuOverride(): string;
 declare function sigajiTanggalHariIni(): string;
-declare function saveAll(): void;
+declare function saveAll(opts?: { delta?: boolean }): void;
 declare function pulihkanKar(nik: string): void;
 declare function hapusKarPermanen(nik: string): void;
 declare function sigajiToastUndo(msg: string, label: string, fn: () => void): void;
@@ -268,6 +268,7 @@ declare var sigajiCloudDelta:
       markDirtyAbsensi?(nik: string, dateIso: string): void;
       markDirtyTunjVar?(periodeNama: string, nik: string, kolomId: string): void;
       markDirtyFull?(): void;
+      sanitizeBaselineForCloud?(row: unknown): unknown;
       hasScopedDirty?(): boolean;
       peekDirty?(): { full: boolean; ids: string[] };
       clearDirty?(): void;
