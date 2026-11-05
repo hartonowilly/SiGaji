@@ -45,8 +45,9 @@ function clone(v) {
 }
 
 /** Server palsu: tabel + trigger versi + jejak hapus + RPC. deny(table,row) meniru RLS. */
-function fakeServer(db) {
+function fakeServer(db, opts) {
   let tick = 0;
+  const maxPage = opts && opts.maxPage > 0 ? opts.maxPage : 0;
   const log = [];
   const tombstones = [];
   const srv = { db, log, deny: () => false };
@@ -176,7 +177,11 @@ function fakeServer(db) {
           out = { data: null, error: null };
         } else {
           let rows = db[table].filter(match);
-          if (st.range) rows = rows.slice(st.range[0], st.range[1] + 1);
+          if (st.range) {
+            var end = st.range[1] + 1;
+            if (maxPage) end = Math.min(end, st.range[0] + maxPage);
+            rows = rows.slice(st.range[0], end);
+          }
           out = { data: clone(rows), error: null };
         }
         return Promise.resolve(out).then(res, rej);
@@ -356,6 +361,37 @@ function writesSince(srv, mark) {
   const mark = srv.log.length;
   const r = await app.T.saveDelta(srv.client('admin'), mem);
   assert('tanpa perubahan → nol tulis', r.upserts === 0 && writesSince(srv, mark).length === 0);
+}
+
+// ── halaman PostgREST lebih pendek dari PAGE_ROWS tidak boleh memotong data ──
+{
+  const db = seed();
+  const v = (row) => Object.assign({ tenant_key: 'main', version: 1, updated_at: '2026-10-01T00:00:00.000Z' }, row);
+  for (let i = 3; i <= 1200; i++) {
+    const nik = 'K' + String(i).padStart(4, '0');
+    db.sigaji_karyawan.push(v({ nik, data: { nik, nama: 'Kar' + i } }));
+  }
+  const srv = fakeServer(db, { maxPage: 500 });
+  const mem = await loadInto(makeApp(), srv.client('admin'));
+  assert('batas server 500: 1.200 karyawan tetap termuat', mem.karyawan.length === 1200, mem.karyawan.length);
+}
+
+{
+  const db = seed();
+  const v = (row) => Object.assign({ tenant_key: 'main', version: 1, updated_at: '2026-10-01T00:00:00.000Z' }, row);
+  for (let i = 0; i < 3500; i++) {
+    db.sigaji_item.push(
+      v({
+        kind: 'auditLog',
+        item_key: 'a' + i,
+        nik: 'K001',
+        data: { id: 'a' + i, nik: 'K001', ts: '2026-11-01T00:00:00.000Z' },
+      })
+    );
+  }
+  const srv = fakeServer(db, { maxPage: 500 });
+  const mem = await loadInto(makeApp(), srv.client('admin'));
+  assert('batas server 500: jejak audit boot tetap 3.000 (bukan 500)', mem.auditLog.length === 3000, mem.auditLog.length);
 }
 
 // ── edit satu hari absensi → satu baris item dengan versi ─────────────────

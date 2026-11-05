@@ -152,21 +152,23 @@
   /**
    * Semua baris query (PostgREST memotong respons di max-rows, biasanya 1000).
    * Berhenti saat halaman kosong — aman walau batas server lebih kecil dari PAGE_ROWS.
+   * Jangan berhenti hanya karena halaman < PAGE_ROWS: itu bisa memotong karyawan/absensi tanpa galat.
    * @param {() => any} build query baru yang sudah diurutkan
-   * @param {number} [maxRows] henti setelah sebanyak ini (jejak audit boot)
+   * @param {number} [maxRows] henti setelah sebanyak ini (jejak audit boot); tidak mengubah syarat halaman kosong
    */
   async function fetchAllRows(build, maxRows) {
     var out = [];
     var cap = maxRows > 0 ? maxRows : 0;
     for (var from = 0; ; ) {
-      var left = cap ? cap - out.length : PAGE_ROWS;
-      if (cap && left <= 0) return out;
-      var want = cap ? Math.min(PAGE_ROWS, left) : PAGE_ROWS;
-      var r = await build().range(from, from + want - 1);
+      if (cap && out.length >= cap) return out;
+      var r = await build().range(from, from + PAGE_ROWS - 1);
       if (r.error) throw r.error;
       var rows = r.data || [];
-      for (var i = 0; i < rows.length; i++) out.push(rows[i]);
-      if (!rows.length || rows.length < want || (cap && out.length >= cap)) return out;
+      if (!rows.length) return out;
+      for (var i = 0; i < rows.length; i++) {
+        out.push(rows[i]);
+        if (cap && out.length >= cap) return out;
+      }
       from += rows.length;
     }
   }
