@@ -136,6 +136,17 @@
     return o;
   }
 
+  var BASELINE_CACHE_KEYS = { nowTotal: true, nowDetails: true, nowAt: true, dirty: true };
+  function sanitizeBaselineForCloud(row) {
+    if (!row || typeof row !== 'object') return row;
+    var o = {};
+    Object.keys(row).forEach(function (k) {
+      if (BASELINE_CACHE_KEYS[k]) return;
+      o[k] = row[k];
+    });
+    return o;
+  }
+
   function explodePayPrivacyFromPeriode(x, pushUnique) {
     if (!x || !x.nama) return;
     var pn = String(x.nama);
@@ -150,7 +161,14 @@
     if (isPlainObject(bl)) {
       Object.keys(bl).forEach(function (nik) {
         if (bl[nik] == null) return;
-        pushUnique(ent('I', { kind: 'absensiPotBaseline', item_key: itemKeyFor('absensiPotBaseline', nik, pn) }, bl[nik], nik));
+        pushUnique(
+          ent(
+            'I',
+            { kind: 'absensiPotBaseline', item_key: itemKeyFor('absensiPotBaseline', nik, pn) },
+            sanitizeBaselineForCloud(bl[nik]),
+            nik
+          )
+        );
       });
     }
   }
@@ -178,7 +196,7 @@
     if (data == null) {
       delete p.absensi_pot_baseline[nik];
       if (!Object.keys(p.absensi_pot_baseline).length) delete p.absensi_pot_baseline;
-    } else p.absensi_pot_baseline[nik] = data;
+    } else p.absensi_pot_baseline[nik] = sanitizeBaselineForCloud(data);
   }
 
   function mergeByNikMaps(preferred, fallback, onlyNik) {
@@ -213,7 +231,12 @@
       var byNik = mergeByNikMaps(hg[p.nama], leakedHg, onlyNik);
       var base = mergeByNikMaps(bl[p.nama], leakedBl, onlyNik);
       if (byNik) p.hasil_gaji = { v: 1, byNik: byNik };
-      if (base) p.absensi_pot_baseline = base;
+      if (base) {
+        Object.keys(base).forEach(function (nik) {
+          base[nik] = sanitizeBaselineForCloud(base[nik]);
+        });
+        p.absensi_pot_baseline = base;
+      }
     });
   }
 
@@ -950,6 +973,7 @@
     itemsToPayloadParts: itemsToPayloadParts,
     sanitizePeriodeForCloud: sanitizePeriodeForCloud,
     attachPayPrivacyFromItems: attachPayPrivacyFromItems,
+    sanitizeBaselineForCloud: sanitizeBaselineForCloud,
     normalizeTunjVarColumns: normalizeTunjVarColumns,
   };
 
