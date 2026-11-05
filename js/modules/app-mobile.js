@@ -732,7 +732,7 @@ async function mobileLeaveDecide(id,decide){
           });
         }
       });
-      saveAll();
+      saveAll({delta:true});
       if(typeof renderAbsensi==='function')renderAbsensi();
     }else if(decide==='approve'){
       toast('Disetujui di server — sinkron data cloud jika perlu');

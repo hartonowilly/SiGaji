@@ -174,7 +174,7 @@ function setTunjVarNilai(nik, vKey, val) {
   } catch (eTv) {
     if (typeof sigajiCatchWarn === 'function') sigajiCatchWarn('js/modules/app-hr-tunjvar.js', eTv);
   }
-  saveAll();
+  saveAll({delta:true});
   refreshTunjVarTotals();
   tunjVarJadwalHitungGaji();
 }
@@ -294,10 +294,15 @@ function importTunjVarExcel(inp) {
           if (k && k.nik != null) nikSet[String(k.nik)] = k;
         });
         var ok = 0,
-          skip = 0;
+          skip = 0,
+          dup = 0,
+          seenNik = {};
         for (var r = 1; r < rows.length; r++) {
           var row = rows[r];
-          if (!row || !row.length) continue;
+          if (typeof sigajiExcelBarisKosong === 'function' ? sigajiExcelBarisKosong(row) : !row || !row.length) {
+            skip++;
+            continue;
+          }
           var nikRaw = typeof sigajiExcelNik === 'function' ? sigajiExcelNik(row[nikIdx]) : String(row[nikIdx] || '').trim();
           var kar = typeof sigajiCariByNik === 'function' ? sigajiCariByNik(nikSet, nikRaw) : nikSet[nikRaw];
           if (!kar || !kar.nik) {
@@ -305,6 +310,8 @@ function importTunjVarExcel(inp) {
             continue;
           }
           var nik = String(kar.nik);
+          if (seenNik[nik]) dup++;
+          seenNik[nik] = true;
           if (!tunjVarBulan[pn][nik]) tunjVarBulan[pn][nik] = {};
           colMap.forEach(function (cm) {
             var cell = row[cm.idx];
@@ -316,7 +323,13 @@ function importTunjVarExcel(inp) {
         saveAll();
         renderTunjVariabelBulan();
         renderPenggajian(true);
-        toast('Import selesai: ' + ok + ' karyawan' + (skip ? ' (' + skip + ' baris dilewati)' : ''));
+        toast(
+          'Import selesai: ' +
+            Object.keys(seenNik).length +
+            ' karyawan' +
+            (dup ? ' (' + dup + ' NIK dobel, nilai terakhir dipakai)' : '') +
+            (skip ? ' · ' + skip + ' baris dilewati' : '')
+        );
       } catch (e) {
         console.error(e);
         toast('Gagal baca Excel: ' + (e.message || e));

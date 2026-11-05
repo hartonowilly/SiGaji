@@ -68,12 +68,12 @@
   window.sigajiSetTbodyRows = function (tbody, rowHtml, chunkSize) {
     if (!tbody) return;
     var rows = rowHtml || [];
-    var chunk = chunkSize || 80;
+    var chunk = chunkSize || 120;
     if (!rows.length) {
       tbody.innerHTML = '';
       return;
     }
-    if (rows.length <= chunk || typeof requestAnimationFrame !== 'function') {
+    if (rows.length <= 400 || typeof requestAnimationFrame !== 'function') {
       tbody.innerHTML = rows.join('');
       return;
     }

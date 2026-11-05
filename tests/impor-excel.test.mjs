@@ -30,14 +30,24 @@ assertEq('kode non-angka tetap', px.sigajiCariByNik(map, 'K9').nik, 'K9');
 const serial = Math.round(Date.UTC(2026, 2, 10) / 86400000 + 25569);
 assertEq('serial Excel → ISO', px.sigajiExcelTanggal(serial), '2026-03-10');
 assertEq('dd/mm/yyyy', px.sigajiExcelTanggal('10/03/2026'), '2026-03-10');
+assertEq('serial Excel sebagai teks', px.sigajiExcelTanggal(String(serial)), '2026-03-10');
+assertEq('1,5 tidak dibaca juta', px.sigajiRp('1,5') < 100 ? 1 : 0, 1);
+assertEq('format ID 1.500,50', px.sigajiRp('1.500,50'), 1501);
+assertEq('baris kosong', px.sigajiExcelBarisKosong(['', '  ', null]), true);
+assertEq('baris ada NIK', px.sigajiExcelBarisKosong(['00123', '']), false);
+assertEq('NIK ilmiah rusak dibuang', px.sigajiExcelNik('1.23e+16'), '');
 
 const slipSrc = fs.readFileSync(path.join(ROOT, 'js/modules/app-slip.js'), 'utf8');
 if (!/function makeSlip\([\s\S]*?hitungGaji\(k,pNama\)/.test(slipSrc)) throw new Error('FAIL: makeSlip harus hitungGaji');
 if (!/function buildGajiSlipPDF\([\s\S]*?hitungGaji\(k,pNama\)/.test(slipSrc)) throw new Error('FAIL: PDF slip harus hitungGaji');
+if (!/function loadMySlip\([\s\S]*?karyawanInPeriode/.test(slipSrc)) throw new Error('FAIL: Slip Gaji Saya menolak periode di luar masa kerja');
 if (!/function loadMySlip\([\s\S]*?makeSlip\(k,p\.nama\)/.test(slipSrc)) throw new Error('FAIL: Slip Gaji Saya harus makeSlip');
 console.log('OK: myslip/PDF memakai hitungGaji (hasil beku jika terkunci)');
 const authSrc = fs.readFileSync(path.join(ROOT, 'js/modules/app-auth.js'), 'utf8');
 if (!/buildGajiSlipPDF\(k, p\.nama/.test(authSrc)) throw new Error('FAIL: Telegram slip harus PDF yang sama');
+if (!/karyawanInPeriode/.test(authSrc)) throw new Error('FAIL: Telegram hanya periode masa kerja (resign di periode itu tetap)');
+if (!/isKarSampah/.test(authSrc)) throw new Error('FAIL: Telegram tidak mengirim karyawan terhapus');
+if (/typeof isKarResign/.test(authSrc)) throw new Error('FAIL: Telegram tidak boleh memblokir resign');
 console.log('OK: Telegram memakai PDF slip yang sama');
 
 console.log('Impor Excel: semua tes lulus.');
