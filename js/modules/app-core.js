@@ -1536,6 +1536,9 @@ function sigajiKoreksiSidikJari(nik,p){
   var gapok=snap&&snap.gapok!=null?snap.gapok:(k&&k.gapok);
   var mc=typeof masterCuti!=='undefined'&&masterCuti?masterCuti:{};
   var ap=perusahaan&&perusahaan.aturan_potongan?perusahaan.aturan_potongan:{};
+  var yrEnd=end?parseInt(String(end).slice(0,4),10):0;
+  var ytdCuti=typeof cutiManualUntukTahunDanPeriode==='function'&&yrEnd?cutiManualUntukTahunDanPeriode(nik,yrEnd,p):0;
+  var ytdCb=typeof countCutiBersamaUntukTahunDanPeriode==='function'&&yrEnd?countCutiBersamaUntukTahunDanPeriode(yrEnd,p,nik):0;
   return [
     abPart,
     hlPart,
@@ -1547,6 +1550,8 @@ function sigajiKoreksiSidikJari(nik,p){
     k&&k.masuk?String(k.masuk):'',
     k&&k.tgl_berhenti?String(k.tgl_berhenti):'',
     String((perusahaan&&perusahaan.hariKerja)||''),
+    String(ytdCuti||0),
+    String(ytdCb||0),
     start,
     end
   ].join('|');
