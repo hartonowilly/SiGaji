@@ -183,10 +183,11 @@ function importMigrasiPphExcel(inp){
         var allowNew=buatBaru?buatBaru.checked:true;
         var byNik={};
         karyawan.forEach(function(k){byNik[String(k.nik)]=k;});
-        var ok=0,skip=0,buat=0,upd=0;
+        var ok=0,skip=0,buat=0,upd=0,nikRusak=0;
         for(var r=1;r<rows.length;r++){
           var row=rows[r];
           if(typeof sigajiExcelBarisKosong==='function'?sigajiExcelBarisKosong(row):!row||!row.length){skip++;continue;}
+          if(typeof sigajiExcelNikRusak==='function'&&sigajiExcelNikRusak(row[nikIdx])){nikRusak++;skip++;continue;}
           var nik=typeof sigajiExcelNik==='function'?sigajiExcelNik(row[nikIdx]):String(row[nikIdx]||'').trim();
           if(!nik||/^contoh/i.test(nik)){skip++;continue;}
           var bruto=brutoIdx>=0?parseMigrasiAngka(row[brutoIdx]):0;
@@ -235,7 +236,7 @@ function importMigrasiPphExcel(inp){
         populateSelects();
         if(typeof renderPPH==='function')renderPPH();
         if(typeof renderLaporan==='function')renderLaporan();
-        toast('Import migrasi: '+ok+' baris ('+upd+' update, '+buat+' karyawan baru)'+(skip?' · '+skip+' dilewati':''));
+        toast('Import migrasi: '+ok+' baris ('+upd+' update, '+buat+' karyawan baru)'+(skip?' · '+skip+' dilewati':'')+(nikRusak&&typeof sigajiExcelNikRusakPesan==='function'?' · '+sigajiExcelNikRusakPesan(nikRusak):''));
       }catch(e){
         console.error(e);
         toast('Gagal baca Excel: '+(e.message||e));

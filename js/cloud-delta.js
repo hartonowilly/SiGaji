@@ -324,6 +324,9 @@
       entityId('T', { periode_nama: String(periodeNama), nik: String(nik), kolom_id: String(kolomId) })
     );
   }
+  function markDirtyAuditLog() {
+    markDirty(entityId('S', { store_key: 'auditLog' }));
+  }
   function peekDirty() {
     return { full: dirtyFull, ids: Object.keys(dirtyIds) };
   }
@@ -958,6 +961,7 @@
     markDirtyFull: markDirtyFull,
     markDirtyAbsensi: markDirtyAbsensi,
     markDirtyTunjVar: markDirtyTunjVar,
+    markDirtyAuditLog: markDirtyAuditLog,
     peekDirty: peekDirty,
     hasScopedDirty: hasScopedDirty,
     clearDirty: clearDirty,

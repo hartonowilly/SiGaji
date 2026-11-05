@@ -33,6 +33,7 @@ const sqlV11 = readFileSync(join(root, 'sql/supabase_sigaji_tables_v11.sql'), 'u
 const sqlRoles = readFileSync(join(root, 'sql/supabase_sigaji_user_roles_rls.sql'), 'utf8');
 const sqlV12 = readFileSync(join(root, 'sql/supabase_sigaji_v12_versi_cabang.sql'), 'utf8');
 const sqlKetat = readFileSync(join(root, 'sql/supabase_sigaji_v12_cabang_ketat.sql'), 'utf8');
+const sqlUnlock = readFileSync(join(root, 'sql/supabase_periode_unlock_admin.sql'), 'utf8');
 
 const UID = {
   admin: '00000000-0000-0000-0000-00000000000a',
@@ -155,6 +156,9 @@ assert('SQL v12 bisa dijalankan dua kali', true);
 await db.exec(sqlKetat);
 await db.exec(sqlKetat);
 assert('SQL cabang ketat bisa dijalankan dua kali', true);
+await db.exec(sqlUnlock);
+await db.exec(sqlUnlock);
+assert('SQL buka kunci Admin bisa dijalankan dua kali', true);
 
 {
   await db.exec(
@@ -181,6 +185,38 @@ assert('SQL cabang ketat bisa dijalankan dua kali', true);
     `select count(*)::int as n from public.sigaji_item where kind='hasilGaji' and item_key='Okt 2026|K2'`
   );
   assert('migrasi aman diulang', hg2[0].n === 1);
+}
+
+{
+  await db.exec(
+    `update public.sigaji_periode set data = data || '{"snapshot_locked":true}'::jsonb where nama='Okt 2026'`
+  );
+  await as(db, 'hrdPusat', async () => {
+    const blocked = await fails(
+      db,
+      `update public.sigaji_periode set data = data || '{"snapshot_locked":false}'::jsonb where nama='Okt 2026'`
+    );
+    assert('HRD pusat tidak bisa buka kunci periode', blocked);
+  });
+  await as(db, 'admin', async () => {
+    const n = await rows(
+      db,
+      `update public.sigaji_periode set data = data || '{"snapshot_locked":false}'::jsonb where nama='Okt 2026' returning 1`
+    );
+    assert('Admin bisa buka kunci periode', n.length === 1);
+  });
+  await as(db, 'hrdPusat', async () => {
+    const n = await rows(
+      db,
+      `update public.sigaji_periode set data = data || '{"snapshot_locked":true}'::jsonb where nama='Okt 2026' returning 1`
+    );
+    assert('HRD pusat masih bisa mengunci periode', n.length === 1);
+  });
+  await as(db, 'admin', async () => {
+    await db.query(
+      `update public.sigaji_periode set data = data || '{"snapshot_locked":false}'::jsonb where nama='Okt 2026'`
+    );
+  });
 }
 
 await as(db, 'hrdPusat', async () => {

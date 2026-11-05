@@ -22,7 +22,7 @@
   var MAX_ENTRI = 600;
   var UMUR_MS = 3 * 24 * 60 * 60 * 1000;
   /** Store yang tidak perlu dilindungi (besar / bukan data inti) — tetap diunggah lewat jalur biasa. */
-  var STORE_ABAIKAN = { auditLog: true, notifikasi: true, bentoLayouts: true };
+  var STORE_ABAIKAN = { notifikasi: true, bentoLayouts: true };
 
   var basis = null; // id → {j, e} ; null = belum ada data awan di sesi ini
   var cache = null; // entri terakhir yang ditulis (hindari parse berulang)

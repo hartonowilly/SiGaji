@@ -36,6 +36,13 @@ assertEq('format ID 1.500,50', px.sigajiRp('1.500,50'), 1501);
 assertEq('baris kosong', px.sigajiExcelBarisKosong(['', '  ', null]), true);
 assertEq('baris ada NIK', px.sigajiExcelBarisKosong(['00123', '']), false);
 assertEq('NIK ilmiah rusak dibuang', px.sigajiExcelNik('1.23e+16'), '');
+assertEq('NIK ilmiah koma Excel rusak', px.sigajiExcelNikRusak('1,23457E+11') ? 1 : 0, 1);
+assertEq('NIK ilmiah koma tidak dipakai', px.sigajiExcelNik('1,23457E+11'), '');
+assertEq(
+  'pesan NIK ilmiah',
+  px.sigajiExcelNikRusakPesan(2).indexOf('Teks') >= 0 && px.sigajiExcelNikRusakPesan(2).indexOf('2') >= 0 ? 1 : 0,
+  1
+);
 
 const slipSrc = fs.readFileSync(path.join(ROOT, 'js/modules/app-slip.js'), 'utf8');
 if (!/function makeSlip\([\s\S]*?hitungGaji\(k,pNama\)/.test(slipSrc)) throw new Error('FAIL: makeSlip harus hitungGaji');

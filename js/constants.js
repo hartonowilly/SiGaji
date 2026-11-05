@@ -31,17 +31,23 @@ function sigajiRp(v){
   return neg?-n:n;
 }
 /** NIK dari sel Excel/CSV: angka tidak memakai notasi ilmiah; teks tetap utuh. */
+/** Sel NIK Excel dalam notasi ilmiah (digit sudah hilang di Excel). */
+function sigajiExcelNikRusak(v){
+  if(v==null||v==='')return false;
+  if(typeof v==='number'&&isFinite(v))return Math.floor(v)!==v||Math.abs(v)>=1e15;
+  var s=String(v).trim().replace(/\s/g,'');
+  return /^\d+([.,]\d+)?e[+-]?\d+$/i.test(s);
+}
+function sigajiExcelNikRusakPesan(n){
+  var c=parseInt(n,10)||0;
+  if(c<1)return '';
+  return c+' NIK tidak terbaca (notasi ilmiah) — di Excel set kolom NIK menjadi Teks';
+}
 function sigajiExcelNik(v){
   if(v==null||v==='')return '';
+  if(sigajiExcelNikRusak(v))return '';
   if(typeof v==='number'&&isFinite(v))return String(Math.round(v));
-  var s=String(v).trim();
-  if(!s)return '';
-  if(/^\d+(\.\d+)?e[+-]?\d+$/i.test(s)){
-    var n=Number(s);
-    if(!isFinite(n)||Math.abs(n)>=1e15)return '';
-    return String(Math.round(n));
-  }
-  return s;
+  return String(v).trim();
 }
 /** Baris Excel/CSV tanpa isi (kosong, strip, atau hanya spasi). */
 function sigajiExcelBarisKosong(row){
@@ -260,4 +266,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Label aplikasi di judul tab, status sistem, dan meta backup. Tanpa nomor versi — versi deploy ada di SIGAJI_BUILD. */
 const SIGAJI_APP_LABEL='SiGaji';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.7.41';
+const SIGAJI_MODULES_CACHE='11.7.42';
