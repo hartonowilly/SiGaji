@@ -1514,42 +1514,110 @@ function sigajiPotKehadiranUntukPeriodeNik(nik,p,idx){
 /** Cache potongan terkini hanya di memori (jangan ikut item awan). Kunci: periode + NIK. */
 var __sigajiKoreksiNowCache=typeof Map==='function'?new Map():null;
 function sigajiKoreksiCacheKey(pNama,nik){return String(pNama||'')+'\u0001'+String(nik||'');}
-function sigajiKoreksiSidikJari(nik,p){
-  var start=p&&p.start?String(p.start):'';
-  var end=p&&p.end?String(p.end):'';
-  var ab=absensi&&absensi[nik]?absensi[nik]:{};
-  var abPart='';
-  Object.keys(ab).sort().forEach(function(d){
-    if(!d||d<start||d>end)return;
-    var st=ab[d];
-    if(st==null||st==='')return;
-    abPart+=d+':'+st+';';
-  });
+function sigajiKoreksiFpPerusahaan(){
+  var sc=typeof __sigajiHitungScope!=='undefined'?__sigajiHitungScope:null;
+  if(sc&&sc.fpPrs)return sc.fpPrs;
+  var mc=typeof masterCuti!=='undefined'&&masterCuti?masterCuti:{};
+  var ap=perusahaan&&perusahaan.aturan_potongan?perusahaan.aturan_potongan:{};
+  var fp=[
+    JSON.stringify(ap),
+    String(mc.kuota||''),
+    mc.cbPotong===false?'0':'1',
+    String(mc.hakBaru||''),
+    String((perusahaan&&perusahaan.hariKerja)||'')
+  ].join('|');
+  if(sc)sc.fpPrs=fp;
+  return fp;
+}
+function sigajiKoreksiHlPart(start,end){
+  var sc=typeof __sigajiHitungScope!=='undefined'?__sigajiHitungScope:null;
+  var k=start+'\u0001'+end;
+  if(sc&&sc.hlFp&&sc.hlFp[k]!=null)return sc.hlFp[k];
   var hlPart='';
   (hariLibur||[]).forEach(function(l){
     var t=l&&l.tgl?String(l.tgl):'';
     if(!t||t<start||t>end)return;
     hlPart+=t+':'+(l.tipe||'')+';';
   });
+  if(sc){
+    if(!sc.hlFp)sc.hlFp=Object.create(null);
+    sc.hlFp[k]=hlPart;
+  }
+  return hlPart;
+}
+/** Hari cuti manual tahun `yr`, diurutkan — diindeks sekali per NIK per tahun. */
+function sigajiCutiManualTahunSorted(nik,yr,idx){
+  var y=String(yr||'');
+  if(!y)return[];
+  if(idx&&idx.cutiSorted&&idx.cutiSorted.has(y))return idx.cutiSorted.get(y);
+  var a=y+'-01-01',b=y+'-12-31';
+  var ents=idx?sigajiAbsensiInRange(idx,a,b):Object.entries((absensi&&absensi[nik])||{});
+  var list=[];
+  for(var i=0;i<ents.length;i++){
+    var d=toIsoDate(ents[i][0]);
+    if(!d||d<a||d>b)continue;
+    if(ents[i][1]!=='cuti')continue;
+    if(typeof isCutiBersamaPotongKuotaTgl==='function'&&isCutiBersamaPotongKuotaTgl(d))continue;
+    if(typeof cutiDalamMasaKerja==='function'&&!cutiDalamMasaKerja(d,nik))continue;
+    list.push(d);
+  }
+  list.sort();
+  if(idx)(idx.cutiSorted||(idx.cutiSorted=new Map())).set(y,list);
+  return list;
+}
+function sigajiCutiCountUntil(list,sampai){
+  var n=0;
+  if(!sampai)return 0;
+  for(var i=0;i<(list||[]).length;i++){
+    if(list[i]<=sampai)n++;
+    else break;
+  }
+  return n;
+}
+function sigajiKoreksiSidikJari(nik,p,idx){
+  var start=p&&p.start?String(p.start):'';
+  var end=p&&p.end?String(p.end):'';
+  var abPart='';
+  var ents=idx&&start&&end?sigajiAbsensiInRange(idx,start,end):null;
+  if(ents){
+    ents.sort(function(a,b){return a[0]<b[0]?-1:a[0]>b[0]?1:0;});
+    for(var i=0;i<ents.length;i++){
+      var d=ents[i][0],st=ents[i][1];
+      if(!d||d<start||d>end||st==null||st==='')continue;
+      abPart+=d+':'+st+';';
+    }
+  }else{
+    var ab=absensi&&absensi[nik]?absensi[nik]:{};
+    Object.keys(ab).sort().forEach(function(d){
+      if(!d||d<start||d>end)return;
+      var st=ab[d];
+      if(st==null||st==='')return;
+      abPart+=d+':'+st+';';
+    });
+  }
   var k=typeof sigajiKarByNik==='function'?sigajiKarByNik(nik):null;
   var snap=karSnapshot&&p&&karSnapshot[p.nama]&&karSnapshot[p.nama][nik];
   var gapok=snap&&snap.gapok!=null?snap.gapok:(k&&k.gapok);
-  var mc=typeof masterCuti!=='undefined'&&masterCuti?masterCuti:{};
-  var ap=perusahaan&&perusahaan.aturan_potongan?perusahaan.aturan_potongan:{};
   var yrEnd=end?parseInt(String(end).slice(0,4),10):0;
-  var ytdCuti=typeof cutiManualUntukTahunDanPeriode==='function'&&yrEnd?cutiManualUntukTahunDanPeriode(nik,yrEnd,p):0;
-  var ytdCb=typeof countCutiBersamaUntukTahunDanPeriode==='function'&&yrEnd?countCutiBersamaUntukTahunDanPeriode(yrEnd,p,nik):0;
+  var ytdCuti=0;
+  var ytdCb=0;
+  if(yrEnd){
+    var yearStart=yrEnd+'-01-01';
+    if(start&&start<yearStart&&end>=yearStart&&typeof cutiManualUntukTahunDanPeriode==='function'){
+      ytdCuti=cutiManualUntukTahunDanPeriode(nik,yrEnd,p,idx);
+    }else{
+      var sampai=end&&end<(yrEnd+'-12-31')?end:(yrEnd+'-12-31');
+      ytdCuti=sigajiCutiCountUntil(sigajiCutiManualTahunSorted(nik,yrEnd,idx),sampai);
+    }
+    ytdCb=typeof countCutiBersamaUntukTahunDanPeriode==='function'?countCutiBersamaUntukTahunDanPeriode(yrEnd,p,nik):0;
+  }
   return [
     abPart,
-    hlPart,
-    JSON.stringify(ap),
-    String(mc.kuota||''),
-    mc.cbPotong===false?'0':'1',
-    String(mc.hakBaru||''),
+    sigajiKoreksiHlPart(start,end),
+    sigajiKoreksiFpPerusahaan(),
     String(gapok||''),
     k&&k.masuk?String(k.masuk):'',
     k&&k.tgl_berhenti?String(k.tgl_berhenti):'',
-    String((perusahaan&&perusahaan.hariKerja)||''),
     String(ytdCuti||0),
     String(ytdCb||0),
     start,
@@ -1568,7 +1636,7 @@ function sigajiBuangCacheKoreksi(nik,tglIso){
 /** Potongan kehadiran periode terkunci: hitung ulang hanya jika sidik jari masukan berubah. */
 function sigajiPotKehadiranTerkini(nik,p,idx){
   if(!nik||!p||!p.nama)return{total:0,details:[]};
-  var fp=sigajiKoreksiSidikJari(nik,p);
+  var fp=sigajiKoreksiSidikJari(nik,p,idx);
   var ck=sigajiKoreksiCacheKey(p.nama,nik);
   var hit=__sigajiKoreksiNowCache&&__sigajiKoreksiNowCache.get(ck);
   if(hit&&hit.fp===fp)return{total:hit.total,details:hit.details||[]};
@@ -1606,7 +1674,7 @@ function sigajiRebaselinePriorLockedAbsensiPot(periodeBaruDikunci){
     karyawanListPeriode(p).forEach(function(k){
       if(!k||!k.nik)return;
       var prev=p.absensi_pot_baseline[k.nik]||{};
-      var pot=sigajiPotKehadiranTerkini(k.nik,p);
+      var pot=sigajiPotKehadiranTerkini(k.nik,p,typeof sigajiAbsensiIndex==='function'?sigajiAbsensiIndex(k.nik):null);
       if(Math.round(pot.total||0)===Math.round(prev.total||0))return;
       var det=(pot.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};});
       p.absensi_pot_baseline[k.nik]={
