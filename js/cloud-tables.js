@@ -604,6 +604,7 @@
 
   async function loadStoreChunks(sb, withItems) {
     var keys = STORE_KEYS.filter(function (k) {
+      if (k === 'auditLog') return true;
       return !withItems || ITEM_STORE_KEYS.indexOf(k) === -1;
     });
     var q = sb
@@ -762,6 +763,9 @@
     var jobs = [
       fetchAllRows(function () {
         return itemQuery(sb).in('kind', ['lembur', 'prorata']).order('kind').order('item_key');
+      }),
+      fetchAllRows(function () {
+        return itemQuery(sb).eq('kind', 'auditLog').order('item_key');
       }),
     ];
     var pats = plan.months.map(function (m) {
@@ -1057,15 +1061,24 @@
     var store = {};
     storeRows.forEach(function (row) {
       store[row.store_key] = row.data;
-      if (STORE_KEYS.indexOf(row.store_key) !== -1) rememberLoaded(loaded, 'S', row);
+      if (STORE_KEYS.indexOf(row.store_key) === -1) return;
+      if (isV12 && row.store_key === 'auditLog') return;
+      rememberLoaded(loaded, 'S', row);
     });
     if (isV12) {
       itemRows.forEach(function (row) {
         if (ITEM_STORE_KEYS.indexOf(row.kind) !== -1) rememberLoaded(loaded, 'I', row);
       });
       var parts = D.itemsToPayloadParts(itemRows);
+      var blobAudit = Array.isArray(store.auditLog) ? store.auditLog : [];
       ITEM_STORE_KEYS.forEach(function (k) {
-        store[k] = parts[k];
+        if (k === 'auditLog') store.auditLog = D.mergeAuditLogs(blobAudit, parts.auditLog);
+        else store[k] = parts[k];
+      });
+      (store.auditLog || []).forEach(function (e) {
+        if (!e) return;
+        var id = D.ensureAuditEntryId(e);
+        rememberLoaded(loaded, 'I', { kind: 'auditLog', item_key: id, nik: e.nik != null ? String(e.nik) : '', data: e });
       });
       D.attachPayPrivacyFromItems(periodes, parts);
     }
@@ -1120,13 +1133,19 @@
       var niksKeep = branchNikSet(payload);
       loaded = loaded.filter(function (x) {
         if (x.e.t === 'K') return !!(x.e.key && niksKeep[x.e.key.nik]);
+        if (x.e.t === 'I' && x.e.key && x.e.key.kind === 'auditLog') {
+          var aid = String(x.e.key.item_key || '');
+          return (payload.auditLog || []).some(function (e) {
+            return e && String(e.id) === aid;
+          });
+        }
         return !(
           x.e.t === 'S' &&
           x.e.key &&
           (x.e.key.store_key === 'users' || x.e.key.store_key === 'approvals' || x.e.key.store_key === 'auditLog')
         );
       });
-      ['users', 'approvals', 'auditLog'].forEach(function (k) {
+      ['users', 'approvals'].concat(isV12 ? [] : ['auditLog']).forEach(function (k) {
         var row = storeRows.filter(function (s) {
           return s.store_key === k;
         })[0];

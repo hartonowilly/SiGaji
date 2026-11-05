@@ -317,4 +317,48 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   assert('full tetap melihat perubahan absensi', planFull.upserts.some((u) => u.e.id === 'I|absensi|K001|2026-10'));
 }
 
+{
+  const p = payload();
+  p.auditLog = [
+    { ts: '2026-10-05T10:00:00.000Z', nik: 'K001', action: 'Ubah Absensi', detail: 'izin' },
+    { id: 'a-kunci', ts: '2026-10-06T10:00:00.000Z', nik: '', action: 'kunci_periode' },
+  ];
+  const entsA = D.explodePayload(p, { items: true });
+  const itemIds = entsA.filter((e) => e.t === 'I' && e.key.kind === 'auditLog').map((e) => e.id);
+  assert('v12: auditLog tidak dikirim sebagai dokumen store', !entsA.some((e) => e.id === 'S|auditLog'));
+  assert('v12: tiap jejak audit jadi item', itemIds.length === 2 && itemIds.includes('I|auditLog|a-kunci'));
+  const hashed = itemIds.find((id) => id !== 'I|auditLog|a-kunci');
+  assert('jejak tanpa id mendapat kunci stabil', !!hashed && hashed.startsWith('I|auditLog|h'));
+  const again = D.explodePayload(p, { items: true }).map((e) => e.id);
+  assert('id jejak tanpa id stabil antar pecah', again.indexOf(hashed) >= 0);
+
+  D.clearDirty();
+  D.markDirtyAuditLog(p.auditLog[1]);
+  assert('kotor audit = item entri baru', D.peekDirty().ids[0] === 'I|auditLog|a-kunci');
+  const one = D.explodePayloadIds(p, ['I|auditLog|a-kunci'], { items: true });
+  assert('pecah satu jejak tidak membawa 3000 entri', one.length === 1 && one[0].data.action === 'kunci_periode');
+
+  const parts = D.itemsToPayloadParts(
+    entsA
+      .filter((e) => e.t === 'I' && e.key.kind === 'auditLog')
+      .map((e) => ({ kind: e.key.kind, item_key: e.key.item_key, nik: e.nik, data: e.data }))
+  );
+  assert('susun ulang audit dari item', parts.auditLog.length === 2 && parts.auditLog[0].ts >= parts.auditLog[1].ts);
+
+  const mem = { auditLog: parts.auditLog.slice() };
+  D.applyEntityToMemory(mem, { t: 'I', key: { kind: 'auditLog', item_key: 'baru' }, nik: 'K002' }, {
+    id: 'baru',
+    ts: '2026-10-07T00:00:00.000Z',
+    nik: 'K002',
+    action: 'Ubah Absensi',
+  });
+  assert('item audit baru masuk depan daftar', mem.auditLog[0].id === 'baru' && mem.auditLog.length === 3);
+
+  const merged = D.mergeAuditLogs(
+    [{ ts: '2026-09-01T00:00:00.000Z', nik: 'K001', action: 'lama' }],
+    [{ id: 'a-kunci', ts: '2026-10-06T10:00:00.000Z', action: 'kunci_periode' }]
+  );
+  assert('gabung blob lama + item baru', merged.length === 2 && merged.some((e) => e.id === 'a-kunci'));
+}
+
 console.log('\nSemua tes sinkron delta lulus.');

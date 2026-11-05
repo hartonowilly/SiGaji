@@ -204,6 +204,9 @@ assertEq('Juli koreksi memakai K0', px.hitungGaji(k3, 'Juli 2026').ptkpStatus, '
 
 const lockSrc = fs.readFileSync(path.join(ROOT, 'js/modules/app-master.js'), 'utf8');
 if (!/roleBuka!=='Admin'/.test(lockSrc)) throw new Error('FAIL: buka kunci periode hanya Admin');
+if (!/Hanya Admin yang dapat menghapus periode terkunci/.test(lockSrc)) {
+  throw new Error('FAIL: hapus periode terkunci hanya Admin');
+}
 if (!/action:'kunci_periode'/.test(lockSrc)) throw new Error('FAIL: kunci periode harus audit');
 if (!/action:'buka_kunci_periode'/.test(lockSrc)) throw new Error('FAIL: buka kunci harus audit');
 if (!/canAccessSubTab\('master','periode'\)/.test(lockSrc)) throw new Error('FAIL: kunci periode cek hak master.periode');

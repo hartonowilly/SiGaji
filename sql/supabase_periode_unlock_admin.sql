@@ -1,4 +1,5 @@
--- Hanya Admin yang boleh membuka kunci periode (snapshot_locked true → false).
+-- Hanya Admin yang boleh membuka kunci periode (snapshot_locked true → false)
+-- dan menghapus periode yang masih terkunci.
 -- Kunci (false → true) tetap boleh HRD kantor pusat. Jalankan di SQL Editor Supabase.
 -- Aman diulang.
 
@@ -24,6 +25,26 @@ security definer
 set search_path = public
 as $$
 begin
+  if tg_op = 'DELETE' then
+    if public.sigaji_data_locked(old.data) then
+      if auth.uid() is null then
+        return old;
+      end if;
+      if not exists (
+        select 1
+        from public.sigaji_user_roles r
+        where r.auth_uid = auth.uid()
+          and r.tenant_key = old.tenant_key
+          and r.aktif
+          and r.role = 'Admin'
+      ) then
+        raise exception 'Hanya Admin yang dapat menghapus periode terkunci'
+          using errcode = '42501';
+      end if;
+    end if;
+    return old;
+  end if;
+
   if tg_op = 'UPDATE'
      and public.sigaji_data_locked(old.data)
      and not public.sigaji_data_locked(new.data) then
@@ -48,7 +69,7 @@ $$;
 
 drop trigger if exists sigaji_periode_guard_unlock on public.sigaji_periode;
 create trigger sigaji_periode_guard_unlock
-  before update on public.sigaji_periode
+  before update or delete on public.sigaji_periode
   for each row execute function public.sigaji_periode_guard_unlock();
 
 grant execute on function public.sigaji_data_locked(jsonb) to authenticated, service_role;

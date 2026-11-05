@@ -196,7 +196,7 @@ alter table public.sigaji_tunj_var_kolom
 
 create table if not exists public.sigaji_item (
   tenant_key text not null default 'main',
-  kind text not null check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline')),
+  kind text not null check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline', 'auditLog')),
   item_key text not null,
   nik text not null default '',
   cabang_id text not null default 'utama',
@@ -778,7 +778,7 @@ grant select, insert, update, delete on table public.sigaji_user_roles to servic
 
 alter table public.sigaji_item drop constraint if exists sigaji_item_kind_check;
 alter table public.sigaji_item add constraint sigaji_item_kind_check
-  check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline'));
+  check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline', 'auditLog'));
 
 -- Gaji beku: pindah ke sigaji_item dulu, baru hapus dari JSON periode (RLS periode = semua anggota).
 insert into public.sigaji_item (tenant_key, kind, item_key, nik, data)

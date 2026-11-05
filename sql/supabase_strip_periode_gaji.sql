@@ -6,7 +6,7 @@
 
 alter table public.sigaji_item drop constraint if exists sigaji_item_kind_check;
 alter table public.sigaji_item add constraint sigaji_item_kind_check
-  check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline'));
+  check (kind in ('absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline', 'auditLog'));
 
 insert into public.sigaji_item (tenant_key, kind, item_key, nik, data)
 select p.tenant_key,
