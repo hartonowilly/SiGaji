@@ -61,7 +61,20 @@ interface Periode {
   hasil_gaji?: { v: number; aturanId?: string; at?: string; byNik?: Record<string, HitungGajiResult> };
   /** Rekap gross/PPh/neto saat dikunci — laporan tidak perlu muat absensi arsip. */
   arsip_rekap?: { v: number; kar: number; gross: number; thr: number; pph: number; neto: number; at: string };
-  absensi_pot_baseline?: Record<string, { total: number; details?: unknown[]; settledAt?: string; capturedAt?: string }>;
+  absensi_pot_baseline?: Record<
+    string,
+    {
+      total: number;
+      details?: unknown[];
+      settledAt?: string;
+      capturedAt?: string;
+      settledIn?: string;
+      nowTotal?: number;
+      nowDetails?: unknown[];
+      nowAt?: string;
+      dirty?: boolean;
+    }
+  >;
 }
 
 /** SheetJS (CDN) — tanpa tipe resmi di proyek ini. */
@@ -246,7 +259,21 @@ declare function hapusKarPermanen(nik: string): void;
 declare function sigajiToastUndo(msg: string, label: string, fn: () => void): void;
 declare function sigajiOutboxCountChanged(n?: number): void;
 declare function sigajiOutboxMemRefs(): Record<string, unknown> | null;
-declare var sigajiCloudDelta: { explodePayload(p: unknown, opts?: unknown): unknown[]; stableStringify(v: unknown): string; applyEntityToMemory(mem: unknown, e: unknown, data: unknown): void } | undefined;
+declare var sigajiCloudDelta:
+  | {
+      explodePayload(p: unknown, opts?: unknown): unknown[];
+      explodePayloadIds?(p: unknown, ids: string[], opts?: unknown): unknown[];
+      stableStringify(v: unknown): string;
+      applyEntityToMemory(mem: unknown, e: unknown, data: unknown): void;
+      markDirtyAbsensi?(nik: string, dateIso: string): void;
+      markDirtyTunjVar?(periodeNama: string, nik: string, kolomId: string): void;
+      markDirtyFull?(): void;
+      hasScopedDirty?(): boolean;
+      peekDirty?(): { full: boolean; ids: string[] };
+      clearDirty?(): void;
+      planFromOutbox?(entries: unknown[], base: unknown, types?: string[]): unknown;
+    }
+  | undefined;
 declare function getPayloadForCloud(): unknown;
 declare function sigajiCanUploadCloudPayload(): boolean;
 declare function sigajiQueueCloudSave(): void;
@@ -261,6 +288,7 @@ declare var sigajiOutbox:
       jumlah(): number;
       reset(): void;
       adaBasis(): boolean;
+      isi?(): unknown[];
     }
   | undefined;
 declare function toast(msg: string): void;

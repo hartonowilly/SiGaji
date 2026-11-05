@@ -1562,8 +1562,21 @@
   }
 
   async function saveDeltaV12(sb, payload, useBase, opts) {
-    var ents = D.explodePayload(payload, { items: true });
-    var plan = D.planChanges(ents, useBase, V12_TYPES);
+    var plan;
+    var box =
+      !opts.base &&
+      typeof window !== 'undefined' &&
+      window.sigajiOutbox &&
+      typeof window.sigajiOutbox.isi === 'function'
+        ? window.sigajiOutbox.isi()
+        : null;
+    var dirtyState = D.peekDirty ? D.peekDirty() : { full: true, ids: [] };
+    if (box && box.length && !dirtyState.full && D.planFromOutbox) {
+      plan = D.planFromOutbox(box, useBase, V12_TYPES);
+    } else {
+      var ents = D.explodePayload(payload, { items: true });
+      plan = D.planChanges(ents, useBase, V12_TYPES);
+    }
     await guardDeletes(plan, useBase, opts);
     var report = { memoryChanged: false, conflicts: [], kept: [], errors: [], skipped: [] };
     plan.upserts = plan.upserts.filter(function (u) {

@@ -726,6 +726,11 @@ async function mobileLeaveDecide(id,decide){
       Object.keys(r.absensi_patch).forEach(function(nik){
         if(!absensi[nik])absensi[nik]={};
         Object.assign(absensi[nik],r.absensi_patch[nik]);
+        if(typeof sigajiCatatAbsensiBerubah==='function'){
+          Object.keys(r.absensi_patch[nik]||{}).forEach(function(d){
+            sigajiCatatAbsensiBerubah(nik,d);
+          });
+        }
       });
       saveAll();
       if(typeof renderAbsensi==='function')renderAbsensi();

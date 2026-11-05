@@ -71,11 +71,51 @@ assertEq('neto turun karena koreksi', g.neto < g.brutoTH, true);
 const px0 = loadPayrollCore({
   perusahaan: { hariKerja: 6, aturan_potongan: { alpha: { mode: 'prorata', nilai: 0 } } },
   karyawan: px.karyawan,
-  periodes: px.periodes,
+  periodes: JSON.parse(JSON.stringify(px.periodes)).map(function (p) {
+    if (p.absensi_pot_baseline && p.absensi_pot_baseline.A001) {
+      p.absensi_pot_baseline.A001 = { total: 0, details: [] };
+    }
+    return p;
+  }),
   absensi: {},
   karSnapshot: px.karSnapshot,
 });
 const g0 = px0.hitungGaji(px0.karyawan[0], 'November 2026');
 assertEq('koreksi turunkan dasar PPh', g.grossPPh, g0.grossPPh - kor.total);
+
+const pxC = loadPayrollCore({
+  perusahaan: { hariKerja: 6, aturan_potongan: { alpha: { mode: 'prorata', nilai: 0 } } },
+  karyawan: px.karyawan,
+  periodes: [
+    {
+      id: 1,
+      nama: 'Oktober 2026',
+      start: '2026-10-01',
+      end: '2026-10-31',
+      bayar: '2026-10-30',
+      status: 'tutup',
+      snapshot_locked: true,
+      absensi_pot_baseline: { A001: { total: 0, details: [] } },
+    },
+    {
+      id: 2,
+      nama: 'November 2026',
+      start: '2026-11-01',
+      end: '2026-11-30',
+      bayar: '2026-11-28',
+      status: 'aktif',
+    },
+  ],
+  absensi: { A001: { '2026-10-31': 'alpha' } },
+  karSnapshot: px.karSnapshot,
+});
+const korA = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
+assertEq('pertama: isi cache nowTotal', pxC.periodes[0].absensi_pot_baseline.A001.nowTotal === korA.total + 0, true);
+pxC.absensi.A001['2026-10-31'] = 'hadir';
+const korB = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
+assertEq('tanpa dirty: koreksi memakai cache', korB.total, korA.total);
+pxC.periodes[0].absensi_pot_baseline.A001.dirty = true;
+const korC = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
+assertEq('dengan dirty: hitung ulang', korC.total, 0);
 
 console.log('\nKoreksi absensi: semua tes lulus.');

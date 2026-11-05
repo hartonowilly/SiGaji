@@ -280,6 +280,154 @@
     return out;
   }
 
+  var dirtyFull = false;
+  var dirtyIds = Object.create(null);
+
+  function markDirty(id) {
+    if (!id) return;
+    dirtyIds[String(id)] = true;
+  }
+  function markDirtyFull() {
+    dirtyFull = true;
+  }
+  function markDirtyAbsensi(nik, dateIso) {
+    if (!nik || !dateIso) return;
+    markDirty(entityId('I', { kind: 'absensi', item_key: itemKeyFor('absensi', String(nik), absensiMonthOf(dateIso)) }));
+  }
+  function markDirtyTunjVar(periodeNama, nik, kolomId) {
+    if (!periodeNama || !nik || !kolomId) return;
+    markDirty(
+      entityId('T', { periode_nama: String(periodeNama), nik: String(nik), kolom_id: String(kolomId) })
+    );
+  }
+  function peekDirty() {
+    return { full: dirtyFull, ids: Object.keys(dirtyIds) };
+  }
+  function hasScopedDirty() {
+    return !dirtyFull && Object.keys(dirtyIds).length > 0;
+  }
+  function clearDirty() {
+    dirtyFull = false;
+    dirtyIds = Object.create(null);
+  }
+
+  function parseEntityId(id) {
+    if (!id || id.charAt(1) !== '|') return null;
+    var t = id.charAt(0);
+    var rest = id.slice(2);
+    if (t === 'T') {
+      var bits = rest.split('\u0001');
+      return { t: 'T', key: { periode_nama: bits[0], nik: bits[1], kolom_id: bits[2] } };
+    }
+    if (t === 'K') return { t: 'K', key: { nik: rest } };
+    if (t === 'P') return { t: 'P', key: { nama: rest } };
+    if (t === 'S') return { t: 'S', key: { store_key: rest } };
+    if (t === 'C') return { t: 'C', key: { id: rest } };
+    if (t === 'I') {
+      var cut = rest.indexOf('|');
+      if (cut < 0) return null;
+      var kind = rest.slice(0, cut);
+      var item_key = rest.slice(cut + 1);
+      var nik = '';
+      if (kind === 'absensi') nik = item_key.slice(0, item_key.lastIndexOf('|'));
+      else if (kind === 'lembur' || kind === 'prorata') nik = item_key;
+      else nik = item_key.slice(item_key.lastIndexOf('|') + 1);
+      return { t: 'I', key: { kind: kind, item_key: item_key }, nik: nik };
+    }
+    return null;
+  }
+
+  function explodeOne(p, id, opts) {
+    var parsed = parseEntityId(id);
+    if (!parsed) return null;
+    opts = opts || {};
+    if (parsed.t === 'K') {
+      var kar = (p.karyawan || []).find(function (k) {
+        return k && String(k.nik) === parsed.key.nik;
+      });
+      return kar ? ent('K', parsed.key, kar) : null;
+    }
+    if (parsed.t === 'P') {
+      var per = (p.periodes || []).find(function (x) {
+        return x && String(x.nama) === parsed.key.nama;
+      });
+      if (!per) return null;
+      return ent('P', parsed.key, sanitizePeriodeForCloud(per));
+    }
+    if (parsed.t === 'S') {
+      var v = p[parsed.key.store_key];
+      if (v === undefined) v = STORE_DEFAULTS[parsed.key.store_key];
+      return ent('S', parsed.key, v);
+    }
+    if (parsed.t === 'C') {
+      var col = normalizeTunjVarColumns(p).find(function (c) {
+        return c.id === parsed.key.id;
+      });
+      return col ? ent('C', { id: col.id }, { nama: col.nama, sort_order: 0 }) : null;
+    }
+    if (parsed.t === 'T') {
+      var tv = isPlainObject(p.tunjVarBulan) ? p.tunjVarBulan : {};
+      var cell = tv[parsed.key.periode_nama] && tv[parsed.key.periode_nama][parsed.key.nik];
+      var n = cell ? parseFloat(cell[parsed.key.kolom_id]) : NaN;
+      if (isNaN(n) || n === 0) return null;
+      return ent('T', parsed.key, Math.round(n));
+    }
+    if (parsed.t === 'I' && opts.items !== false) {
+      var kind = parsed.key.kind;
+      var nikI = parsed.nik;
+      if (kind === 'hasilGaji' || kind === 'absensiPotBaseline') {
+        var pn = parsed.key.item_key.slice(0, parsed.key.item_key.lastIndexOf('|'));
+        var per2 = (p.periodes || []).find(function (x) {
+          return x && String(x.nama) === pn;
+        });
+        if (!per2) return null;
+        var bag = [];
+        explodePayPrivacyFromPeriode(per2, function (e) {
+          bag.push(e);
+        });
+        return (
+          bag.filter(function (e) {
+            return e.id === id;
+          })[0] || null
+        );
+      }
+      var tmp = [];
+      var src = {};
+      if (kind === 'absensi' || kind === 'lembur' || kind === 'prorata') {
+        if (p[kind] && nikI && p[kind][nikI] != null) src[nikI] = p[kind][nikI];
+      } else {
+        var sub = parsed.key.item_key.slice(0, parsed.key.item_key.lastIndexOf('|'));
+        if (p[kind] && p[kind][sub] && nikI) {
+          src[sub] = {};
+          src[sub][nikI] = p[kind][sub][nikI];
+        }
+      }
+      explodeItems(kind, src, tmp);
+      return (
+        tmp.filter(function (e) {
+          return e.id === id;
+        })[0] || null
+      );
+    }
+    return null;
+  }
+
+  /** Pecah hanya id yang diminta (klik absensi / sel tunjangan). */
+  function explodePayloadIds(p, ids, opts) {
+    p = p || {};
+    opts = opts || {};
+    var out = [];
+    var seen = Object.create(null);
+    (ids || []).forEach(function (id) {
+      if (!id || seen[id]) return;
+      var e = explodeOne(p, id, opts);
+      if (!e) return;
+      seen[e.id] = true;
+      out.push(e);
+    });
+    return out;
+  }
+
   /**
    * Payload aplikasi → daftar entitas.
    * @param {object} p payload (getPayloadForCloud)
@@ -400,10 +548,11 @@
    * Rencana unggah: entitas yang berubah/baru + yang dihapus sejak base.
    * Entitas jenis yang tidak dikelola (types) tidak disentuh — mis. sigaji_item saat SQL v12 belum ada.
    */
-  function planChanges(entities, base, types) {
+  function planChanges(entities, base, types, opts) {
     var upserts = [];
     var deletes = [];
     var seen = Object.create(null);
+    opts = opts || {};
     var allow = types
       ? types.reduce(function (o, t) {
           o[t] = true;
@@ -417,13 +566,36 @@
       var b = base.get(e.id);
       if (!b || b.j !== j) upserts.push({ e: e, j: j, base: b });
     });
-    base.ids().forEach(function (id) {
-      if (seen[id]) return;
-      var b = base.get(id);
-      if (allow && !allow[b.t]) return;
-      deletes.push({ id: id, base: b });
-    });
+    if (opts.partial) {
+      (opts.watchIds || []).forEach(function (id) {
+        if (seen[id]) return;
+        var b = base.get(id);
+        if (!b) return;
+        if (allow && !allow[b.t]) return;
+        deletes.push({ id: id, base: b });
+      });
+    } else {
+      base.ids().forEach(function (id) {
+        if (seen[id]) return;
+        var b = base.get(id);
+        if (allow && !allow[b.t]) return;
+        deletes.push({ id: id, base: b });
+      });
+    }
     return { upserts: upserts, deletes: deletes };
+  }
+
+  /** Rencana unggah dari outbox (sudah delta) — jangan menelusuri seluruh memori. */
+  function planFromOutbox(entries, base, types) {
+    var ents = [];
+    var watch = [];
+    (entries || []).forEach(function (en) {
+      if (!en || !en.id) return;
+      watch.push(en.id);
+      if (en.d == null) return;
+      ents.push({ id: en.id, t: en.t, key: en.key, nik: en.nik, data: en.d });
+    });
+    return planChanges(ents, base, types, { partial: true, watchIds: watch });
   }
 
   function countByType(list, pick) {
@@ -757,9 +929,18 @@
     stableStringify: stableStringify,
     entityId: entityId,
     explodePayload: explodePayload,
+    explodePayloadIds: explodePayloadIds,
+    markDirty: markDirty,
+    markDirtyFull: markDirtyFull,
+    markDirtyAbsensi: markDirtyAbsensi,
+    markDirtyTunjVar: markDirtyTunjVar,
+    peekDirty: peekDirty,
+    hasScopedDirty: hasScopedDirty,
+    clearDirty: clearDirty,
     entityFromRow: entityFromRow,
     createBase: createBase,
     planChanges: planChanges,
+    planFromOutbox: planFromOutbox,
     suspiciousMassDelete: suspiciousMassDelete,
     merge3: function (b, l, s) {
       return mergeEntity(b, l, s);

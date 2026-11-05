@@ -957,6 +957,13 @@
           sigajiCatchWarn('js/cloud-sync.js', eOb);
         }
       }
+      try {
+        if (window.sigajiCloudDelta && typeof window.sigajiCloudDelta.clearDirty === 'function') {
+          window.sigajiCloudDelta.clearDirty();
+        }
+      } catch (eClr) {
+        sigajiCatchWarn('js/cloud-sync.js', eClr);
+      }
       if (typeof window.sigajiSetSyncStatus === 'function') {
         window.sigajiSetSyncStatus('synced', new Date().toLocaleTimeString('id-ID'));
       }
