@@ -228,14 +228,30 @@ const CLOUD = {
   assert('putar tanpa outbox = 0', c.run('sigajiOutbox.putar()') === 0);
 }
 
-// 8. Store yang diabaikan (auditLog, notifikasi, bentoLayouts) tidak masuk outbox.
+// 8. notifikasi/bentoLayouts tidak masuk outbox; auditLog ikut (jejak absensi).
 {
   const ls = makeLocalStorage();
   const a = boot(ls);
   a.ctx.__cloud = structuredClone(CLOUD);
   a.run('applyDbFromCloudPayload(__cloud);');
-  a.run('auditLog.push({t:1});notifikasi.push({id:1});bentoLayouts.x=1;saveAll();');
-  assert('auditLog/notifikasi/bentoLayouts diabaikan', ls.getItem('sigaji_outbox') == null);
+  a.run('notifikasi.push({id:1});bentoLayouts.x=1;saveAll();');
+  assert('notifikasi/bentoLayouts diabaikan', ls.getItem('sigaji_outbox') == null);
+}
+
+{
+  const ls = makeLocalStorage();
+  const a = boot(ls);
+  a.ctx.__cloud = structuredClone(CLOUD);
+  a.run('applyDbFromCloudPayload(__cloud);');
+  a.run("absensi.K0001={'2026-10-05':'sakit'};");
+  a.run("sigajiCloudDelta.markDirtyAbsensi('K0001','2026-10-05');");
+  a.run('auditLog=[{action:"Ubah Absensi"}];');
+  a.run('sigajiCloudDelta.markDirtyAuditLog();');
+  const n = a.run('sigajiOutbox.catat()');
+  const got = ids(ls);
+  assert('catat cepat: absensi + auditLog', n >= 2);
+  assert('catat cepat: id absensi', got.indexOf('I|absensi|K0001|2026-10') >= 0);
+  assert('catat cepat: id auditLog', got.indexOf('S|auditLog') >= 0);
 }
 
 {

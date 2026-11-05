@@ -1344,6 +1344,10 @@ function auditPush(entry){
   auditLog.unshift(entry);
   // batasi ukuran agar tidak membengkak
   if(auditLog.length>3000)auditLog=auditLog.slice(0,3000);
+  try{
+    var dlt=(typeof window!=='undefined'&&window.sigajiCloudDelta)||null;
+    if(dlt&&typeof dlt.markDirtyAuditLog==='function')dlt.markDirtyAuditLog();
+  }catch(eAud){sigajiCatchWarn('js/modules/app-core.js',eAud);}
 }
 function logPayrollAudit(nik,action,detail){
   try{

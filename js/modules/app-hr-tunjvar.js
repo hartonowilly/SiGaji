@@ -296,10 +296,16 @@ function importTunjVarExcel(inp) {
         var ok = 0,
           skip = 0,
           dup = 0,
+          nikRusak = 0,
           seenNik = {};
         for (var r = 1; r < rows.length; r++) {
           var row = rows[r];
           if (typeof sigajiExcelBarisKosong === 'function' ? sigajiExcelBarisKosong(row) : !row || !row.length) {
+            skip++;
+            continue;
+          }
+          if (typeof sigajiExcelNikRusak === 'function' && sigajiExcelNikRusak(row[nikIdx])) {
+            nikRusak++;
             skip++;
             continue;
           }
@@ -328,7 +334,8 @@ function importTunjVarExcel(inp) {
             Object.keys(seenNik).length +
             ' karyawan' +
             (dup ? ' (' + dup + ' NIK dobel, nilai terakhir dipakai)' : '') +
-            (skip ? ' · ' + skip + ' baris dilewati' : '')
+            (skip ? ' · ' + skip + ' baris dilewati' : '') +
+            (nikRusak && typeof sigajiExcelNikRusakPesan === 'function' ? ' · ' + sigajiExcelNikRusakPesan(nikRusak) : nikRusak ? ' · NIK ilmiah dilewati' : '')
         );
       } catch (e) {
         console.error(e);
