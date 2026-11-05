@@ -267,7 +267,8 @@ declare var sigajiCloudDelta:
       applyEntityToMemory(mem: unknown, e: unknown, data: unknown): void;
       markDirtyAbsensi?(nik: string, dateIso: string): void;
       markDirtyTunjVar?(periodeNama: string, nik: string, kolomId: string): void;
-      markDirtyAuditLog?(): void;
+      markDirtyAuditLog?(entry?: unknown): void;
+      ensureAuditEntryId?(e: unknown): string;
       markDirtyFull?(): void;
       sanitizeBaselineForCloud?(row: unknown): unknown;
       hasScopedDirty?(): boolean;
