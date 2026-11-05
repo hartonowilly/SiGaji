@@ -35,6 +35,7 @@ const sqlV12 = readFileSync(join(root, 'sql/supabase_sigaji_v12_versi_cabang.sql
 const sqlKetat = readFileSync(join(root, 'sql/supabase_sigaji_v12_cabang_ketat.sql'), 'utf8');
 const sqlUnlock = readFileSync(join(root, 'sql/supabase_periode_unlock_admin.sql'), 'utf8');
 const sqlAuditItems = readFileSync(join(root, 'sql/supabase_audit_log_items.sql'), 'utf8');
+const sqlAuditStaff = readFileSync(join(root, 'sql/supabase_audit_log_staff_only.sql'), 'utf8');
 
 const UID = {
   admin: '00000000-0000-0000-0000-00000000000a',
@@ -163,6 +164,9 @@ assert('SQL buka kunci Admin bisa dijalankan dua kali', true);
 await db.exec(sqlAuditItems);
 await db.exec(sqlAuditItems);
 assert('SQL pecah auditLog ke item bisa dijalankan dua kali', true);
+await db.exec(sqlAuditStaff);
+await db.exec(sqlAuditStaff);
+assert('SQL jejak audit hanya staf bisa dijalankan dua kali', true);
 
 {
   await db.exec(
@@ -318,16 +322,28 @@ await as(db, 'hrdC2', async () => {
   assert('HRD cabang: tidak bisa ubah peta role', await fails(db, `select public.sigaji_sync_user_roles('main', '[]'::jsonb)`));
 });
 
+await db.exec(
+  `insert into public.sigaji_item (tenant_key, kind, item_key, nik, data) values
+    ('main', 'auditLog', 'a-k1', 'K1', '{"id":"a-k1","nik":"K1","by":"HRD","detail":"H → A"}'::jsonb)`
+);
+
 await as(db, 'kar1', async () => {
   const k = await rows(db, `select nik from public.sigaji_karyawan`);
   assert('Karyawan: hanya data dirinya', k.map((x) => x.nik).join() === 'K1', k);
   const it = await rows(db, `select distinct nik from public.sigaji_item`);
   assert('Karyawan: absensi rekan tidak terbaca (kebocoran ditutup)', it.map((x) => x.nik).join() === 'K1', it);
+  const aud = await rows(db, `select item_key from public.sigaji_item where kind='auditLog'`);
+  assert('Karyawan: jejak audit dirinya tidak terbaca', aud.length === 0, aud);
   const s = await rows(db, `select store_key from public.sigaji_store order by store_key`);
   assert('Karyawan: store hanya profil/master (tanpa users & absensi)', s.map((x) => x.store_key).join() === 'perusahaan', s);
   assert('Karyawan: tidak bisa menulis', (await rows(db, `update public.sigaji_karyawan set data='{}' returning 1`)).length === 0);
   const r = await rpc(db, 'sigaji_save_rows', ['item', JSON.stringify([{ key: { kind: 'absensi', item_key: 'K1|2026-11' }, nik: 'K1', data: { '2026-11-01': 'H' } }]), '[]', 'main']);
   assert('Karyawan: RPC simpan ditolak RLS', r.saved.length === 0 && r.errors.length === 1, r);
+});
+
+await as(db, 'admin', async () => {
+  const aud = await rows(db, `select item_key from public.sigaji_item where kind='auditLog'`);
+  assert('Admin: jejak audit terbaca', aud.some((x) => x.item_key === 'a-k1'), aud);
 });
 
 await as(db, 'admin2', async () => {

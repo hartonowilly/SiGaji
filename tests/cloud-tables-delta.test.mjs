@@ -34,6 +34,7 @@ function fakeSupabase(db) {
         if (kind === 'eq') return r[c] === v;
         if (kind === 'in') return v.includes(r[c]);
         if (kind === 'gte') return String(r[c] || '') >= v;
+        if (kind === 'neq') return r[c] !== v;
         return true;
       });
     const api = {
@@ -50,6 +51,10 @@ function fakeSupabase(db) {
       },
       gte(c, v) {
         st.filters.push(['gte', c, v]);
+        return api;
+      },
+      neq(c, v) {
+        st.filters.push(['neq', c, v]);
         return api;
       },
       order() {

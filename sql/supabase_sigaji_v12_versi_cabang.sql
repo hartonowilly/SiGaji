@@ -11,7 +11,8 @@
 --   4) RLS ketat untuk SEMUA tenant:
 --        Admin, HRD tanpa cabang  = kantor pusat: semua data tenant-nya
 --        HRD dengan cabang         = hanya karyawan/absensi/tunjangan cabang itu; master & periode baca saja
---        Karyawan                  = hanya data NIK sendiri (tidak lagi bisa membaca absensi seluruh karyawan)
+--        Karyawan                  = hanya data NIK sendiri (tidak lagi bisa membaca absensi seluruh karyawan);
+--                                    jejak audit (sigaji_item.kind = auditLog) tidak ikut — internal HRD/Admin
 --      Kebijakan lama yang longgar (termasuk per tenant dari supabase_tenant_add.sql) dihapus.
 --
 -- Urutan aman: deploy aplikasi versi baru dulu → semua user refresh → jalankan file ini saat tidak ada yang
@@ -663,7 +664,14 @@ declare
   self constant text := '((tenant_key || ''|'' || nik) = any ((select public.sigaji_self_keys())::text[]))';
 begin
   foreach t in array array['sigaji_karyawan', 'sigaji_item', 'sigaji_tunj_var_nilai'] loop
-    execute format('create policy v12_staff_select on public.%I for select to authenticated using (%s or %s)', t, scope, self);
+    if t = 'sigaji_item' then
+      execute format(
+        'create policy v12_staff_select on public.%I for select to authenticated using (%s or (%s and kind <> ''auditLog''))',
+        t, scope, self
+      );
+    else
+      execute format('create policy v12_staff_select on public.%I for select to authenticated using (%s or %s)', t, scope, self);
+    end if;
     execute format('create policy v12_staff_insert on public.%I for insert to authenticated with check (%s)', t, scope);
     execute format('create policy v12_staff_update on public.%I for update to authenticated using (%s) with check (%s)', t, scope, scope);
     execute format('create policy v12_staff_delete on public.%I for delete to authenticated using (%s)', t, scope);
