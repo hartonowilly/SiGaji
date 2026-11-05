@@ -1341,12 +1341,18 @@ function deepCloneLite(o){
 function nowIso(){return new Date().toISOString();}
 function auditPush(entry){
   if(!auditLog)auditLog=[];
+  if(!entry)return;
+  try{
+    var dltId=(typeof window!=='undefined'&&window.sigajiCloudDelta)||null;
+    if(dltId&&typeof dltId.ensureAuditEntryId==='function')dltId.ensureAuditEntryId(entry);
+    else if(!entry.id)entry.id='a'+Date.now().toString(36);
+  }catch(eId){sigajiCatchWarn('js/modules/app-core.js',eId);}
   auditLog.unshift(entry);
   // batasi ukuran agar tidak membengkak
   if(auditLog.length>3000)auditLog=auditLog.slice(0,3000);
   try{
     var dlt=(typeof window!=='undefined'&&window.sigajiCloudDelta)||null;
-    if(dlt&&typeof dlt.markDirtyAuditLog==='function')dlt.markDirtyAuditLog();
+    if(dlt&&typeof dlt.markDirtyAuditLog==='function')dlt.markDirtyAuditLog(entry);
   }catch(eAud){sigajiCatchWarn('js/modules/app-core.js',eAud);}
 }
 function logPayrollAudit(nik,action,detail){

@@ -34,6 +34,7 @@ const sqlRoles = readFileSync(join(root, 'sql/supabase_sigaji_user_roles_rls.sql
 const sqlV12 = readFileSync(join(root, 'sql/supabase_sigaji_v12_versi_cabang.sql'), 'utf8');
 const sqlKetat = readFileSync(join(root, 'sql/supabase_sigaji_v12_cabang_ketat.sql'), 'utf8');
 const sqlUnlock = readFileSync(join(root, 'sql/supabase_periode_unlock_admin.sql'), 'utf8');
+const sqlAuditItems = readFileSync(join(root, 'sql/supabase_audit_log_items.sql'), 'utf8');
 
 const UID = {
   admin: '00000000-0000-0000-0000-00000000000a',
@@ -159,6 +160,9 @@ assert('SQL cabang ketat bisa dijalankan dua kali', true);
 await db.exec(sqlUnlock);
 await db.exec(sqlUnlock);
 assert('SQL buka kunci Admin bisa dijalankan dua kali', true);
+await db.exec(sqlAuditItems);
+await db.exec(sqlAuditItems);
+assert('SQL pecah auditLog ke item bisa dijalankan dua kali', true);
 
 {
   await db.exec(
@@ -217,6 +221,38 @@ assert('SQL buka kunci Admin bisa dijalankan dua kali', true);
       `update public.sigaji_periode set data = data || '{"snapshot_locked":false}'::jsonb where nama='Okt 2026'`
     );
   });
+}
+
+{
+  await db.exec(
+    `insert into public.sigaji_periode (tenant_key, nama, data) values
+      ('main', 'Kunci 2026', '{"nama":"Kunci 2026","snapshot_locked":true}')`
+  );
+  await as(db, 'hrdPusat', async () => {
+    const blocked = await fails(db, `delete from public.sigaji_periode where nama='Kunci 2026'`);
+    assert('HRD pusat tidak bisa hapus periode terkunci', blocked);
+  });
+  await as(db, 'admin', async () => {
+    const n = await rows(db, `delete from public.sigaji_periode where nama='Kunci 2026' returning 1`);
+    assert('Admin bisa hapus periode terkunci', n.length === 1);
+  });
+}
+
+{
+  await db.exec(`
+    insert into public.sigaji_store (tenant_key, store_key, data) values
+      ('main', 'auditLog', '[{"ts":"2026-10-01T00:00:00.000Z","nik":"K1","action":"Ubah Absensi"},{"id":"a-kunci","ts":"2026-10-02T00:00:00.000Z","nik":"","action":"kunci_periode"}]'::jsonb)
+    on conflict (tenant_key, store_key) do update set data = excluded.data
+  `);
+  await db.exec(sqlAuditItems);
+  const n = await rows(db, `select count(*)::int as n from public.sigaji_item where kind='auditLog'`);
+  const blob = await rows(db, `select data from public.sigaji_store where store_key='auditLog'`);
+  assert('migrasi: dua jejak audit jadi item', n[0].n === 2, n);
+  assert('migrasi: dokumen store auditLog dikosongkan', Array.isArray(blob[0].data) && blob[0].data.length === 0, blob);
+  await db.exec(sqlAuditItems);
+  const n2 = await rows(db, `select count(*)::int as n from public.sigaji_item where kind='auditLog'`);
+  assert('migrasi audit aman diulang', n2[0].n === 2);
+  await db.exec(`delete from public.sigaji_item where kind='auditLog'`);
 }
 
 await as(db, 'hrdPusat', async () => {

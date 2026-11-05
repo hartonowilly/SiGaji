@@ -308,7 +308,7 @@ function rebuildSnapshotPeriode(id){
   if(sigajiSameId(PA().id,p.id)){renderDash();renderPenggajian();renderPPH();renderLaporan();}
   toast('Snapshot '+p.nama+' berhasil di-rebuild dari Master saat ini');
 }
-function hapusPeriode(id){var p=periodesFindById(id);if(!p)return;sigajiConfirm({title:'Hapus periode',message:'Apakah Anda yakin ingin menghapus periode "'+(p.nama||String(id))+'"?',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;periodes=periodes.filter(function(x){return !sigajiSameId(x.id,id);});saveAll();renderPeriodes();toast('Periode dihapus');});}
+function hapusPeriode(id){var p=periodesFindById(id);if(!p)return;if(p.snapshot_locked){var roleHapus=(typeof CU!=='undefined'&&CU&&CU.role)||'';if(roleHapus!=='Admin'){toast('Hanya Admin yang dapat menghapus periode terkunci');return;}}sigajiConfirm({title:'Hapus periode',message:'Apakah Anda yakin ingin menghapus periode "'+(p.nama||String(id))+'"?',danger:true,okText:'Ya, hapus'}).then(function(ok){if(!ok)return;periodes=periodes.filter(function(x){return !sigajiSameId(x.id,id);});saveAll();renderPeriodes();toast('Periode dihapus');});}
 function parseNamaPeriodeBulanTahun(nama){
   var bulan=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
   var m=String(nama||'').trim().match(/^([A-Za-zÀ-ÿ]+)\s+(\d{4})$/i);

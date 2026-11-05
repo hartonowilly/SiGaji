@@ -5,7 +5,16 @@
  */
 (function (root) {
   /** Kunci store yang punya tabel baris sendiri (sigaji_item) setelah SQL v12. */
-  var ITEM_KINDS = ['absensi', 'lembur', 'prorata', 'thrManual', 'karSnapshot', 'hasilGaji', 'absensiPotBaseline'];
+  var ITEM_KINDS = [
+    'absensi',
+    'lembur',
+    'prorata',
+    'thrManual',
+    'karSnapshot',
+    'hasilGaji',
+    'absensiPotBaseline',
+    'auditLog',
+  ];
   var PAY_PRIVACY_KINDS = { hasilGaji: true, absensiPotBaseline: true };
 
   var STORE_KEYS = [
@@ -243,6 +252,15 @@
 
   /** Pecah satu kind (absensi, lembur, …) menjadi entitas sigaji_item. */
   function explodeItems(kind, src, out) {
+    if (kind === 'auditLog') {
+      (Array.isArray(src) ? src : []).forEach(function (e) {
+        if (!e || typeof e !== 'object') return;
+        var id = ensureAuditEntryId(e);
+        if (!id) return;
+        out.push(ent('I', { kind: 'auditLog', item_key: id }, e, e.nik != null ? String(e.nik) : ''));
+      });
+      return;
+    }
     if (!isPlainObject(src)) return;
     if (kind === 'absensi') {
       Object.keys(src).forEach(function (nik) {
@@ -324,8 +342,55 @@
       entityId('T', { periode_nama: String(periodeNama), nik: String(nik), kolom_id: String(kolomId) })
     );
   }
-  function markDirtyAuditLog() {
-    markDirty(entityId('S', { store_key: 'auditLog' }));
+  function auditEntryId(e) {
+    if (!e || typeof e !== 'object') return '';
+    var raw = e.id != null ? String(e.id).trim() : '';
+    if (raw) return raw.replace(/\|/g, '_');
+    var copy = {};
+    Object.keys(e).forEach(function (k) {
+      if (k !== 'id') copy[k] = e[k];
+    });
+    var s = stableStringify(copy);
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return 'h' + (h >>> 0).toString(36);
+  }
+  function ensureAuditEntryId(e) {
+    if (!e || typeof e !== 'object') return '';
+    e.id = auditEntryId(e);
+    return e.id;
+  }
+  function sortAuditLog(list) {
+    if (!Array.isArray(list)) return [];
+    list.sort(function (a, b) {
+      return String((b && b.ts) || '').localeCompare(String((a && a.ts) || ''));
+    });
+    if (list.length > 3000) list.length = 3000;
+    return list;
+  }
+  function mergeAuditLogs(fromStore, fromItems) {
+    var by = Object.create(null);
+    function add(list) {
+      (Array.isArray(list) ? list : []).forEach(function (e) {
+        if (!e || typeof e !== 'object') return;
+        var id = ensureAuditEntryId(e);
+        if (!id) return;
+        by[id] = e;
+      });
+    }
+    add(fromStore);
+    add(fromItems);
+    var out = Object.keys(by).map(function (k) {
+      return by[k];
+    });
+    return sortAuditLog(out);
+  }
+  function markDirtyAuditLog(entry) {
+    if (!entry || typeof entry !== 'object') return;
+    markDirty(entityId('I', { kind: 'auditLog', item_key: ensureAuditEntryId(entry) }));
   }
   function peekDirty() {
     return { full: dirtyFull, ids: Object.keys(dirtyIds) };
@@ -358,6 +423,7 @@
       var nik = '';
       if (kind === 'absensi') nik = item_key.slice(0, item_key.lastIndexOf('|'));
       else if (kind === 'lembur' || kind === 'prorata') nik = item_key;
+      else if (kind === 'auditLog') nik = '';
       else nik = item_key.slice(item_key.lastIndexOf('|') + 1);
       return { t: 'I', key: { kind: kind, item_key: item_key }, nik: nik };
     }
@@ -402,6 +468,19 @@
     if (parsed.t === 'I' && opts.items !== false) {
       var kind = parsed.key.kind;
       var nikI = parsed.nik;
+      if (kind === 'auditLog') {
+        var listA = Array.isArray(p.auditLog) ? p.auditLog : [];
+        var want = String(parsed.key.item_key);
+        for (var ai = 0; ai < listA.length; ai++) {
+          var rowA = listA[ai];
+          if (!rowA) continue;
+          if (String(rowA.id || auditEntryId(rowA)) === want) {
+            if (!rowA.id) rowA.id = want;
+            return ent('I', { kind: 'auditLog', item_key: want }, rowA, rowA.nik != null ? String(rowA.nik) : '');
+          }
+        }
+        return null;
+      }
       if (kind === 'hasilGaji' || kind === 'absensiPotBaseline') {
         var pn = parsed.key.item_key.slice(0, parsed.key.item_key.lastIndexOf('|'));
         var per2 = (p.periodes || []).find(function (x) {
@@ -901,6 +980,29 @@
     var kind = e.key.kind;
     var nik = e.nik != null ? String(e.nik) : '';
     var sub = itemSubKey(e);
+    if (kind === 'auditLog') {
+      if (!Array.isArray(mem.auditLog)) mem.auditLog = [];
+      var aid = String(e.key.item_key || '');
+      if (data == null) {
+        mem.auditLog = mem.auditLog.filter(function (x) {
+          return x && String(x.id) !== aid;
+        });
+        return;
+      }
+      var row = isPlainObject(data) ? data : {};
+      if (!row.id) row.id = aid;
+      var foundA = false;
+      for (var ai2 = 0; ai2 < mem.auditLog.length; ai2++) {
+        if (mem.auditLog[ai2] && String(mem.auditLog[ai2].id) === aid) {
+          mem.auditLog[ai2] = row;
+          foundA = true;
+          break;
+        }
+      }
+      if (!foundA) mem.auditLog.unshift(row);
+      sortAuditLog(mem.auditLog);
+      return;
+    }
     if (PAY_PRIVACY_KINDS[kind] && Array.isArray(mem.periodes)) {
       applyPayPrivacyToPeriode(mem.periodes, kind, sub, nik, data);
     }
@@ -941,12 +1043,14 @@
       karSnapshot: {},
       hasilGaji: {},
       absensiPotBaseline: {},
+      auditLog: [],
     };
     (rows || []).forEach(function (row) {
       var e = entityFromRow('I', row);
       if (ITEM_KINDS.indexOf(e.key.kind) === -1) return;
       applyItemToMemory(parts, e, e.data);
     });
+    sortAuditLog(parts.auditLog);
     return parts;
   }
 
@@ -962,6 +1066,8 @@
     markDirtyAbsensi: markDirtyAbsensi,
     markDirtyTunjVar: markDirtyTunjVar,
     markDirtyAuditLog: markDirtyAuditLog,
+    ensureAuditEntryId: ensureAuditEntryId,
+    mergeAuditLogs: mergeAuditLogs,
     peekDirty: peekDirty,
     hasScopedDirty: hasScopedDirty,
     clearDirty: clearDirty,

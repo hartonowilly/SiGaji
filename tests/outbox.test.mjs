@@ -245,13 +245,13 @@ const CLOUD = {
   a.run('applyDbFromCloudPayload(__cloud);');
   a.run("absensi.K0001={'2026-10-05':'sakit'};");
   a.run("sigajiCloudDelta.markDirtyAbsensi('K0001','2026-10-05');");
-  a.run('auditLog=[{action:"Ubah Absensi"}];');
-  a.run('sigajiCloudDelta.markDirtyAuditLog();');
+  a.run('auditLog=[{id:"a1",action:"Ubah Absensi",nik:"K0001"}];');
+  a.run('sigajiCloudDelta.markDirtyAuditLog(auditLog[0]);');
   const n = a.run('sigajiOutbox.catat()');
   const got = ids(ls);
   assert('catat cepat: absensi + auditLog', n >= 2);
   assert('catat cepat: id absensi', got.indexOf('I|absensi|K0001|2026-10') >= 0);
-  assert('catat cepat: id auditLog', got.indexOf('S|auditLog') >= 0);
+  assert('catat cepat: id auditLog', got.indexOf('I|auditLog|a1') >= 0);
 }
 
 {
