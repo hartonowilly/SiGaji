@@ -36,7 +36,7 @@ function sigajiExcelNik(v){
   if(typeof v==='number'&&isFinite(v))return String(Math.round(v));
   var s=String(v).trim();
   if(!s)return '';
-  if(/^\d+(\.\d+)?e[+\-]?\d+$/i.test(s)){
+  if(/^\d+(\.\d+)?e[+-]?\d+$/i.test(s)){
     var n=Number(s);
     if(!isFinite(n)||Math.abs(n)>=1e15)return '';
     return String(Math.round(n));
