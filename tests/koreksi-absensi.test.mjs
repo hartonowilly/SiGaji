@@ -110,12 +110,46 @@ const pxC = loadPayrollCore({
   karSnapshot: px.karSnapshot,
 });
 const korA = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
-assertEq('pertama: isi cache nowTotal', pxC.periodes[0].absensi_pot_baseline.A001.nowTotal === korA.total + 0, true);
+assertEq('cache tidak ditulis ke baseline', pxC.periodes[0].absensi_pot_baseline.A001.nowTotal == null, true);
+const korA2 = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
+assertEq('hitung ulang sesi: sidik jari sama', korA2.total, korA.total);
+
 pxC.absensi.A001['2026-10-31'] = 'hadir';
 const korB = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
-assertEq('tanpa dirty: koreksi memakai cache', korB.total, korA.total);
-pxC.periodes[0].absensi_pot_baseline.A001.dirty = true;
-const korC = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
-assertEq('dengan dirty: hitung ulang', korC.total, 0);
+assertEq('absensi dari luar (awan): hitung ulang', korB.total, 0);
+
+const pxStale = loadPayrollCore({
+  perusahaan: { hariKerja: 6, aturan_potongan: { alpha: { mode: 'prorata', nilai: 0 } } },
+  karyawan: px.karyawan,
+  periodes: [
+    {
+      id: 1,
+      nama: 'Oktober 2026',
+      start: '2026-10-01',
+      end: '2026-10-31',
+      bayar: '2026-10-30',
+      status: 'tutup',
+      snapshot_locked: true,
+      absensi_pot_baseline: { A001: { total: 0, details: [], nowTotal: 0 } },
+    },
+    {
+      id: 2,
+      nama: 'November 2026',
+      start: '2026-11-01',
+      end: '2026-11-30',
+      bayar: '2026-11-28',
+      status: 'aktif',
+    },
+  ],
+  absensi: { A001: { '2026-10-31': 'alpha' } },
+  karSnapshot: px.karSnapshot,
+});
+const korStale = pxStale.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
+assertEq('nowTotal basi di JSON diabaikan', korStale.total > 0, true);
+
+pxC.absensi.A001['2026-10-31'] = 'alpha';
+pxC.hariLibur = [{ tgl: '2026-10-31', nama: 'Libur uji', tipe: 'nasional' }];
+const korLib = pxC.hitungKoreksiAbsensiBulanSebelumnya('A001', 'November 2026');
+assertEq('hari libur baru: koreksi 0', korLib.total, 0);
 
 console.log('\nKoreksi absensi: semua tes lulus.');

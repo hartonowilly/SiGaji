@@ -261,6 +261,25 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   ];
   D.attachPayPrivacyFromItems(prefer, { hasilGaji: { 'Okt 2026': { K001: { neto: 4500000 } } } });
   assert('item menang atas JSON beku lama', prefer[0].hasil_gaji.byNik.K001.neto === 4500000);
+
+  const withCache = payload();
+  withCache.periodes[0].absensi_pot_baseline = {
+    K001: { total: 385185, details: [], nowTotal: 0, nowDetails: [], dirty: true, capturedAt: '2026-10-30' },
+  };
+  const blEnt = D.explodePayload(withCache, { items: true }).find(
+    (e) => e.t === 'I' && e.key.kind === 'absensiPotBaseline'
+  );
+  assert('baseline ke awan tanpa nowTotal', blEnt && blEnt.data.total === 385185 && blEnt.data.nowTotal == null);
+  assert('baseline ke awan tanpa dirty', blEnt && blEnt.data.dirty == null && blEnt.data.capturedAt === '2026-10-30');
+  const restoredBl = [{ nama: 'Okt 2026' }];
+  D.attachPayPrivacyFromItems(restoredBl, {
+    absensiPotBaseline: { 'Okt 2026': { K001: { total: 1, nowTotal: 0, dirty: true } } },
+  });
+  assert(
+    'muat baseline: cache nowTotal dibuang',
+    restoredBl[0].absensi_pot_baseline.K001.total === 1 &&
+      restoredBl[0].absensi_pot_baseline.K001.nowTotal == null
+  );
 }
 
 {
