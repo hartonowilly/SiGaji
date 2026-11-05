@@ -263,4 +263,34 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   assert('item menang atas JSON beku lama', prefer[0].hasil_gaji.byNik.K001.neto === 4500000);
 }
 
+{
+  const p = payload();
+  const one = D.explodePayloadIds(p, ['I|absensi|K001|2026-10'], { items: true });
+  assert('pecah sebagian: 1 bulan absensi', one.length === 1 && one[0].data['2026-10-01'] === 'izin');
+  assert('pecah sebagian: September tidak ikut', !one[0].data['2026-09-30']);
+  const tv = D.explodePayloadIds(p, ['T|Okt 2026\u0001K001\u0001v1'], { items: true });
+  assert('pecah sebagian: 1 sel tunjangan', tv.length === 1 && tv[0].data === 250000);
+  D.markDirtyAbsensi('K001', '2026-10-01');
+  assert('scoped dirty setelah satu absensi', D.hasScopedDirty() === true);
+  D.markDirtyFull();
+  assert('full menonaktifkan scoped', D.hasScopedDirty() === false);
+  D.clearDirty();
+  const base = baseFrom(D.explodePayload(p, { items: true }));
+  const planFull = D.planChanges(
+    D.explodePayload({ ...p, absensi: { K001: { '2026-10-01': 'alpha' } } }, { items: true }),
+    base
+  );
+  const planPart = D.planChanges(
+    D.explodePayloadIds({ ...p, absensi: { K001: { '2026-10-01': 'alpha' } } }, ['I|absensi|K001|2026-10'], {
+      items: true,
+    }),
+    base,
+    null,
+    { partial: true, watchIds: ['I|absensi|K001|2026-10'] }
+  );
+  assert('partial tidak menghapus entitas lain', planPart.deletes.length === 0);
+  assert('partial tetap mengunggah absensi yang berubah', planPart.upserts.some((u) => u.e.id === 'I|absensi|K001|2026-10'));
+  assert('full tetap melihat perubahan absensi', planFull.upserts.some((u) => u.e.id === 'I|absensi|K001|2026-10'));
+}
+
 console.log('\nSemua tes sinkron delta lulus.');

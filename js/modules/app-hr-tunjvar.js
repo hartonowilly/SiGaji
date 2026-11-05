@@ -167,6 +167,13 @@ function setTunjVarNilai(nik, vKey, val) {
     return;
   }
   tunjVarBulan[pn][nik][vKey] = n;
+  try {
+    if (window.sigajiCloudDelta && window.sigajiCloudDelta.markDirtyTunjVar) {
+      window.sigajiCloudDelta.markDirtyTunjVar(pn, nik, vKey);
+    }
+  } catch (eTv) {
+    if (typeof sigajiCatchWarn === 'function') sigajiCatchWarn('js/modules/app-hr-tunjvar.js', eTv);
+  }
   saveAll();
   refreshTunjVarTotals();
   tunjVarJadwalHitungGaji();

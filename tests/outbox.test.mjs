@@ -266,4 +266,16 @@ const CLOUD = {
   );
 }
 
+{
+  const ls = makeLocalStorage();
+  const a = boot(ls);
+  a.ctx.__cloud = structuredClone(CLOUD);
+  a.run('applyDbFromCloudPayload(__cloud);');
+  a.run("absensi.K0001={'2026-10-05':'sakit'};");
+  a.run("sigajiCloudDelta.markDirtyAbsensi('K0001','2026-10-05');");
+  const n = a.run('sigajiOutbox.catat()');
+  assert('catat scoped: 1 entri absensi', n === 1);
+  assert('catat scoped: id bulan Okt', ids(ls).join() === 'I|absensi|K0001|2026-10');
+}
+
 console.log('\nOutbox: semua tes lulus.');

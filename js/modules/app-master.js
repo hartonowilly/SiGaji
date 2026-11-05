@@ -262,6 +262,7 @@ function toggleLockPeriode(id){
         detail:'Snapshot dikunci'
       });
     }catch(eAud){sigajiCatchWarn('js/modules/app-master.js',eAud);}
+    try{if(window.sigajiCloudDelta&&window.sigajiCloudDelta.markDirtyFull)window.sigajiCloudDelta.markDirtyFull();}catch(eFull){sigajiCatchWarn('js/modules/app-master.js',eFull);}
     saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci (baseline absensi tersimpan)');
   }else{
     if(typeof sigajiNeedPeriodeData==='function'&&!sigajiNeedPeriodeData(p.nama)){toast('Data periode '+p.nama+' masih dimuat dari arsip — coba lagi sebentar lagi.');return;}
@@ -1168,6 +1169,7 @@ function eksekusiImport(){
     }
   });
   if(dipilih.indexOf('roles')>=0&&typeof window.sigajiMigrateRolePerms==='function')window.sigajiMigrateRolePerms(roles);
+  try{if(window.sigajiCloudDelta&&window.sigajiCloudDelta.markDirtyFull)window.sigajiCloudDelta.markDirtyFull();}catch(eImp){sigajiCatchWarn('js/modules/app-master.js',eImp);}
   saveAll();renderAll();updateNotifBadge();applyBranding();renderSidebar();toast('Import selesai');
   document.getElementById('import-preview').style.display='none';importData=null;
   var inp=document.getElementById('import-file-input');if(inp)inp.value='';

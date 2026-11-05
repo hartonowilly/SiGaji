@@ -104,10 +104,29 @@
     basis = baru;
   }
 
+  function entriDari(e, j, lama, now) {
+    var prev = lama[e.id];
+    return {
+      id: e.id,
+      t: e.t,
+      key: e.key,
+      nik: e.nik,
+      d: e.data,
+      ts: prev && prev.j === j ? prev.ts : now,
+      j: j,
+    };
+  }
+
   /** Hitung ulang outbox = selisih memori vs basis. Dipanggil saveAll. */
   function catat() {
     if (!basis || !aktif()) return 0;
     var d = D();
+    if (!d) return 0;
+    if (d.hasScopedDirty && d.hasScopedDirty()) return catatSebagian(d);
+    return catatPenuh(d);
+  }
+
+  function catatPenuh(d) {
     var list = entitasMemori();
     if (!list) return 0;
     var lama = Object.create(null);
@@ -122,16 +141,7 @@
       var j = d.stableStringify(e.data);
       var b = basis[e.id];
       if (b && b.j === j) return;
-      var prev = lama[e.id];
-      out.push({
-        id: e.id,
-        t: e.t,
-        key: e.key,
-        nik: e.nik,
-        d: e.data,
-        ts: prev && prev.j === j ? prev.ts : now,
-        j: j,
-      });
+      out.push(entriDari(e, j, lama, now));
     });
     Object.keys(basis).forEach(function (id) {
       if (seen[id]) return;
@@ -146,6 +156,50 @@
         ts: prev && prev.j === 'null' ? prev.ts : now,
         j: 'null',
       });
+    });
+    tulis(out);
+    return out.length;
+  }
+
+  /** Hanya id yang ditandai kotor (satu klik absensi / sel tunjangan). */
+  function catatSebagian(d) {
+    if (typeof root.getPayloadForCloud !== 'function' || !d.explodePayloadIds) return catatPenuh(d);
+    var peek = d.peekDirty();
+    var ids = peek.ids || [];
+    var found = d.explodePayloadIds(root.getPayloadForCloud(), ids, { items: true });
+    var foundMap = Object.create(null);
+    found.forEach(function (e) {
+      foundMap[e.id] = e;
+    });
+    var lama = Object.create(null);
+    baca().forEach(function (en) {
+      if (en && en.id) lama[en.id] = en;
+    });
+    var now = Date.now();
+    var out = baca().filter(function (en) {
+      return en && ids.indexOf(en.id) < 0;
+    });
+    ids.forEach(function (id) {
+      var e = foundMap[id];
+      var b = basis[id];
+      if (e) {
+        var j = d.stableStringify(e.data);
+        if (b && b.j === j) return;
+        out.push(entriDari(e, j, lama, now));
+        return;
+      }
+      if (b) {
+        var prev = lama[id];
+        out.push({
+          id: id,
+          t: b.e.t,
+          key: b.e.key,
+          nik: b.e.nik,
+          d: null,
+          ts: prev && prev.j === 'null' ? prev.ts : now,
+          j: 'null',
+        });
+      }
     });
     tulis(out);
     return out.length;
@@ -192,6 +246,11 @@
       ubah = true;
     });
     if (!Object.keys(hari).length) delete mem.absensi[nik];
+    if (ubah && typeof root.sigajiCatatAbsensiBerubah === 'function') {
+      Object.keys(data).forEach(function (d) {
+        root.sigajiCatatAbsensiBerubah(nik, d);
+      });
+    }
     return ubah;
   }
 
@@ -295,5 +354,6 @@
     adaBasis: function () {
       return !!basis;
     },
+    isi: baca,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

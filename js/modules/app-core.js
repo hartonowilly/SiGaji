@@ -186,8 +186,27 @@ function applyAbsensiResign(nik,tglBerhenti){
   while(cur<=end){
     var iso=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
     absensi[nik][iso]='resign';
+    if(typeof sigajiCatatAbsensiBerubah==='function')sigajiCatatAbsensiBerubah(nik,iso);
     cur.setDate(cur.getDate()+1);
   }
+}
+/** Absensi berubah: tandai koreksi periode terkunci + entitas awan yang perlu dibanding. */
+function sigajiTandaiAbsensiKoreksiKotor(nik,tglIso){
+  if(!nik||!tglIso)return;
+  (periodes||[]).forEach(function(p){
+    if(!p||!p.snapshot_locked||!p.absensi_pot_baseline)return;
+    if(!p.start||!p.end||tglIso<p.start||tglIso>p.end)return;
+    if(!p.absensi_pot_baseline[nik])return;
+    p.absensi_pot_baseline[nik].dirty=true;
+  });
+}
+function sigajiCatatAbsensiBerubah(nik,tglIso){
+  if(!nik||!tglIso)return;
+  sigajiTandaiAbsensiKoreksiKotor(nik,tglIso);
+  try{
+    var dlt=(typeof window!=='undefined'&&window.sigajiCloudDelta)||null;
+    if(dlt&&typeof dlt.markDirtyAbsensi==='function')dlt.markDirtyAbsensi(nik,tglIso);
+  }catch(eMark){sigajiCatchWarn('js/modules/app-core.js',eMark);}
 }
 /**
  * Aktifkan pro-rata otomatis di periode yang memuat tgl berhenti.
@@ -1506,10 +1525,14 @@ function sigajiCaptureAbsensiPotBaseline(p,overwrite){
     if(!k||!k.nik)return;
     if(!overwrite&&p.absensi_pot_baseline[k.nik]!==undefined)return;
     var pot=sigajiPotKehadiranUntukPeriodeNik(k.nik,p);
+    var detCap=(pot.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};});
     p.absensi_pot_baseline[k.nik]={
       total:pot.total||0,
-      details:(pot.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};}),
+      details:detCap,
       capturedAt:new Date().toISOString(),
+      nowTotal:pot.total||0,
+      nowDetails:detCap,
+      nowAt:new Date().toISOString()
     };
   });
 }
@@ -1524,14 +1547,20 @@ function sigajiRebaselinePriorLockedAbsensiPot(periodeBaruDikunci){
     if(!ym||ym>=ymActive)return;
     karyawanListPeriode(p).forEach(function(k){
       if(!k||!k.nik)return;
-      var pot=sigajiPotKehadiranUntukPeriodeNik(k.nik,p);
       var prev=p.absensi_pot_baseline[k.nik]||{};
+      var perlu=!!prev.dirty||prev.nowTotal==null||Math.round(prev.nowTotal||0)!==Math.round(prev.total||0);
+      if(!perlu)return;
+      var pot=sigajiPotKehadiranUntukPeriodeNik(k.nik,p);
+      var det=(pot.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};});
       p.absensi_pot_baseline[k.nik]={
         total:pot.total||0,
-        details:(pot.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};}),
+        details:det,
         capturedAt:prev.capturedAt||null,
         settledIn:periodeBaruDikunci.nama,
         settledAt:new Date().toISOString(),
+        nowTotal:pot.total||0,
+        nowDetails:det,
+        nowAt:new Date().toISOString()
       };
     });
   });
@@ -1553,8 +1582,16 @@ function hitungKoreksiAbsensiBulanSebelumnya(nik,periodeAktifNama,idx){
     if(!base||base.total===undefined)return;
     var sc=sigajiHitungScopeNik(nik);
     var now=sc&&sc.pot.get(p.nama);
+    if(!now&&!base.dirty&&base.nowTotal!=null){
+      now={total:base.nowTotal,details:base.nowDetails||[]};
+      if(sc)sc.pot.set(p.nama,now);
+    }
     if(!now){
       now=sigajiPotKehadiranUntukPeriodeNik(nik,p,idx||(idx=sigajiAbsensiIndex(nik)));
+      base.nowTotal=now.total||0;
+      base.nowDetails=(now.details||[]).map(function(d){return{label:d.label,nilai:d.nilai};});
+      base.nowAt=new Date().toISOString();
+      delete base.dirty;
       if(sc)sc.pot.set(p.nama,now);
     }
     var delta=Math.round((now.total||0)-(base.total||0));
