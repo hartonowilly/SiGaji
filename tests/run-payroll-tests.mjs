@@ -31,6 +31,7 @@ const suites = [
   'cari-orang.test.mjs',
   'payroll-komponen-diff.test.mjs',
   'backup-export.test.mjs',
+  'backup-restore-freeze.test.mjs',
   'timeline-tahun.test.mjs',
   'angka-teks.test.mjs',
   'penyimpanan-lokal.test.mjs',

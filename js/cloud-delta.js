@@ -184,6 +184,7 @@
     }
     if (!p) return;
     if (kind === 'hasilGaji') {
+      if (data != null && !p.snapshot_locked) return;
       if (!p.hasil_gaji || p.hasil_gaji.v !== 1) p.hasil_gaji = { v: 1, byNik: (p.hasil_gaji && p.hasil_gaji.byNik) || {} };
       if (!p.hasil_gaji.byNik) p.hasil_gaji.byNik = {};
       if (data == null) {
@@ -230,7 +231,7 @@
       delete p.absensi_pot_baseline;
       var byNik = mergeByNikMaps(hg[p.nama], leakedHg, onlyNik);
       var base = mergeByNikMaps(bl[p.nama], leakedBl, onlyNik);
-      if (byNik) p.hasil_gaji = { v: 1, byNik: byNik };
+      if (byNik && p.snapshot_locked) p.hasil_gaji = { v: 1, byNik: byNik };
       if (base) {
         Object.keys(base).forEach(function (nik) {
           base[nik] = sanitizeBaselineForCloud(base[nik]);

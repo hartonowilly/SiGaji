@@ -34,7 +34,25 @@ function sigajiRp(v){
 function sigajiExcelNik(v){
   if(v==null||v==='')return '';
   if(typeof v==='number'&&isFinite(v))return String(Math.round(v));
-  return String(v).trim();
+  var s=String(v).trim();
+  if(!s)return '';
+  if(/^\d+(\.\d+)?e[+\-]?\d+$/i.test(s)){
+    var n=Number(s);
+    if(!isFinite(n)||Math.abs(n)>=1e15)return '';
+    return String(Math.round(n));
+  }
+  return s;
+}
+/** Baris Excel/CSV tanpa isi (kosong, strip, atau hanya spasi). */
+function sigajiExcelBarisKosong(row){
+  if(!row||!row.length)return true;
+  for(var i=0;i<row.length;i++){
+    var v=row[i];
+    if(v==null||v==='')continue;
+    if(String(v).trim()===''||/^[-—]+$/.test(String(v).trim()))continue;
+    return false;
+  }
+  return true;
 }
 /**
  * Cari karyawan di peta NIK. Jika Excel menghilangkan nol di depan, cocokkan angka
@@ -67,6 +85,13 @@ function sigajiExcelTanggal(v){
   }
   var s=String(v).trim();
   if(!s||/^[-—]+$/.test(s))return '';
+  if(/^\d{5}(\.\d+)?$/.test(s)){
+    var serial=parseFloat(s);
+    if(serial>20000&&serial<90000){
+      var ds=new Date(Math.round((serial-25569)*86400*1000));
+      if(!isNaN(ds.getTime()))return ds.toISOString().slice(0,10);
+    }
+  }
   if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
   var m=s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if(m)return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
@@ -235,4 +260,4 @@ window.SIGAJI_CLOUD_ONLY_MODE=true;
 /** Label aplikasi di judul tab, status sistem, dan meta backup. Tanpa nomor versi — versi deploy ada di SIGAJI_BUILD. */
 const SIGAJI_APP_LABEL='SiGaji';
 /** Harus sama dengan ?v= semua js/modules/* di index.html (cache bust deploy). */
-const SIGAJI_MODULES_CACHE='11.7.40';
+const SIGAJI_MODULES_CACHE='11.7.41';

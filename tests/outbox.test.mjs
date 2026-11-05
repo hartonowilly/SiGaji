@@ -278,4 +278,33 @@ const CLOUD = {
   assert('catat scoped: id bulan Okt', ids(ls).join() === 'I|absensi|K0001|2026-10');
 }
 
+{
+  const ls = makeLocalStorage();
+  const a = boot(ls);
+  a.ctx.__cloud = structuredClone(CLOUD);
+  a.run('applyDbFromCloudPayload(__cloud);');
+  a.run("absensi.K0001={'2026-10-05':'sakit'};");
+  a.run("sigajiCloudDelta.markDirtyAbsensi('K0001','2026-10-05');");
+  a.run("karyawan[0].nama='Nama Diubah';");
+  a.run('saveAll()');
+  const got = ids(ls);
+  assert('saveAll tanpa delta: absensi tetap tercatat', got.indexOf('I|absensi|K0001|2026-10') >= 0);
+  assert('saveAll tanpa delta: profil karyawan ikut tercatat', got.indexOf('K|K0001') >= 0);
+}
+
+{
+  const ls = makeLocalStorage();
+  const a = boot(ls);
+  a.ctx.__cloud = structuredClone(CLOUD);
+  a.run('applyDbFromCloudPayload(__cloud);');
+  a.run("absensi.K0001={'2026-10-05':'sakit'};");
+  a.run("sigajiCloudDelta.markDirtyAbsensi('K0001','2026-10-05');");
+  a.run("karyawan[0].nama='Nama Diubah';");
+  a.run('sigajiOutbox.catat()');
+  assert(
+    'catat scoped setelah edit profil tanpa markDirtyFull: hanya absensi (celah lama)',
+    ids(ls).join() === 'I|absensi|K0001|2026-10'
+  );
+}
+
 console.log('\nOutbox: semua tes lulus.');

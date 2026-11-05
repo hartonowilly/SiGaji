@@ -250,7 +250,7 @@ function toggleAb(nik,date,el){
     logPayrollAudit(nik,'Ubah Absensi',date+' '+(SL[cur]||cur)+' → '+(SL[next]||next));
   }
   if(typeof sigajiCatatAbsensiBerubah==='function')sigajiCatatAbsensiBerubah(nik,date);
-  saveAll();
+  saveAll({delta:true});
 }
 // ── CUTI REKAP ───────────────────────────────────
 function renderCutiRekap(){

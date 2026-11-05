@@ -23,7 +23,12 @@ const sandbox = {
   console,
   document: { getElementById: () => ({ value: '' }), addEventListener: function () {} },
   karyawan: [{ nik: 'K1' }],
-  periodes: [{ nama: 'Okt', snapshot_locked: true, hasil_gaji: { v: 1, byNik: { K1: { neto: 4500000 } } } }],
+  periodes: [{
+    nama: 'Okt',
+    snapshot_locked: true,
+    hasil_gaji: { v: 1, byNik: { K1: { neto: 4500000 } } },
+    absensi_pot_baseline: { K1: { total: 100, nowTotal: 0, dirty: true, capturedAt: '2026-10-30' } },
+  }],
   hariLibur: [],
   masterCuti: {},
   absensi: {},
@@ -61,6 +66,10 @@ assert(
   'backup JSON memuat hasil beku periode',
   data.periodes[0].hasil_gaji && data.periodes[0].hasil_gaji.byNik.K1.neto === 4500000
 );
+assert('backup membuang cache nowTotal', data.periodes[0].absensi_pot_baseline.K1.nowTotal == null);
+assert('backup membuang dirty', data.periodes[0].absensi_pot_baseline.K1.dirty == null);
+assert('backup menyimpan total baseline', data.periodes[0].absensi_pot_baseline.K1.total === 100);
+assert('fungsi sanitasi backup ada', typeof sandbox.sigajiBackupSanitizePeriodes === 'function');
 assert('checklist backup punya Template gaji', sandbox.DATA_LABELS.gajiTemplates === 'Template gaji');
 assert('export JSON bisa disimpan ke cloud', typeof sandbox.jsonBackupSaveToCloud === 'function');
 assert('ada tombol Simpan JSON ke cloud', typeof sandbox.exportBackupJsonCloud === 'function');

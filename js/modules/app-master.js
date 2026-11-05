@@ -231,6 +231,10 @@ function aktifkanPeriode(id){periodes.forEach(function(p){p.status=sigajiSameId(
 function toggleLockPeriode(id){
   var p=periodesFindById(id);
   if(!p)return;
+  if(typeof canAccessSubTab==='function'&&!canAccessSubTab('master','periode')){
+    toast('Tidak ada hak mengubah kunci periode');
+    return;
+  }
   if(!p.snapshot_locked){
     var list=karyawanListPeriode(p);
     ensureKarSnapshotPeriode(p.nama,list);
@@ -265,8 +269,10 @@ function toggleLockPeriode(id){
     try{if(window.sigajiCloudDelta&&window.sigajiCloudDelta.markDirtyFull)window.sigajiCloudDelta.markDirtyFull();}catch(eFull){sigajiCatchWarn('js/modules/app-master.js',eFull);}
     saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci (baseline absensi tersimpan)');
   }else{
+    var roleBuka=(typeof CU!=='undefined'&&CU&&CU.role)||'';
+    if(roleBuka!=='Admin'){toast('Hanya Admin yang dapat membuka kunci periode');return;}
     if(typeof sigajiNeedPeriodeData==='function'&&!sigajiNeedPeriodeData(p.nama)){toast('Data periode '+p.nama+' masih dimuat dari arsip — coba lagi sebentar lagi.');return;}
-    if(!confirm('Buka kunci snapshot periode "'+p.nama+'"? Perubahan berikutnya pada periode ini bisa mengubah snapshot.'))return;
+    if(!confirm('Buka kunci snapshot periode "'+p.nama+'"? Perubahan berikutnya pada periode ini bisa mengubah snapshot. Hasil beku lama dihapus; kunci ulang akan menghitung ulang, bukan menimpa diam-diam.'))return;
     p.snapshot_locked=false;
     delete p.hasil_gaji;
     delete p.arsip_rekap;
@@ -285,6 +291,7 @@ function toggleLockPeriode(id){
         detail:'Snapshot dibuka; hasil beku dihapus dari memori'
       });
     }catch(eAud2){sigajiCatchWarn('js/modules/app-master.js',eAud2);}
+    try{if(window.sigajiCloudDelta&&window.sigajiCloudDelta.markDirtyFull)window.sigajiCloudDelta.markDirtyFull();}catch(eFull2){sigajiCatchWarn('js/modules/app-master.js',eFull2);}
     saveAll();renderPeriodes();updatePeriodeSimpanButtonState();toast('Kunci periode dibuka');
   }
 }
@@ -732,30 +739,55 @@ function populateSelects(){
 function renderPeriodeSelects(){
   var aktif = PA().id;
   var sorted=typeof periodesSortedByStart==='function'?periodesSortedByStart():periodes;
-  var opts = sorted
-    .map(function (p) {
-      return '<option value="' + escapeAttr(String(p.id)) + '">' + escapeHtml(p.nama) + '</option>';
-    })
-    .join('');
   var slipEl = document.getElementById('slip-per');
   var prevSlip = slipEl && slipEl.value;
+  var myEl = document.getElementById('my-period');
+  var prevMe = myEl && myEl.value;
   ['slip-per', 'my-period'].forEach(function (id) {
     var el = document.getElementById(id);
     if (!el) return;
-    var html = opts;
-    el.innerHTML = html;
-    if (id === 'slip-per') {
-      if (prevSlip && periodes.some(function (p) { return String(p.id).trim() === String(prevSlip).trim(); })) {
-        var keep = periodesFindById(prevSlip);
-        el.value = keep ? String(keep.id) : String(prevSlip).trim();
-      } else el.value = String(aktif);
-    } else el.value = String(aktif);
+    var listP=sorted;
+    if(id==='my-period'&&typeof CU!=='undefined'&&CU&&CU.nik&&typeof karyawanInPeriode==='function'){
+      var karMe=(karyawan||[]).find(function(x){return x&&String(x.nik)===String(CU.nik);});
+      if(karMe)listP=sorted.filter(function(p){return karyawanInPeriode(karMe,p);});
+    }
+    el.innerHTML=listP.map(function(p){
+      return '<option value="'+escapeAttr(String(p.id))+'">'+escapeHtml(p.nama)+'</option>';
+    }).join('');
+    var idsOk=listP.map(function(p){return String(p.id);});
+    var keepVal=id==='slip-per'?prevSlip:prevMe;
+    if(keepVal&&idsOk.indexOf(String(keepVal).trim())>=0){
+      var keep=periodesFindById(keepVal);
+      el.value=keep?String(keep.id):String(keepVal).trim();
+    }else el.value=idsOk.indexOf(String(aktif))>=0?String(aktif):(idsOk[0]||'');
   });
 }
 var DATA_KEYS=['karyawan','periodes','hariLibur','masterCuti','absensi','lembur','prorata','approvals','notifikasi','perusahaan','users','roles','thrManual','tunjVarBulan','tunjVarLabels','tunjVarColumns','karSnapshot','auditLog','cabang','gajiTemplates'];
 var DATA_LABELS={karyawan:'Karyawan',periodes:'Periode',hariLibur:'Hari Libur',masterCuti:'Setting Cuti',absensi:'Absensi',lembur:'Lembur',prorata:'Pro-Rata',approvals:'Approval',notifikasi:'Notifikasi',perusahaan:'Perusahaan',users:'Users',roles:'Roles',thrManual:'THR Manual',tunjVarBulan:'Tunjangan variabel per periode',tunjVarLabels:'Label kolom tunj. variabel',tunjVarColumns:'Definisi kolom tunj. variabel',karSnapshot:'Snapshot karyawan per periode',auditLog:'Audit trail payroll',cabang:'Daftar cabang',gajiTemplates:'Template gaji'};
 /** Salinan dalam memori agar backup identik dengan data tersimpan & tidak ada field yang terpotong */
 function sigajiDeepClone(o){try{if(o===undefined)return undefined;return JSON.parse(JSON.stringify(o));}catch(e){console.warn('sigajiDeepClone',e);return o;}}
+/** Cache koreksi (nowTotal/dirty) tidak ikut file backup; hasil beku tetap. */
+function sigajiBackupSanitizePeriodes(list){
+  return (list||[]).map(function(p){
+    var o=sigajiDeepClone(p);
+    if(!o||!o.absensi_pot_baseline)return o;
+    Object.keys(o.absensi_pot_baseline).forEach(function(nik){
+      var r=o.absensi_pot_baseline[nik];
+      if(!r||typeof r!=='object')return;
+      if(typeof window!=='undefined'&&window.sigajiCloudDelta&&typeof window.sigajiCloudDelta.sanitizeBaselineForCloud==='function'){
+        o.absensi_pot_baseline[nik]=window.sigajiCloudDelta.sanitizeBaselineForCloud(r);
+        return;
+      }
+      var clean={};
+      Object.keys(r).forEach(function(k){
+        if(k==='nowTotal'||k==='nowDetails'||k==='nowAt'||k==='dirty')return;
+        clean[k]=r[k];
+      });
+      o.absensi_pot_baseline[nik]=clean;
+    });
+    return o;
+  });
+}
 function buildExportData(){
   saveAll();
   var snapPeriods=Object.keys(karSnapshot||{});
@@ -770,12 +802,13 @@ function buildExportData(){
     snapshotPeriodeCount:snapPeriods.length,
     snapshotRowCount:snapRows,
     blokData:DATA_KEYS.slice(),
-    keterangan:'Backup lengkap semua komponen basis data lokal (setara isi sigaji_db)'
+    keterangan:'Backup lengkap semua komponen basis data lokal (setara isi sigaji_db)',
+    freezePeriodeCount:(periodes||[]).filter(function(p){return p&&p.hasil_gaji&&p.hasil_gaji.byNik;}).length
   };
   return{
     _meta:meta,
     karyawan:sigajiDeepClone(karyawan),
-    periodes:sigajiDeepClone(periodes),
+    periodes:sigajiBackupSanitizePeriodes(periodes),
     hariLibur:sigajiDeepClone(hariLibur),
     masterCuti:sigajiDeepClone(masterCuti),
     absensi:sigajiDeepClone(absensi),
@@ -1045,6 +1078,7 @@ if(typeof window!=='undefined'){
   window.jsonBackupUnduhDariCloud=jsonBackupUnduhDariCloud;
   window.jsonBackupPakaiImport=jsonBackupPakaiImport;
   window.jsonBackupSaveToCloud=jsonBackupSaveToCloud;
+  window.sigajiBackupSanitizePeriodes=sigajiBackupSanitizePeriodes;
 }
 function simpanRiwayatBackup(meta){try{var r=JSON.parse(localStorage.getItem('sigaji_backup_riwayat')||'[]');r.unshift(Object.assign({},meta,{tanggalDisplay:new Date().toLocaleString('id-ID')}));r=r.slice(0,3);localStorage.setItem('sigaji_backup_riwayat',JSON.stringify(r));}catch(e){sigajiCatchWarn("js/modules/app-master.js",e);}}
 function renderBackupRiwayat(){
@@ -1153,6 +1187,7 @@ function eksekusiImport(){
   dipilih.forEach(function(k){
     if(importData[k]===undefined)return;
     var val=normalisasiData(k,importData[k]);
+    if(k==='periodes')val=sigajiBackupSanitizePeriodes(Array.isArray(val)?val:[]);
     if(mode==='merge'){
       if(k==='karyawan'){var ex=karyawan.map(function(x){return x.nik;});var baru=val.filter(function(x){return !ex.includes(x.nik);});var upd=val.filter(function(x){return ex.includes(x.nik);});var baruAktif=baru.filter(function(x){return !String((x&&x.tgl_berhenti)||'').trim();});if(typeof sigajiCanAddActiveEmployees==='function'){var chk=sigajiCanAddActiveEmployees(baruAktif.length);if(!chk.ok){toast(chk.message);return;}}upd.forEach(function(nk){var i=karyawan.findIndex(function(x){return x.nik===nk.nik;});if(i>=0)karyawan[i]=Object.assign({},karyawan[i],nk);});karyawan.push.apply(karyawan,baru);if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan);}
       else if(k==='periodes'){var en=periodes.map(function(x){return x.nama;});periodes.push.apply(periodes,val.filter(function(x){return !en.includes(x.nama);}));}

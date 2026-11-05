@@ -236,7 +236,7 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
       .filter((e) => e.t === 'I')
       .map((e) => ({ kind: e.key.kind, item_key: e.key.item_key, nik: e.nik, data: e.data }))
   );
-  const restored = [D.sanitizePeriodeForCloud(p.periodes[0])];
+  const restored = [Object.assign(D.sanitizePeriodeForCloud(p.periodes[0]), { snapshot_locked: true })];
   D.attachPayPrivacyFromItems(restored, parts);
   assert('item hasilGaji dipasang kembali ke periode di memori', restored[0].hasil_gaji.byNik.K001.neto === 4500000);
   assert('item baseline dipasang kembali', restored[0].absensi_pot_baseline.K001.total === 0);
@@ -244,6 +244,7 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   const leaked = [
     {
       nama: 'Okt 2026',
+      snapshot_locked: true,
       hasil_gaji: { v: 1, byNik: { K001: { neto: 111 }, K002: { neto: 222 } } },
       absensi_pot_baseline: { K001: { total: 3 }, K002: { total: 4 } },
     },
@@ -256,9 +257,13 @@ assert('mode v12: THR manual per periode|nik', idsV12.includes('I|thrManual|THR 
   const prefer = [
     {
       nama: 'Okt 2026',
+      snapshot_locked: true,
       hasil_gaji: { v: 1, byNik: { K001: { neto: 111 } } },
     },
   ];
+  const unlocked = [{ nama: 'Okt 2026', snapshot_locked: false }];
+  D.attachPayPrivacyFromItems(unlocked, { hasilGaji: { 'Okt 2026': { K001: { neto: 999 } } } });
+  assert('periode terbuka tidak memasang hasil beku lama', unlocked[0].hasil_gaji == null);
   D.attachPayPrivacyFromItems(prefer, { hasilGaji: { 'Okt 2026': { K001: { neto: 4500000 } } } });
   assert('item menang atas JSON beku lama', prefer[0].hasil_gaji.byNik.K001.neto === 4500000);
 

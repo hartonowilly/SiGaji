@@ -543,7 +543,7 @@ function markRecoveryBackup(tag){
     window.sigajiIdb.put(IDB_KEY_RECOVERY,snap).catch(function(e){sigajiCatchWarn("js/storage.js",e);});
   }catch(e){sigajiCatchWarn("js/storage.js",e);}
 }
-function saveAll(){
+function saveAll(opts){
   if(window.sigajiKaryawanRestricted){
     try{
       if(typeof sigajiSortKaryawanByNik==='function')karyawan=sigajiSortKaryawanByNik(karyawan||[]);
@@ -563,6 +563,9 @@ function saveAll(){
     if(window.sigajiApplyingCloud)return;
     if(sigajiLocalState.hydrating)return;
     if(typeof window.sigajiCanUploadCloudPayload==='function'&&!window.sigajiCanUploadCloudPayload())return;
+    if(!(opts&&opts.delta)){
+      try{if(window.sigajiCloudDelta&&window.sigajiCloudDelta.markDirtyFull)window.sigajiCloudDelta.markDirtyFull();}catch(eDf){sigajiCatchWarn("js/storage.js",eDf);}
+    }
     try{if(window.sigajiOutbox)window.sigajiOutbox.catat();}catch(eOb){sigajiCatchWarn("js/storage.js",eOb);}
     if(typeof window.sigajiQueueCloudSave==='function')window.sigajiQueueCloudSave();
   }catch(e){sigajiCatchWarn("js/storage.js",e);}

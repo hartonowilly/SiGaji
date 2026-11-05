@@ -186,9 +186,9 @@ function importMigrasiPphExcel(inp){
         var ok=0,skip=0,buat=0,upd=0;
         for(var r=1;r<rows.length;r++){
           var row=rows[r];
-          if(!row||!row.length)continue;
+          if(typeof sigajiExcelBarisKosong==='function'?sigajiExcelBarisKosong(row):!row||!row.length){skip++;continue;}
           var nik=typeof sigajiExcelNik==='function'?sigajiExcelNik(row[nikIdx]):String(row[nikIdx]||'').trim();
-          if(!nik||/^contoh/i.test(nik))continue;
+          if(!nik||/^contoh/i.test(nik)){skip++;continue;}
           var bruto=brutoIdx>=0?parseMigrasiAngka(row[brutoIdx]):0;
           var pph=pphIdx>=0?parseMigrasiAngka(row[pphIdx]):0;
           var iuran=iuranIdx>=0?parseMigrasiAngka(row[iuranIdx]):0;

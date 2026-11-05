@@ -2,7 +2,12 @@
  * Tarif pajak/BPJS baru tidak mengubah periode yang tanggal bayarnya lebih lama,
  * dan periode terkunci mengembalikan angka slip yang sudah disimpan.
  */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { loadPayrollCore } from './lib/payroll-harness.mjs';
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function assertEq(name, actual, expected) {
   if (actual !== expected) {
@@ -108,7 +113,15 @@ const marTanpaBeku = px.hitungGaji(k, 'Maret 2026');
 assertEq('tanpa freeze: tidak menulis hasil_gaji diam-diam', pMar.hasil_gaji == null ? 1 : 0, 1);
 assertEq('hitung tanpa freeze tetap menghasilkan angka', !!(marTanpaBeku && marTanpaBeku.neto > 0), true);
 pMar.hasil_gaji = bekuLama;
-
+const netoBeku1 = px.hitungGaji(k, 'Maret 2026').neto;
+pMar.snapshot_locked = false;
+delete pMar.hasil_gaji;
+k.gapok = 9_000_000;
+pMar.snapshot_locked = true;
+px.sigajiBekukanHasilPeriode(pMar, { skipSave: true });
+const netoBeku2 = px.hitungGaji(k, 'Maret 2026').neto;
+assertEq('buka kunci lalu kunci lagi menghitung freeze baru', netoBeku2 === netoBeku1 ? 0 : 1, 1);
+k.gapok = 8_000_000;
 pMar.snapshot_locked = false;
 delete pMar.hasil_gaji;
 px.perusahaan.ter_custom = {};
@@ -188,5 +201,12 @@ px.sigajiCatatPtkpKaryawan(k3, 'K0', { alasan: 'koreksi' });
 k3.ptkp = 'K0';
 assertEq('koreksi: berlaku 1 Jan tahun ini', k3.ptkp_berlaku, '2026-01-01');
 assertEq('Juli koreksi memakai K0', px.hitungGaji(k3, 'Juli 2026').ptkpStatus, 'K0');
+
+const lockSrc = fs.readFileSync(path.join(ROOT, 'js/modules/app-master.js'), 'utf8');
+if (!/roleBuka!=='Admin'/.test(lockSrc)) throw new Error('FAIL: buka kunci periode hanya Admin');
+if (!/action:'kunci_periode'/.test(lockSrc)) throw new Error('FAIL: kunci periode harus audit');
+if (!/action:'buka_kunci_periode'/.test(lockSrc)) throw new Error('FAIL: buka kunci harus audit');
+if (!/canAccessSubTab\('master','periode'\)/.test(lockSrc)) throw new Error('FAIL: kunci periode cek hak master.periode');
+console.log('OK: kunci/buka kunci: hak Admin + audit');
 
 console.log('Kunci aturan pajak: semua tes lulus.');

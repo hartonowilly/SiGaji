@@ -586,7 +586,15 @@ function loadMySlip(){
   const pid=document.getElementById('my-period')&&document.getElementById('my-period').value;
   const p=periodesFindById(pid)||PA();
   var host=document.getElementById('my-slip-content');
-  if(!host||!k)return;
+  if(!host)return;
+  if(!k){
+    host.innerHTML='<div class="info-box">Akun ini tidak terhubung ke NIK karyawan.</div>';
+    return;
+  }
+  if(p&&typeof karyawanInPeriode==='function'&&!karyawanInPeriode(k,p)){
+    host.innerHTML='<div class="info-box">Anda tidak termasuk periode '+escapeHtml(p.nama||'')+' (misalnya sudah resign sebelum periode ini). Pilih periode saat Anda masih bekerja — slip memakai hasil beku jika periode terkunci.</div>';
+    return;
+  }
   var h=mySlipAbsenSummaryHtml(k.nik,p)+makeSlip(k,p.nama);
   host.innerHTML=h;
 }
@@ -604,7 +612,12 @@ function exportPDFMe(){
   const k=karyawan.find(function(x){return x.nik===CU.nik;});
   const pid=document.getElementById('my-period')&&document.getElementById('my-period').value;
   const p=periodesFindById(pid)||PA();
-  if(k)generatePDF(k,p.nama,p.bayar);
+  if(!k){toast('Akun tidak terhubung ke NIK');return;}
+  if(p&&typeof karyawanInPeriode==='function'&&!karyawanInPeriode(k,p)){
+    toast('Anda tidak termasuk periode ini');
+    return;
+  }
+  generatePDF(k,p.nama,p.bayar);
 }
 function exportAllTHRPDF(){
   const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
