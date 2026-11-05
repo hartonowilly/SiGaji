@@ -50,6 +50,8 @@
   /** Store yang boleh ditulis HRD cabang (sisanya hanya kantor pusat — sama dengan RLS). */
   var BRANCH_STORE_WRITE = { approvals: true, notifikasi: true, auditLog: true, bentoLayouts: true };
   var PAGE_ROWS = 1000;
+  /** Jejak audit di boot: sama dengan batas memori (cloud-delta sortAuditLog). Baris lebih lama di DB tidak diunduh. */
+  var AUDIT_BOOT_LIMIT = 3000;
   var PULL_MARGIN_MS = 30 * 1000;
   var UPGRADE_CHECK_MS = 5 * 60 * 1000;
 
@@ -151,17 +153,31 @@
    * Semua baris query (PostgREST memotong respons di max-rows, biasanya 1000).
    * Berhenti saat halaman kosong — aman walau batas server lebih kecil dari PAGE_ROWS.
    * @param {() => any} build query baru yang sudah diurutkan
+   * @param {number} [maxRows] henti setelah sebanyak ini (jejak audit boot)
    */
-  async function fetchAllRows(build) {
+  async function fetchAllRows(build, maxRows) {
     var out = [];
+    var cap = maxRows > 0 ? maxRows : 0;
     for (var from = 0; ; ) {
-      var r = await build().range(from, from + PAGE_ROWS - 1);
+      var left = cap ? cap - out.length : PAGE_ROWS;
+      if (cap && left <= 0) return out;
+      var want = cap ? Math.min(PAGE_ROWS, left) : PAGE_ROWS;
+      var r = await build().range(from, from + want - 1);
       if (r.error) throw r.error;
       var rows = r.data || [];
       for (var i = 0; i < rows.length; i++) out.push(rows[i]);
-      if (!rows.length) return out;
+      if (!rows.length || rows.length < want || (cap && out.length >= cap)) return out;
       from += rows.length;
     }
+  }
+
+  function fetchAuditLogRows(sb) {
+    return fetchAllRows(function () {
+      return itemQuery(sb)
+        .eq('kind', 'auditLog')
+        .order('updated_at', { ascending: false })
+        .order('item_key');
+    }, AUDIT_BOOT_LIMIT);
   }
 
   async function fetchTunjVarRows(sb, sinceIso) {
@@ -764,9 +780,7 @@
       fetchAllRows(function () {
         return itemQuery(sb).in('kind', ['lembur', 'prorata']).order('kind').order('item_key');
       }),
-      fetchAllRows(function () {
-        return itemQuery(sb).eq('kind', 'auditLog').order('item_key');
-      }),
+      fetchAuditLogRows(sb),
     ];
     var pats = plan.months.map(function (m) {
       return '*|' + m;
@@ -1017,8 +1031,13 @@
         if (plan) {
           return Promise.all([fetchItemsHot(sb, plan), fetchItemsKoreksi(sb, plan)]).then(dedupeItems);
         }
-        return fetchAllRows(function () {
-          return itemQuery(sb).order('kind').order('item_key');
+        return Promise.all([
+          fetchAllRows(function () {
+            return itemQuery(sb).neq('kind', 'auditLog').order('kind').order('item_key');
+          }),
+          fetchAuditLogRows(sb),
+        ]).then(function (parts) {
+          return (parts[0] || []).concat(parts[1] || []);
         });
       }),
       planP,
@@ -1904,6 +1923,7 @@
               .select('kind,item_key,nik,data')
               .eq('tenant_key', TK)
               .eq('nik', nik)
+              .neq('kind', 'auditLog')
               .order('kind')
               .order('item_key');
           })

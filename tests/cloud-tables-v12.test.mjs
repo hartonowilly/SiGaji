@@ -102,6 +102,7 @@ function fakeServer(db) {
         if (kind === 'gte') return String(r[c] || '') >= v;
         if (kind === 'like') return likeMatch(r[c], v);
         if (kind === 'or') return orMatch(r, v);
+        if (kind === 'neq') return r[c] !== v;
         return true;
       });
     const api = {
@@ -130,6 +131,10 @@ function fakeServer(db) {
       },
       or(expr) {
         st.filters.push(['or', '', expr]);
+        return api;
+      },
+      neq(c, v) {
+        st.filters.push(['neq', c, v]);
         return api;
       },
       order() {
