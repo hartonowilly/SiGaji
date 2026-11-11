@@ -16,6 +16,8 @@ declare var perusahaan: {
   web?: string;
   /** Kode virtual account e-Dabu (file gaji BPJS Kesehatan). */
   bpjs_kes_va?: string;
+  /** Stempel unduh file BPJS per nama periode: { [nama]: { tk?: string, kes?: string } }. */
+  bpjs_file_periode?: Record<string, { tk?: string; kes?: string }>;
   /** Kelompok risiko JKK: sangat_rendah (default 0,24%) … sangat_tinggi. */
   jkk_tingkat?: string;
   jamMasuk?: string;
@@ -205,6 +207,22 @@ declare function sigajiSetTbodyRows(tbody: HTMLElement | null, rows: string[], c
 declare function sigajiWithSkeleton(target: Element | string, colspan: number, run: () => unknown): unknown;
 declare function sigajiNormalizeKarTipe(v?: string, k?: KaryawanPayroll): string;
 declare function renderSlipSendBatchChecklist(): void;
+declare function sigajiInferPolaPeriode(p: { start?: string; end?: string } | null): string;
+declare function sigajiTanggalPolaUntukBulan(
+  pola: string,
+  y: number,
+  m0: number
+): { start: string; end: string; bayar: string } | null;
+declare function sigajiRancangPeriodeBerikutnya(p: unknown): {
+  nama: string;
+  pola: string;
+  start: string;
+  end: string;
+  bayar: string;
+  tipe_periode: string;
+  opsi_lebih_bayar?: string;
+  thr_aktif: boolean;
+} | null;
 /** @returns posisi Y setelah sampul */
 declare function sigajiPdfMagazineCover(doc: any, opts?: Record<string, unknown>): number;
 declare function sigajiPdfMagazineFooter(doc: any, pageNum: number): void;

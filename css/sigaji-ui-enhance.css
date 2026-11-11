@@ -1600,6 +1600,16 @@ body[data-pg-cols='lengkap'] th.pg-col-adv {
   color: var(--color-text-muted);
 }
 .dash-brief-bar { margin: 12px 0 8px; }
+.dash-tutup-bulan { border-left: 3px solid var(--color-primary, #0f766e); }
+.dash-tutup-ok .dash-tindakan-text { color: var(--color-success, #15803d); }
+.dash-tutup-todo .dash-tindakan-text { font-weight: 600; }
+.slip-belum-ringkas {
+  background: var(--color-surface-muted, #f8fafc);
+  border: 1px solid var(--color-border-light, #e5e7eb);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
 .bento-widget-head-static { cursor: default; }
 .btn-link {
   background: none;

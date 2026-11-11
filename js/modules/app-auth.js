@@ -359,7 +359,10 @@ async function sendCurrentSlipToTelegram(){
       }
       slipSendInvalidateMetaCache();
       renderSlipSendBatchChecklist(true);
+      slipClearFail(k.nik, 'telegram');
       toast(alsoThr?'Terkirim: slip gaji + slip THR':'Terkirim ke Telegram');
+    } else if (k) {
+      slipMarkFail(k.nik, 'telegram', 'gagal kirim Telegram');
     }
   }catch(e){
     console.error('sendCurrentSlipToTelegram',e);
@@ -384,6 +387,8 @@ var __slipEmailMetaCacheKey = '';
 var __slipEmailMetaBundle = null;
 var __slipSendMetaCacheKey = '';
 var __slipSendMetaBundle = null;
+var __slipSendLastFail = [];
+var __slipSendFilter = 'all';
 function slipSendInvalidateMetaCache(){
   __slipTgMetaCacheKey = '';
   __slipTgMetaBundle = null;
@@ -391,6 +396,34 @@ function slipSendInvalidateMetaCache(){
   __slipEmailMetaBundle = null;
   __slipSendMetaCacheKey = '';
   __slipSendMetaBundle = null;
+}
+function slipMarkFail(nik, channel, reason) {
+  var n = String(nik || '').trim();
+  var ch = channel === 'email' ? 'email' : 'telegram';
+  __slipSendLastFail = (__slipSendLastFail || []).filter(function (x) {
+    return !(x.nik === n && x.channel === ch);
+  });
+  __slipSendLastFail.push({ nik: n, channel: ch, reason: reason || 'gagal', at: Date.now() });
+}
+function slipClearFail(nik, channel) {
+  var n = String(nik || '').trim();
+  var ch = channel === 'email' ? 'email' : 'telegram';
+  __slipSendLastFail = (__slipSendLastFail || []).filter(function (x) {
+    return !(x.nik === n && x.channel === ch);
+  });
+}
+function slipFailOf(nik, channel) {
+  var n = String(nik || '').trim();
+  var ch = channel === 'email' ? 'email' : 'telegram';
+  var arr = __slipSendLastFail || [];
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[i].nik === n && arr[i].channel === ch) return arr[i];
+  }
+  return null;
+}
+function slipSendSetFilter(f) {
+  __slipSendFilter = f || 'all';
+  renderSlipSendBatchChecklist(false);
 }
 function slipTgInvalidateMetaCache(){ slipSendInvalidateMetaCache(); }
 function slipEmailInvalidateMetaCache(){ slipSendInvalidateMetaCache(); }
@@ -432,6 +465,99 @@ async function loadSlipSendMetaBundle(p){
   return { tg: tg, email: em };
 }
 
+function slipKirimUlangSatu(nik, channel) {
+  var n = String(nik || '').trim();
+  if (!n) return;
+  var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
+  var p = periodesFindById(pid) || PA();
+  var k = (typeof karyawan !== 'undefined' ? karyawan : []).find(function (x) {
+    return x.nik === n;
+  });
+  if (!k || !p) {
+    toast('Karyawan / periode tidak ditemukan');
+    return;
+  }
+  var slipKar = document.getElementById('slip-kar');
+  if (slipKar) {
+    slipKar.value = n;
+    if (typeof previewSlip === 'function') previewSlip();
+  }
+  if (channel === 'email') {
+    if (typeof sendCurrentSlipToEmail === 'function') sendCurrentSlipToEmail();
+  } else {
+    if (typeof sendCurrentSlipToTelegram === 'function') sendCurrentSlipToTelegram();
+  }
+}
+
+function renderSlipBelumRingkas(list, p, slipType, bundle) {
+  var isThr = slipType === 'thr' && p && p.thr_aktif;
+  var tgB = (bundle && bundle.tg) || {};
+  var emB = (bundle && bundle.email) || {};
+  var belumTaut = [];
+  var belumTg = [];
+  var gagal = [];
+  var belumEm = [];
+  (list || []).forEach(function (k) {
+    if (!k || !k.nik) return;
+    var nk = String(k.nik).trim();
+    var L = tgB.linked && typeof tgB.linked.has === 'function' && tgB.linked.has(nk);
+    var tgSm = (tgB.sentMap && tgB.sentMap[nk]) || {};
+    var emSm = (emB.sentMap && emB.sentMap[nk]) || {};
+    var tgSent = isThr ? tgSm.thr : tgSm.gaji;
+    var emSent = isThr ? emSm.thr : emSm.gaji;
+    if (!L) belumTaut.push(k);
+    else if (!tgSent) belumTg.push(k);
+    if (slipFailOf(nk, 'telegram') || slipFailOf(nk, 'email')) gagal.push(k);
+    if (!emSent) belumEm.push(k);
+  });
+  var chip = function (id, label, n) {
+    var on = __slipSendFilter === id ? ' btn-p' : ' btn-out';
+    return (
+      '<button type="button" class="btn btn-xs' +
+      on +
+      '" data-sigaji-action="invoke" data-fn="slipSendSetFilter" data-arg="' +
+      id +
+      '">' +
+      label +
+      (n != null ? ' (' + n + ')' : '') +
+      '</button>'
+    );
+  };
+  var nama = function (arr) {
+    return arr
+      .slice(0, 4)
+      .map(function (x) {
+        return x.nama || x.nik;
+      })
+      .join(', ') + (arr.length > 4 ? ' +' + (arr.length - 4) : '');
+  };
+  var line = function (label, arr, emptyTxt) {
+    if (!arr.length) return '<div class="dash-tutup-ok font-12">' + emptyTxt + '</div>';
+    return (
+      '<div class="font-12"><strong>' +
+      label +
+      ':</strong> ' +
+      escapeHtml(nama(arr)) +
+      '</div>'
+    );
+  };
+  return (
+    '<div class="slip-belum-ringkas mb1">' +
+    '<div class="ct font-13 mb-sm">Siapa belum dapat slip</div>' +
+    line('Belum taut Telegram', belumTaut, 'Semua sudah taut Telegram') +
+    line('Belum kirim Telegram', belumTg, 'Tidak ada yang tertaut tapi belum dikirim') +
+    line('Gagal kirim terakhir', gagal, 'Tidak ada gagal kirim di sesi ini') +
+    line('Belum kirim email', belumEm, 'Semua sudah dapat email (atau tidak ada yang perlu)') +
+    '<div class="fl gap1 mt-sm flex-wrap">' +
+    chip('all', 'Semua', list.length) +
+    chip('belum-taut', 'Belum taut', belumTaut.length) +
+    chip('belum-tg', 'Belum kirim TG', belumTg.length) +
+    chip('gagal', 'Gagal', gagal.length) +
+    chip('belum-email', 'Belum email', belumEm.length) +
+    '</div></div>'
+  );
+}
+
 function renderSlipSendBatchTableRows(list, p, slipType, bundle){
   var wrap = document.getElementById('slip-send-batch-wrap');
   if (!wrap) return;
@@ -446,6 +572,7 @@ function renderSlipSendBatchTableRows(list, p, slipType, bundle){
     foot +=
       '<div class="font-10 ct-danger mt-sm">Riwayat email: jalankan <code>sql/supabase_sigaji_slip_email_sent.sql</code> di Supabase.</div>';
   if (tgB.linksError) foot += '<div class="font-10 ct-danger mt-sm">Gagal membaca tautan Telegram (cek login &amp; RLS).</div>';
+  var filter = __slipSendFilter || 'all';
   var rows = list
     .map(function (k) {
       var nikEsc = escapeAttr(k.nik || '');
@@ -468,6 +595,27 @@ function renderSlipSendBatchTableRows(list, p, slipType, bundle){
       var emSl = emSentRec
         ? '<span class="bdg b-ok font-10">Ya</span><div class="font-9 text-muted">' + escapeHtml(fmtSlipTgSentAt(emSentRec.at)) + '</div>'
         : '<span class="bdg b-gray font-10">Belum</span>';
+      var failTg = slipFailOf(nk, 'telegram');
+      var failEm = slipFailOf(nk, 'email');
+      var cat = 'ok';
+      if (failTg || failEm) cat = 'gagal';
+      else if (!L) cat = 'belum-taut';
+      else if (!tgSentIso) cat = 'belum-tg';
+      else if (!emSentRec) cat = 'belum-email';
+      if (filter !== 'all' && filter !== cat) return '';
+      var aksi =
+        '<div class="fl gap1 flex-wrap">' +
+        (L
+          ? '<button type="button" class="btn btn-xs btn-telegram" data-sigaji-action="invoke" data-fn="slipKirimUlangSatu" data-arg="' +
+            nikEsc +
+            '" data-arg2="telegram">Kirim ulang TG</button>'
+          : '') +
+        (hasEm
+          ? '<button type="button" class="btn btn-xs btn-email" data-sigaji-action="invoke" data-fn="slipKirimUlangSatu" data-arg="' +
+            nikEsc +
+            '" data-arg2="email">Kirim ulang email</button>'
+          : '') +
+        '</div>';
       return (
         '<tr><td class="text-center" style="width:40px"><input type="checkbox" class="slip-send-cb" data-nik="' +
         nikEsc +
@@ -481,14 +629,19 @@ function renderSlipSendBatchTableRows(list, p, slipType, bundle){
         emCell +
         '</td><td style="min-width:88px">' +
         tgSl +
+        (failTg ? '<div class="font-9 ct-danger">' + escapeHtml(failTg.reason) + '</div>' : '') +
         '</td><td style="min-width:88px">' +
         emSl +
+        (failEm ? '<div class="font-9 ct-danger">' + escapeHtml(failEm.reason) + '</div>' : '') +
+        '</td><td>' +
+        aksi +
         '</td></tr>'
       );
     })
     .join('');
   var html =
-    '<div class="rounded-sm sigaji-slip-send-scroll" style="overflow-x:auto; border:1px solid var(--bd)"><table class="w-full font-12"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-send-cb-all" title="Pilih semua" data-sigaji-action="call-value" data-fn="slipSendToggleAll" data-arg="$checked"></th><th>Kode</th><th>Nama</th><th>Telegram</th><th>Email</th><th>Slip TG</th><th>Slip email</th></tr></thead><tbody>' +
+    renderSlipBelumRingkas(list, p, slipType, bundle) +
+    '<div class="rounded-sm sigaji-slip-send-scroll" style="overflow-x:auto; border:1px solid var(--bd)"><table class="w-full font-12"><thead><tr><th style="width:40px"><input type="checkbox" id="slip-send-cb-all" title="Pilih semua" data-sigaji-action="call-value" data-fn="slipSendToggleAll" data-arg="$checked"></th><th>Kode</th><th>Nama</th><th>Telegram</th><th>Email</th><th>Slip TG</th><th>Slip email</th><th>Kirim ulang</th></tr></thead><tbody>' +
     rows +
     '</tbody></table></div>' +
     foot;
@@ -643,15 +796,20 @@ async function sendSlipTelegramBatch(){
       var sent = await telegramSendSlipPdf(k.nik, o.fileName || 'Slip_' + k.nik + '.pdf', caption, pdfBase64);
       if (sent) {
         ok++;
+        slipClearFail(k.nik, 'telegram');
         await recordSlipTelegramSentToCloud(k.nik, p.nama, isThr ? 'thr' : 'gaji');
         if (!isThr && p.thr_aktif) {
           var thr2 = await trySendThrTelegramAfterGaji(k, p);
           if (thr2) ok++;
         }
-      } else fail++;
+      } else {
+        fail++;
+        slipMarkFail(k.nik, 'telegram', 'gagal kirim Telegram');
+      }
     }catch(e){
       console.error('sendSlipTelegramBatch', nik, e);
       fail++;
+      slipMarkFail(nik, 'telegram', e && e.message ? String(e.message) : 'gagal kirim Telegram');
     }
     await new Promise(function (r) {
       setTimeout(r, 450);
@@ -827,7 +985,10 @@ async function sendCurrentSlipToEmail() {
       }
       slipSendInvalidateMetaCache();
       renderSlipSendBatchChecklist(true);
+      slipClearFail(k.nik, 'email');
       toast('Slip terkirim ke ' + k.email);
+    } else if (k) {
+      slipMarkFail(k.nik, 'email', 'gagal kirim email');
     }
   } catch (e) {
     console.error('sendCurrentSlipToEmail', e);
@@ -952,15 +1113,20 @@ async function sendSlipEmailBatch() {
       );
       if (sent) {
         ok++;
+        slipClearFail(k.nik, 'email');
         await recordSlipEmailSentToCloud(k.nik, p.nama, isThr ? 'thr' : 'gaji', k.email);
         if (!isThr && p.thr_aktif) {
           var thr2 = await trySendThrEmailAfterGaji(k, p);
           if (thr2) ok++;
         }
-      } else fail++;
+      } else {
+        fail++;
+        slipMarkFail(k.nik, 'email', 'gagal kirim email');
+      }
     } catch (e) {
       console.error('sendSlipEmailBatch', nik, e);
       fail++;
+      slipMarkFail(nik, 'email', e && e.message ? String(e.message) : 'gagal kirim email');
     }
     await new Promise(function (r) {
       setTimeout(r, 600);

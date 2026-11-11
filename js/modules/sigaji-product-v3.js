@@ -950,6 +950,17 @@
     link.href = KERTAS_FONT_HREF;
     document.head.appendChild(link);
   }
+  var SIANG_THEME = 'siang';
+  var SIANG_FONT_HREF =
+    'https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap';
+  function ensureSiangFonts() {
+    if (document.getElementById('sigaji-font-siang')) return;
+    var link = document.createElement('link');
+    link.id = 'sigaji-font-siang';
+    link.rel = 'stylesheet';
+    link.href = SIANG_FONT_HREF;
+    document.head.appendChild(link);
+  }
 
   window.sigajiApplyUiPrefs = function (prefs) {
     prefs = prefs || sigajiGetUiPrefs();
@@ -959,6 +970,7 @@
     root.setAttribute('data-density', prefs.density || 'comfortable');
     paintBrandTopbar(theme);
     if (theme === KERTAS_THEME) ensureKertasFonts();
+    if (theme === SIANG_THEME) ensureSiangFonts();
     if (theme === 'brand') {
       var pal = brandPalette(brandAccentRaw());
       root.style.setProperty('--ux-accent', pal.btn);
@@ -998,6 +1010,7 @@
     dark: 'Gelap · Padat',
     brand: 'PT · Kantor',
     kertas: 'Buku Kas · Kertas',
+    siang: 'Siang · Tenang',
   };
 
   window.sigajiSetUiPref = function (key, val) {

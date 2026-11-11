@@ -139,6 +139,16 @@ function bpjsKumpulkan() {
   return { ok: true, periode: p, built: built, perusahaan: typeof perusahaan !== 'undefined' ? perusahaan : {} };
 }
 
+function sigajiStampBpjsFilePeriode(periode, jenis) {
+  var p = periode || (typeof PA === 'function' ? PA() : null);
+  if (!p || !p.nama || typeof perusahaan === 'undefined' || !perusahaan) return;
+  if (!perusahaan.bpjs_file_periode) perusahaan.bpjs_file_periode = {};
+  var rec = perusahaan.bpjs_file_periode[p.nama] || {};
+  rec[jenis] = new Date().toISOString();
+  perusahaan.bpjs_file_periode[p.nama] = rec;
+  if (typeof saveAll === 'function') saveAll();
+}
+
 function bpjsToastKosong(label, missing, missingLabel) {
   var msg = label + ': ' + missing.length + ' karyawan tanpa ' + missingLabel + '.';
   if (missing.length && missing.length <= 4) msg += ' ' + missing.join(', ') + '.';
@@ -174,6 +184,7 @@ function exportBpjsTkUpah() {
     ]);
     var msg = 'File upah BPJS TK diunduh (' + pack.built.tk.length + ' orang).';
     if (pack.built.tanpaKpj.length) msg += ' ' + bpjsToastKosong('Perhatian', pack.built.tanpaKpj, 'nomor KPJ');
+    sigajiStampBpjsFilePeriode(pack.periode, 'tk');
     toast(msg);
   });
 }
@@ -211,6 +222,7 @@ function exportBpjsKesUpah() {
     ]);
     var msg = 'File gaji BPJS Kesehatan diunduh (' + pack.built.kes.length + ' orang).';
     if (pack.built.tanpaKartu.length) msg += ' ' + bpjsToastKosong('Perhatian', pack.built.tanpaKartu, 'nomor kartu');
+    sigajiStampBpjsFilePeriode(pack.periode, 'kes');
     toast(msg);
   });
 }

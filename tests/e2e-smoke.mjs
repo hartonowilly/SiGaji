@@ -123,6 +123,15 @@ assert(
   })
 );
 await page.evaluate(function () {
+  sigajiSetUiPref('theme', 'siang');
+});
+assert(
+  'tema siang',
+  await page.evaluate(function () {
+    return document.documentElement.getAttribute('data-theme') === 'siang';
+  })
+);
+await page.evaluate(function () {
   sigajiSetUiPref('theme', 'light');
 });
 

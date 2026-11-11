@@ -1,0 +1,199 @@
+/**
+ * SiGaji — Tema "Siang · Tenang" (data-theme='siang').
+ * Sage wash, permukaan putih, tinta navy, aksen teal, sudut 8px, tanpa blur kaca.
+ * Font: Source Serif 4 (judul) + Source Sans 3 (isi) — dimuat lazy saat tema aktif.
+ */
+[data-theme='siang'] {
+  --font: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --siang-bg: #f4f6f2;
+  --siang-wash: #e7eee8;
+  --siang-surface: #ffffff;
+  --siang-ink: #1a2332;
+  --siang-body: #334155;
+  --siang-muted: #64748b;
+  --siang-line: #d5ddd6;
+  --siang-teal: #0f766e;
+  --siang-teal-dark: #0b5f59;
+  --siang-teal-bg: #e6f4f1;
+  --siang-sage: #4d7c5a;
+
+  --wh: var(--siang-surface);
+  --bg: var(--siang-bg);
+  --content-bg: var(--siang-wash);
+  --color-bg-content: var(--siang-wash);
+  --tx: var(--siang-ink);
+  --ink: var(--siang-ink);
+  --ink-body: var(--siang-body);
+  --muted: var(--siang-muted);
+  --bd: var(--siang-line);
+  --color-border: var(--siang-line);
+  --color-border-light: #e2e8e3;
+  --color-text: var(--siang-ink);
+  --color-text-muted: var(--siang-muted);
+  --color-surface: var(--siang-surface);
+  --color-surface-muted: #eef2ee;
+  --row-hover: #f3f7f4;
+
+  --blue: var(--siang-teal);
+  --blue-dark: var(--siang-teal-dark);
+  --blue-light: #14b8a6;
+  --bll: var(--siang-teal-bg);
+  --color-primary: var(--siang-teal);
+  --color-primary-dark: var(--siang-teal-dark);
+  --color-primary-subtle: var(--siang-teal-bg);
+  --ux-accent: var(--siang-teal);
+  --ux-accent-dark: var(--siang-teal-dark);
+  --on-primary: #ffffff;
+
+  --sidebar: #24312c;
+  --sidebar-fg: #d7e4dc;
+  --sidebar-fg-muted: #93a89c;
+  --sidebar-fg-hover: #f1f7f3;
+  --sidebar-fg-active: #99f6e4;
+
+  --table-head-bg: #e8f0ea;
+  --table-head-color: var(--siang-ink);
+  --table-head-border: #c9d6cc;
+  --table-zebra: #f7faf7;
+  --cell-neto-color: var(--siang-sage);
+
+  --shadow-sm: 0 1px 2px rgba(26, 35, 50, 0.05);
+  --shadow-card: 0 1px 2px rgba(26, 35, 50, 0.06);
+  --shadow-topbar: none;
+}
+
+[data-theme='siang'] body,
+[data-theme='siang'] #app,
+[data-theme='siang'] .content {
+  background: var(--siang-wash);
+  color: var(--siang-body);
+  font-family: var(--font);
+}
+[data-theme='siang'] .pt,
+[data-theme='siang'] .alogo,
+[data-theme='siang'] .ct,
+[data-theme='siang'] .llogo h1,
+[data-theme='siang'] .mtit,
+[data-theme='siang'] .dash-hero-title,
+[data-theme='siang'] .bento-hero-title {
+  font-family: var(--font-serif);
+  color: var(--siang-ink);
+  font-weight: 600;
+}
+[data-theme='siang'] .card,
+[data-theme='siang'] .bento-widget,
+[data-theme='siang'] .lbox,
+[data-theme='siang'] .lbox-premium,
+[data-theme='siang'] .dash-tindakan,
+[data-theme='siang'] .dash-kpi3-card {
+  background: var(--siang-surface);
+  border: 1px solid var(--siang-line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-theme='siang'] .btn,
+[data-theme='siang'] .toolbar-select,
+[data-theme='siang'] .fg input,
+[data-theme='siang'] .fg select,
+[data-theme='siang'] .fg textarea {
+  border-radius: 8px;
+}
+[data-theme='siang'] .btn-p {
+  background: var(--siang-teal);
+  border-color: var(--siang-teal);
+  color: #fff;
+  box-shadow: none;
+}
+[data-theme='siang'] .btn-p:hover {
+  background: var(--siang-teal-dark);
+}
+[data-theme='siang'] .btn-g {
+  background: var(--siang-sage);
+  border-color: var(--siang-sage);
+}
+[data-theme='siang'] .btn-out {
+  background: var(--siang-surface);
+  border: 1px solid var(--siang-line);
+  color: var(--siang-body);
+}
+
+[data-theme='siang'] #login {
+  background: var(--siang-wash);
+}
+[data-theme='siang'] .login-bg-deco {
+  display: none;
+}
+[data-theme='siang'] .lbox,
+[data-theme='siang'] .lbox-premium {
+  box-shadow: 0 8px 28px rgba(15, 118, 110, 0.08);
+}
+[data-theme='siang'] .llogo h1 {
+  background: none;
+  -webkit-text-fill-color: var(--siang-ink);
+  color: var(--siang-ink);
+}
+
+[data-theme='siang'] .topbar {
+  background: var(--siang-surface) !important;
+  border-bottom: 1px solid var(--siang-line) !important;
+  box-shadow: none !important;
+  color: var(--siang-ink) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+[data-theme='siang'] .topbar .alogo {
+  color: var(--siang-teal) !important;
+}
+[data-theme='siang'] .periode-pill {
+  background: var(--siang-teal-bg);
+  border: 1px solid #99d5ce;
+  color: var(--siang-teal);
+  border-radius: 8px;
+  box-shadow: none;
+}
+[data-theme='siang'] .topbar .av,
+[data-theme='siang'] .av {
+  border-radius: 8px;
+  background: var(--siang-teal);
+  color: #fff;
+  box-shadow: none;
+}
+
+[data-theme='siang'] .sidebar,
+[data-theme='siang'] #sidebar-wrap,
+html[data-theme='siang'].sigaji-mobile-nav #sidebar-wrap.sigaji-nav-drawer-open {
+  background: var(--sidebar);
+  border-right: 0;
+  box-shadow: none;
+}
+[data-theme='siang'] .sidebar .ni,
+[data-theme='siang'] .ni {
+  border-radius: 8px;
+  margin: 2px 8px;
+}
+[data-theme='siang'] .sidebar .ni.active,
+[data-theme='siang'] .ni.active {
+  background: rgba(15, 118, 110, 0.28);
+  color: #ccfbf1;
+}
+[data-theme='siang'] .nsec {
+  color: var(--sidebar-fg-muted);
+}
+
+[data-theme='siang'] td.num,
+[data-theme='siang'] th.num,
+[data-theme='siang'] .sv-money {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme='siang'] .dash-tutup-ok .dash-tindakan-text {
+  color: var(--siang-sage);
+}
+[data-theme='siang'] .dash-tutup-todo .dash-tindakan-text {
+  color: var(--siang-ink);
+}

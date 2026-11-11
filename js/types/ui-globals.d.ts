@@ -70,6 +70,7 @@ declare function sigajiRefreshMutasiPreview(...args: any[]): any;
 declare function sigajiRefreshSpTaxIdHint(...args: any[]): any;
 declare function sigajiRenderBentoDashboard(...args: any[]): any;
 declare function sigajiRenderDashBrief(...args: any[]): any;
+declare function sigajiCollectTutupBulan(...args: any[]): any;
 declare function sigajiRenderBranchWorkspaceBanner(...args: any[]): any;
 declare function sigajiRenderCabangMasterTab(...args: any[]): any;
 declare function sigajiRenderCabangTopbar(...args: any[]): any;

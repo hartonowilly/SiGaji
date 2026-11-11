@@ -356,6 +356,10 @@
 
   function goTindakanPage(item) {
     if (!item) return;
+    if (item.fn && typeof window[item.fn] === 'function') {
+      window[item.fn](item.fnArg);
+      return;
+    }
     if (item.openPtkp && typeof openPtkpJanuariModal === 'function') {
       openPtkpJanuariModal(item.periodeNama);
       return;
@@ -444,6 +448,207 @@
     });
   };
 
+  function isoInRange(iso, start, end) {
+    var d = String(iso || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+    var a = String(start || '').slice(0, 10);
+    var b = String(end || '').slice(0, 10);
+    if (a && d < a) return false;
+    if (b && d > b) return false;
+    return true;
+  }
+
+  window.sigajiCollectTutupBulan = function (opts) {
+    opts = opts || {};
+    var p = opts.p || (typeof PA === 'function' ? PA() : null);
+    var list =
+      opts.list ||
+      (p && typeof karyawanListPeriode === 'function' ? karyawanListPeriode(p) : []);
+    var out = [];
+    if (!p) return out;
+
+    var locked = !!p.snapshot_locked;
+    out.push({
+      id: 'tutup-kunci',
+      ok: locked,
+      text: locked ? 'Snapshot terkunci' : 'Belum kunci periode ini',
+      btn: locked ? 'Periode berikutnya' : 'Kunci sekarang',
+      fn: locked ? 'buatPeriodeBerikutnya' : 'dashTutupKunciAktif',
+    });
+
+    var norekKosong = (list || []).filter(function (k) {
+      return k && k.nik && !String(k.norek || '').replace(/[^\d]/g, '');
+    });
+    out.push({
+      id: 'tutup-norek',
+      ok: !norekKosong.length,
+      text: norekKosong.length
+        ? norekKosong.length + ' NIK tanpa rekening (' + sampleNames(norekKosong, 3) + ')'
+        : 'Semua NIK punya rekening',
+      btn: norekKosong.length ? (norekKosong.length === 1 ? 'Buka profil' : 'Lihat siapa') : '',
+      pg: norekKosong.length ? 'karyawan' : '',
+      nik: norekKosong[0] && norekKosong[0].nik,
+      people: peopleFrom(norekKosong),
+    });
+
+    var masuk = (list || []).filter(function (k) {
+      return k && isoInRange(k.masuk, p.start, p.end);
+    });
+    out.push({
+      id: 'tutup-masuk',
+      ok: true,
+      info: true,
+      text: masuk.length
+        ? masuk.length + ' masuk di periode ini (' + sampleNames(masuk, 3) + ')'
+        : 'Tidak ada karyawan masuk di periode ini',
+      btn: masuk.length > 1 ? 'Lihat siapa' : masuk.length === 1 ? 'Buka profil' : '',
+      pg: masuk.length ? 'karyawan' : '',
+      nik: masuk[0] && masuk[0].nik,
+      people: peopleFrom(masuk),
+    });
+
+    var resign = (list || []).filter(function (k) {
+      return k && isoInRange(k.tgl_berhenti, p.start, p.end);
+    });
+    out.push({
+      id: 'tutup-resign',
+      ok: true,
+      info: true,
+      text: resign.length
+        ? resign.length + ' resign di periode ini (' + sampleNames(resign, 3) + ')'
+        : 'Tidak ada resign di periode ini',
+      btn: resign.length > 1 ? 'Lihat siapa' : resign.length === 1 ? 'Buka profil' : '',
+      pg: resign.length ? 'karyawan' : '',
+      nik: resign[0] && resign[0].nik,
+      people: peopleFrom(resign),
+    });
+
+    var prs = opts.perusahaan || (typeof perusahaan !== 'undefined' ? perusahaan : null);
+    var stamp = prs && prs.bpjs_file_periode && prs.bpjs_file_periode[p.nama];
+    var bpjsOk = !!(stamp && stamp.tk && stamp.kes);
+    var bpjsParts = [];
+    if (!(stamp && stamp.tk)) bpjsParts.push('TK');
+    if (!(stamp && stamp.kes)) bpjsParts.push('Kesehatan');
+    out.push({
+      id: 'tutup-bpjs',
+      ok: bpjsOk,
+      text: bpjsOk ? 'File BPJS TK & Kesehatan sudah diunduh' : 'BPJS belum file' + (bpjsParts.length ? ' (' + bpjsParts.join(' & ') + ')' : ''),
+      btn: bpjsOk ? '' : 'Unduh file',
+      pg: bpjsOk ? '' : 'laporan',
+    });
+
+    var meta = opts.slipMeta;
+    if (!meta) {
+      out.push({
+        id: 'tutup-slip-tg',
+        ok: false,
+        pending: true,
+        text: 'Slip Telegram: memuat status…',
+        btn: 'Buka slip',
+        pg: 'slip',
+      });
+      out.push({
+        id: 'tutup-slip-em',
+        ok: false,
+        pending: true,
+        text: 'Slip email: memuat status…',
+        btn: 'Buka slip',
+        pg: 'slip',
+      });
+    } else if (meta.offline) {
+      out.push({
+        id: 'tutup-slip-tg',
+        ok: true,
+        info: true,
+        text: 'Slip Telegram/email: mode online dibutuhkan untuk status kirim',
+        btn: 'Buka slip',
+        pg: 'slip',
+      });
+    } else {
+      var tgB = (meta.tg || {});
+      var emB = (meta.email || {});
+      var linked = tgB.linked;
+      var tgSent = 0;
+      var tgUnlinked = 0;
+      var tgBelum = 0;
+      var emSent = 0;
+      var emBelum = 0;
+      (list || []).forEach(function (k) {
+        if (!k || !k.nik) return;
+        var nk = String(k.nik).trim();
+        var L = linked && typeof linked.has === 'function' && linked.has(nk);
+        var tgSm = (tgB.sentMap && tgB.sentMap[nk]) || {};
+        var emSm = (emB.sentMap && emB.sentMap[nk]) || {};
+        if (tgSm.gaji) tgSent++;
+        else if (!L) tgUnlinked++;
+        else tgBelum++;
+        if (emSm.gaji) emSent++;
+        else emBelum++;
+      });
+      var tgOk = tgBelum === 0 && tgUnlinked === 0;
+      var tgTxt = tgOk
+        ? 'Slip Telegram: semua terkirim (' + tgSent + ')'
+        : 'Slip Telegram belum kirim: ' +
+          (tgBelum ? tgBelum + ' gagal/belum' : '') +
+          (tgBelum && tgUnlinked ? ', ' : '') +
+          (tgUnlinked ? tgUnlinked + ' belum taut' : '');
+      out.push({
+        id: 'tutup-slip-tg',
+        ok: tgOk,
+        text: tgTxt,
+        btn: 'Buka slip',
+        pg: 'slip',
+      });
+      out.push({
+        id: 'tutup-slip-em',
+        ok: emBelum === 0,
+        text:
+          emBelum === 0
+            ? 'Slip email: semua terkirim (' + emSent + ')'
+            : 'Slip email belum kirim: ' + emBelum + ' orang',
+        btn: 'Buka slip',
+        pg: 'slip',
+      });
+    }
+    return out;
+  };
+
+  window.dashTutupKunciAktif = function () {
+    var p = typeof PA === 'function' ? PA() : null;
+    if (!p) return;
+    if (typeof toggleLockPeriode === 'function') toggleLockPeriode(p.id);
+  };
+
+  function renderTutupRows(items) {
+    return (
+      '<ul class="dash-tindakan-list dash-tutup-list">' +
+      items
+        .map(function (it) {
+          var cls = it.ok ? 'dash-tutup-ok' : it.info ? 'dash-tutup-info' : 'dash-tutup-todo';
+          var btn = it.btn
+            ? '<button type="button" class="btn btn-xs ' +
+              (it.ok || it.info ? 'btn-out' : 'btn-p') +
+              '" data-sigaji-action="invoke" data-fn="sigajiDashGoTindakan" data-arg="' +
+              eh(it.id) +
+              '">' +
+              eh(it.btn) +
+              '</button>'
+            : '';
+          return (
+            '<li class="dash-tindakan-row ' +
+            cls +
+            '"><span class="dash-tindakan-text">' +
+            eh(it.text) +
+            '</span>' +
+            btn +
+            '</li>'
+          );
+        })
+        .join('') +
+      '</ul>'
+    );
+  }
+
   window.sigajiDashGoTindakan = function (id) {
     var item = findTindakan(id);
     if (!item) return;
@@ -460,13 +665,47 @@
     if (!host) return;
     var p = ctx.p || (typeof PA === 'function' ? PA() : null);
     var status = window.sigajiDashStatusLine(p);
+    var slipKey = p && p.nama;
+    if (window.__sigajiDashSlipMetaKey !== slipKey) {
+      window.__sigajiDashSlipMeta = null;
+      window.__sigajiDashSlipMetaKey = slipKey;
+      window.__sigajiDashSlipMetaLoading = false;
+    }
     var items = window.sigajiCollectDashTindakan({
       p: p,
       list: ctx.list,
       pendingAp: ctx.pAp,
       thrAktif: ctx.thrAktif,
     });
-    window.__sigajiDashTindakan = items;
+    var cloudOn =
+      typeof sigajiIsCloudConfigured === 'function' &&
+      sigajiIsCloudConfigured() &&
+      window.sigajiSupabase;
+    if (!ctx.slipMeta && !window.__sigajiDashSlipMeta && !cloudOn) {
+      window.__sigajiDashSlipMeta = { offline: true };
+    }
+    var tutup = window.sigajiCollectTutupBulan({
+      p: p,
+      list: ctx.list,
+      perusahaan: ctx.perusahaan,
+      slipMeta: ctx.slipMeta != null ? ctx.slipMeta : window.__sigajiDashSlipMeta,
+    });
+    window.__sigajiDashTindakan = items.concat(tutup);
+
+    if (!ctx.slipMeta && !window.__sigajiDashSlipMeta && !window.__sigajiDashSlipMetaLoading && cloudOn && p && typeof loadSlipSendMetaBundle === 'function') {
+      window.__sigajiDashSlipMetaLoading = true;
+      loadSlipSendMetaBundle(p)
+        .then(function (bundle) {
+          window.__sigajiDashSlipMeta = bundle;
+          window.__sigajiDashSlipMetaLoading = false;
+          window.sigajiRenderDashBrief(ctx);
+        })
+        .catch(function () {
+          window.__sigajiDashSlipMeta = { offline: true };
+          window.__sigajiDashSlipMetaLoading = false;
+          window.sigajiRenderDashBrief(ctx);
+        });
+    }
 
     var tindakanHtml;
     if (!items.length) {
@@ -504,6 +743,10 @@
       eh(status) +
       (ctx.thrAktif ? ' <span class="bdg b-pu">THR</span>' : '') +
       '</div>' +
+      '<section class="dash-tindakan dash-tutup-bulan" id="dash-tutup-bulan" aria-label="Tutup bulan">' +
+      '<h2 class="dash-brief-h">Tutup bulan</h2>' +
+      renderTutupRows(tutup) +
+      '</section>' +
       '<section class="dash-tindakan" aria-label="Perlu tindakan">' +
       '<h2 class="dash-brief-h">Perlu tindakan</h2>' +
       tindakanHtml +

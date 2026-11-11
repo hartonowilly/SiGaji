@@ -144,4 +144,29 @@ assert(
   })
 );
 
+const tutup = s.sigajiCollectTutupBulan({
+  p: {
+    nama: 'Oktober 2026',
+    start: '2026-10-01',
+    end: '2026-10-31',
+    bayar: '2026-10-31',
+    snapshot_locked: false,
+  },
+  list: [
+    { nik: '1', nama: 'Ani', norek: '', masuk: '2026-10-05' },
+    { nik: '2', nama: 'Budi', norek: '123', tgl_berhenti: '2026-10-20' },
+  ],
+  perusahaan: {},
+  slipMeta: { offline: true },
+});
+const tutupIds = tutup.map(function (x) {
+  return x.id;
+});
+assert('tutup bulan: belum kunci', tutupIds.indexOf('tutup-kunci') >= 0 && !tutup.filter(function (x) { return x.id === 'tutup-kunci'; })[0].ok);
+assert('tutup bulan: norek', tutup.some(function (x) { return x.id === 'tutup-norek' && /Ani/.test(x.text); }));
+assert('tutup bulan: masuk', tutup.some(function (x) { return x.id === 'tutup-masuk' && /Ani/.test(x.text); }));
+assert('tutup bulan: resign', tutup.some(function (x) { return x.id === 'tutup-resign' && /Budi/.test(x.text); }));
+assert('tutup bulan: BPJS belum file', tutup.some(function (x) { return x.id === 'tutup-bpjs' && !x.ok; }));
+assert('tutup bulan satu layar', tutup.length >= 5);
+
 console.log('dash-brief.test.mjs: all passed');
