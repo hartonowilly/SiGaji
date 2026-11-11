@@ -576,18 +576,20 @@ function loadBPJSPanel(k){
     {key:'jht-kar',tarif:'2%',lbl:'JHT Karyawan (2%)',sec:'tk'},
     {key:'jp-prs',tarif:'2%',lbl:'JP Perusahaan (2%)',sec:'tk'},
     {key:'jp-kar',tarif:'1%',lbl:'JP Karyawan (1%)',sec:'tk'},
-    {key:'jkk-prs',tarif:'0,24%',lbl:'JKK Perusahaan (0,24%)',sec:'tk'},
+    {key:'jkk-prs',tarif:'0,24%',lbl:'JKK Perusahaan',sec:'tk'},
     {key:'jkm-prs',tarif:'0,3%',lbl:'JKM Perusahaan (0,3%)',sec:'tk'}
   ];
   const mkRow=function(c){
     const ok=bpjsKompAktif(k,c.key);
     const def=typeof bpjsKomponenDef==='function'?bpjsKomponenDef(c.key,typeof tglAturanDariPeriode==='function'?tglAturanDariPeriode(typeof PA==='function'?PA():null):''):BPJS_DEF[c.key];const b=def.basis?Math.min(basis,def.basis):basis;
     const autoV=Math.round(b*def.pct/100);const isMn=bm[c.key]!==undefined;bmState[c.key]=isMn;
+    const tarifTxt=def&&def.pct!=null?String(def.pct).replace('.',',')+'%':c.tarif;
+    const lblTxt=c.key==='jkk-prs'?(def&&def.lbl?def.lbl:('JKK Perusahaan ('+tarifTxt+')')):c.lbl;
     const chk='<label class="fl items-center cursor-pointer m-0"><input class="cursor-pointer m-0 chk-brand" type="checkbox" data-nik="'+k.nik+'" data-key="'+c.key+'" '+(ok?'checked':'')+' data-sigaji-action="call-value" data-fn="onBPJSKompChange" data-arg="$this" style="width:15px; height:15px"></label>';
     const nomVal=ok?(isMn?bm[c.key]:autoV):0;
     const nomEl='<input type="text" class="bi inp-rp '+(isMn?'manual':'')+'" id="b-'+c.key+'-v" value="'+formatRpInputNum(nomVal)+'" data-rp="1" '+(!isMn||!ok?'readonly':'')+' data-nik="'+k.nik+'" data-key="'+c.key+'" data-sigaji-action="call-value" data-fn="onBMChange2" data-arg="$this" data-sigaji-live="1">';
     const modeEl=ok?('<button class="tm '+(isMn?'manual':'auto')+'" id="tm-'+c.key+'"'+sigajiDataAction('toggle-manual',{key:c.key})+'>'+(isMn?'Manual':'Auto')+'</button>'):'<span class="bdg b-gray font-10">Off</span>';
-    return '<div class="bpjs-row '+(ok?'':'off')+'">'+chk+'<div class="font-11 fw-600">'+c.lbl+'</div><div><input class="bi font-11" value="'+c.tarif+'" readonly></div>'+nomEl+modeEl+'</div>';
+    return '<div class="bpjs-row '+(ok?'':'off')+'">'+chk+'<div class="font-11 fw-600">'+lblTxt+'</div><div><input class="bi font-11" value="'+tarifTxt+'" readonly></div>'+nomEl+modeEl+'</div>';
   };
   document.getElementById('bpjs-kes-rows').innerHTML=KOMP.filter(function(c){return c.sec==='kes';}).map(mkRow).join('');
   document.getElementById('bpjs-tk-rows').innerHTML=KOMP.filter(function(c){return c.sec==='tk';}).map(mkRow).join('');
