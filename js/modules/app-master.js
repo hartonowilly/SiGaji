@@ -228,6 +228,116 @@ function simpanPeriode(){
   }
 }
 function aktifkanPeriode(id){periodes.forEach(function(p){p.status=sigajiSameId(p.id,id)?'aktif':'tutup';});try{var pAkt=typeof periodesFindById==='function'?periodesFindById(id):null;var yAkt=pAkt&&typeof sigajiPeriodePayrollMeta==='function'?sigajiPeriodePayrollMeta(pAkt).year:0;if(yAkt)window.__sigajiTimelineYear=yAkt;}catch(eAkt){sigajiCatchWarn('js/modules/app-master.js',eAkt);}saveAll();renderPeriodes();document.getElementById('top-periode').textContent=PA().nama;renderKar();renderPenggajian();renderDash();renderPPH();renderLaporan();renderPeriodeSelects();populateSelects();toast('Diaktifkan');}
+function isiFormPeriodeObj(p,pola){
+  if(!p)return;
+  var n=document.getElementById('p-nama');if(n)n.value=p.nama||'';
+  var s=document.getElementById('p-start');if(s)s.value=p.start||'';
+  var e=document.getElementById('p-end');if(e)e.value=p.end||'';
+  var b=document.getElementById('p-bayar');if(b)b.value=p.bayar||'';
+  var st=document.getElementById('p-status');if(st)st.value=p.status||'aktif';
+  var tp=document.getElementById('p-tipe-periode');if(tp)tp.value=p.tipe_periode||'normal';
+  var lb=document.getElementById('p-opsi-lebih-bayar');if(lb)lb.value=p.opsi_lebih_bayar||'refund';
+  var polaEl=document.getElementById('p-pola');
+  if(polaEl)polaEl.value=pola||(typeof sigajiInferPolaPeriode==='function'?sigajiInferPolaPeriode(p):'custom');
+  var thr=document.getElementById('p-thr-aktif');if(thr){thr.checked=!!p.thr_aktif;toggleThrFields();}
+  if(typeof toggleOpsiLebihBayar==='function')toggleOpsiLebihBayar();
+}
+function kunciSnapshotPeriode(p,opts){
+  opts=opts||{};
+  if(!p)return false;
+  if(p.snapshot_locked)return true;
+  if(typeof canAccessSubTab==='function'&&!canAccessSubTab('master','periode')){
+    toast('Tidak ada hak mengubah kunci periode');
+    return false;
+  }
+  var list=karyawanListPeriode(p);
+  ensureKarSnapshotPeriode(p.nama,list);
+  var prog=getKarSnapshotProgress(p.nama,list);
+  if(!prog.ok){toast('Snapshot belum lengkap: '+prog.done+'/'+prog.total);return false;}
+  if(!opts.skipConfirm&&!confirm('Kunci snapshot periode "'+p.nama+'"? Setelah dikunci, perubahan master, tarif pajak, dan iuran BPJS tidak mengubah slip periode ini.'))return false;
+  p.snapshot_locked=true;
+  try{
+    if(typeof sigajiBekukanHasilPeriode==='function')sigajiBekukanHasilPeriode(p,{skipSave:true});
+  }catch(eBeku){sigajiCatchWarn("js/modules/app-master.js",eBeku);}
+  try{
+    if(typeof sigajiCaptureAbsensiPotBaseline==='function')sigajiCaptureAbsensiPotBaseline(p,true);
+    if(typeof sigajiRebaselinePriorLockedAbsensiPot==='function')sigajiRebaselinePriorLockedAbsensiPot(p);
+  }catch(eAbsBase){sigajiCatchWarn("js/modules/app-master.js",eAbsBase);}
+  try{
+    if(typeof sigajiSimpanArsipRekap==='function')sigajiSimpanArsipRekap(p);
+  }catch(eArsip){sigajiCatchWarn("js/modules/app-master.js",eArsip);}
+  try{
+    if(typeof sigajiKunciSisaCutiDariPeriode==='function')sigajiKunciSisaCutiDariPeriode(p);
+  }catch(eCutiSisa){sigajiCatchWarn('js/modules/app-master.js',eCutiSisa);}
+  try{
+    if(typeof auditPush==='function')auditPush({
+      ts:typeof nowIso==='function'?nowIso():new Date().toISOString(),
+      periode:p.nama||'',
+      nik:'',
+      nama:p.nama||'',
+      by:(typeof CU!=='undefined'&&CU&&(CU.nama||CU.username||CU.email))||'',
+      byEmail:(typeof CU!=='undefined'&&CU&&CU.email)||'',
+      role:(typeof CU!=='undefined'&&CU&&CU.role)||'',
+      cabangId:(typeof CU!=='undefined'&&CU&&CU.cabangId)||'',
+      action:'kunci_periode',
+      detail:'Snapshot dikunci'
+    });
+  }catch(eAud){sigajiCatchWarn('js/modules/app-master.js',eAud);}
+  try{if(window.sigajiCloudDelta&&window.sigajiCloudDelta.markDirtyFull)window.sigajiCloudDelta.markDirtyFull();}catch(eFull){sigajiCatchWarn('js/modules/app-master.js',eFull);}
+  if(!opts.skipSave){
+    saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci (baseline absensi tersimpan)');
+  }
+  return true;
+}
+function buatPeriodeBerikutnya(){
+  if(typeof canAccessSubTab==='function'&&!canAccessSubTab('master','periode')){
+    toast('Tidak ada hak mengubah periode');
+    return;
+  }
+  var p=typeof PA==='function'?PA():null;
+  if(!p){toast('Belum ada periode aktif');return;}
+  if(typeof sigajiRancangPeriodeBerikutnya!=='function'){mulaiFormPeriodeBaru();return;}
+  var r=sigajiRancangPeriodeBerikutnya(p);
+  if(!r||!r.nama||!r.start||!r.end){mulaiFormPeriodeBaru();return;}
+  var existing=findPeriodeByNama(r.nama);
+  var tipeLbl=r.tipe_periode==='desember'?'rekonsiliasi Desember':'normal';
+  var polaLbl=r.pola==='custom'?'tanggal digeser 1 bulan':r.pola;
+  var msg=existing
+    ?('Periode "'+r.nama+'" sudah ada. Kunci "'+p.nama+'" (jika masih terbuka) lalu aktifkan '+r.nama+'?')
+    :('Kunci "'+p.nama+'" lalu buat "'+r.nama+'" ('+r.start+' s.d. '+r.end+', pola '+polaLbl+', pajak '+tipeLbl+')? THR tidak ikut disalin.');
+  if(!confirm(msg))return;
+  if(!p.snapshot_locked){
+    if(!kunciSnapshotPeriode(p,{skipConfirm:true,skipSave:true}))return;
+  }
+  var open=getPeriodesSnapshotTerbuka(r.nama).filter(function(x){return !sigajiSameId(x.id,p.id);});
+  if(open.length){
+    saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();
+    toast('Masih ada snapshot terbuka: '+open.map(function(x){return x.nama;}).join(', ')+'. Kunci dulu.');
+    goToDaftarPeriode();
+    return;
+  }
+  if(existing){
+    saveAll();
+    aktifkanPeriode(existing.id);
+    isiFormPeriodeObj(existing,r.pola);
+    toast('Periode '+r.nama+' diaktifkan');
+    return;
+  }
+  var obj={id:Date.now(),snapshot_locked:false,nama:r.nama,start:r.start,end:r.end,bayar:r.bayar,status:'aktif',tipe_periode:r.tipe_periode||'normal',opsi_lebih_bayar:r.opsi_lebih_bayar||'refund',thr_aktif:false,thr_nama:'',thr_bayar:'',thr_hariraya:''};
+  periodes.push(obj);
+  periodes.forEach(function(x){if(x.nama!==obj.nama)x.status='tutup';});
+  var listBaru=karyawanListPeriode(obj);
+  ensureKarSnapshotPeriode(obj.nama,listBaru);
+  saveAll();
+  isiFormPeriodeObj(obj,r.pola);
+  renderPeriodes();
+  var topP=document.getElementById('top-periode');if(topP)topP.textContent=PA().nama;
+  renderKar();renderPenggajian();renderDash();renderPPH();renderLaporan();renderPeriodeSelects();populateSelects();
+  toast('Periode '+obj.nama+' dibuat dan aktif');
+  if(typeof isNamaPeriodeJanuari==='function'&&isNamaPeriodeJanuari(obj.nama)&&typeof openPtkpJanuariModal==='function'){
+    setTimeout(function(){openPtkpJanuariModal(obj.nama);},350);
+  }
+}
 function toggleLockPeriode(id){
   var p=periodesFindById(id);
   if(!p)return;
@@ -236,41 +346,7 @@ function toggleLockPeriode(id){
     return;
   }
   if(!p.snapshot_locked){
-    var list=karyawanListPeriode(p);
-    ensureKarSnapshotPeriode(p.nama,list);
-    var prog=getKarSnapshotProgress(p.nama,list);
-    if(!prog.ok){toast('Snapshot belum lengkap: '+prog.done+'/'+prog.total);return;}
-    if(!confirm('Kunci snapshot periode "'+p.nama+'"? Setelah dikunci, perubahan master, tarif pajak, dan iuran BPJS tidak mengubah slip periode ini.'))return;
-    p.snapshot_locked=true;
-    try{
-      if(typeof sigajiBekukanHasilPeriode==='function')sigajiBekukanHasilPeriode(p,{skipSave:true});
-    }catch(eBeku){sigajiCatchWarn("js/modules/app-master.js",eBeku);}
-    try{
-      if(typeof sigajiCaptureAbsensiPotBaseline==='function')sigajiCaptureAbsensiPotBaseline(p,true);
-      if(typeof sigajiRebaselinePriorLockedAbsensiPot==='function')sigajiRebaselinePriorLockedAbsensiPot(p);
-    }catch(eAbsBase){sigajiCatchWarn("js/modules/app-master.js",eAbsBase);}
-    try{
-      if(typeof sigajiSimpanArsipRekap==='function')sigajiSimpanArsipRekap(p);
-    }catch(eArsip){sigajiCatchWarn("js/modules/app-master.js",eArsip);}
-    try{
-      if(typeof sigajiKunciSisaCutiDariPeriode==='function')sigajiKunciSisaCutiDariPeriode(p);
-    }catch(eCutiSisa){sigajiCatchWarn('js/modules/app-master.js',eCutiSisa);}
-    try{
-      if(typeof auditPush==='function')auditPush({
-        ts:typeof nowIso==='function'?nowIso():new Date().toISOString(),
-        periode:p.nama||'',
-        nik:'',
-        nama:p.nama||'',
-        by:(typeof CU!=='undefined'&&CU&&(CU.nama||CU.username||CU.email))||'',
-        byEmail:(typeof CU!=='undefined'&&CU&&CU.email)||'',
-        role:(typeof CU!=='undefined'&&CU&&CU.role)||'',
-        cabangId:(typeof CU!=='undefined'&&CU&&CU.cabangId)||'',
-        action:'kunci_periode',
-        detail:'Snapshot dikunci'
-      });
-    }catch(eAud){sigajiCatchWarn('js/modules/app-master.js',eAud);}
-    try{if(window.sigajiCloudDelta&&window.sigajiCloudDelta.markDirtyFull)window.sigajiCloudDelta.markDirtyFull();}catch(eFull){sigajiCatchWarn('js/modules/app-master.js',eFull);}
-    saveAll();renderPeriodes();renderPeriodeSnapshotGuardUi(false);updatePeriodeSimpanButtonState();toast('Periode '+p.nama+' terkunci (baseline absensi tersimpan)');
+    kunciSnapshotPeriode(p);
   }else{
     var roleBuka=(typeof CU!=='undefined'&&CU&&CU.role)||'';
     if(roleBuka!=='Admin'){toast('Hanya Admin yang dapat membuka kunci periode');return;}
@@ -346,29 +422,11 @@ function updatePolaPeriode(){
   var pola=polaEl?polaEl.value:'custom';
   if(pola==='custom')return;
   var bt=resolveBulanTahunUntukPola();
-  var y=bt.tahun,mo=bt.bulan;
-  function pad(n){return String(n).padStart(2,'0');}
-  function lastDay(yy,m0){return new Date(yy,m0+1,0).getDate();}
-  function iso(yy,m0,day){return yy+'-'+pad(m0+1)+'-'+pad(day);}
-  var start,end,bayar;
-  if(pola==='1-akhir'){
-    start=iso(y,mo,1);
-    end=iso(y,mo,lastDay(y,mo));
-    bayar=end;
-  }else if(pola==='25-24'){
-    var pMo=mo-1,pY=y;if(pMo<0){pMo=11;pY--;}
-    start=iso(pY,pMo,25);
-    end=iso(y,mo,24);
-    bayar=iso(y,mo,25);
-  }else if(pola==='21-20'){
-    var pMo2=mo-1,pY2=y;if(pMo2<0){pMo2=11;pY2--;}
-    start=iso(pY2,pMo2,21);
-    end=iso(y,mo,20);
-    bayar=iso(y,mo,21);
-  }else return;
-  var sEl=document.getElementById('p-start');if(sEl)sEl.value=start;
-  var eEl=document.getElementById('p-end');if(eEl)eEl.value=end;
-  var bEl=document.getElementById('p-bayar');if(bEl)bEl.value=bayar;
+  var tgl=typeof sigajiTanggalPolaUntukBulan==='function'?sigajiTanggalPolaUntukBulan(pola,bt.tahun,bt.bulan):null;
+  if(!tgl)return;
+  var sEl=document.getElementById('p-start');if(sEl)sEl.value=tgl.start;
+  var eEl=document.getElementById('p-end');if(eEl)eEl.value=tgl.end;
+  var bEl=document.getElementById('p-bayar');if(bEl)bEl.value=tgl.bayar;
 }
 function onPeriodeNamaInput(){
   updatePeriodeSimpanButtonState();

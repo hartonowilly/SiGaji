@@ -16,6 +16,8 @@ declare var perusahaan: {
   web?: string;
   /** Kode virtual account e-Dabu (file gaji BPJS Kesehatan). */
   bpjs_kes_va?: string;
+  /** Stempel unduh file BPJS per nama periode: { [nama]: { tk?: string, kes?: string } }. */
+  bpjs_file_periode?: Record<string, { tk?: string; kes?: string }>;
   /** Kelompok risiko JKK: sangat_rendah (default 0,24%) … sangat_tinggi. */
   jkk_tingkat?: string;
   jamMasuk?: string;

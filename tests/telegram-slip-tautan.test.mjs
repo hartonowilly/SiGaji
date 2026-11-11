@@ -29,6 +29,7 @@ assert(
   /function sendCurrentSlipToEmail[\s\S]{0,900}slipAlasanTidakKirim\(k, p/.test(auth)
 );
 assert('alasan kirim cek periode', /karyawanInPeriode\(k,p\)/.test(auth) && /sigajiAmbilHasilBeku/.test(auth));
+assert('kirim ulang satu orang ada', /function slipKirimUlangSatu/.test(auth) && /Siapa belum dapat slip/.test(auth));
 assert('API pindah tautan ada', /fromNik/.test(move) && /toNik/.test(move));
 assert('API cek cabang NIK tujuan', /assertNikInScope\(sb, tenant, caller\.me, toNik\)/.test(move));
 assert(

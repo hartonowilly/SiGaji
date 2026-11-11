@@ -8,7 +8,8 @@
   html,
   html[data-theme='dark'],
   html[data-theme='brand'],
-  html[data-theme='kertas'] {
+  html[data-theme='kertas'],
+  html[data-theme='siang'] {
     --wh: #fff;
     --surface: #fff;
     --surface-2: #fff;
