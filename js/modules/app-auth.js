@@ -230,12 +230,49 @@ async function telegramGetLinkStatus(nik){
 }
 
 /** Putus tautan Telegram untuk NIK (HRD/Admin). */
-async function telegramUnlinkNik(nik){
+async function telegramUnlinkNik(nik,opts){
+  opts=opts||{};
   const t=await getCloudAccessToken();
-  if(!t){toast('Belum login awan / sesi tidak ada');return false;}
+  if(!t){
+    if(opts.quiet)return true;
+    toast('Belum login awan / sesi tidak ada');
+    return false;
+  }
   var res=typeof sigajiFetchJson==='function'?await sigajiFetchJson(sigajiFunctionUrl('telegram-unlink'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({nik})}):null;
-  if(!res||!res.ok){if(typeof sigajiApiToast==='function')sigajiApiToast(res);else toast((res&&res.error)||'Gagal putus tautan Telegram');return false;}
+  if(!res||!res.ok){
+    if(!opts.quiet){
+      if(typeof sigajiApiToast==='function')sigajiApiToast(res);else toast((res&&res.error)||'Gagal putus tautan Telegram');
+    }
+    return false;
+  }
   return true;
+}
+
+/** Pindahkan tautan Telegram saat NIK di profil diganti. Tanpa tautan = sukses diam. */
+async function telegramMoveNikLink(fromNik,toNik){
+  fromNik=String(fromNik||'').trim();
+  toNik=String(toNik||'').trim();
+  if(!fromNik||!toNik||fromNik===toNik)return true;
+  const t=await getCloudAccessToken();
+  if(!t)return true;
+  var res=typeof sigajiFetchJson==='function'?await sigajiFetchJson(sigajiFunctionUrl('telegram-move-link'),{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({fromNik:fromNik,toNik:toNik})}):null;
+  if(!res||!res.ok){if(typeof sigajiApiToast==='function')sigajiApiToast(res);else toast((res&&res.error)||'Gagal pindah tautan Telegram');return false;}
+  return true;
+}
+
+/** Alasan menolak kirim slip (Telegram/email). Kosong = boleh. Resign di dalam periode tetap boleh. */
+function slipAlasanTidakKirim(k,p,opts){
+  opts=opts||{};
+  if(!k)return 'Pilih karyawan';
+  if(typeof isKarSampah==='function'&&isKarSampah(k))return 'Karyawan di sampah — tidak dikirim';
+  if(p&&typeof karyawanInPeriode==='function'&&!karyawanInPeriode(k,p)){
+    return (k.nama||k.nik)+' tidak termasuk periode '+(p.nama||'');
+  }
+  if(!opts.thr&&p&&typeof isPeriodeLocked==='function'&&isPeriodeLocked(p.nama)){
+    var beku=typeof sigajiAmbilHasilBeku==='function'?sigajiAmbilHasilBeku(p,k.nik):null;
+    if(!beku)return 'Periode terkunci, belum ada hasil beku untuk '+(k.nama||k.nik);
+  }
+  return '';
 }
 
 /** Kirim slip PDF (base64) ke Telegram untuk NIK (HRD/Admin). */
@@ -299,6 +336,8 @@ async function sendCurrentSlipToTelegram(){
     const pid=document.getElementById('slip-per')&&document.getElementById('slip-per').value;
     const p=periodesFindById(pid)||PA();
     const type=(document.getElementById('slip-type')&&document.getElementById('slip-type').value)||'gaji';
+    var alasan=slipAlasanTidakKirim(k,p,{thr:type==='thr'&&p&&p.thr_aktif});
+    if(alasan){toast(alasan);return;}
 
     var o=null;
     if(type==='thr'&&p.thr_aktif)o=buildTHRSlipPDF(k,p);
@@ -578,11 +617,7 @@ async function sendSlipTelegramBatch(){
       skip++;
       continue;
     }
-    if (typeof isKarSampah === 'function' && isKarSampah(k)) {
-      skip++;
-      continue;
-    }
-    if (typeof karyawanInPeriode === 'function' && p && !karyawanInPeriode(k, p)) {
+    if (slipAlasanTidakKirim(k, p, { thr: isThr })) {
       skip++;
       continue;
     }
@@ -749,14 +784,19 @@ async function sendCurrentSlipToEmail() {
       toast('Pilih karyawan');
       return;
     }
-    if (!slipEmailHasValidAddress(k)) {
-      toast('Email karyawan kosong atau tidak valid — isi di profil karyawan');
-      return;
-    }
     var pid = document.getElementById('slip-per') && document.getElementById('slip-per').value;
     var p = periodesFindById(pid) || PA();
     var type = (document.getElementById('slip-type') && document.getElementById('slip-type').value) || 'gaji';
     var isThr = type === 'thr' && p.thr_aktif;
+    var alasanEm = slipAlasanTidakKirim(k, p, { thr: isThr });
+    if (alasanEm) {
+      toast(alasanEm);
+      return;
+    }
+    if (!slipEmailHasValidAddress(k)) {
+      toast('Email karyawan kosong atau tidak valid — isi di profil karyawan');
+      return;
+    }
     var o = isThr ? buildTHRSlipPDF(k, p) : buildGajiSlipPDF(k, p.nama, p.bayar);
     if (!o || !o.doc) {
       toast('Gagal menyiapkan PDF');
@@ -873,11 +913,7 @@ async function sendSlipEmailBatch() {
       skip++;
       continue;
     }
-    if (typeof isKarSampah === 'function' && isKarSampah(k)) {
-      skip++;
-      continue;
-    }
-    if (typeof karyawanInPeriode === 'function' && p && !karyawanInPeriode(k, p)) {
+    if (slipAlasanTidakKirim(k, p, { thr: isThr })) {
       skip++;
       continue;
     }

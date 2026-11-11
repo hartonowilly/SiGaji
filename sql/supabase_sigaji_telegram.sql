@@ -22,6 +22,19 @@ create table if not exists public.sigaji_telegram_link_requests (
   primary key (tenant_key, nik)
 );
 
+delete from public.sigaji_telegram_links a
+using public.sigaji_telegram_links b
+where a.tenant_key = b.tenant_key
+  and a.chat_id = b.chat_id
+  and a.ctid <> b.ctid
+  and (
+    a.linked_at < b.linked_at
+    or (a.linked_at = b.linked_at and a.nik < b.nik)
+  );
+
+create unique index if not exists sigaji_telegram_links_chat_uidx
+on public.sigaji_telegram_links (tenant_key, chat_id);
+
 create index if not exists sigaji_telegram_link_requests_code_idx
 on public.sigaji_telegram_link_requests (tenant_key, code);
 

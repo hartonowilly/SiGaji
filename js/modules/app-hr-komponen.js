@@ -64,8 +64,11 @@ function pulihkanKar(nik){
 function hapusKarPermanen(nik){
   const k=karyawan.find(x=>x.nik===nik);
   if(!k)return;
-  sigajiConfirm({title:'Hapus permanen',message:'Hapus permanen "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi dan lembur ikut terhapus. Tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus permanen'}).then(function(ok){
+  sigajiConfirm({title:'Hapus permanen',message:'Hapus permanen "'+k.nama+'"?\n\nNIK: '+k.nik+'\nAbsensi dan lembur ikut terhapus. Tidak dapat dibatalkan.',danger:true,okText:'Ya, hapus permanen'}).then(async function(ok){
     if(!ok)return;
+    try{
+      if(typeof telegramUnlinkNik==='function')await telegramUnlinkNik(nik,{quiet:true});
+    }catch(eUn){sigajiCatchWarn('js/modules/app-hr-komponen.js',eUn);}
     karyawan=karyawan.filter(x=>x.nik!==nik);
     delete absensi[nik];
     delete lembur[nik];
@@ -417,7 +420,14 @@ async function simpanKarPanel(){
       karSnapshot[pAktif.nama][k.nik].hari_gaji=hariGaji;
     }
   }catch(eSk){sigajiCatchWarn("js/modules/app-hr.js",eSk);}
-  if(newNik!==oldNik){if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}cpNik=newNik;}
+  if(newNik!==oldNik){
+    if(absensi[oldNik]){absensi[newNik]=absensi[oldNik];delete absensi[oldNik];}
+    if(lembur[oldNik]){lembur[newNik]=lembur[oldNik];delete lembur[oldNik];}
+    cpNik=newNik;
+    try{
+      if(typeof telegramMoveNikLink==='function')await telegramMoveNikLink(oldNik,newNik);
+    }catch(eMv){sigajiCatchWarn('js/modules/app-hr-komponen.js',eMv);}
+  }
   try{if(typeof syncProrataDariResign==='function')syncProrataDariResign(k);}catch(eSync){sigajiCatchWarn("js/modules/app-hr.js",eSync);}
   try{if(typeof syncProrataDariMasuk==='function')syncProrataDariMasuk(k);}catch(eMas){sigajiCatchWarn("js/modules/app-hr.js",eMas);}
   saveAll();document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;
