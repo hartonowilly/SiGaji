@@ -131,6 +131,29 @@ function batasUpahJPUntukTanggal(tanggal) {
   return pick && pick.basis ? pick.basis : 9559600;
 }
 
+/** JKK perusahaan: lima kelompok risiko (PP 44/2015). Default sangat rendah 0,24%. */
+var SIGAJI_JKK_TINGKAT = [
+  { id: 'sangat_rendah', lbl: 'Sangat rendah (0,24%)', pct: 0.24 },
+  { id: 'rendah', lbl: 'Rendah (0,54%)', pct: 0.54 },
+  { id: 'sedang', lbl: 'Sedang (0,89%)', pct: 0.89 },
+  { id: 'tinggi', lbl: 'Tinggi (1,27%)', pct: 1.27 },
+  { id: 'sangat_tinggi', lbl: 'Sangat tinggi (1,74%)', pct: 1.74 },
+];
+
+function sigajiJkkTingkatDef(id) {
+  var want = String(id || '').trim();
+  var found = null;
+  SIGAJI_JKK_TINGKAT.forEach(function (x) {
+    if (x.id === want) found = x;
+  });
+  return found || SIGAJI_JKK_TINGKAT[0];
+}
+
+function sigajiJkkTingkatPerusahaan() {
+  var prs = typeof perusahaan !== 'undefined' && perusahaan ? perusahaan : {};
+  return sigajiJkkTingkatDef(prs.jkk_tingkat);
+}
+
 function bpjsKomponenDef(key, tanggal) {
   var buku = aturanPajakUntukTanggal(tanggal);
   var def = buku && buku.bpjs && buku.bpjs[key];
@@ -138,6 +161,11 @@ function bpjsKomponenDef(key, tanggal) {
   if (!def) def = { pct: 0, basis: null };
   if (key === 'jp-prs' || key === 'jp-kar') {
     return { pct: def.pct, basis: batasUpahJPUntukTanggal(tanggal), lbl: def.lbl };
+  }
+  if (key === 'jkk-prs') {
+    var jkk = sigajiJkkTingkatPerusahaan();
+    var pctTxt = String(jkk.pct).replace('.', ',');
+    return { pct: jkk.pct, basis: def.basis, lbl: 'JKK Perusahaan (' + pctTxt + '%)' };
   }
   return def;
 }

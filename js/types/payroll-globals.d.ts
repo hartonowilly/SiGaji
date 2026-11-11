@@ -16,6 +16,8 @@ declare var perusahaan: {
   web?: string;
   /** Kode virtual account e-Dabu (file gaji BPJS Kesehatan). */
   bpjs_kes_va?: string;
+  /** Kelompok risiko JKK: sangat_rendah (default 0,24%) … sangat_tinggi. */
+  jkk_tingkat?: string;
   jamMasuk?: string;
   jamPulang?: string;
   /** Nomor urut 1721-A1 terakhir per tahun pajak, mis. { "2026": 12 }. */
@@ -242,6 +244,9 @@ declare function aturanOverrideUntukTanggal(tanggal?: string): {
   ptkp_nilai?: Record<string, number> | null;
 };
 declare function bpjsKomponenDef(key: string, tanggal?: string): { pct: number; basis: number | null; lbl?: string };
+declare var SIGAJI_JKK_TINGKAT: Array<{ id: string; lbl: string; pct: number }>;
+declare function sigajiJkkTingkatDef(id?: string): { id: string; lbl: string; pct: number };
+declare function sigajiJkkTingkatPerusahaan(): { id: string; lbl: string; pct: number };
 declare function batasUpahJPUntukTanggal(tanggal?: string): number;
 declare function masaKerjaBulanSampai(k: KaryawanPayroll, sampaiIso?: string): number;
 declare function kuotaCutiKaryawan(k: KaryawanPayroll | null | undefined, yr?: number | string): number;

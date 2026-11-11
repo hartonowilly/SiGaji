@@ -114,6 +114,12 @@ assertEq(
 );
 assertEq('BPJS JKK prs 0,24%', bpjs.jkk_prs, 24_000);
 assertEq('BPJS JKM prs 0,3%', bpjs.jkm_prs, 30_000);
+assertEq('JKK default sangat rendah', px.sigajiJkkTingkatPerusahaan().pct, 0.24);
+px.perusahaan.jkk_tingkat = 'sangat_tinggi';
+assertEq('JKK sangat tinggi 1,74%', calcBPJS(kBpjs, 8_000_000, 2_000_000).jkk_prs, 174_000);
+px.perusahaan.jkk_tingkat = 'bukan_tingkat';
+assertEq('JKK id tidak dikenal → sangat rendah', calcBPJS(kBpjs, 8_000_000, 2_000_000).jkk_prs, 24_000);
+px.perusahaan.jkk_tingkat = 'sangat_rendah';
 
 // Komponen nonaktif → 0
 const kOff = { nik: 'TES002', gapok: 5_000_000, bpjs_aktif: { 'kes-prs': false, 'kes-kar': false } };
