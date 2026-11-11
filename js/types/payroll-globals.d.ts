@@ -252,6 +252,11 @@ declare function masaKerjaBulanSampai(k: KaryawanPayroll, sampaiIso?: string): n
 declare function kuotaCutiDasar(k: KaryawanPayroll | null | undefined, yr?: number | string): number;
 declare function bawaCutiTahunLalu(k: KaryawanPayroll | null | undefined, yr?: number | string): number;
 declare function kuotaCutiKaryawan(k: KaryawanPayroll | null | undefined, yr?: number | string): number;
+declare function sigajiCutiTahunAbsensiLengkap(yr?: number | string): boolean;
+declare function sigajiKunciSisaCutiTahun(yr?: number | string, list?: KaryawanPayroll[]): number;
+declare function sigajiHapusSisaCutiTahun(yr?: number | string, list?: KaryawanPayroll[]): void;
+declare function sigajiKunciSisaCutiDariPeriode(p: Periode | null | undefined): void;
+declare function sigajiTahunCutiDitutupPeriode(p: Periode | null | undefined): number;
 declare function bulanKerjaPajakTahun(k: KaryawanPayroll, thn: number | string, tglAkhirIso?: string): number;
 declare function periodePakaiRekonsiliasiTahunan(p: Periode | null | undefined): boolean;
 declare function dasarUpahTHR(k: KaryawanPayroll): number;
@@ -597,4 +602,6 @@ interface KaryawanPayroll {
   pph_return?: { nilai?: Rupiah; ket?: string };
   pph_ytd_awal?: Record<string, { bruto?: number; pph?: number; sd_bulan?: number; iuran_jht_jp?: number }>;
   pph_lebih_bayar_bawa?: { tahun?: number; nilai?: number; sumberTahun?: number };
+  /** Sisa hak cuti dasar per tahun kalender, diisi saat periode 31 Des dikunci. */
+  cuti_sisa_tahun?: Record<string, number>;
 }
