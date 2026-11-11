@@ -335,11 +335,8 @@ export function filterKaryawanByScope(list, scope) {
   return (list || []).filter((k) => k && scope.has(karyawanCabangId(k)));
 }
 
-/** Lempar 403 bila NIK di luar cabang pemanggil. */
-export async function assertNikInScope(sb, tenant, me, nik) {
-  const scope = cabangScope(me);
-  if (!scope) return;
-  let k = null;
+/** Satu karyawan by NIK, atau null. */
+export async function loadKaryawanByNik(sb, tenant, nik) {
   if (await tablesReady(sb, tenant)) {
     const { data, error } = await sb
       .from('sigaji_karyawan')
@@ -348,10 +345,17 @@ export async function assertNikInScope(sb, tenant, me, nik) {
       .eq('nik', nik)
       .maybeSingle();
     if (error) throw error;
-    k = data && data.data;
-  } else {
-    k = ((await loadBlob(sb, tenant)).karyawan || []).find((x) => x && String(x.nik) === String(nik));
+    return (data && data.data) || null;
   }
+  const list = ((await loadBlob(sb, tenant)).karyawan || []);
+  return list.find((x) => x && String(x.nik) === String(nik)) || null;
+}
+
+/** Lempar 403 bila NIK di luar cabang pemanggil. */
+export async function assertNikInScope(sb, tenant, me, nik) {
+  const scope = cabangScope(me);
+  if (!scope) return;
+  const k = await loadKaryawanByNik(sb, tenant, nik);
   if (!k || !scope.has(karyawanCabangId(k))) {
     throw new Error('Forbidden — karyawan di luar cabang Anda');
   }
