@@ -207,6 +207,22 @@ declare function sigajiSetTbodyRows(tbody: HTMLElement | null, rows: string[], c
 declare function sigajiWithSkeleton(target: Element | string, colspan: number, run: () => unknown): unknown;
 declare function sigajiNormalizeKarTipe(v?: string, k?: KaryawanPayroll): string;
 declare function renderSlipSendBatchChecklist(): void;
+declare function sigajiInferPolaPeriode(p: { start?: string; end?: string } | null): string;
+declare function sigajiTanggalPolaUntukBulan(
+  pola: string,
+  y: number,
+  m0: number
+): { start: string; end: string; bayar: string } | null;
+declare function sigajiRancangPeriodeBerikutnya(p: unknown): {
+  nama: string;
+  pola: string;
+  start: string;
+  end: string;
+  bayar: string;
+  tipe_periode: string;
+  opsi_lebih_bayar?: string;
+  thr_aktif: boolean;
+} | null;
 /** @returns posisi Y setelah sampul */
 declare function sigajiPdfMagazineCover(doc: any, opts?: Record<string, unknown>): number;
 declare function sigajiPdfMagazineFooter(doc: any, pageNum: number): void;
