@@ -367,13 +367,9 @@ function cutiTerpakaiUntukKuota(nik,yr){
 function sigajiCutiTahunAbsensiLengkap(yr){
   var y=parseInt(String(yr||''),10);
   if(!y)return true;
-  try{
-    var ct=typeof window!=='undefined'?window.sigajiCloudTables:null;
-    if(ct&&typeof ct.archiveCutoffYm==='function'){
-      var cut=String(ct.archiveCutoffYm()||'');
-      if(/^\d{4}-\d{2}$/.test(cut)&&cut>String(y)+'-01')return false;
-    }
-  }catch(eCut){}
+  var ct=typeof window!=='undefined'?window.sigajiCloudTables:null;
+  var cut=ct&&typeof ct.archiveCutoffYm==='function'?String(ct.archiveCutoffYm()||''):'';
+  if(/^\d{4}-\d{2}$/.test(cut)&&cut>String(y)+'-01')return false;
   return true;
 }
 function bacaSisaCutiTahunTersimpan(k,yr){
