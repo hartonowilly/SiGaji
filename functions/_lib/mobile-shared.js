@@ -566,7 +566,7 @@ function masaKerjaBulanSampaiMobile(k, sampaiIso) {
   return Math.max(0, m);
 }
 
-function kuotaCutiKaryawanMobile(payload, k, yr) {
+function kuotaCutiDasarMobile(payload, k, yr) {
   const base = Math.max(0, parseInt(String((payload.masterCuti && payload.masterCuti.kuota) || 12), 10) || 12);
   const mode = String((payload.masterCuti && payload.masterCuti.hakBaru) || 'langsung');
   if (!k || mode === 'langsung') return base;
@@ -578,6 +578,31 @@ function kuotaCutiKaryawanMobile(payload, k, yr) {
   if (mode === 'setelah_12bln') return mb >= 12 ? base : 0;
   if (mode === 'prorata' && mb < 12) return Math.floor((base * mb) / 12);
   return base;
+}
+
+function kuotaCutiKaryawanMobile(payload, k, yr) {
+  const y = parseInt(String(yr || ''), 10) || new Date().getFullYear();
+  const co = String((payload.masterCuti && payload.masterCuti.carryover) || 'no');
+  const akhir = kuotaCutiDasarMobile(payload, k, y);
+  if (!k || !k.nik || (co !== 'yes' && co !== 'max5')) return akhir;
+  const masuk = k.masuk ? String(k.masuk).substring(0, 10) : '';
+  const masukY = masuk ? parseInt(masuk.substring(0, 4), 10) || 0 : 0;
+  let t0 = masukY && masukY < y ? masukY : y;
+  if (y - t0 > 15) t0 = y - 15;
+  let kuota = 0;
+  for (let t = t0; t <= y; t++) {
+    const dasar = kuotaCutiDasarMobile(payload, k, t);
+    let bawa = 0;
+    if (t > t0) {
+      let sisa =
+        kuota -
+        (cutiManualTrackingYear(payload, k.nik, t - 1) + countCutiBersamaTrackingYear(payload, t - 1, k.nik));
+      if (sisa < 0) sisa = 0;
+      bawa = co === 'max5' ? Math.min(5, sisa) : sisa;
+    }
+    kuota = dasar + bawa;
+  }
+  return kuota;
 }
 
 export function computeCutiBalanceForYear(payload, nik, yr, extraPendingDays) {

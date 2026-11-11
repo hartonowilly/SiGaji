@@ -297,6 +297,7 @@ function detailCuti(nik,yr,tracking){
   var tahun=parseInt(yr,10)||new Date().getFullYear();
   var r=rincianCutiTahun(nik,tahun,{tracking:!!tracking});
   var kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,tahun):(masterCuti.kuota||12);
+  var bawa=typeof bawaCutiTahunLalu==='function'?bawaCutiTahunLalu(k,tahun):0;
   var sisa=kuota-r.total;
   var sisaCls=sisa<=0?'ct-danger':sisa<=3?'ct-warn':'ct-success';
   var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
@@ -337,6 +338,7 @@ function detailCuti(nik,yr,tracking){
   }else{
     h+='<div class="text-muted font-12 p-md">Belum ada cuti tercatat di '+String(tahun)+'.</div>';
   }
+  if(bawa>0)h+='<div class="font-10 text-muted mt-xs">Kuota termasuk <strong>'+String(bawa)+' hari</strong> sisa tahun '+(tahun-1)+' (Carry Over).</div>';
   if(!masterCuti.cbPotong)h+='<div class="font-10 text-muted mt-xs">Setelan: cuti bersama tidak otomatis memotong kuota (Master &rarr; Setting Cuti).</div>';
   var tEl=document.getElementById('m-cuti-t');
   if(tEl)tEl.textContent='Saldo Cuti '+String(tahun)+' — '+(k.nama||nik);

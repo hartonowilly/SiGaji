@@ -176,4 +176,16 @@ const bpjsOff = {
   assertEq('kuota setelah 12 bulan: belum dapat', bal.kuota, 0);
 }
 
+{
+  const payload = {
+    perusahaan: { hariKerja: 6 },
+    masterCuti: { kuota: 12, carryover: 'yes', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: [{ nik: 'C2', masuk: '2025-01-01' }],
+    hariLibur: [],
+    absensi: { C2: { '2025-02-03': 'cuti', '2025-02-04': 'cuti' } },
+  };
+  const bal = computeCutiBalanceForYear(payload, 'C2', 2026, 0);
+  assertEq('mobile carryover: kuota 12 + sisa 10', bal.kuota, 22);
+}
+
 console.log('\nAudit mobile/laporan: semua tes lulus.');
