@@ -5,10 +5,16 @@ import {
   handleOptions,
   assertCallerIsHrdOrAdmin,
 } from '../_lib/cf-shared.js';
-import { assertNikInScope } from '../_lib/tenant-data.js';
+import { assertNikInScope, loadKaryawanByNik } from '../_lib/tenant-data.js';
+import { telegramMoveDestConflict } from '../_lib/telegram-move-link-guard.js';
 
 export async function onRequestOptions({ request }) {
   return handleOptions(request);
+}
+
+function forbiddenStatus(e) {
+  const raw = (e && e.message) || String(e);
+  return /Forbidden/i.test(raw) ? 403 : 500;
 }
 
 /** Pindahkan tautan Telegram dari NIK lama ke NIK baru (ganti NIK di profil). */
@@ -28,6 +34,20 @@ export async function onRequestPost({ request, env }) {
     await assertNikInScope(sb, tenant, caller.me, fromNik);
     if (fromNik === toNik) return jsonResponse(200, { ok: true, nik: toNik, moved: false }, request);
 
+    const destK = await loadKaryawanByNik(sb, tenant, toNik);
+    if (destK) await assertNikInScope(sb, tenant, caller.me, toNik);
+
+    const { data: destLink, error: de } = await sb
+      .from('sigaji_telegram_links')
+      .select('chat_id')
+      .eq('tenant_key', tenant)
+      .eq('nik', toNik)
+      .maybeSingle();
+    if (de) return jsonResponse(500, { ok: false, error: de.message }, request);
+
+    const destConflict = telegramMoveDestConflict(destK, destLink);
+    if (destConflict) return jsonResponse(destConflict.status, { ok: false, error: destConflict.error }, request);
+
     const { data: link, error: le } = await sb
       .from('sigaji_telegram_links')
       .select('chat_id')
@@ -39,13 +59,6 @@ export async function onRequestPost({ request, env }) {
       await sb.from('sigaji_telegram_link_requests').delete().eq('tenant_key', tenant).eq('nik', fromNik);
       return jsonResponse(200, { ok: true, nik: toNik, moved: false }, request);
     }
-
-    const { error: dTo } = await sb
-      .from('sigaji_telegram_links')
-      .delete()
-      .eq('tenant_key', tenant)
-      .eq('nik', toNik);
-    if (dTo) return jsonResponse(500, { ok: false, error: dTo.message }, request);
 
     const { error: dChat } = await sb
       .from('sigaji_telegram_links')
@@ -67,6 +80,6 @@ export async function onRequestPost({ request, env }) {
 
     return jsonResponse(200, { ok: true, nik: toNik, moved: true }, request);
   } catch (e) {
-    return jsonResponse(500, { ok: false, error: e.message || String(e) }, request);
+    return jsonResponse(forbiddenStatus(e), { ok: false, error: e.message || String(e) }, request);
   }
 }
