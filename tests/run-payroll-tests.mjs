@@ -57,6 +57,7 @@ const suites = [
   'audit-mobile-laporan.test.mjs',
   'sync-alpha-page.test.mjs',
   'telegram-webhook-secret.test.mjs',
+  'telegram-slip-tautan.test.mjs',
   'rekon-masa-pajak.test.mjs',
   'payroll-sp-tabs.test.mjs',
   'outbox.test.mjs',

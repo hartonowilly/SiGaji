@@ -28,6 +28,7 @@ Jalankan di **SQL Editor** berurutan:
 | `supabase_sigaji_registration.sql` | Permintaan daftar email |
 | `supabase_registration_anon_insert.sql` | Insert daftar dari browser (anon) |
 | `supabase_sigaji_telegram.sql` | Telegram |
+| `supabase_telegram_chat_unik.sql` | Satu chat Telegram = satu NIK (setelah tabel Telegram ada) |
 | `supabase_sigaji_slip_email_sent.sql` | Riwayat email slip |
 | `supabase_sigaji_slip_tg_sent.sql` | Riwayat Telegram slip |
 | `supabase_fix_slip_tg_sent_period_nama.sql` | Perbaikan data lama |

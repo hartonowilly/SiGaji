@@ -67,6 +67,14 @@ export async function onRequestPost({ request, env }) {
       linked_at: nowIso,
     };
 
+    const { error: dChat } = await sb
+      .from('sigaji_telegram_links')
+      .delete()
+      .eq('tenant_key', tenant)
+      .eq('chat_id', chatId)
+      .neq('nik', req.nik);
+    if (dChat) return jsonResponse(500, { ok: false, error: dChat.message }, request);
+
     const { error: upErr } = await sb.from('sigaji_telegram_links').upsert(linkRow, { onConflict: 'tenant_key,nik' });
     if (upErr) return jsonResponse(500, { ok: false, error: upErr.message }, request);
 
