@@ -190,6 +190,52 @@ assertEq('minggu tidak potong kuota', html.includes('tidak potong kuota'), true)
     periodes: [],
   });
   assertEq('karyawan baru 2026: tidak ada bawa', pxBaru.kuotaCutiKaryawan({ ...kar, nik: 'CO2', masuk: '2026-03-01' }, 2026), 12);
+
+  const karLama = { ...kar, nik: 'CO3', masuk: '2024-01-01' };
+  const pxLama = loadPayrollCore({
+    masterCuti: { kuota: 12, carryover: 'yes', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: [karLama],
+    absensi: { CO3: { '2025-02-03': 'cuti', '2025-02-04': 'cuti' } },
+    hariLibur: [],
+    periodes: [{ id: 1, nama: 'Des 2025', start: '2025-12-01', end: '2025-12-31', status: 'tutup' }],
+  });
+  pxLama.sigajiCloudTables = { archiveCutoffYm: function () { return '2025-01'; } };
+  assertEq('arsip 2024 tidak dikira sisa penuh', pxLama.kuotaCutiKaryawan(karLama, 2026), 22);
+
+  const karSimpan = { ...kar, nik: 'CO4', masuk: '2020-01-01', cuti_sisa_tahun: { '2025': 2 } };
+  const pxSimpan = loadPayrollCore({
+    masterCuti: { kuota: 12, carryover: 'yes', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: [karSimpan],
+    absensi: {},
+    hariLibur: [],
+    periodes: [],
+  });
+  pxSimpan.sigajiCloudTables = { archiveCutoffYm: function () { return '2026-01'; } };
+  assertEq('saldo tersimpan: 12 + 2', pxSimpan.kuotaCutiKaryawan(karSimpan, 2026), 14);
+  assertEq(
+    'tanpa saldo + tahun lalu arsip: jangan karangan 12',
+    pxSimpan.kuotaCutiKaryawan({ ...karSimpan, nik: 'CO5', cuti_sisa_tahun: undefined }, 2026),
+    12
+  );
+
+  const listKunci = [{ nik: 'CO6', masuk: '2025-01-01' }];
+  const pxKunci = loadPayrollCore({
+    masterCuti: { kuota: 12, carryover: 'max5', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: listKunci,
+    absensi: { CO6: { '2025-02-03': 'cuti', '2025-02-04': 'cuti' } },
+    hariLibur: [],
+    periodes: [{ id: 1, nama: 'Des 2025', start: '2025-12-01', end: '2025-12-31', snapshot_locked: false }],
+  });
+  assertEq(
+    'periode 31 Des menutup tahun cuti',
+    pxKunci.sigajiTahunCutiDitutupPeriode(pxKunci.periodes[0]),
+    2025
+  );
+  pxKunci.sigajiKunciSisaCutiDariPeriode(pxKunci.periodes[0]);
+  assertEq('kunci Desember menyimpan sisa 10', pxKunci.karyawan[0].cuti_sisa_tahun['2025'], 10);
+  pxKunci.absensi = {};
+  pxKunci.sigajiCloudTables = { archiveCutoffYm: function () { return '2026-01'; } };
+  assertEq('setelah arsip, kuota memakai sisa tersimpan (maks 5)', pxKunci.kuotaCutiKaryawan(pxKunci.karyawan[0], 2026), 17);
 }
 
 console.log('\nRincian cuti: semua tes lulus.');
