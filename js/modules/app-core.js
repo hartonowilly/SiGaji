@@ -2,6 +2,7 @@
 /// <reference path="../types/payroll-globals.d.ts" />
 /* exported periodesFindById, periodesSortedByStart, sortPeriodesByPayrollYm, namaHL, ini,
    cutiManualTrackingYear, countCutiBersamaTrackingYear, cutiTerpakai, rincianCutiTahun,
+   kuotaCutiDasar, bawaCutiTahunLalu, kuotaCutiKaryawan,
    setPREnabled, setPRField, hitungPPhProgresif, setPphYtdAwal, syncTunjVarLabelsFromColumns,
    karyawanSortedAll, karyawanResignSampaiPeriode, cmpKarResignTglDesc, nextNikOtomatis, clearPphReturnPanel, canEditDataPadaTanggalIso,
    refreshKarSnapshotFromMaster, setSpPayrollView, getKarSnapshotProgress */
@@ -338,11 +339,12 @@ function cutiDalamMasaKerja(tglIso,nik){
   return cutiBersamaSetelahMasuk(tglIso,nik)&&cutiSebelumBerhenti(tglIso,nik);
 }
 /**
- * Hak cuti karyawan: `langsung` (default), `setelah_12bln` (UU), atau `prorata` tahun pertama.
+ * Hak cuti tahun itu tanpa sisa tahun lalu.
+ * `langsung` (default), `setelah_12bln` (UU), atau `prorata` tahun pertama.
  * @param {KaryawanPayroll|null} k
  * @param {number|string} [yr]
  */
-function kuotaCutiKaryawan(k,yr){
+function kuotaCutiDasar(k,yr){
   var base=Math.max(0,parseInt(String((typeof masterCuti!=='undefined'&&masterCuti&&masterCuti.kuota)||12),10)||12);
   var mode=String((typeof masterCuti!=='undefined'&&masterCuti&&masterCuti.hakBaru)||'langsung');
   if(!k||mode==='langsung')return base;
@@ -354,6 +356,46 @@ function kuotaCutiKaryawan(k,yr){
   if(mode==='setelah_12bln')return mb>=12?base:0;
   if(mode==='prorata'&&mb<12)return Math.floor(base*mb/12);
   return base;
+}
+function cutiTerpakaiUntukKuota(nik,yr){
+  if(!nik)return 0;
+  var manual=typeof cutiManualTrackingYear==='function'?cutiManualTrackingYear(nik,yr):0;
+  var cb=typeof countCutiBersamaTrackingYear==='function'?countCutiBersamaTrackingYear(yr,nik):0;
+  return (manual||0)+(cb||0);
+}
+/** Sisa tahun lalu yang masuk kuota tahun `yr` (0 bila Carry Over = Tidak). */
+function bawaCutiTahunLalu(k,yr){
+  var co=String((typeof masterCuti!=='undefined'&&masterCuti&&masterCuti.carryover)||'no');
+  if(!k||(co!=='yes'&&co!=='max5'))return 0;
+  var y=parseInt(String(yr||''),10)||new Date().getFullYear();
+  return Math.max(0,kuotaCutiKaryawan(k,y)-kuotaCutiDasar(k,y));
+}
+/**
+ * Hak cuti karyawan, termasuk sisa tahun lalu bila Carry Over aktif.
+ * @param {KaryawanPayroll|null} k
+ * @param {number|string} [yr]
+ */
+function kuotaCutiKaryawan(k,yr){
+  var y=parseInt(String(yr||''),10)||new Date().getFullYear();
+  var co=String((typeof masterCuti!=='undefined'&&masterCuti&&masterCuti.carryover)||'no');
+  var akhir=kuotaCutiDasar(k,y);
+  if(!k||!k.nik||(co!=='yes'&&co!=='max5'))return akhir;
+  var masuk=toIsoDate(k.masuk);
+  var masukY=masuk?parseInt(masuk.slice(0,4),10)||0:0;
+  var t0=masukY&&masukY<y?masukY:y;
+  if(y-t0>15)t0=y-15;
+  var kuota=0;
+  for(var t=t0;t<=y;t++){
+    var dasar=kuotaCutiDasar(k,t);
+    var bawa=0;
+    if(t>t0){
+      var sisa=kuota-cutiTerpakaiUntukKuota(k.nik,t-1);
+      if(sisa<0)sisa=0;
+      bawa=co==='max5'?Math.min(5,sisa):sisa;
+    }
+    kuota=dasar+bawa;
+  }
+  return kuota;
 }
 // Cuti bersama mengurangi kuota (NEW v9). `nik` opsional: skip hari sebelum tgl masuk.
 function countCutiBersama(yr,nik,sampaiIso){

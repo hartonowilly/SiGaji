@@ -249,6 +249,8 @@ declare function sigajiJkkTingkatDef(id?: string): { id: string; lbl: string; pc
 declare function sigajiJkkTingkatPerusahaan(): { id: string; lbl: string; pct: number };
 declare function batasUpahJPUntukTanggal(tanggal?: string): number;
 declare function masaKerjaBulanSampai(k: KaryawanPayroll, sampaiIso?: string): number;
+declare function kuotaCutiDasar(k: KaryawanPayroll | null | undefined, yr?: number | string): number;
+declare function bawaCutiTahunLalu(k: KaryawanPayroll | null | undefined, yr?: number | string): number;
 declare function kuotaCutiKaryawan(k: KaryawanPayroll | null | undefined, yr?: number | string): number;
 declare function bulanKerjaPajakTahun(k: KaryawanPayroll, thn: number | string, tglAkhirIso?: string): number;
 declare function periodePakaiRekonsiliasiTahunan(p: Periode | null | undefined): boolean;

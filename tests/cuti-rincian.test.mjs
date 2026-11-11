@@ -142,4 +142,54 @@ assertEq('minggu tidak potong kuota', html.includes('tidak potong kuota'), true)
   assertEq('karyawan lama tanpa tgl masuk: CB penuh', px2.countCutiBersama(2026), 5);
 }
 
+{
+  const kar = {
+    nik: 'CO1',
+    nama: 'Cuti Over',
+    masuk: '2025-01-01',
+    gapok: 5_000_000,
+    ptkp: 'TK0',
+    tunjangan: [],
+    potongan: [],
+    natura: [],
+  };
+  const abs = { CO1: { '2025-02-03': 'cuti', '2025-02-04': 'cuti' } };
+  const pxNo = loadPayrollCore({
+    masterCuti: { kuota: 12, carryover: 'no', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: [kar],
+    absensi: abs,
+    hariLibur: [],
+    periodes: [{ id: 1, nama: '2025', start: '2025-01-01', end: '2025-12-31', status: 'tutup' }],
+  });
+  assertEq('carryover mati: kuota 2026 = 12', pxNo.kuotaCutiKaryawan(kar, 2026), 12);
+
+  const pxYes = loadPayrollCore({
+    masterCuti: { kuota: 12, carryover: 'yes', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: [kar],
+    absensi: abs,
+    hariLibur: [],
+    periodes: [{ id: 1, nama: '2025', start: '2025-01-01', end: '2025-12-31', status: 'tutup' }],
+  });
+  assertEq('carryover semua: 12 kuota + 10 sisa 2025', pxYes.kuotaCutiKaryawan(kar, 2026), 22);
+  assertEq('bawa 10 hari', pxYes.bawaCutiTahunLalu(kar, 2026), 10);
+
+  const px5 = loadPayrollCore({
+    masterCuti: { kuota: 12, carryover: 'max5', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: [kar],
+    absensi: abs,
+    hariLibur: [],
+    periodes: [{ id: 1, nama: '2025', start: '2025-01-01', end: '2025-12-31', status: 'tutup' }],
+  });
+  assertEq('carryover maks 5: 12 + 5', px5.kuotaCutiKaryawan(kar, 2026), 17);
+
+  const pxBaru = loadPayrollCore({
+    masterCuti: { kuota: 12, carryover: 'yes', cbPotong: false, hakBaru: 'langsung' },
+    karyawan: [{ ...kar, nik: 'CO2', masuk: '2026-03-01' }],
+    absensi: {},
+    hariLibur: [],
+    periodes: [],
+  });
+  assertEq('karyawan baru 2026: tidak ada bawa', pxBaru.kuotaCutiKaryawan({ ...kar, nik: 'CO2', masuk: '2026-03-01' }, 2026), 12);
+}
+
 console.log('\nRincian cuti: semua tes lulus.');
