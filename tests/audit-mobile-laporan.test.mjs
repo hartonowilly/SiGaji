@@ -188,4 +188,17 @@ const bpjsOff = {
   assertEq('mobile carryover: kuota 12 + sisa 10', bal.kuota, 22);
 }
 
+{
+  const payload = {
+    perusahaan: { hariKerja: 6 },
+    masterCuti: { kuota: 12, carryover: 'yes', cbPotong: false, hakBaru: 'langsung' },
+    archiveCutoffYm: '2026-01',
+    karyawan: [{ nik: 'C3', masuk: '2020-01-01', cuti_sisa_tahun: { '2025': 2 } }],
+    hariLibur: [],
+    absensi: {},
+  };
+  const bal = computeCutiBalanceForYear(payload, 'C3', 2026, 0);
+  assertEq('mobile saldo tersimpan: 12 + 2', bal.kuota, 14);
+}
+
 console.log('\nAudit mobile/laporan: semua tes lulus.');

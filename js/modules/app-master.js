@@ -253,6 +253,9 @@ function toggleLockPeriode(id){
       if(typeof sigajiSimpanArsipRekap==='function')sigajiSimpanArsipRekap(p);
     }catch(eArsip){sigajiCatchWarn("js/modules/app-master.js",eArsip);}
     try{
+      if(typeof sigajiKunciSisaCutiDariPeriode==='function')sigajiKunciSisaCutiDariPeriode(p);
+    }catch(eCutiSisa){sigajiCatchWarn('js/modules/app-master.js',eCutiSisa);}
+    try{
       if(typeof auditPush==='function')auditPush({
         ts:typeof nowIso==='function'?nowIso():new Date().toISOString(),
         periode:p.nama||'',
@@ -277,6 +280,10 @@ function toggleLockPeriode(id){
     delete p.hasil_gaji;
     delete p.arsip_rekap;
     delete p.absensi_pot_baseline;
+    try{
+      var yBuka=typeof sigajiTahunCutiDitutupPeriode==='function'?sigajiTahunCutiDitutupPeriode(p):0;
+      if(yBuka&&typeof sigajiHapusSisaCutiTahun==='function')sigajiHapusSisaCutiTahun(yBuka);
+    }catch(eCutiBuka){sigajiCatchWarn('js/modules/app-master.js',eCutiBuka);}
     try{
       if(typeof auditPush==='function')auditPush({
         ts:typeof nowIso==='function'?nowIso():new Date().toISOString(),

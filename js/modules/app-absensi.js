@@ -351,7 +351,11 @@ function simpanMasterCuti(){
   masterCuti.carryover=document.getElementById('cuti-carryover').value;
   masterCuti.cbPotong=!!(document.getElementById('cuti-cb-potong')&&document.getElementById('cuti-cb-potong').checked);
   var hakEl=document.getElementById('cuti-hak-baru');
-  if(hakEl)masterCuti.hakBaru=hakEl.value||'langsung';
+  if(hakEl)  masterCuti.hakBaru=hakEl.value||'langsung';
+  try{
+    var yLalu=new Date().getFullYear()-1;
+    if(typeof sigajiKunciSisaCutiTahun==='function')sigajiKunciSisaCutiTahun(yLalu);
+  }catch(eSisa){sigajiCatchWarn('js/modules/app-absensi.js',eSisa);}
   saveAll();renderCutiRekap();renderKar();renderHariLibur();renderAbsensi();toast('Setting cuti disimpan');
 }
 // ── LEMBUR ───────────────────────────────────────

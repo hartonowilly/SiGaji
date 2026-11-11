@@ -2123,6 +2123,10 @@
     archivePending: function () {
       return !!(archive && !archive.loaded);
     },
+    /** YYYY-MM awal jendela boot; kosong = semua tahun dimuat. */
+    archiveCutoffYm: function () {
+      return archive && archive.cutoff ? String(archive.cutoff) : '';
+    },
     loadArchive: loadArchive,
     _base: base,
   };
