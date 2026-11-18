@@ -247,11 +247,16 @@ function renderAbsensiBody(){
         mobileCards+='<div class="ab-mobile-day-item">'
           +'<div class="ab-mobile-day-lbl">'+dd2+'</div>'
           +(canCell2
-            ?'<button type="button" class="'+cellCls2+'"'+sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date})+'>'+lbl2+'</button>'
+            ?'<button type="button" class="'+cellCls2+'"'+sigajiDataAction('ab-open-status',{nik:k.nik,date:x.date})+'>'+lbl2+'</button>'
             :'<span class="'+cellCls2+' ab-mobile-day-static"'+(isRes2?' title="Sudah resign sejak '+fmtDate(tStop)+'"':'')+'>'+lbl2+'</span>')
           +'</div>';
       });
-      mobileCards+='</div><p class="ab-mobile-tap-hint">Ketuk tanggal kerja untuk ganti H → C → I → S → ½S → ½I → A.</p>';
+      mobileCards+='</div>'
+        +'<div class="ab-mobile-fill fl gap1 flex-wrap">'
+        +'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('invoke',{fn:'abIsiSemuaHadir',arg:k.nik})+'>Semua hadir</button>'
+        +'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('invoke',{fn:'abIsiSepertiKemarin',arg:k.nik})+'>Sama seperti kemarin</button>'
+        +'</div>'
+        +'<p class="ab-mobile-tap-hint">Ketuk tanggal, pilih status. Satu ketukan, satu simpan.</p>';
     }
     mobileCards+='</div>';
   });
@@ -297,6 +302,158 @@ function toggleAb(nik,date,el){
   }
   if(typeof sigajiCatatAbsensiBerubah==='function')sigajiCatatAbsensiBerubah(nik,date);
   saveAll({delta:true});
+}
+var AB_ST_OPT=[
+  {id:'hadir',lbl:'H',nama:'Hadir'},
+  {id:'cuti',lbl:'C',nama:'Cuti'},
+  {id:'izin',lbl:'I',nama:'Izin'},
+  {id:'sakit',lbl:'S',nama:'Sakit'},
+  {id:'setengah_sakit',lbl:'½S',nama:'½ Sakit'},
+  {id:'setengah_ijin',lbl:'½I',nama:'½ Izin'},
+  {id:'alpha',lbl:'A',nama:'Alpha'}
+];
+var AB_ST_LBL={hadir:'H',cuti:'C',izin:'I',sakit:'S',setengah_sakit:'1/2S',setengah_ijin:'1/2I',alpha:'A'};
+function abSisaCutiNik(nik,iso){
+  var k=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  if(!k)return 0;
+  var yr=parseInt(String(iso||'').slice(0,4),10)||new Date().getFullYear();
+  var kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,yr):(typeof masterCuti!=='undefined'&&masterCuti.kuota)||12;
+  var manual=typeof cutiManualTrackingYear==='function'?cutiManualTrackingYear(nik,yr):0;
+  var cb=typeof countCutiBersamaTrackingYear==='function'?countCutiBersamaTrackingYear(yr,nik):0;
+  return kuota-manual-cb;
+}
+function abBolehUbahTanggal(nik,date){
+  if(!(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(date):canEditDataPadaTanggalIso(date))){
+    toast('Tanggal ini di periode yang snapshot-nya terkunci. Hanya Admin yang dapat mengubah absensi.');
+    return false;
+  }
+  var kar=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  var tStop=typeof toIsoDate==='function'?toIsoDate(kar&&kar.tgl_berhenti):String((kar&&kar.tgl_berhenti)||'').trim();
+  if(tStop&&date>=tStop){
+    toast('Sudah resign sejak '+fmtDate(tStop)+' — absensi tidak diubah. Ubah tgl. berhenti di profil jika perlu.');
+    return false;
+  }
+  return true;
+}
+function abCloseStatusSheet(){
+  var m=document.getElementById('ab-status-sheet');
+  if(m)m.remove();
+  if(document.body)document.body.style.overflow='';
+}
+function abBukaStatusSheet(nik,date){
+  if(!abBolehUbahTanggal(nik,date))return;
+  abCloseStatusSheet();
+  if(!absensi[nik])absensi[nik]={};
+  var cur=absensi[nik][date]||'hadir';
+  var nama='';
+  var kar=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  if(kar)nama=kar.nama||nik;
+  var wrap=document.createElement('div');
+  wrap.id='ab-status-sheet';
+  wrap.className='mbd show ab-status-sheet-bd';
+  var btns=AB_ST_OPT.map(function(o){
+    var on=o.id===cur?' is-on':'';
+    return '<button type="button" class="ab-status-pick ab-st-'+o.id+on+'"'+sigajiDataAction('ab-set-status',{nik:nik,date:date,tipe:o.id})+'>'
+      +'<span class="ab-status-pick-lbl">'+o.lbl+'</span><span class="ab-status-pick-nama">'+o.nama+'</span></button>';
+  }).join('');
+  var html='<div class="modal ab-status-sheet" role="dialog" aria-label="Pilih status absensi">'
+    +'<div class="modal-head"><strong>'+escapeHtml(nama)+'</strong>'
+    +'<div class="u-muted-11">'+escapeHtml(fmtDate(date))+'</div></div>'
+    +'<div class="ab-status-picks">'+btns+'</div>'
+    +'<div class="mfoot"><button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="abCloseStatusSheet">Batal</button></div></div>';
+  wrap.innerHTML=html;
+  document.body.appendChild(wrap);
+  document.body.style.overflow='hidden';
+  wrap.addEventListener('click',function(ev){if(ev.target===wrap)abCloseStatusSheet();});
+}
+function abSetStatus(nik,date,next,opts){
+  opts=opts||{};
+  if(!abBolehUbahTanggal(nik,date))return false;
+  if(!absensi[nik])absensi[nik]={};
+  var cur=absensi[nik][date]||'hadir';
+  if(cur==='resign'){toast('Status resign — ubah lewat tgl. berhenti di profil karyawan');return false;}
+  var ok=false;
+  AB_ST_OPT.forEach(function(o){if(o.id===next)ok=true;});
+  if(!ok)return false;
+  if(next==='cuti'&&cur!=='cuti'&&abSisaCutiNik(nik,date)<=0){
+    if(!confirm('Sisa cuti 0 — tetap catat sebagai cuti (akan dipotong)?'))return false;
+  }
+  if(cur===next)return true;
+  absensi[nik][date]=next;
+  if(!opts.skipAudit&&typeof logPayrollAudit==='function'){
+    logPayrollAudit(nik,'Ubah Absensi',date+' '+(AB_ST_LBL[cur]||cur)+' → '+(AB_ST_LBL[next]||next));
+  }
+  if(!opts.skipSave){
+    if(typeof sigajiCatatAbsensiBerubah==='function')sigajiCatatAbsensiBerubah(nik,date);
+    saveAll({delta:true});
+  }
+  return true;
+}
+function abPilihStatus(nik,date,tipe){
+  var ok=abSetStatus(nik,date,tipe,{});
+  abCloseStatusSheet();
+  if(ok&&typeof renderAbsensiBody==='function')renderAbsensiBody();
+}
+function abHariIsiKartu(nik){
+  var pid=document.getElementById('ab-periode-sel')&&document.getElementById('ab-periode-sel').value;
+  var pAbs=(typeof periodes!=='undefined'&&periodes.find(function(x){return String(x.id)===String(pid);}))||(typeof PA==='function'?PA():null);
+  if(!pAbs)return [];
+  var daysAll=typeof absensiDaysFromPeriode==='function'?absensiDaysFromPeriode(pAbs):[];
+  var ym=window.__sigajiAbMonth||'';
+  var days=daysAll.filter(function(x){return x.date.substring(0,7)===ym;});
+  var kar=(karyawan||[]).find(function(x){return x&&x.nik===nik;});
+  var tStop=typeof toIsoDate==='function'?toIsoDate(kar&&kar.tgl_berhenti):String((kar&&kar.tgl_berhenti)||'').trim();
+  return days.filter(function(x){
+    if(tStop&&x.date>=tStop)return false;
+    if(typeof isHL==='function'&&isHL(x.date))return false;
+    if(typeof isHariLiburKerja==='function'&&isHariLiburKerja(x.dow))return false;
+    return typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(x.date):true;
+  });
+}
+function abIsiSemuaHadir(nik){
+  var hari=abHariIsiKartu(nik);
+  if(!hari.length){toast('Tidak ada tanggal kerja yang bisa diisi');return;}
+  if(!confirm('Isi semua tanggal kerja bulan ini jadi Hadir untuk karyawan ini?'))return;
+  var n=0;
+  hari.forEach(function(x){
+    if(abSetStatus(nik,x.date,'hadir',{skipAudit:true,skipSave:true}))n++;
+  });
+  if(typeof logPayrollAudit==='function')logPayrollAudit(nik,'Ubah Absensi','Semua hadir '+String(hari.length)+' hari');
+  if(typeof sigajiCatatAbsensiBerubah==='function'&&hari[0])sigajiCatatAbsensiBerubah(nik,hari[0].date);
+  saveAll({delta:true});
+  if(typeof renderAbsensiBody==='function')renderAbsensiBody();
+  toast('Hadir: '+n+' hari');
+}
+function abIsoKemarin(iso){
+  var d=new Date(String(iso)+'T12:00:00');
+  if(isNaN(d.getTime()))return '';
+  d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function abStatusDiTanggal(nik,date){
+  var isLN=typeof isHL==='function'&&isHL(date);
+  var dow=new Date(date+'T12:00:00').getDay();
+  var isLK=typeof isHariLiburKerja==='function'&&isHariLiburKerja(dow);
+  if(isLN)return 'libnas';
+  if(isLK)return 'libur';
+  return (absensi[nik]&&absensi[nik][date])||'hadir';
+}
+function abIsiSepertiKemarin(nik){
+  var hari=abHariIsiKartu(nik);
+  if(!hari.length){toast('Tidak ada tanggal kerja yang bisa diisi');return;}
+  if(!confirm('Salin status hari sebelumnya ke setiap tanggal kerja bulan ini?'))return;
+  var n=0;
+  hari.forEach(function(x){
+    var prev=abIsoKemarin(x.date);
+    var st=abStatusDiTanggal(nik,prev);
+    if(st==='libur'||st==='libnas'||st==='resign')st='hadir';
+    if(abSetStatus(nik,x.date,st,{skipAudit:true,skipSave:true}))n++;
+  });
+  if(typeof logPayrollAudit==='function')logPayrollAudit(nik,'Ubah Absensi','Sama seperti kemarin '+String(hari.length)+' hari');
+  if(typeof sigajiCatatAbsensiBerubah==='function'&&hari[0])sigajiCatatAbsensiBerubah(nik,hari[0].date);
+  saveAll({delta:true});
+  if(typeof renderAbsensiBody==='function')renderAbsensiBody();
+  toast('Disalin: '+n+' hari');
 }
 // ── CUTI REKAP ───────────────────────────────────
 function renderCutiRekap(){

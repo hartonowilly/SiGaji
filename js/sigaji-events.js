@@ -178,6 +178,12 @@
       case 'toggle-ab':
         if (nik && date && typeof toggleAb === 'function') toggleAb(nik, date, el);
         return true;
+      case 'ab-open-status':
+        if (nik && date && typeof abBukaStatusSheet === 'function') abBukaStatusSheet(nik, date);
+        return true;
+      case 'ab-set-status':
+        if (nik && date && tipe && typeof abPilihStatus === 'function') abPilihStatus(nik, date, tipe);
+        return true;
       case 'del-lembur':
         if (nik && i != null && typeof delLembur === 'function') delLembur(nik, +i);
         return true;
