@@ -521,9 +521,14 @@ html.sigaji-mobile-nav .ab-mobile-card {
   border-radius: 14px;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
 }
-html.sigaji-mobile-nav .ab-mobile-days {
-  mask-image: linear-gradient(90deg, #000 94%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, #000 94%, transparent);
+html.sigaji-mobile-nav .ab-mobile-cari {
+  width: 100%;
+  margin-bottom: 0.35rem;
+}
+html.sigaji-mobile-nav .ab-mobile-card-head .btn {
+  min-height: 40px;
+  min-width: 52px;
+  flex-shrink: 0;
 }
 html.sigaji-mobile-nav .ab-month-nav {
   position: sticky;

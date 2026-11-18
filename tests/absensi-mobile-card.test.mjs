@@ -1,0 +1,24 @@
+/**
+ * Absensi HP: daftar ringkas seperti Gaji, kalender hanya setelah Isi.
+ */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function assert(name, cond) {
+  if (!cond) throw new Error('FAIL: ' + name);
+  console.log('OK: ' + name);
+}
+
+const abs = fs.readFileSync(path.join(ROOT, 'js/modules/app-absensi.js'), 'utf8');
+const html = fs.readFileSync(path.join(ROOT, 'partials/pg-absensi.html'), 'utf8');
+
+assert('cari absensi HP', /function abSetCari/.test(abs) && /id="ab-mobile-cari"/.test(html));
+assert('buka satu kartu', /function abBukaKartu/.test(abs) && /Tutup/.test(abs) && /Isi/.test(abs));
+assert('kalender minggu hanya saat terbuka', /if\(isOpen\)/.test(abs) && /ab-mobile-week/.test(abs));
+assert('tab singkat HP', /tab-short/.test(html) && /Kalender/.test(html));
+assert('cuti kartu HP', /cuti-rekap-mobile/.test(html) && /cuti-mobile-card/.test(abs));
+
+console.log('absensi-mobile-card.test.mjs: all passed');

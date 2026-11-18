@@ -10,10 +10,10 @@
     <button class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="renderAbsensi">&#8635; Refresh</button>
   </div></div>
   <div class="tabs">
-    <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender">&#128197; Kalender Absensi</div>
-    <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti">&#127774; Tracking Cuti</div>
-    <div class="tab" data-abtab="lokasi" data-abpanel="abt-lokasi">&#128205; Lokasi GPS</div>
-    <div class="tab" data-abtab="pengajuan" data-abpanel="abt-pengajuan">&#128221; Pengajuan Cuti</div>
+    <div class="tab active" data-abtab="kalender" data-abpanel="abt-kalender"><span class="tab-full">&#128197; Kalender Absensi</span><span class="tab-short">Kalender</span></div>
+    <div class="tab" data-abtab="cuti" data-abpanel="abt-cuti"><span class="tab-full">&#127774; Tracking Cuti</span><span class="tab-short">Cuti</span></div>
+    <div class="tab" data-abtab="lokasi" data-abpanel="abt-lokasi"><span class="tab-full">&#128205; Lokasi GPS</span><span class="tab-short">GPS</span></div>
+    <div class="tab" data-abtab="pengajuan" data-abpanel="abt-pengajuan"><span class="tab-full">&#128221; Pengajuan Cuti</span><span class="tab-short">Ajuan</span></div>
   </div>
   <div id="abt-kalender">
     <div class="ab-status-legend">
@@ -29,14 +29,19 @@
       <span class="ab-chip ab-ln">LN Libnas</span>
     </div>
     <div class="u-hidden font-12 fw-600 text-body mb-md p-inset-xs card-surface-neutral rounded-sm leading-normal" id="ab-kal-periode-info" style="border:1px solid var(--bd)"></div>
+    <div class="ab-mobile-toolbar" id="ab-mobile-toolbar">
+      <input type="search" id="ab-mobile-cari" class="toolbar-select ab-mobile-cari" placeholder="Cari nama atau NIK…" data-sigaji-action="call-value" data-fn="abSetCari" data-sigaji-live="1" autocomplete="off">
+      <p class="ab-mobile-hint">Seperti Gaji: daftar ringkas. Ketuk <strong>Isi</strong> untuk kalender satu orang.</p>
+    </div>
     <div id="ab-scroll-host" class="ab-grid-host"><div id="ab-grid-wrap"></div></div>
     <div class="mt-lg" id="ab-rekap-wrap"></div>
   </div>
   <div class="u-hidden" id="abt-cuti">
     <div class="card">
       <div class="ct">Tracking Cuti — <span id="cuti-yr-lbl">2026</span></div>
-      <div class="table-wrap"><table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
+      <div class="table-wrap cuti-rekap-desktop"><table><thead><tr><th>No</th><th>NIK</th><th>Nama</th><th>Masa Kerja</th><th>Kuota</th><th>Cuti Manual</th><th>Cuti Bersama</th><th>Total Terpakai</th><th>Sisa</th><th>Progress</th></tr></thead>
       <tbody id="tb-cuti-rekap"></tbody></table></div>
+      <div id="cuti-rekap-mobile" class="cuti-rekap-mobile"></div>
     </div>
   </div>
   <div class="u-hidden" id="abt-lokasi">
