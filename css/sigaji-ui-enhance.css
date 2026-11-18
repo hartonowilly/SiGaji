@@ -910,6 +910,11 @@ button.ab-mobile-day.is-clickable:active {
   font-weight: 600;
   color: var(--color-text-muted);
 }
+.ab-confirm-msg {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 14px;
+  line-height: 1.45;
+}
 .ab-mobile-tap-hint,
 .ab-mobile-hint {
   margin: 0.45rem 0 0;
