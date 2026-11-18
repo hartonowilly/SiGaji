@@ -20,5 +20,12 @@ assert('buka satu kartu', /function abBukaKartu/.test(abs) && /Tutup/.test(abs) 
 assert('kalender minggu hanya saat terbuka', /if\(isOpen\)/.test(abs) && /ab-mobile-week/.test(abs));
 assert('tab singkat HP', /tab-short/.test(html) && /Kalender/.test(html));
 assert('cuti kartu HP', /cuti-rekap-mobile/.test(html) && /cuti-mobile-card/.test(abs));
+assert('HP pilih status, bukan putar', /ab-open-status/.test(abs) && /function abPilihStatus/.test(abs));
+assert('desktop tetap putar toggleAb', /function toggleAb/.test(abs) && /S=\['hadir','cuti','izin','sakit'/.test(abs));
+assert('HP satu baris audit', /function abSetStatus/.test(abs) && /Sisa cuti 0/.test(abs));
+assert('isi massal HP', /function abIsiSemuaHadir/.test(abs) && /function abIsiSepertiKemarin/.test(abs));
+
+const ev = fs.readFileSync(path.join(ROOT, 'js/sigaji-events.js'), 'utf8');
+assert('event picker HP', /ab-open-status/.test(ev) && /ab-set-status/.test(ev));
 
 console.log('absensi-mobile-card.test.mjs: all passed');
