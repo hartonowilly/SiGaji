@@ -216,6 +216,7 @@ function renderLaporanBody(){
   var sums={kar:0,gross:0,thr:0,pph:0,neto:0};
   var pakaiArsip=sigajiRekapArsipBerlaku();
   var arsipBaru=false;
+  var lapCards=[];
   var rows=sigajiWithHitungCache(function(){return sorted.map(function(p){
     var locked=!!(p.snapshot_locked&&p.status!=='aktif');
     var r=locked&&pakaiArsip&&p.arsip_rekap&&p.arsip_rekap.v===1?p.arsip_rekap:null;
@@ -233,6 +234,7 @@ function renderLaporanBody(){
       +'<td><strong>'+escapeHtml(p.nama)+'</strong>'+(p.thr_aktif?' <span class="bdg b-pu">THR</span>':'')+rentang+'</td>';
     var tail='<td><span class="bdg '+(p.status==='aktif'?'b-warn':'b-ok')+'" title="'+escapeHtml(stTip)+'">'+stLbl+'</span></td></tr>';
     if(memuat){
+      lapCards.push('<div class="hp-person-card"><div class="hp-person-card-meta"><div class="hp-person-name">'+escapeHtml(p.nama)+'</div><div class="font-10 text-subtle">Memuat arsip…</div></div></div>');
       return head+'<td class="num text-subtle" colspan="5" title="Data periode lama sedang dimuat dari arsip">Memuat arsip…</td>'+tail;
     }
     sums.kar+=r.kar;
@@ -240,6 +242,11 @@ function renderLaporanBody(){
     sums.thr+=r.thr;
     sums.pph+=r.pph;
     sums.neto+=r.neto;
+    lapCards.push('<div class="hp-person-card'+(p.status==='aktif'?' is-open':'')+'">'
+      +'<div class="hp-person-card-head hp-person-card-head-static">'
+      +'<div class="hp-person-card-meta"><div class="hp-person-name">'+escapeHtml(p.nama)+'</div>'
+      +'<div class="font-10 text-subtle">'+stLbl+(r.kar?' · '+r.kar+' orang':'')+'</div></div>'
+      +'<strong class="hp-person-neto">'+fmt(r.neto)+'</strong></div></div>');
     return head
       +'<td class="num">'+r.kar+'</td><td class="num cell-money">'+fmt(r.gross)+'</td><td class="num cell-money">'+(r.thr>0?fmt(r.thr):'&#8212;')+'</td>'
       +'<td class="num cell-money">'+fmt(r.pph)+'</td><td class="num cell-neto"><strong class="cell-neto-strong">'+fmt(r.neto)+'</strong></td>'
@@ -250,6 +257,19 @@ function renderLaporanBody(){
   var foot=document.getElementById('tb-lap-foot');
   if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows,50);
   if(foot)fillLapRekapFoot(foot,rows.length,sums);
+  var lapMob=document.getElementById('lap-mobile-rekap');
+  if(lapMob){
+    var html='<div class="hp-gaji-kpis">'
+      +'<div><strong>'+fmt(sums.neto)+'</strong><span>Total THP</span></div>'
+      +'<div><strong>'+fmt(sums.pph)+'</strong><span>Total PPh</span></div>'
+      +'<div><strong>'+String(sums.kar)+'</strong><span>Karyawan</span></div></div>'
+      +'<div class="hp-lap-dl fl gap1 flex-wrap">'
+      +'<button type="button" class="btn btn-sm btn-p" data-sigaji-action="invoke" data-fn="exportCSV">Unduh CSV</button>'
+      +'<button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportExcelEbupotBulanan">Unduh Excel</button>'
+      +'<button type="button" class="btn btn-sm btn-out" data-sigaji-action="invoke" data-fn="exportXmlEbupotCoretax">XML Coretax</button></div>'
+      +lapCards.join('');
+    lapMob.innerHTML=html;
+  }
 }
 function exportCSV(){
   const rows=[['No','Nama','Dept','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','PPh Return','Neto']];
@@ -704,9 +724,12 @@ function renderTHRBody(){
     if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tbThr,[emptyThr],1);
     if(footThr)footThr.replaceChildren();
     const sum=document.getElementById('thr-summary');if(sum)sum.innerHTML='';
+    var thrMob0=document.getElementById('thr-mobile-list');
+    if(thrMob0)thrMob0.innerHTML='';
     return;
   }
   var totalPphEst=0;
+  var thrCards=[];
   var thrRows=sortKaryawanByNik(karyawan||[]).map(function(k,idx){
     const t=hitungTHRBruto(k,pNama);const isE=t.eligible;if(isE){total+=t.nilai;eligible++;}
     const mb=Math.floor(t.mb/12)+'thn '+t.mb%12+'bln';
@@ -735,6 +758,11 @@ function renderTHRBody(){
     }else{
       manCell='<span class="font-11 text-dash-muted">&#8212;</span>';
     }
+    thrCards.push('<div class="hp-person-card">'
+      +'<div class="hp-person-card-head hp-person-card-head-static">'
+      +'<div class="hp-person-card-meta"><div class="hp-person-name">'+escapeHtml(k.nama)+'</div>'
+      +'<div class="font-10 text-subtle">'+(isE?(isManual?'Manual':'Otomatis'):'Belum eligible')+'</div></div>'
+      +'<strong class="hp-person-neto">'+(isE?fmt(t.nilai):'—')+'</strong></div></div>');
     return '<tr><td class="text-center fw-700 text-muted sticky-no">'+(idx+1)+'</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div><div><strong>'+escapeHtml(k.nama)+'</strong><br><small class="text-muted">'+escapeHtml(k.nik)+'</small></div></div></td>'
       +'<td>'+mb+'</td>'
       +'<td class="num cell-money">'+fmt(t.dasar)+'</td>'
@@ -753,4 +781,9 @@ function renderTHRBody(){
     +'<div><div class="font-22 fw-800 ct-success">'+fmt(total)+'</div><div class="u-muted-11">Dibayar Full Netto</div></div></div>'
     +(periodeAdaTHR?'<div class="info-box info-pu mt-md mb-0 font-11">&#10003; Periode aktif ada THR. PPh THR digabung ke gaji akhir bulan.</div>':'<div class="info-box info-amber mt-md mb-0 font-11">Aktifkan THR di Master Periode untuk menggabungkan PPh THR ke gaji.</div>');
   document.getElementById('thr-summary').innerHTML=h;
+  var thrMob=document.getElementById('thr-mobile-list');
+  if(thrMob){
+    var html=thrCards.join('');
+    thrMob.innerHTML=html;
+  }
 }

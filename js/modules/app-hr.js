@@ -272,6 +272,51 @@ function karRowHtml(k,no){
     :`<button class="btn btn-sm btn-p"${sigajiDataAction('open-profile',{nik:k.nik})}>Profil</button>${tgBtn}<button class="btn btn-sm btn-r"${sigajiDataAction('delete-kar',{nik:k.nik})}>Hapus</button>`;
   return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;${resignBadge}</div><div class="font-10 text-muted font-mono">${subLine}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td><td><span class="bdg ${siklusCls}">${escapeHtml(siklusLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1">${aksi}</div></td></tr>`;
 }
+function karBukaKartu(nik){
+  var next=window.__sigajiKarOpenNik===nik?'':nik;
+  window.__sigajiKarOpenNik=next;
+  var box=document.getElementById('kar-mobile-list');
+  if(!box)return;
+  var cards=box.querySelectorAll('.hp-person-card');
+  var i;
+  for(i=0;i<cards.length;i++){
+    cards[i].classList.toggle('is-open',cards[i].getAttribute('data-nik')===next);
+  }
+}
+function karMobileCardHtml(k){
+  var open=window.__sigajiKarOpenNik===k.nik;
+  var yrKar=new Date().getFullYear();
+  var t=typeof cutiTerpakai==='function'?cutiTerpakai(k.nik,yrKar):0;
+  var kuotaCut=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,yrKar):(typeof masterCuti!=='undefined'&&masterCuti.kuota)||12;
+  var s=kuotaCut-t;
+  var stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
+  var hpDig=String(k.hp||'').replace(/\D/g,'');
+  var wa=typeof formatHPWhatsApp==='function'?formatHPWhatsApp(k.hp):'';
+  var telBtn=hpDig?'<a class="btn btn-xs btn-out" href="tel:+'+hpDig+'">Telepon</a>':'';
+  var waBtn=wa?'<a class="btn btn-xs btn-p" href="https://wa.me/'+wa+'" target="_blank" rel="noopener">WA</a>':'';
+  var tgBtn=(typeof CU!=='undefined'&&CU&&(CU.role==='Admin'||CU.role==='HRD'))?'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('telegram',{nik:k.nik})+'>Telegram</button>':'';
+  var detailAksi=__karListMode==='sampah'
+    ?'<button type="button" class="btn btn-xs btn-p"'+sigajiDataAction('restore-kar',{nik:k.nik})+'>Pulihkan</button><button type="button" class="btn btn-xs btn-r"'+sigajiDataAction('purge-kar',{nik:k.nik})+'>Hapus permanen</button>'
+    :'<button type="button" class="btn btn-xs btn-p"'+sigajiDataAction('open-profile',{nik:k.nik})+'>Profil</button>'+tgBtn+'<button type="button" class="btn btn-xs btn-r"'+sigajiDataAction('delete-kar',{nik:k.nik})+'>Hapus</button>';
+  return '<div class="hp-person-card'+(open?' is-open':'')+'" data-nik="'+escapeAttr(k.nik)+'">'
+    +'<button type="button" class="hp-person-card-head"'+sigajiDataAction('invoke',{fn:'karBukaKartu',arg:k.nik})+'>'
+    +'<div class="hp-person-card-meta"><div class="hp-person-name">'+escapeHtml(k.nama)+'</div>'
+    +'<div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+escapeHtml(k.jabatan||'-')+'</div></div>'
+    +'<span class="bdg '+stCls+'">'+escapeHtml(k.status||'-')+'</span></button>'
+    +'<div class="hp-person-card-stats">'
+    +'<span class="bdg b-info">PTKP '+escapeHtml(k.ptkp||'-')+'</span>'
+    +'<span class="bdg">Cuti '+s+'/'+kuotaCut+'</span>'
+    +telBtn+waBtn+'</div>'
+    +'<div class="hp-person-card-detail fl gap1 flex-wrap">'+detailAksi+'</div></div>';
+}
+function karFillMobile(list){
+  var box=document.getElementById('kar-mobile-list');
+  if(!box)return;
+  var html='';
+  if(!list||!list.length)html='<div class="u-muted-12 p-inset-xs">Tidak ada nama yang cocok.</div>';
+  else html=list.map(karMobileCardHtml).join('');
+  box.innerHTML=html;
+}
 function renderKar(){
   if(typeof sigajiWithSkeleton==='function'){
     return sigajiWithSkeleton('tb-kar',10,renderKarBody);
@@ -307,11 +352,13 @@ function renderKarBody(){
     var emptyKarRow='<tr><td colspan="'+String(karColspan)+'">'+empty+'</td></tr>';
     if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,[emptyKarRow],1);
     else tb.replaceChildren();
+    karFillMobile([]);
     return;
   }
   var rows=list.map((k,i)=>karRowHtml(k,i+1));
   if(typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
   else tb.innerHTML=rows.join('');
+  karFillMobile(list);
 }
 function filterKar(q){
   var base=listKarMasterBase();
@@ -327,4 +374,5 @@ function filterKar(q){
   var rows=r.map((k,i)=>karRowHtml(k,i+1));
   if(tb&&typeof sigajiSetTbodyRows==='function')sigajiSetTbodyRows(tb,rows);
   else if(tb)tb.innerHTML=rows.join('');
+  karFillMobile(r);
 }

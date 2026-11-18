@@ -49,15 +49,70 @@ function sigajiGeserIsoSatuBulan(iso, delta) {
   var d = p.d > last ? last : p.d;
   return sigajiIsoYmd(n.y, n.m0, d);
 }
-/** Geser tanggal bayar 1 bulan: tanggal 5 tetap 5; akhir bulan tetap akhir bulan. */
+/**
+ * Patokan hari gajian: angka 1–31, atau 'akhir' (31 / selalu hari terakhir).
+ * 28 Feb dan 30 Nov adalah akhir bulan kalender, tetapi bukan “gajian akhir bulan”.
+ * Lihat 2–3 periode: kalau ada yang bukan akhir bulan (mis. 28 Jan), patokannya tanggal itu.
+ */
+function sigajiPatokanHariBayar(p, riwayat) {
+  var dates = [];
+  function push(x) {
+    if (!x || !x.bayar) return;
+    var parsed = sigajiParseIsoYmd(x.bayar);
+    if (!parsed) return;
+    dates.push({
+      d: parsed.d,
+      last: sigajiLastDayOfMonth(parsed.y, parsed.m0),
+    });
+  }
+  push(p);
+  var list = (riwayat && riwayat.length
+    ? riwayat
+    : typeof periodes !== 'undefined' && periodes
+      ? periodes
+      : []
+  ).slice();
+  list.sort(function (a, b) {
+    return String((b && b.start) || '').localeCompare(String((a && a.start) || ''));
+  });
+  var i;
+  var n = 0;
+  var pStart = p && p.start ? String(p.start) : '';
+  var pNama = p && p.nama;
+  for (i = 0; i < list.length && n < 2; i++) {
+    var x = list[i];
+    if (!x) continue;
+    if (pNama && x.nama === pNama && String(x.start || '') === pStart) continue;
+    if (pStart && x.start && String(x.start) >= pStart) continue;
+    push(x);
+    n++;
+  }
+  var bukanAkhir = [];
+  var maxD = 0;
+  for (i = 0; i < dates.length; i++) {
+    maxD = Math.max(maxD, dates[i].d);
+    if (dates[i].d !== dates[i].last) bukanAkhir.push(dates[i].d);
+  }
+  if (bukanAkhir.length) return bukanAkhir[0];
+  if (maxD >= 31) return 'akhir';
+  return dates.length ? dates[0].d : 0;
+}
+function sigajiIsoBayarDariPatokan(fromIso, delta, patokan) {
+  var p = sigajiParseIsoYmd(fromIso);
+  if (!p) return '';
+  var n = sigajiGeserBulan(p.y, p.m0, delta);
+  var last = sigajiLastDayOfMonth(n.y, n.m0);
+  if (patokan === 'akhir') return sigajiIsoYmd(n.y, n.m0, last);
+  var d = parseInt(patokan, 10);
+  if (!(d > 0)) d = p.d;
+  if (d > last) d = last;
+  return sigajiIsoYmd(n.y, n.m0, d);
+}
+/** Geser 1 bulan: tgl 28 tetap 28; hanya tgl 31 yang mengikuti akhir bulan. */
 function sigajiGeserTanggalBayar(iso, delta) {
   var p = sigajiParseIsoYmd(iso);
   if (!p) return '';
-  var lastThis = sigajiLastDayOfMonth(p.y, p.m0);
-  var n = sigajiGeserBulan(p.y, p.m0, delta);
-  var lastNext = sigajiLastDayOfMonth(n.y, n.m0);
-  var d = p.d === lastThis ? lastNext : p.d > lastNext ? lastNext : p.d;
-  return sigajiIsoYmd(n.y, n.m0, d);
+  return sigajiIsoBayarDariPatokan(iso, delta, p.d >= 31 ? 'akhir' : p.d);
 }
 function sigajiInferPolaPeriode(p) {
   if (!p || !p.start || !p.end) return 'custom';
@@ -107,7 +162,7 @@ function sigajiBulanGajiDariPeriode(p) {
   return null;
 }
 /** Rancangan periode bulan depan dari periode acuan. */
-function sigajiRancangPeriodeBerikutnya(p) {
+function sigajiRancangPeriodeBerikutnya(p, riwayat) {
   var bl = sigajiBulanGajiDariPeriode(p);
   if (!bl) return null;
   var next = sigajiGeserBulan(bl.y, bl.m0, 1);
@@ -119,11 +174,13 @@ function sigajiRancangPeriodeBerikutnya(p) {
       end: sigajiGeserIsoSatuBulan(p.end, 1),
     };
   }
+  var patokan = sigajiPatokanHariBayar(p, riwayat);
   var bayar = p.bayar
-    ? sigajiGeserTanggalBayar(p.bayar, 1)
-    : tgl.bayar || sigajiGeserTanggalBayar(p.end, 1);
+    ? sigajiIsoBayarDariPatokan(p.bayar, 1, patokan)
+    : tgl.bayar || sigajiIsoBayarDariPatokan(p.end, 1, patokan || 'akhir');
   tgl = { start: tgl.start, end: tgl.end, bayar: bayar };
-  var tipe = next.m0 === 11 ? 'desember' : 'normal';
+  var bp = sigajiParseIsoYmd(tgl.bayar);
+  var tipe = bp && bp.m0 === 11 ? 'desember' : 'normal';
   return {
     nama: sigajiNamaBulanTahun(next.m0, next.y),
     pola: pola,

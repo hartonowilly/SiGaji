@@ -290,6 +290,8 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
   }
   let prAktif=0;
   var sumGross=0,sumThr=0,sumThBruto=0,sumBpjs=0,sumPph=0,sumPphRet=0,sumNeto=0,sumPotKh=0;
+  var mobileCards=[];
+  var nCek=0;
   const rows=karyawanListPeriode(p).map(function(k,idx){
     const pr=segarkanProrataBaris(k,p);
     const g=(gajiByNik&&gajiByNik[k.nik])||hitungGaji(k,p.nama);
@@ -331,6 +333,29 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
     var potKhTip=potKhTipParts.length?potKhTipParts.join(' · '):'Tidak ada potongan ketidakhadiran pada periode ini';
     var potKhTd='<td class="num cell-money'+(potKhShow>0?' cell-deduction':'')+'" title="'+escapeAttr(potKhTip)+'">'
       +(potKhShow>0?'<span class="ct-danger fw-700">- '+fmt(potKhShow)+'</span>'+(kAbs>0?'<div class="font-9 ct-warn">inc. koreksi bln lalu</div>':''):'&#8212;')+'</td>';
+    var cek=[];
+    if(pr.enabled)cek.push('Prorata');
+    if(kAbs>0)cek.push('Koreksi absensi');
+    if(potKhShow>0)cek.push('Potongan absen');
+    if(g.neto<0)cek.push('THP minus');
+    if(cek.length)nCek++;
+    var isOpen=window.__sigajiPgOpenNik===k.nik;
+    var bpjsKar=(g.bpjs.kes_kar||0)+(g.bpjs.jht_kar||0)+(g.bpjs.jp_kar||0);
+    mobileCards.push('<div class="hp-person-card'+(isOpen?' is-open':'')+(cek.length?' is-alert':'')+'" data-nik="'+escapeAttr(k.nik)+'">'
+      +'<button type="button" class="hp-person-card-head"'+sigajiDataAction('invoke',{fn:'pgBukaKartu',arg:k.nik})+'>'
+      +'<div class="hp-person-card-meta"><div class="hp-person-name">'+escapeHtml(k.nama)+'</div>'
+      +'<div class="font-10 text-subtle">'+escapeHtml(k.nik)+'</div></div>'
+      +'<strong class="hp-person-neto">'+fmt(g.neto)+'</strong></button>'
+      +(cek.length?'<div class="hp-person-card-stats">'+cek.map(function(x){return '<span class="ab-mobile-stat is-alert-lbl">'+escapeHtml(x)+'</span>';}).join('')+'</div>':'')
+      +'<div class="hp-person-card-detail">'
+      +'<div class="hp-kv"><span>Pendapatan</span><b>'+fmt(g.grossPPh)+'</b></div>'
+      +(g.thrBruto>0?'<div class="hp-kv"><span>THR</span><b>'+fmt(g.thrBruto)+'</b></div>':'')
+      +'<div class="hp-kv"><span>BPJS karyawan</span><b>'+fmt(bpjsKar)+'</b></div>'
+      +(potKhShow>0?'<div class="hp-kv"><span>Potongan absen</span><b class="ct-danger">- '+fmt(potKhShow)+'</b></div>':'')
+      +'<div class="hp-kv"><span>PPh 21</span><b>'+fmt(g.pph)+'</b></div>'
+      +(g.pphRet>0?'<div class="hp-kv"><span>Pengembalian PPh</span><b class="ct-success">+'+fmt(g.pphRet)+'</b></div>':'')
+      +'<div class="hp-kv"><span>Bersih</span><b>'+fmt(g.neto)+'</b></div>'
+      +'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('payroll-detail',{nik:k.nik,periode:p.nama})+'>Rincian</button></div></div>');
     return '<tr class="'+rowCls.join(' ')+'">'
       +'<td class="pg-sticky-no text-center fw-700 text-muted">'+(idx+1)+'</td>'
       +'<td class="pg-sticky-name"><div class="fl gap2 items-center"><div class="ka">'+ini(k.nama)+'</div>'
@@ -360,6 +385,26 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
     if(tbFoot)fillPgPenggajianFoot(tbFoot,rows.length,hasCab,{gross:sumGross,thr:sumThr,thBruto:sumThBruto,bpjs:sumBpjs,potKh:sumPotKh,pph:sumPph,pphRet:sumPphRet,neto:sumNeto});
   }
   const ae=document.getElementById('pr-aktif');if(ae)ae.textContent=prAktif+' karyawan';
+  var wrap=document.getElementById('pg-mobile-wrap');
+  if(wrap){
+    var h='<div class="hp-gaji-kpis">'
+      +'<div><strong>'+fmt(sumNeto)+'</strong><span>Total THP</span></div>'
+      +'<div><strong>'+String(rows.length)+'</strong><span>Orang</span></div>'
+      +'<div'+(nCek?' class="is-alert"':'')+'><strong>'+String(nCek)+'</strong><span>Perlu cek</span></div></div>'
+      +(mobileCards.length?mobileCards.join(''):'<div class="u-muted-12 p-inset-xs">Belum ada karyawan di periode ini.</div>');
+    wrap.innerHTML=h;
+  }
+}
+function pgBukaKartu(nik){
+  var next=window.__sigajiPgOpenNik===nik?'':nik;
+  window.__sigajiPgOpenNik=next;
+  var box=document.getElementById('pg-mobile-wrap');
+  if(!box)return;
+  var cards=box.querySelectorAll('.hp-person-card');
+  var i;
+  for(i=0;i<cards.length;i++){
+    cards[i].classList.toggle('is-open',cards[i].getAttribute('data-nik')===next);
+  }
 }
 function kirimApproval(){
   const p=PA();let added=0;
