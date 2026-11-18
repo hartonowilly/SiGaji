@@ -319,7 +319,7 @@ function renderCutiRekap(){
     if(mobCuti)mobCuti.innerHTML='<div class="u-muted-12 p-inset-xs">Tidak ada karyawan aktif untuk tahun ini.</div>';
     return;
   }
-  var cutiCards='';
+  var rows=[];
   tb.innerHTML=list.map(function(k,idx){
     const mb=masaKerjaBulan(k);const manual=cutiManualTrackingYear(k.nik,yr);const cb=countCutiBersamaTrackingYear(yr,k.nik);const total=manual+cb;
     const kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,yr):(masterCuti.kuota||12);
@@ -327,7 +327,7 @@ function renderCutiRekap(){
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
     const sisaCls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
     const act=sigajiDataAction('cuti-detail',{nik:k.nik,yr:yr,tracking:'1'})+' title="Klik: lihat tanggal cuti '+String(yr)+'"';
-    cutiCards+='<div class="ab-mobile-card cuti-mobile-card">'
+    rows.push('<div class="ab-mobile-card cuti-mobile-card">'
       +'<div class="ab-mobile-card-head"><div class="ab-mobile-card-meta"><h4>'+escapeHtml(k.nama)+'</h4>'
       +'<div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+Math.floor(mb/12)+' thn '+mb%12+' bln</div></div>'
       +'<button type="button" class="btn btn-xs btn-out"'+act+'>Rincian</button></div>'
@@ -335,7 +335,7 @@ function renderCutiRekap(){
       +'<span class="ab-mobile-stat is-cuti">Kuota '+kuota+'</span>'
       +'<span class="ab-mobile-stat is-warn">Pakai '+total+'</span>'
       +'<span class="ab-mobile-stat '+(sisa<=0?'is-danger':sisa<=3?'is-warn':'is-hadir')+'">Sisa '+sisa+'</span>'
-      +'</div></div>';
+      +'</div></div>');
     return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+k.nama+'</div></td>'
       +'<td>'+Math.floor(mb/12)+'thn '+mb%12+'bln</td>'
       +'<td>'+kuota+'</td><td><span class="bdg sigaji-money-click '+(manual>0?'b-warn':'b-gray')+'"'+act+'>'+manual+'</span></td>'
@@ -344,7 +344,7 @@ function renderCutiRekap(){
       +'<td><span class="bdg sigaji-money-click '+sisaCls+'"'+act+'>'+sisa+'</span></td>'
       +'<td><div class="cuti-bar u-inline-block" style="width:120px"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
   }).join('');
-  if(mobCuti)mobCuti.innerHTML=cutiCards;
+  if(mobCuti)mobCuti.innerHTML=rows.join('');
 }
 /**
  * Modal rincian tanggal cuti (dipanggil dari badge saldo cuti di Master Karyawan & Tracking Cuti).
