@@ -184,6 +184,9 @@
       case 'ab-set-status':
         if (nik && date && tipe && typeof abPilihStatus === 'function') abPilihStatus(nik, date, tipe);
         return true;
+      case 'ab-copy-kemarin':
+        if (nik && date && typeof abTerapSepertiKemarin === 'function') abTerapSepertiKemarin(nik, date);
+        return true;
       case 'del-lembur':
         if (nik && i != null && typeof delLembur === 'function') delLembur(nik, +i);
         return true;

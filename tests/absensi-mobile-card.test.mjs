@@ -24,8 +24,12 @@ assert('HP pilih status, bukan putar', /ab-open-status/.test(abs) && /function a
 assert('desktop tetap putar toggleAb', /function toggleAb/.test(abs) && /S=\['hadir','cuti','izin','sakit'/.test(abs));
 assert('HP satu baris audit', /function abSetStatus/.test(abs) && /Sisa cuti 0/.test(abs));
 assert('isi massal HP', /function abIsiSemuaHadir/.test(abs) && /function abIsiSepertiKemarin/.test(abs));
+assert('kemarin satu tanggal, bukan sebulan', /function abIsoHariKerjaSebelum/.test(abs) && /function abTerapSepertiKemarin/.test(abs) && /Tanggal lain tidak diubah/.test(abs));
+assert('kemarin tidak merambat hadir', !/Salin status hari sebelumnya ke setiap tanggal kerja/.test(abs));
+assert('semua hadir skip yang sudah terisi', /sudah berisi status lain, tidak diubah/.test(abs) && /function abStatusTersimpan/.test(abs));
+assert('konfirmasi lembar HP', /function abConfirmSheet/.test(abs) && /ab-confirm-sheet/.test(abs));
 
 const ev = fs.readFileSync(path.join(ROOT, 'js/sigaji-events.js'), 'utf8');
-assert('event picker HP', /ab-open-status/.test(ev) && /ab-set-status/.test(ev));
+assert('event picker HP', /ab-open-status/.test(ev) && /ab-set-status/.test(ev) && /ab-copy-kemarin/.test(ev));
 
 console.log('absensi-mobile-card.test.mjs: all passed');

@@ -29,6 +29,7 @@ const suites = [
   'gaji-template.test.mjs',
   'dash-brief.test.mjs',
   'absensi-mobile-card.test.mjs',
+  'absensi-kemarin.test.mjs',
   'periode-berikutnya.test.mjs',
   'cari-orang.test.mjs',
   'payroll-komponen-diff.test.mjs',

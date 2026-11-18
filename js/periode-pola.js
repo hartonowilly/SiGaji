@@ -49,6 +49,16 @@ function sigajiGeserIsoSatuBulan(iso, delta) {
   var d = p.d > last ? last : p.d;
   return sigajiIsoYmd(n.y, n.m0, d);
 }
+/** Geser tanggal bayar 1 bulan: tanggal 5 tetap 5; akhir bulan tetap akhir bulan. */
+function sigajiGeserTanggalBayar(iso, delta) {
+  var p = sigajiParseIsoYmd(iso);
+  if (!p) return '';
+  var lastThis = sigajiLastDayOfMonth(p.y, p.m0);
+  var n = sigajiGeserBulan(p.y, p.m0, delta);
+  var lastNext = sigajiLastDayOfMonth(n.y, n.m0);
+  var d = p.d === lastThis ? lastNext : p.d > lastNext ? lastNext : p.d;
+  return sigajiIsoYmd(n.y, n.m0, d);
+}
 function sigajiInferPolaPeriode(p) {
   if (!p || !p.start || !p.end) return 'custom';
   var s = sigajiParseIsoYmd(p.start);
@@ -107,9 +117,12 @@ function sigajiRancangPeriodeBerikutnya(p) {
     tgl = {
       start: sigajiGeserIsoSatuBulan(p.start, 1),
       end: sigajiGeserIsoSatuBulan(p.end, 1),
-      bayar: sigajiGeserIsoSatuBulan(p.bayar || p.end, 1),
     };
   }
+  var bayar = p.bayar
+    ? sigajiGeserTanggalBayar(p.bayar, 1)
+    : tgl.bayar || sigajiGeserTanggalBayar(p.end, 1);
+  tgl = { start: tgl.start, end: tgl.end, bayar: bayar };
   var tipe = next.m0 === 11 ? 'desember' : 'normal';
   return {
     nama: sigajiNamaBulanTahun(next.m0, next.y),

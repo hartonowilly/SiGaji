@@ -407,6 +407,35 @@ html.sigaji-mobile-nav .content .table-wrap thead th:first-child {
   z-index: 3;
 }
 
+html.sigaji-mobile-nav .sticky-no,
+html.sigaji-mobile-nav .pg-sticky-no,
+html.sigaji-mobile-nav .ab-sticky-no {
+  display: none;
+}
+html.sigaji-mobile-nav .sigaji-table .sticky-name,
+html.sigaji-mobile-nav .sigaji-table .pg-sticky-name,
+html.sigaji-mobile-nav .pg-table-sticky th.pg-sticky-name,
+html.sigaji-mobile-nav .pg-table-sticky td.pg-sticky-name,
+html.sigaji-mobile-nav .ab-sticky-name {
+  left: 0;
+  min-width: 120px;
+  max-width: 120px;
+}
+html.sigaji-mobile-nav .sticky-name .ka,
+html.sigaji-mobile-nav .pg-sticky-name .ka,
+html.sigaji-mobile-nav .ab-kar-avatar {
+  display: none;
+}
+html.sigaji-mobile-nav .sticky-name .knl,
+html.sigaji-mobile-nav .pg-sticky-name .knl,
+html.sigaji-mobile-nav .ab-kar-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Tab ── */
 html.sigaji-mobile-nav .tabs {
   gap: 0;

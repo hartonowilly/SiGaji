@@ -302,9 +302,14 @@ function buatPeriodeBerikutnya(){
   var existing=findPeriodeByNama(r.nama);
   var tipeLbl=r.tipe_periode==='desember'?'rekonsiliasi Desember':'normal';
   var polaLbl=r.pola==='custom'?'tanggal digeser 1 bulan':r.pola;
+  var masaLbl='';
+  if(typeof ebupotMasaFromPeriode==='function'){
+    var masa=ebupotMasaFromPeriode({bayar:r.bayar,end:r.end,start:r.start});
+    if(masa&&masa.label)masaLbl=', masa e-Bupot '+masa.label;
+  }
   var msg=existing
     ?('Periode "'+r.nama+'" sudah ada. Kunci "'+p.nama+'" (jika masih terbuka) lalu aktifkan '+r.nama+'?')
-    :('Kunci "'+p.nama+'" lalu buat "'+r.nama+'" ('+r.start+' s.d. '+r.end+', pola '+polaLbl+', pajak '+tipeLbl+')? THR tidak ikut disalin.');
+    :('Kunci "'+p.nama+'" lalu buat "'+r.nama+'" ('+r.start+' s.d. '+r.end+', bayar '+r.bayar+', pola '+polaLbl+', pajak '+tipeLbl+masaLbl+')? THR tidak ikut disalin.');
   if(!confirm(msg))return;
   if(!p.snapshot_locked){
     if(!kunciSnapshotPeriode(p,{skipConfirm:true,skipSave:true}))return;
