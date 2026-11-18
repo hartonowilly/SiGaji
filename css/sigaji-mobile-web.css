@@ -436,6 +436,84 @@ html.sigaji-mobile-nav .ab-kar-name {
   white-space: nowrap;
 }
 
+.hp-card-list { display: none; }
+html.sigaji-mobile-nav .hp-card-list { display: block; }
+html.sigaji-mobile-nav #pg-karyawan .table-wrap,
+html.sigaji-mobile-nav #pg-penggajian .pg-table-sticky,
+html.sigaji-mobile-nav #pg-penggajian .pg-cols-toggle,
+html.sigaji-mobile-nav #lap-tab-rekap .table-wrap,
+html.sigaji-mobile-nav #pg-thr .card .table-wrap {
+  display: none !important;
+}
+html.sigaji-mobile-nav #lap-rekap-hint { display: none; }
+.hp-person-card {
+  border: 1px solid var(--color-border-light, var(--bd));
+  border-radius: 14px;
+  background: var(--wh);
+  margin: 0 0 0.55rem;
+  padding: 0.65rem 0.75rem;
+}
+.hp-person-card.is-alert {
+  border-color: var(--color-warning, #d97706);
+}
+.hp-person-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+.hp-person-card-head-static { cursor: default; }
+.hp-person-card-meta { flex: 1; min-width: 0; }
+.hp-person-name {
+  font-weight: 800;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hp-person-neto { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.hp-person-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  align-items: center;
+}
+.hp-person-card-detail { display: none; margin-top: 0.55rem; }
+.hp-person-card.is-open .hp-person-card-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.hp-kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 13px;
+}
+.hp-gaji-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+.hp-gaji-kpis > div {
+  background: var(--color-surface-muted, #f8fafc);
+  border-radius: 12px;
+  padding: 0.55rem 0.4rem;
+}
+.hp-gaji-kpis strong { display: block; font-size: 12px; font-weight: 800; }
+.hp-gaji-kpis span { font-size: 10px; color: var(--color-text-muted); }
+.hp-gaji-kpis .is-alert { background: var(--color-warning-bg, #fef3c7); }
+.hp-lap-dl { margin: 0 0 0.75rem; }
+
 /* ── Tab ── */
 html.sigaji-mobile-nav .tabs {
   gap: 0;

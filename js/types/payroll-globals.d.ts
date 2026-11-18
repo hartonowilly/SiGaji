@@ -213,7 +213,7 @@ declare function sigajiTanggalPolaUntukBulan(
   y: number,
   m0: number
 ): { start: string; end: string; bayar: string } | null;
-declare function sigajiRancangPeriodeBerikutnya(p: unknown): {
+declare function sigajiRancangPeriodeBerikutnya(p: unknown, riwayat?: unknown[]): {
   nama: string;
   pola: string;
   start: string;
