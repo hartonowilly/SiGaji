@@ -83,6 +83,20 @@ function renderAbsensiDanCuti(){
   if(typeof renderAbsensi==='function')renderAbsensi();
   if(typeof renderCutiRekap==='function')renderCutiRekap();
 }
+function abSetCari(q){
+  window.__sigajiAbCari=String(q==null?'':q);
+  if(typeof renderAbsensiBody==='function')renderAbsensiBody();
+}
+function abBukaKartu(nik){
+  var n=String(nik||'');
+  window.__sigajiAbOpenNik=window.__sigajiAbOpenNik===n?'':n;
+  if(typeof renderAbsensiBody==='function')renderAbsensiBody();
+}
+function abKarCocokCari(k,q){
+  if(!q)return true;
+  var s=(String(k.nama||'')+' '+String(k.nik||'')+' '+String(k.jabatan||'')).toLowerCase();
+  return s.indexOf(q) >= 0;
+}
 function renderAbsensi(){
   if(typeof sigajiWithSkeleton==='function'){
     return sigajiWithSkeleton('ab-grid-wrap',12,renderAbsensiBody);
@@ -143,11 +157,13 @@ function renderAbsensiBody(){
   var roBanner=adaSelTerkunci?'<div class="info-box info-amber font-11 mb-lg">Sebagian tanggal di kalender termasuk <strong>periode gaji yang snapshot-nya terkunci</strong>. Anda hanya dapat melihat (tidak mengubah absensi hari itu). Hubungi <strong>Admin</strong> untuk koreksi atau buka kunci di Master → Periode.</div>':'';
   var listKar=typeof karyawanListPeriode==='function'?karyawanListPeriode(pAbs):sortKaryawanByNik(karyawan||[]);
   listKar.forEach(function(k){if(!absensi[k.nik])absensi[k.nik]={};});
+  var hpNav=typeof sigajiIsMobileNav==='function'&&sigajiIsMobileNav();
   var prevMY='';
-  var html='<table class="font-11 w-full sigaji-table ab-grid-table"><thead><tr class="ab-grid-head">'
+  var html=hpNav?'':'<table class="font-11 w-full sigaji-table ab-grid-table"><thead><tr class="ab-grid-head">'
     +'<th class="text-center ab-grid-head-sticky ab-sticky-no">No</th>'
     +'<th class="text-left ab-grid-head-sticky ab-sticky-name">Nama</th>'
     +'<th class="text-left font-11 ab-grid-head-sticky ab-sticky-jab">Jabatan</th>';
+  if(!hpNav){
   days.forEach(function(x){
     var dowN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
     var myKey=x.date.substring(0,7);
@@ -160,11 +176,17 @@ function renderAbsensiBody(){
       +(showMon?'<div class="ab-day-mon-lbl">'+bulanSingkat[x.m]+'</div>':'')+'</th>';
   });
   html+='<th class="text-center ab-grid-sum-head ab-day-th">H</th><th class="text-center ab-grid-sum-head ab-day-th">C</th><th class="text-center ab-grid-sum-head ab-day-th">S</th><th class="text-center ab-grid-sum-head ab-day-th">I</th><th class="text-center ab-grid-sum-head ab-day-th">A</th></tr></thead><tbody>';
+  }
+  var cariQ=String(window.__sigajiAbCari||'').trim().toLowerCase();
+  var openNik=String(window.__sigajiAbOpenNik||'');
+  var cariEl=document.getElementById('ab-mobile-cari');
+  if(cariEl&&document.activeElement!==cariEl)cariEl.value=window.__sigajiAbCari||'';
   var mobileCards='';
+  var nKartu=0;
   listKar.forEach(function(k,ki){
     var rowCls=ki%2===0?'ab-row-even':'ab-row-odd';
     var tStop=typeof toIsoDate==='function'?toIsoDate(k.tgl_berhenti):String(k.tgl_berhenti||'').trim();
-    html+='<tr class="'+rowCls+'" data-nik="'+escapeAttr(k.nik)+'"><td class="text-center fw-800 text-subtle ab-sticky-no">'+(ki+1)+'</td><td class="fw-700 ab-sticky-name"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1 min-w-0"><div class="font-12 fw-700 ab-kar-name">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle ab-kar-nik">'+escapeHtml(k.nik)+(tStop?' · resign '+fmtDate(tStop):'')+'</div></div></div></td><td class="font-11 text-muted ab-sticky-jab">'+escapeHtml(k.jabatan||'')+'</td>';
+    if(!hpNav)html+='<tr class="'+rowCls+'" data-nik="'+escapeAttr(k.nik)+'"><td class="text-center fw-800 text-subtle ab-sticky-no">'+(ki+1)+'</td><td class="fw-700 ab-sticky-name"><div class="fl items-start gap-xs"><div class="ab-kar-avatar">'+ini(k.nama)+'</div><div class="flex-1 min-w-0"><div class="font-12 fw-700 ab-kar-name">'+escapeHtml(k.nama)+'</div><div class="font-10 text-subtle ab-kar-nik">'+escapeHtml(k.nik)+(tStop?' · resign '+fmtDate(tStop):'')+'</div></div></div></td><td class="font-11 text-muted ab-sticky-jab">'+escapeHtml(k.jabatan||'')+'</td>';
     var cH=0,cC=0,cS=0,cI=0,cA=0;
     days.forEach(function(x){
       var isLN=isHL(x.date);
@@ -180,43 +202,65 @@ function renderAbsensiBody(){
       else if(st==='setengah_ijin'){cI+=.5;cH+=.5;}
       else if(st==='alpha')cA++;
       var canCell=cc&&(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(x.date):canEditDataPadaTanggalIso(x.date));
+      if(!hpNav){
       var mobTip=(st==='hadir'||st==='libur'||st==='libnas')?absensiMobileTip(k.nik,x.date):'';
       var cellCls='ab-cell ab-st-'+(st||'libur')+(canCell?' is-clickable':'')+(cc&&!canCell?' is-readonly':'')+(isRes?' is-resign':'');
       html+='<td class="'+cellCls+'" '+(canCell?sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date}):(isRes||cc)?'title="'+(isRes?('Sudah resign sejak '+fmtDate(tStop)):'Periode terkunci — hubungi Admin')+'"':'')+mobTip+'>'+lbl+'</td>';
+      }
     });
     var fmtHr=typeof fmtHariAbsen==='function'?fmtHariAbsen:function(n,z){return n||(z===false?'0':'');};
-    html+='<td class="text-center fw-800 ct-success num ab-total-h">'+fmtHr(cH)+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+fmtHr(cC)+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+fmtHr(cS)+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+fmtHr(cI)+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+fmtHr(cA)+'</td></tr>';
-    mobileCards+='<div class="ab-mobile-card"><h4>'+escapeHtml(k.nama)+'</h4><div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+(tStop?' · resign '+fmtDate(tStop):'')+'</div>'
-      +'<div class="ab-mobile-days">';
-    days.forEach(function(x){
-      var isLN2=isHL(x.date);
-      var isLK2=isHariLiburKerja(x.dow);
-      var isRes2=!!(tStop&&x.date>=tStop);
-      var st2=isRes2?'resign':(absensi[k.nik][x.date]||(isLN2?'libnas':isLK2?'libur':'hadir'));
-      var lbl2=ST_LBL[st2]||'-';
-      var cc2=!isLK2&&!isLN2&&!isRes2;
-      var canCell2=cc2&&(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(x.date):canEditDataPadaTanggalIso(x.date));
-      var dd2=parseInt(x.date.split('-')[2],10);
-      var dowN2=['Min','Sen','Sel','Rab','Kam','Jum','Sab'][x.dow];
-      var cellCls2='ab-cell ab-mobile-day ab-st-'+(st2||'libur')+(canCell2?' is-clickable':'')+(cc2&&!canCell2?' is-readonly':'')+(isRes2?' is-resign':'');
-      mobileCards+='<div class="ab-mobile-day-item"><div class="ab-mobile-day-lbl">'+dowN2+' <span class="fw-700">'+dd2+'</span></div>'
-        +(canCell2
-          ?'<button type="button" class="'+cellCls2+'"'+sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date})+'>'+lbl2+'</button>'
-          :'<span class="'+cellCls2+' ab-mobile-day-static"'+
-            (isRes2?' title="Sudah resign sejak '+fmtDate(tStop)+'"':'')+'>'+lbl2+'</span>')
-        +'</div>';
-    });
-    mobileCards+='</div><div class="ab-mobile-stats">'
+    if(!hpNav)html+='<td class="text-center fw-800 ct-success num ab-total-h">'+fmtHr(cH)+'</td><td class="text-center fw-800 ct-purple num ab-total-c">'+fmtHr(cC)+'</td><td class="text-center fw-800 ct-warn num ab-total-s">'+fmtHr(cS)+'</td><td class="text-center fw-800 ct-brand num ab-total-i">'+fmtHr(cI)+'</td><td class="text-center fw-800 ct-danger num ab-total-a">'+fmtHr(cA)+'</td></tr>';
+    if(!abKarCocokCari(k,cariQ))return;
+    nKartu++;
+    var perluCek=cA>0||cS>0||cI>0;
+    var isOpen=openNik===String(k.nik);
+    mobileCards+='<div class="ab-mobile-card'+(isOpen?' is-open':'')+(perluCek?' is-alert':'')+'">'
+      +'<div class="ab-mobile-card-head">'
+      +'<div class="ab-kar-avatar">'+ini(k.nama)+'</div>'
+      +'<div class="ab-mobile-card-meta"><h4>'+escapeHtml(k.nama)+'</h4>'
+      +'<div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+(k.jabatan||'-')+(tStop?' · resign '+fmtDate(tStop):'')+'</div></div>'
+      +'<button type="button" class="btn btn-xs '+(isOpen?'btn-out':'btn-p')+'"'+sigajiDataAction('invoke',{fn:'abBukaKartu',arg:k.nik})+'>'+(isOpen?'Tutup':'Isi')+'</button></div>'
+      +'<div class="ab-mobile-stats">'
       +'<span class="ab-mobile-stat is-hadir">H '+fmtHr(cH,false)+'</span>'
       +'<span class="ab-mobile-stat is-cuti">C '+fmtHr(cC,false)+'</span>'
       +'<span class="ab-mobile-stat is-warn">S '+fmtHr(cS,false)+'</span>'
       +'<span class="ab-mobile-stat is-brand">I '+fmtHr(cI,false)+'</span>'
       +'<span class="ab-mobile-stat is-danger">A '+fmtHr(cA,false)+'</span>'
-      +'</div></div>';
+      +(perluCek?'<span class="ab-mobile-stat is-alert-lbl">Perlu cek</span>':'')
+      +'</div>';
+    if(isOpen){
+      mobileCards+='<div class="ab-mobile-week" role="grid" aria-label="Kalender '+escapeHtml(k.nama)+'">'
+        +'<span class="ab-mobile-week-dow">Min</span><span class="ab-mobile-week-dow">Sen</span><span class="ab-mobile-week-dow">Sel</span><span class="ab-mobile-week-dow">Rab</span><span class="ab-mobile-week-dow">Kam</span><span class="ab-mobile-week-dow">Jum</span><span class="ab-mobile-week-dow">Sab</span>';
+      var pad=days.length&&days[0].dow!=null?days[0].dow:0;
+      var pi;
+      for(pi=0;pi<pad;pi++)mobileCards+='<span class="ab-mobile-week-pad"></span>';
+      days.forEach(function(x){
+        var isLN2=isHL(x.date);
+        var isLK2=isHariLiburKerja(x.dow);
+        var isRes2=!!(tStop&&x.date>=tStop);
+        var st2=isRes2?'resign':(absensi[k.nik][x.date]||(isLN2?'libnas':isLK2?'libur':'hadir'));
+        var lbl2=ST_LBL[st2]||'-';
+        var cc2=!isLK2&&!isLN2&&!isRes2;
+        var canCell2=cc2&&(typeof canEditAbsensiPadaTanggalIso==='function'?canEditAbsensiPadaTanggalIso(x.date):canEditDataPadaTanggalIso(x.date));
+        var dd2=parseInt(x.date.split('-')[2],10);
+        var cellCls2='ab-cell ab-mobile-day ab-st-'+(st2||'libur')+(canCell2?' is-clickable':'')+(cc2&&!canCell2?' is-readonly':'')+(isRes2?' is-resign':'');
+        mobileCards+='<div class="ab-mobile-day-item">'
+          +'<div class="ab-mobile-day-lbl">'+dd2+'</div>'
+          +(canCell2
+            ?'<button type="button" class="'+cellCls2+'"'+sigajiDataAction('toggle-ab',{nik:k.nik,date:x.date})+'>'+lbl2+'</button>'
+            :'<span class="'+cellCls2+' ab-mobile-day-static"'+(isRes2?' title="Sudah resign sejak '+fmtDate(tStop)+'"':'')+'>'+lbl2+'</span>')
+          +'</div>';
+      });
+      mobileCards+='</div><p class="ab-mobile-tap-hint">Ketuk tanggal kerja untuk ganti H → C → I → S → ½S → ½I → A.</p>';
+    }
+    mobileCards+='</div>';
   });
-  html+='</tbody></table>';
+  if(!nKartu){
+    mobileCards+='<div class="u-muted-12 p-inset-xs">Tidak ada nama yang cocok.</div>';
+  }
+  if(!hpNav)html+='</tbody></table>';
   var h=roBanner+monthNav
-    +'<div class="table-wrap ab-grid-desktop">'+html+'</div>'
+    +(hpNav?'':'<div class="table-wrap ab-grid-desktop">'+html+'</div>')
     +'<div class="ab-grid-mobile">'+mobileCards+'</div>';
   document.getElementById('ab-grid-wrap').innerHTML=h;
   var hkP=hariKerjaRange(pAbs.start,pAbs.end);
@@ -245,7 +289,9 @@ function toggleAb(nik,date,el){
   if(cur==='resign'){toast('Status resign — ubah lewat tgl. berhenti di profil karyawan');return;}
   const next=S[(S.indexOf(cur)+1)%S.length];
   absensi[nik][date]=next;el.textContent=SL[next];
-  el.className='ab-cell ab-st-'+next+(el.classList.contains('is-readonly')?' is-readonly':' is-clickable');
+  var extra=el.classList.contains('ab-mobile-day')?' ab-mobile-day':'';
+  if(el.classList.contains('ab-mobile-day-static'))extra+=' ab-mobile-day-static';
+  el.className='ab-cell'+extra+' ab-st-'+next+(el.classList.contains('is-readonly')?' is-readonly':' is-clickable');
   if(typeof logPayrollAudit==='function'){
     logPayrollAudit(nik,'Ubah Absensi',date+' '+(SL[cur]||cur)+' → '+(SL[next]||next));
   }
@@ -261,6 +307,7 @@ function renderCutiRekap(){
   const cbEl=document.getElementById('cuti-cb-potong');if(cbEl)cbEl.checked=masterCuti.cbPotong!==false;
   const hakEl=document.getElementById('cuti-hak-baru');if(hakEl)hakEl.value=masterCuti.hakBaru||'langsung';
   const tb=document.getElementById('tb-cuti-rekap');if(!tb)return;
+  var mobCuti=document.getElementById('cuti-rekap-mobile');
   // Tracking cuti = rekap tahunan (tidak terpengaruh periode gaji). Filter: karyawan aktif / belum berhenti sebelum tahun tsb.
   const yearStart=String(yr)+'-01-01';
   var list=sortKaryawanByNik((karyawan||[]).filter(function(k){
@@ -269,8 +316,10 @@ function renderCutiRekap(){
   }));
   if(!list.length){
     tb.innerHTML='<tr><td class="text-center text-subtle" colspan="10" style="padding:1.25rem">Tidak ada karyawan aktif untuk tahun ini.</td></tr>';
+    if(mobCuti)mobCuti.innerHTML='<div class="u-muted-12 p-inset-xs">Tidak ada karyawan aktif untuk tahun ini.</div>';
     return;
   }
+  var rows=[];
   tb.innerHTML=list.map(function(k,idx){
     const mb=masaKerjaBulan(k);const manual=cutiManualTrackingYear(k.nik,yr);const cb=countCutiBersamaTrackingYear(yr,k.nik);const total=manual+cb;
     const kuota=typeof kuotaCutiKaryawan==='function'?kuotaCutiKaryawan(k,yr):(masterCuti.kuota||12);
@@ -278,6 +327,15 @@ function renderCutiRekap(){
     const pct=kuota>0?Math.min(100,Math.round(total/kuota*100)):0;
     const sisaCls=sisa<=0?'b-err':sisa<=3?'b-warn':'b-teal';
     const act=sigajiDataAction('cuti-detail',{nik:k.nik,yr:yr,tracking:'1'})+' title="Klik: lihat tanggal cuti '+String(yr)+'"';
+    rows.push('<div class="ab-mobile-card cuti-mobile-card">'
+      +'<div class="ab-mobile-card-head"><div class="ab-mobile-card-meta"><h4>'+escapeHtml(k.nama)+'</h4>'
+      +'<div class="font-10 text-subtle">'+escapeHtml(k.nik)+' · '+Math.floor(mb/12)+' thn '+mb%12+' bln</div></div>'
+      +'<button type="button" class="btn btn-xs btn-out"'+act+'>Rincian</button></div>'
+      +'<div class="ab-mobile-stats">'
+      +'<span class="ab-mobile-stat is-cuti">Kuota '+kuota+'</span>'
+      +'<span class="ab-mobile-stat is-warn">Pakai '+total+'</span>'
+      +'<span class="ab-mobile-stat '+(sisa<=0?'is-danger':sisa<=3?'is-warn':'is-hadir')+'">Sisa '+sisa+'</span>'
+      +'</div></div>');
     return '<tr><td class="text-center fw-700 text-muted">'+(idx+1)+'</td><td>'+k.nik+'</td><td><div class="knl"'+sigajiDataAction('open-profile',{nik:k.nik})+'>'+k.nama+'</div></td>'
       +'<td>'+Math.floor(mb/12)+'thn '+mb%12+'bln</td>'
       +'<td>'+kuota+'</td><td><span class="bdg sigaji-money-click '+(manual>0?'b-warn':'b-gray')+'"'+act+'>'+manual+'</span></td>'
@@ -286,6 +344,7 @@ function renderCutiRekap(){
       +'<td><span class="bdg sigaji-money-click '+sisaCls+'"'+act+'>'+sisa+'</span></td>'
       +'<td><div class="cuti-bar u-inline-block" style="width:120px"><div class="cuti-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';
   }).join('');
+  if(mobCuti)mobCuti.innerHTML=rows.join('');
 }
 /**
  * Modal rincian tanggal cuti (dipanggil dari badge saldo cuti di Master Karyawan & Tracking Cuti).
