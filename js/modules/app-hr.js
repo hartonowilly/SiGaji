@@ -292,7 +292,8 @@ function karMobileCardHtml(k){
   var stCls=k.status==='Tetap'?'b-ok':k.status==='Kontrak'?'b-warn':'b-gray';
   var hpDig=String(k.hp||'').replace(/\D/g,'');
   var wa=typeof formatHPWhatsApp==='function'?formatHPWhatsApp(k.hp):'';
-  var telBtn=hpDig?'<a class="btn btn-xs btn-out" href="tel:+'+hpDig+'">Telepon</a>':'';
+  var telHref=wa?'tel:+'+wa:(hpDig?'tel:'+hpDig:'');
+  var telBtn=telHref?'<a class="btn btn-xs btn-out" href="'+telHref+'">Telepon</a>':'';
   var waBtn=wa?'<a class="btn btn-xs btn-p" href="https://wa.me/'+wa+'" target="_blank" rel="noopener">WA</a>':'';
   var tgBtn=(typeof CU!=='undefined'&&CU&&(CU.role==='Admin'||CU.role==='HRD'))?'<button type="button" class="btn btn-xs btn-out"'+sigajiDataAction('telegram',{nik:k.nik})+'>Telegram</button>':'';
   var detailAksi=__karListMode==='sampah'

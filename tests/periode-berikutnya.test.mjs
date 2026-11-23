@@ -140,4 +140,29 @@ assertEq('Des nama, bayar 3 Jan', lagPay.bayar, '2027-01-03');
 assertEq('tipe mengikuti bulan bayar, bukan nama', lagPay.tipe_periode, 'normal');
 assertEq('nama tetap Desember', lagPay.nama, 'Desember 2026');
 
+sandbox.perusahaan = { hari_gajian: 'akhir' };
+const novAkhir = sandbox.sigajiRancangPeriodeBerikutnya({
+  nama: 'November 2026',
+  start: '2026-11-01',
+  end: '2026-11-30',
+  bayar: '2026-11-30',
+});
+assertEq('pengaturan akhir bulan: 30 Nov → 31 Des', novAkhir.bayar, '2026-12-31');
+const febAkhir = sandbox.sigajiRancangPeriodeBerikutnya({
+  nama: 'Februari 2027',
+  start: '2027-02-01',
+  end: '2027-02-28',
+  bayar: '2027-02-28',
+});
+assertEq('pengaturan akhir bulan: 28 Feb → 31 Mar', febAkhir.bayar, '2027-03-31');
+sandbox.perusahaan = { hari_gajian: 28 };
+const nov28 = sandbox.sigajiRancangPeriodeBerikutnya({
+  nama: 'November 2026',
+  start: '2026-11-01',
+  end: '2026-11-30',
+  bayar: '2026-11-30',
+});
+assertEq('pengaturan tgl 28 menimpa 30 Nov', nov28.bayar, '2026-12-28');
+sandbox.perusahaan = {};
+
 console.log('\nPeriode berikutnya: semua tes lulus.');

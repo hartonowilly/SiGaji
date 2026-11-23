@@ -213,6 +213,9 @@ declare function sigajiTanggalPolaUntukBulan(
   y: number,
   m0: number
 ): { start: string; end: string; bayar: string } | null;
+declare function sigajiNormHariGajian(v: unknown): number | 'akhir' | '';
+declare function sigajiHariGajianDariPerusahaan(): number | 'akhir' | '';
+declare function sigajiFillHariGajianSelect(): void;
 declare function sigajiRancangPeriodeBerikutnya(p: unknown, riwayat?: unknown[]): {
   nama: string;
   pola: string;
