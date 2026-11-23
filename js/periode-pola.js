@@ -97,6 +97,17 @@ function sigajiPatokanHariBayar(p, riwayat) {
   if (maxD >= 31) return 'akhir';
   return dates.length ? dates[0].d : 0;
 }
+/** 'akhir' atau 1–31. Kosong = belum diatur di profil perusahaan. */
+function sigajiNormHariGajian(v) {
+  if (v === 'akhir' || v === 'akhir_bulan') return 'akhir';
+  var n = parseInt(v, 10);
+  if (n >= 1 && n <= 31) return n;
+  return '';
+}
+function sigajiHariGajianDariPerusahaan() {
+  if (typeof perusahaan === 'undefined' || !perusahaan) return '';
+  return sigajiNormHariGajian(perusahaan.hari_gajian);
+}
 function sigajiIsoBayarDariPatokan(fromIso, delta, patokan) {
   var p = sigajiParseIsoYmd(fromIso);
   if (!p) return '';
@@ -174,7 +185,7 @@ function sigajiRancangPeriodeBerikutnya(p, riwayat) {
       end: sigajiGeserIsoSatuBulan(p.end, 1),
     };
   }
-  var patokan = sigajiPatokanHariBayar(p, riwayat);
+  var patokan = sigajiHariGajianDariPerusahaan() || sigajiPatokanHariBayar(p, riwayat);
   var bayar = p.bayar
     ? sigajiIsoBayarDariPatokan(p.bayar, 1, patokan)
     : tgl.bayar || sigajiIsoBayarDariPatokan(p.end, 1, patokan || 'akhir');

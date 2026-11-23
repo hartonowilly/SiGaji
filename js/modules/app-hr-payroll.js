@@ -348,10 +348,11 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
       +'<strong class="hp-person-neto">'+fmt(g.neto)+'</strong></button>'
       +(cek.length?'<div class="hp-person-card-stats">'+cek.map(function(x){return '<span class="ab-mobile-stat is-alert-lbl">'+escapeHtml(x)+'</span>';}).join('')+'</div>':'')
       +'<div class="hp-person-card-detail">'
-      +'<div class="hp-kv"><span>Pendapatan</span><b>'+fmt(g.grossPPh)+'</b></div>'
+      +'<div class="hp-kv"><span>Pendapatan</span><b>'+fmt(g.brutoTH||0)+'</b></div>'
       +(g.thrBruto>0?'<div class="hp-kv"><span>THR</span><b>'+fmt(g.thrBruto)+'</b></div>':'')
       +'<div class="hp-kv"><span>BPJS karyawan</span><b>'+fmt(bpjsKar)+'</b></div>'
       +(potKhShow>0?'<div class="hp-kv"><span>Potongan absen</span><b class="ct-danger">- '+fmt(potKhShow)+'</b></div>':'')
+      +((g.potT||0)>0?'<div class="hp-kv"><span>Potongan lain</span><b class="ct-danger">- '+fmt(g.potT)+'</b></div>':'')
       +'<div class="hp-kv"><span>PPh 21</span><b>'+fmt(g.pph)+'</b></div>'
       +(g.pphRet>0?'<div class="hp-kv"><span>Pengembalian PPh</span><b class="ct-success">+'+fmt(g.pphRet)+'</b></div>':'')
       +'<div class="hp-kv"><span>Bersih</span><b>'+fmt(g.neto)+'</b></div>'
