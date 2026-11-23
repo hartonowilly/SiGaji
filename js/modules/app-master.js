@@ -438,7 +438,7 @@ function onPeriodeNamaInput(){
   var polaEl=document.getElementById('p-pola');
   if(polaEl&&polaEl.value!=='custom')updatePolaPeriode();
 }
-function simpanPerusahaan(){perusahaan.nama=document.getElementById('prs-nama').value;perusahaan.npwp=document.getElementById('prs-npwp').value;perusahaan.nitku=(document.getElementById('prs-nitku')&&document.getElementById('prs-nitku').value.trim())||'';perusahaan.alamat=document.getElementById('prs-alamat').value;perusahaan.telp=document.getElementById('prs-telp').value;perusahaan.email=document.getElementById('prs-email').value;perusahaan.web=document.getElementById('prs-web').value;perusahaan.bpjs_kes_va=(document.getElementById('prs-bpjs-va')&&document.getElementById('prs-bpjs-va').value.trim())||'';var jkkEl=document.getElementById('prs-jkk-tingkat');if(jkkEl)perusahaan.jkk_tingkat=(typeof sigajiJkkTingkatDef==='function'?sigajiJkkTingkatDef(jkkEl.value).id:'sangat_rendah');var bc=document.getElementById('prs-brand-color');if(bc)perusahaan.brand_color=bc.value||'#1a56a0';perusahaan.a1_kota=(document.getElementById('prs-a1-kota')&&document.getElementById('prs-a1-kota').value)||'';perusahaan.a1_prefix=(document.getElementById('prs-a1-prefix')&&document.getElementById('prs-a1-prefix').value.trim())||'A1';perusahaan.a1_ttd_nama=(document.getElementById('prs-a1-ttd')&&document.getElementById('prs-a1-ttd').value)||'';perusahaan.a1_ttd_jabatan=(document.getElementById('prs-a1-jab')&&document.getElementById('prs-a1-jab').value)||'';perusahaan.jamMasuk=(document.getElementById('prs-jam-masuk')&&document.getElementById('prs-jam-masuk').value)||'08:00';var hgEl=document.getElementById('prs-hari-gajian');if(hgEl)perusahaan.hari_gajian=typeof sigajiNormHariGajian==='function'?sigajiNormHariGajian(hgEl.value):hgEl.value;var hk=document.querySelector('input[name="hk-radio"]:checked');perusahaan.hariKerja=hk?parseInt(hk.value)||6:6;var kAbsEl=document.getElementById('prs-koreksi-absensi-otomatis');if(kAbsEl)perusahaan.koreksi_absensi_otomatis=!!kAbsEl.checked;saveAll();applyBranding();if(typeof sigajiApplyUiPrefs==='function')sigajiApplyUiPrefs();updateHKRadioStyle();renderPenggajian();renderDash();toast('Data perusahaan disimpan');}
+function simpanPerusahaan(){perusahaan.nama=document.getElementById('prs-nama').value;perusahaan.npwp=document.getElementById('prs-npwp').value;perusahaan.nitku=(document.getElementById('prs-nitku')&&document.getElementById('prs-nitku').value.trim())||'';perusahaan.alamat=document.getElementById('prs-alamat').value;perusahaan.telp=document.getElementById('prs-telp').value;perusahaan.email=document.getElementById('prs-email').value;perusahaan.web=document.getElementById('prs-web').value;perusahaan.bpjs_kes_va=(document.getElementById('prs-bpjs-va')&&document.getElementById('prs-bpjs-va').value.trim())||'';var jkkEl=document.getElementById('prs-jkk-tingkat');if(jkkEl)perusahaan.jkk_tingkat=(typeof sigajiJkkTingkatDef==='function'?sigajiJkkTingkatDef(jkkEl.value).id:'sangat_rendah');var bc=document.getElementById('prs-brand-color');if(bc)perusahaan.brand_color=bc.value||'#1a56a0';perusahaan.a1_kota=(document.getElementById('prs-a1-kota')&&document.getElementById('prs-a1-kota').value)||'';perusahaan.a1_prefix=(document.getElementById('prs-a1-prefix')&&document.getElementById('prs-a1-prefix').value.trim())||'A1';perusahaan.a1_ttd_nama=(document.getElementById('prs-a1-ttd')&&document.getElementById('prs-a1-ttd').value)||'';perusahaan.a1_ttd_jabatan=(document.getElementById('prs-a1-jab')&&document.getElementById('prs-a1-jab').value)||'';perusahaan.jamMasuk=(document.getElementById('prs-jam-masuk')&&document.getElementById('prs-jam-masuk').value)||'08:00';var hgEl=document.getElementById('prs-hari-gajian');if(hgEl){var hgVal=typeof sigajiNormHariGajian==='function'?sigajiNormHariGajian(hgEl.value):'';if(hgVal)perusahaan.hari_gajian=hgVal;else delete perusahaan.hari_gajian;}var hk=document.querySelector('input[name="hk-radio"]:checked');perusahaan.hariKerja=hk?parseInt(hk.value)||6:6;var kAbsEl=document.getElementById('prs-koreksi-absensi-otomatis');if(kAbsEl)perusahaan.koreksi_absensi_otomatis=!!kAbsEl.checked;saveAll();applyBranding();if(typeof sigajiApplyUiPrefs==='function')sigajiApplyUiPrefs();updateHKRadioStyle();renderPenggajian();renderDash();toast('Data perusahaan disimpan');}
 function sigajiFillJkkTingkatSelect(){
   var sel=document.getElementById('prs-jkk-tingkat');
   if(!sel)return;
@@ -459,16 +459,27 @@ function loadPrsForm(){['nama','npwp','nitku','alamat','telp','email','web'].for
 function sigajiFillHariGajianSelect(){
   var sel=document.getElementById('prs-hari-gajian');
   if(!sel)return;
-  var opts=['<option value="akhir">Akhir bulan</option>'];
+  var opts=['<option value="">Otomatis (ikuti tanggal bayar periode sebelumnya)</option>','<option value="akhir">Akhir bulan</option>'];
   var i;
   for(i=1;i<=31;i++)opts.push('<option value="'+i+'">Tanggal '+i+'</option>');
   var html=opts.join('');
   sel.innerHTML=html;
   var saved=typeof sigajiNormHariGajian==='function'?sigajiNormHariGajian(typeof perusahaan!=='undefined'&&perusahaan&&perusahaan.hari_gajian):'';
-  if(saved){sel.value=String(saved);return;}
+  sel.value=saved?String(saved):'';
+  var hint=document.getElementById('prs-hari-gajian-hint');
+  if(!hint)return;
   var p=typeof PA==='function'?PA():null;
   var g=typeof sigajiPatokanHariBayar==='function'?sigajiPatokanHariBayar(p,typeof periodes!=='undefined'?periodes:[]):'';
-  if(g)sel.value=String(g);
+  var deteksi=g==='akhir'?'akhir bulan':(g?'tanggal '+g:'');
+  if(saved){
+    hint.textContent=saved==='akhir'
+      ?'Tersimpan: akhir bulan. Periode berikutnya memakai hari terakhir bulan, bukan tebakan dari tanggal bayar.'
+      :'Tersimpan: tanggal '+saved+'. Periode berikutnya memakai tanggal ini, bukan tebakan dari riwayat.';
+    return;
+  }
+  hint.textContent=deteksi
+    ?'Terdeteksi: '+deteksi+'. Tetap pilih Otomatis kecuali gaji memang selalu akhir bulan atau tanggal tetap (mis. 25).'
+    :'Belum ada periode. Biarkan Otomatis; pilih Akhir bulan atau tanggal hanya jika patokannya sudah pasti.';
 }
 var __umkEditing=false;
 function ensurePerusahaanUmk(){if(!perusahaan.umk||typeof perusahaan.umk!=='object')perusahaan.umk={};}
