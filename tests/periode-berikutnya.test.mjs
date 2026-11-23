@@ -164,5 +164,23 @@ const nov28 = sandbox.sigajiRancangPeriodeBerikutnya({
 });
 assertEq('pengaturan tgl 28 menimpa 30 Nov', nov28.bayar, '2026-12-28');
 sandbox.perusahaan = {};
+const nov25 = sandbox.sigajiRancangPeriodeBerikutnya({
+  nama: 'November 2026',
+  start: '2026-10-25',
+  end: '2026-11-24',
+  bayar: '2026-11-25',
+});
+assertEq('tanpa pengaturan: pola 25-24 tetap 25 Des', nov25.bayar, '2026-12-25');
+sandbox.perusahaan = { hari_gajian: '' };
+assertEq(
+  'hari_gajian kosong tidak menimpa riwayat',
+  sandbox.sigajiRancangPeriodeBerikutnya({
+    nama: 'November 2026',
+    start: '2026-11-01',
+    end: '2026-11-30',
+    bayar: '2026-11-25',
+  }).bayar,
+  '2026-12-25'
+);
 
 console.log('\nPeriode berikutnya: semua tes lulus.');
