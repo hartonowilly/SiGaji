@@ -30,6 +30,8 @@ declare var perusahaan: {
   a1_ttd_jabatan?: string;
   converter_bank?: Record<string, unknown>;
   hariKerja?: number;
+  /** Patokan gajian: 1–31 atau 'akhir'. */
+  hari_gajian?: number | 'akhir' | '';
   ter_custom?: Record<string, number[]>;
   ptkp_nilai?: Record<string, number>;
   /** Tanggal bayar mulai berlakunya ter_custom / ptkp_nilai yang sekarang. */
@@ -215,6 +217,7 @@ declare function sigajiTanggalPolaUntukBulan(
 ): { start: string; end: string; bayar: string } | null;
 declare function sigajiNormHariGajian(v: unknown): number | 'akhir' | '';
 declare function sigajiHariGajianDariPerusahaan(): number | 'akhir' | '';
+declare function sigajiPatokanHariBayar(p: unknown, riwayat?: unknown[]): number | 'akhir' | '';
 declare function sigajiFillHariGajianSelect(): void;
 declare function sigajiRancangPeriodeBerikutnya(p: unknown, riwayat?: unknown[]): {
   nama: string;
