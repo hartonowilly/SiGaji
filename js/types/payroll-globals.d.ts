@@ -219,6 +219,13 @@ declare function sigajiNormHariGajian(v: unknown): number | 'akhir' | '';
 declare function sigajiHariGajianDariPerusahaan(): number | 'akhir' | '';
 declare function sigajiPatokanHariBayar(p: unknown, riwayat?: unknown[]): number | 'akhir' | '';
 declare function sigajiFillHariGajianSelect(): void;
+declare function ebupotMasaFromIso(iso: string): { yyyymm: string; label: string; tahun: string; bulan: string };
+declare function ebupotMasaThrFromPeriode(p: unknown): { yyyymm: string; label?: string; tahun?: string; bulan?: string };
+declare function ebupotPeriodeIkutMasa(p: unknown, yyyymm: string): boolean;
+declare function sigajiHistPush(state?: Record<string, unknown>): void;
+declare function sigajiHistReplacePg(pg: string): void;
+declare function sigajiHistIsPop(): boolean;
+declare function sigajiHistCloseTopLayer(): boolean;
 declare function sigajiRancangPeriodeBerikutnya(p: unknown, riwayat?: unknown[]): {
   nama: string;
   pola: string;

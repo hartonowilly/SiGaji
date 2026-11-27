@@ -355,12 +355,6 @@ if(typeof window!=='undefined'){
 function sigajiPersistLastPg(pg){
   if(!pg)return;
   try{localStorage.setItem('sigaji_last_pg',pg);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
-  try{
-    if(window.history&&window.history.replaceState){
-      var base=window.location.pathname+(window.location.search||'');
-      window.history.replaceState(null,'',base+'#'+encodeURIComponent(pg));
-    }
-  }catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
 }
 function sigajiReadLastPg(){
   try{
@@ -384,6 +378,11 @@ if(typeof window!=='undefined'){
   window.sigajiResolveStartupPg=sigajiResolveStartupPg;
 }
 function showPg(pg){
+  var pgSebelum='';
+  try{
+    var aktif=document.querySelector('.pg.active');
+    if(aktif&&aktif.id)pgSebelum=aktif.id.replace(/^pg-/,'');
+  }catch(ePg0){sigajiCatchWarn("js/modules/app-shell.js",ePg0);}
   if(pg==='pph'){showPg('laporan');setTimeout(function(){var t=document.querySelector('#pg-laporan .tab[data-laptab="pph"]');if(t)switchLaporanTab(t,'lap-tab-pph');},80);return;}
   if(pg==='sysstatus'){showPg('backup');setTimeout(function(){switchBackupTab(null,'bk-ringkas');},50);return;}
   if(!canAccess(pg)){toast('Tidak punya akses ke modul ini');return;}
@@ -422,6 +421,11 @@ function showPg(pg){
   if(pg==='penggajian')setTimeout(function(){renderPenggajian();},0);
   if(pg==='simulasi')setTimeout(function(){if(typeof renderSimulasiSandbox==='function')renderSimulasiSandbox();else if(typeof renderSimulasiGaji==='function')renderSimulasiGaji();},30);
   sigajiPersistLastPg(pg);
+  try{
+    var fromPop=typeof sigajiHistIsPop==='function'&&sigajiHistIsPop();
+    if(pg&&pg!==pgSebelum&&!fromPop&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'pg',pg:pg});
+    else if(typeof sigajiHistReplacePg==='function')sigajiHistReplacePg(pg);
+  }catch(eHist){sigajiCatchWarn("js/modules/app-shell.js",eHist);}
   try{sigajiSyncMobileBottomNavActive(pg);}catch(eMb){sigajiCatchWarn("js/modules/app-shell.js",eMb);}
 }
 function applyMasterSubtabVisibility(){
@@ -653,8 +657,22 @@ if(typeof document!=='undefined'){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindPayrollSpTabsOnce);
   else bindPayrollSpTabsOnce();
 }
-function openModal(id){document.getElementById(id).classList.add('show');}
-function closeModal(id){document.getElementById(id).classList.remove('show');}
+function openModal(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  var already=el.classList.contains('show');
+  el.classList.add('show');
+  if(!already&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'modal',id:id});
+}
+function closeModal(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  if(!(typeof sigajiHistIsPop==='function'&&sigajiHistIsPop())&&el.classList.contains('show')&&window.history&&window.history.state&&window.history.state.sigaji==='modal'&&window.history.state.id===id){
+    window.history.back();
+    return;
+  }
+  el.classList.remove('show');
+}
 var tT;toast=function(msg){var t=document.getElementById('toast9');if(!t){try{console.warn(msg);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}return;}t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(function(){t.classList.remove('show');},3200);};
 function updateResetButtonState(){
   var phrase=(document.getElementById('reset-inp')&&document.getElementById('reset-inp').value)||'';

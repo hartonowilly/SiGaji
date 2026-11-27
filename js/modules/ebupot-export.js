@@ -39,10 +39,10 @@ function ebupotPtkpSlash(ptkp) {
   return m ? m[1].toUpperCase() + '/' + m[2] : String(ptkp);
 }
 
-function ebupotMasaFromPeriode(p) {
-  var ref = (p && (p.bayar || p.end || p.start)) || '';
-  var d = new Date(String(ref).trim() + 'T12:00:00');
-  if (isNaN(d.getTime())) return { yyyymm: '', label: '', tahun: '', bulan: '' };
+function ebupotMasaFromIso(iso) {
+  var ref = String(iso || '').trim().slice(0, 10);
+  var d = new Date(ref + 'T12:00:00');
+  if (!ref || isNaN(d.getTime())) return { yyyymm: '', label: '', tahun: '', bulan: '' };
   var y = d.getFullYear();
   var m = String(d.getMonth() + 1).padStart(2, '0');
   var bln = [
@@ -66,6 +66,42 @@ function ebupotMasaFromPeriode(p) {
     tahun: String(y),
     bulan: m,
   };
+}
+
+function ebupotMasaFromPeriode(p) {
+  return ebupotMasaFromIso((p && (p.bayar || p.end || p.start)) || '');
+}
+
+/** Masa pajak THR: tanggal bayar THR. Kosong = ikut masa gaji. */
+function ebupotMasaThrFromPeriode(p) {
+  if (!p || !p.thr_aktif) return { yyyymm: '', label: '', tahun: '', bulan: '' };
+  if (p.thr_bayar) return ebupotMasaFromIso(p.thr_bayar);
+  return ebupotMasaFromPeriode(p);
+}
+
+function ebupotPeriodeIkutMasa(p, yyyymm) {
+  if (!p || !yyyymm) return false;
+  if (ebupotMasaFromPeriode(p).yyyymm === yyyymm) return true;
+  return ebupotMasaThrFromPeriode(p).yyyymm === yyyymm;
+}
+
+/** Bruto/PPh gaji vs THR dipisah menurut bulan dibayar. */
+function ebupotBagianUntukMasa(gx, per, yyyymm) {
+  var gajiMasa = ebupotMasaFromPeriode(per).yyyymm === yyyymm;
+  var thrMasa = ebupotMasaThrFromPeriode(per).yyyymm === yyyymm;
+  var bruto = 0;
+  var pph = 0;
+  var thr = 0;
+  if (gajiMasa) {
+    bruto += Math.round((gx && gx.grossPPhRegular) || 0);
+    pph += Math.round((gx && gx.pphTanpaThr) || 0);
+  }
+  if (thrMasa) {
+    bruto += Math.round((gx && gx.thrBruto) || 0);
+    pph += Math.round((gx && gx.pphAtasThr) || 0);
+    thr += Math.round((gx && gx.thrBruto) || 0);
+  }
+  return { bruto: bruto, pph: pph, thr: thr, gajiMasa: gajiMasa, thrMasa: thrMasa };
 }
 
 function ebupotBrutoPerHari(k, g) {
@@ -185,11 +221,16 @@ function ebupotBuildRows(periode) {
     return { ok: false, error: 'Periode gaji aktif tidak ditemukan' };
   }
   var masa = ebupotMasaFromPeriode(periode);
-  var periodesMasa = [periode];
-  (typeof periodes !== 'undefined' && periodes ? periodes : []).forEach(function (p) {
-    if (!p || p.nama === periode.nama) return;
-    if (ebupotMasaFromPeriode(p).yyyymm === masa.yyyymm) periodesMasa.push(p);
-  });
+  var periodesMasa = [];
+  var seenPer = {};
+  function pushPerMasa(p) {
+    if (!p || !p.nama || seenPer[p.nama]) return;
+    if (!ebupotPeriodeIkutMasa(p, masa.yyyymm)) return;
+    seenPer[p.nama] = true;
+    periodesMasa.push(p);
+  }
+  pushPerMasa(periode);
+  (typeof periodes !== 'undefined' && periodes ? periodes : []).forEach(pushPerMasa);
   var seenNik = {};
   var list = [];
   periodesMasa.forEach(function (per) {
@@ -274,13 +315,29 @@ function ebupotBuildRows(periode) {
       if (typeof karyawanInPeriode === 'function' && !karyawanInPeriode(k, per)) return;
       var gx = hitungGaji(k, per.nama);
       g = gx;
-      bruto += Math.round(gx.grossPPh || 0);
-      pph += Math.round(gx.pph || 0);
-      thrSum += Math.round(gx.thrBruto || 0);
-      if (gx.reconciliation) rec = gx.reconciliation;
-      if (gx.isMasaPajakTerakhir) masaTerakhir = true;
+      var bag = ebupotBagianUntukMasa(gx, per, masa.yyyymm);
+      bruto += bag.bruto;
+      pph += bag.pph;
+      thrSum += bag.thr;
+      if (gx.reconciliation && bag.gajiMasa) rec = gx.reconciliation;
+      if (gx.isMasaPajakTerakhir && bag.gajiMasa) masaTerakhir = true;
+      if (gx.thrBruto > 0 && !bag.thrMasa && bag.gajiMasa) {
+        var masaThrLbl = ebupotMasaThrFromPeriode(per).label;
+        warnings.push(
+          'THR ' +
+            (k.nama || k.nik) +
+            ' dibayar ' +
+            String(per.thr_bayar || '') +
+            ' — masuk e-Bupot masa ' +
+            (masaThrLbl || 'bayar THR') +
+            ', bukan ' +
+            masa.label +
+            '.'
+        );
+      }
     });
     if (!g) return;
+    if (!bruto && !pph) return;
     totalBruto += bruto;
     totalPph += pph;
     var ptkpKey = typeof ptkpStatusHasil === 'function' ? ptkpStatusHasil(g, k) : g.ptkpStatus || k.ptkp;
