@@ -109,7 +109,8 @@ function bpjsWriteBook(filename, sheets) {
     if (sh.textCols) bpjsForceTextCols(ws, sh.textCols, sh.textFrom || 1, sh.rows.length);
     XLSX.utils.book_append_sheet(wb, ws, sh.name);
   });
-  XLSX.writeFile(wb, filename);
+  if (typeof sigajiWriteXlsx === 'function') sigajiWriteXlsx(wb, filename);
+  else XLSX.writeFile(wb, filename);
 }
 
 function bpjsNamaFile(prefix, periode) {

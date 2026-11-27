@@ -625,15 +625,19 @@
         var blob = new Blob([out], {
           type: 'application/vnd.ms-excel.sheet.macroEnabled.12',
         });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName(iso, cfg.label, isThr ? 'thr' : '');
-        a.click();
-        setTimeout(function () {
-          URL.revokeObjectURL(a.href);
-        }, 4000);
+        var fnBank = fileName(iso, cfg.label, isThr ? 'thr' : '');
+        if (typeof sigajiSaveFile === 'function') sigajiSaveFile(blob, fnBank, blob.type);
+        else {
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = fnBank;
+          a.click();
+          setTimeout(function () {
+            URL.revokeObjectURL(a.href);
+          }, 4000);
+        }
         if (typeof closeModal === 'function') closeModal('m-converter');
-        toast(hasil.rows.length + ' baris transfer diunduh: ' + a.download);
+        toast(hasil.rows.length + ' baris transfer diunduh: ' + fnBank);
       })
       .catch(function (e) {
         toast('Gagal: ' + (e && e.message ? e.message : e));

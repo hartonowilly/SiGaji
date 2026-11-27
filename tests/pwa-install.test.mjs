@@ -27,11 +27,19 @@ const headers = fs.readFileSync(path.join(ROOT, '_headers'), 'utf8');
 
 assert('payroll manifest standalone + ikon 192/512', payMan.display === 'standalone' && payMan.start_url === '/' && payMan.icons.some(function (i) { return i.sizes === '192x192'; }) && payMan.icons.some(function (i) { return i.sizes === '512x512'; }));
 assert('absen manifest scope /mobile/', absMan.start_url === '/mobile/' && absMan.scope === '/mobile/' && absMan.display === 'standalone');
-assert('template payroll PWA tags', /rel="manifest" href="\/manifest.webmanifest"/.test(tpl) && /apple-touch-icon/.test(tpl) && /id="sigaji-pwa-banner"/.test(tpl) && /pwa-install\.js/.test(tpl));
-assert('absen PWA tags', /rel="manifest" href="\/mobile\/manifest.webmanifest"/.test(mob) && /apple-touch-icon/.test(mob) && /pwa-install\.js/.test(mob) && /id="sigaji-pwa-banner"/.test(mob));
-assert('SW passthrough fetch GET', /skipWaiting/.test(sw) && /addEventListener\('fetch'/.test(sw) && /method !== 'GET'/.test(sw));
+assert('template payroll PWA tags', /rel="manifest" href="\/manifest.webmanifest"/.test(tpl) && /apple-touch-icon/.test(tpl) && /sigaji-pwa-banner/.test(tpl) && /pwa-install\.js/.test(tpl));
+assert('absen PWA tags', /rel="manifest" href="\/mobile\/manifest.webmanifest"/.test(mob) && /apple-touch-icon/.test(mob) && /pwa-install\.js/.test(mob) && /sigaji-pwa-banner/.test(mob));
+assert('SW cadangan offline navigate', /offline\.html/.test(sw) && /mode === 'navigate'/.test(sw) && /method !== 'GET'/.test(sw));
 assert('pwa-install daftar /sw.js', /serviceWorker\.register\('\/sw\.js'\)/.test(pwa) && /beforeinstallprompt/.test(pwa) && /data-sigaji-pwa/.test(pwa));
-assert('hint Nanti terpisah gaji vs absen', /sigaji_pwa_hint_dismissed_gaji/.test(pwa) && /sigaji_pwa_hint_dismissed_absen/.test(pwa));
+assert('hint Nanti hanya sesi ini', /sessionStorage/.test(pwa) && /sigaji_pwa_hint_session_gaji/.test(pwa) && /sigaji_pwa_hint_session_absen/.test(pwa));
+assert('teks iOS Tambah ke Layar Utama', /Tambah ke Layar Utama/.test(tpl) && /login ulang/.test(tpl));
+assert('manifest tidak kunci portrait', payMan.orientation == null && absMan.orientation == null);
+assert('Muat ulang di topbar', /sigajiReloadApp/.test(tpl));
+const save = fs.readFileSync(path.join(ROOT, 'js/sigaji-save-file.js'), 'utf8');
+assert('simpan file Bagikan di iOS standalone', /sigajiSaveFile/.test(save) && /canShare/.test(save) && /sigajiWriteXlsx/.test(save));
+const css = fs.readFileSync(path.join(ROOT, 'css/styles.css'), 'utf8');
+assert('isian BPJS 16px', /\.bi\{[^}]*font-size:16px/.test(css));
+assert('latar html biru tua', /html,body\{background:#0c1929/.test(tpl));
 assert('sw.js tidak di-cache lama', /\/sw\.js/.test(headers) && /no-store/.test(headers));
 
 ['sigaji-180.png', 'sigaji-192.png', 'sigaji-512.png', 'sigaji-maskable-192.png', 'sigaji-maskable-512.png'].forEach(function (name) {

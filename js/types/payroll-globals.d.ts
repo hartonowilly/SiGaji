@@ -226,6 +226,9 @@ declare function sigajiHistPush(state?: Record<string, unknown>): void;
 declare function sigajiHistReplacePg(pg: string): void;
 declare function sigajiHistIsPop(): boolean;
 declare function sigajiHistCloseTopLayer(): boolean;
+declare function sigajiSaveFile(data: Blob | ArrayBuffer | Uint8Array | string, filename: string, mime?: string): void | Promise<void>;
+declare function sigajiWriteXlsx(wb: unknown, filename: string): void | Promise<void>;
+declare function sigajiReloadApp(): void;
 declare function sigajiRancangPeriodeBerikutnya(p: unknown, riwayat?: unknown[]): {
   nama: string;
   pola: string;

@@ -360,6 +360,11 @@ function mobLocUpdateRadiusUi(){
 }
 async function mobLocUseMyPosition(){
   if(!navigator.geolocation){toast('Browser tidak mendukung GPS');return;}
+  var stand=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+  if(stand){
+    var ok=window.confirm('Aplikasi layar utama di iPhone sering meminta izin lokasi lagi setiap kali dibuka. Izinkan lokasi untuk menempatkan titik di peta?');
+    if(!ok)return;
+  }
   toast('Mengambil lokasi…');
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat=document.getElementById('mob-loc-lat');

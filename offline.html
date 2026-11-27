@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c1929">
+<title>Tidak ada koneksi — SiGaji</title>
+<style>
+html,body{margin:0;min-height:100%;background:#0c1929;color:#e8eef6;font-family:system-ui,-apple-system,sans-serif;}
+.box{max-width:22rem;margin:0 auto;padding:3.5rem 1.25rem 2rem;text-align:center;}
+h1{font-size:1.25rem;margin:0 0 .6rem;}
+p{font-size:.9rem;line-height:1.45;color:#9fb0c8;margin:0 0 1.25rem;}
+button{appearance:none;border:0;border-radius:10px;padding:.75rem 1.15rem;font-weight:700;background:#1a56a0;color:#fff;font-size:1rem;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>Tidak ada koneksi</h1>
+  <p>SiGaji butuh internet untuk gaji dan absen. Data tidak disimpan di HP.</p>
+  <button type="button" id="retry">Coba lagi</button>
+</div>
+<script>
+document.getElementById('retry').addEventListener('click', function () { location.href = '/'; });
+</script>
+</body>
+</html>

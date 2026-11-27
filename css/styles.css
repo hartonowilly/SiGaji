@@ -130,7 +130,7 @@ tr:hover td{background:var(--row-hover)}
 .bpjs-chk input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--color-primary)}
 .bpjs-row{display:grid;grid-template-columns:auto 2fr 1fr 1fr auto;gap:.5rem;align-items:center;padding:.5rem .6rem;background:var(--row-hover);border-radius:7px;border:1px solid var(--bd);margin-bottom:.4rem}
 .bpjs-row.off{opacity:.4}
-.bi{padding:5px 8px;border:1.5px solid var(--color-border);border-radius:6px;font-size:12px;width:100%;font-family:inherit;outline:none}
+.bi{padding:8px 10px;border:1.5px solid var(--color-border);border-radius:6px;font-size:16px;width:100%;font-family:inherit;outline:none;min-height:44px}
 .bi.manual{border-color:var(--color-warning);background:var(--row-prorate-bg)}
 .tm{font-size:10px;padding:3px 7px;border-radius:5px;cursor:pointer;font-weight:700;white-space:nowrap;border:none;font-family:inherit}
 .tm.auto{background:var(--color-success-bg);color:var(--color-success)}.tm.manual{background:var(--color-warning-bg);color:var(--color-warning)}

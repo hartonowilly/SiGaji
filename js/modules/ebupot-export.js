@@ -200,13 +200,16 @@ function ebupotXmlEl(name, value, opts) {
 
 function ebupotDownloadText(filename, text, mime) {
   var blob = new Blob([text], { type: mime || 'application/xml;charset=utf-8' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(function () {
-    URL.revokeObjectURL(a.href);
-  }, 4000);
+  if (typeof sigajiSaveFile === 'function') sigajiSaveFile(blob, filename, mime);
+  else {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(function () {
+      URL.revokeObjectURL(a.href);
+    }, 4000);
+  }
 }
 
 function ebupotKarTipe(k) {
@@ -656,7 +659,8 @@ function exportExcelEbupotBulanan() {
         '_' +
         String(built.periode.nama).replace(/[^\w\d]+/g, '_') +
         '.xlsx';
-      XLSX.writeFile(wb, fn);
+      if (typeof sigajiWriteXlsx === 'function') sigajiWriteXlsx(wb, fn);
+      else XLSX.writeFile(wb, fn);
       toast(
         'Excel e-Bupot diunduh (' +
           built.rows.length +
@@ -885,11 +889,15 @@ function exportCsvEbupotBulanan() {
     );
   });
   var blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download =
+  var csvFn =
     'eBupot_SiGaji_' + built.masa.yyyymm + '_' + built.periode.nama.replace(/[^\w\d]+/g, '_') + '.csv';
-  a.click();
+  if (typeof sigajiSaveFile === 'function') sigajiSaveFile(blob, csvFn, 'text/csv;charset=utf-8');
+  else {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = csvFn;
+    a.click();
+  }
   toast('CSV e-Bupot diunduh — untuk arsip/referensi (Coretax butuh XML via template DJP)');
 }
 

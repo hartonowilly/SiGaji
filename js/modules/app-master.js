@@ -948,13 +948,16 @@ function jsonBackupStripLogo(data){
 function jsonBackupDownloadFile(data, filename){
   var json=JSON.stringify(data,null,2);
   var blob=new Blob([json],{type:'application/json;charset=utf-8'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+  if(typeof sigajiSaveFile==='function')sigajiSaveFile(blob,filename,'application/json;charset=utf-8');
+  else{
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
   return json.length;
 }
 function exportBackup(){
@@ -1155,13 +1158,17 @@ async function exportCloudDatabaseBackup(){
     var disp=r.headers.get('content-disposition')||'';
     var m=/filename="([^"]+)"/i.exec(disp);
     var fn=m?m[1]:'Sigaji_DB_Export_'+new Date().toISOString().split('T')[0]+'.json';
-    var a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'}));
-    a.download=fn;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
+    var blobDb=new Blob([text],{type:'application/json;charset=utf-8'});
+    if(typeof sigajiSaveFile==='function')sigajiSaveFile(blobDb,fn,'application/json;charset=utf-8');
+    else{
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blobDb);
+      a.download=fn;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }
     var detail='';
     try{
       var parsed=JSON.parse(text);
@@ -1314,4 +1321,4 @@ function eksekusiImport(){
   document.getElementById('import-preview').style.display='none';importData=null;
   var inp=document.getElementById('import-file-input');if(inp)inp.value='';
 }
-function exportCSVAll(){var rows=[['NIK','Nama','Dept','Jabatan','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','Neto','PTKP','Status','Tgl Masuk']];sortKaryawanByNik(karyawan||[]).forEach(function(k){var g=hitungGaji(k);rows.push([k.nik,k.nama,k.dept,k.jabatan,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,Math.round(g.neto),k.ptkp,k.status,k.masuk]);});var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var b=new Blob(['\uFEFF'+csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SiGaji_'+new Date().toISOString().split('T')[0]+'.csv';a.click();toast('CSV diunduh');}
+function exportCSVAll(){var rows=[['NIK','Nama','Dept','Jabatan','Gaji Pokok','Gross PPh','THR','TH Bruto','BPJS Kar','PPh 21','Neto','PTKP','Status','Tgl Masuk']];sortKaryawanByNik(karyawan||[]).forEach(function(k){var g=hitungGaji(k);rows.push([k.nik,k.nama,k.dept,k.jabatan,k.gapok,Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,Math.round(g.neto),k.ptkp,k.status,k.masuk]);});var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var b=new Blob(['\uFEFF'+csv],{type:'text/csv'});if(typeof sigajiSaveFile==='function')sigajiSaveFile(b,'SiGaji_'+new Date().toISOString().split('T')[0]+'.csv','text/csv');else{var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='SiGaji_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}toast('CSV diunduh');}
