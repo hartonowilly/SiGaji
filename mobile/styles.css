@@ -125,10 +125,20 @@ input, select, textarea {
   font-size: 12px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.92);
-  text-align: center;
+  text-align: left;
   margin: 0.75rem 0 0;
   padding: 0.65rem 0.75rem;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.pwa-install-hint p { margin: 0 0 0.5rem; }
+.sigaji-pwa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+@media (display-mode: standalone) {
+  .pwa-install-hint { display: none !important; }
 }

@@ -7,6 +7,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SiGaji Absen">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="/icons/pwa/sigaji-180.png">
 <link rel="manifest" href="/mobile/manifest.webmanifest">
 <link rel="stylesheet" href="/mobile/styles.css">
 <title>SiGaji Absen</title>
@@ -23,7 +25,14 @@
       <input type="password" id="login-pw" autocomplete="current-password">
       <button type="button" class="btn btn-primary" data-sigaji-action="invoke" data-fn="sigajiMobileLogin">Masuk</button>
     </div>
-    <p class="pwa-install-hint">Pasang ke layar utama: menu browser → <strong>Tambahkan ke Layar Utama</strong></p>
+    <div id="sigaji-pwa-banner" class="pwa-install-hint" hidden>
+      <p id="sigaji-pwa-ios" hidden>Di iPhone: Safari → Bagikan → <strong>Add to Home Screen</strong>.</p>
+      <p id="sigaji-pwa-other">Pasang ke layar utama: menu browser → <strong>Tambahkan ke layar utama</strong>.</p>
+      <div class="sigaji-pwa-actions">
+        <button type="button" class="btn btn-primary" id="sigaji-pwa-pasang" hidden data-sigaji-pwa="pasang">Pasang aplikasi</button>
+        <button type="button" class="btn btn-out" data-sigaji-pwa="tutup">Nanti</button>
+      </div>
+    </div>
   </div>
 
   <div id="screen-home" class="screen">
@@ -113,6 +122,7 @@
 <div id="toast"></div>
 <script src="/js/config.js"></script>
 <script src="/js/vendor/supabase.js"></script>
-<script src="/mobile/app.js?v=11.7.57"></script>
+<script src="/mobile/app.js?v=11.7.58"></script>
+<script src="/js/pwa-install.js?v=11.7.58"></script>
 </body>
 </html>

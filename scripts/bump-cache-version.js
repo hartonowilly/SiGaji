@@ -34,7 +34,7 @@ fs.writeFileSync(templatePath, html, 'utf8');
 
 if (fs.existsSync(mobileHtmlPath)) {
   let mob = fs.readFileSync(mobileHtmlPath, 'utf8');
-  mob = mob.replace(/(src="\/mobile\/[^"]+\?v=)[^"]+/g, '$1' + ver);
+  mob = mob.replace(/((?:href|src)="\/(?:mobile|js)\/(?!vendor\/)[^"]+\?v=)[^"]+/g, '$1' + ver);
   fs.writeFileSync(mobileHtmlPath, mob, 'utf8');
 }
 
