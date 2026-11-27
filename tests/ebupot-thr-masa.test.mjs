@@ -1,6 +1,9 @@
 /**
  * THR dilaporkan di e-Bupot pada bulan dibayar, bukan bulan gaji.
  */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { loadEbupotExport } from './lib/payroll-harness.mjs';
 
 function assertEq(name, actual, expected) {
@@ -85,5 +88,7 @@ assertEq('file kedua masa gaji April', pack0.list[1].masa.yyyymm, '202704');
 assertEq('file April tanpa THR', pack0.list[1].rows[0].thrBruto, 0);
 const marOnly = px0.ebupotBuildRows(firstOnly[0], { masaYyyymm: '202703' });
 assert('buildRows masa 202703 ok', marOnly.ok && marOnly.rows[0].thrBruto > 0);
+const src = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'js/modules/ebupot-export.js'), 'utf8');
+assert('toast dua file THR', src.indexOf('2 file: masa THR dan masa gaji') >= 0);
 
 console.log('ebupot-thr-masa.test.mjs: all passed');

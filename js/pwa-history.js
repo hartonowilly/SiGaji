@@ -41,6 +41,15 @@
     } catch (e2) { /* ignore */ }
   };
 
+  w.sigajiHistReplace = function (state) {
+    if (pop || !enabled()) return;
+    try {
+      var pg = (state && state.pg) || currentPg();
+      var st = Object.assign({ sigaji: 1, pg: pg }, state || {});
+      w.history.replaceState(st, '', baseUrl() + hashFor(pg));
+    } catch (eR) { /* ignore */ }
+  };
+
   w.sigajiHistBackIf = function (kind) {
     if (pop || !enabled() || !w.history.state) return false;
     if (w.history.state.sigaji === kind) {

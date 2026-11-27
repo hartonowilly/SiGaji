@@ -223,6 +223,7 @@ declare function ebupotMasaFromIso(iso: string): { yyyymm: string; label: string
 declare function ebupotMasaThrFromPeriode(p: unknown): { yyyymm: string; label?: string; tahun?: string; bulan?: string };
 declare function ebupotPeriodeIkutMasa(p: unknown, yyyymm: string): boolean;
 declare function sigajiHistPush(state?: Record<string, unknown>): void;
+declare function sigajiHistReplace(state?: Record<string, unknown>): void;
 declare function sigajiHistReplacePg(pg: string): void;
 declare function sigajiHistIsPop(): boolean;
 declare function sigajiHistBackIf(kind: string): boolean;

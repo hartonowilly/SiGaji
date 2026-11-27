@@ -608,22 +608,35 @@ function ebupotDaftarBuiltMasa(periode) {
   return { ok: true, list: list };
 }
 
+function ebupotToastDuaMasa(pack) {
+  return !!(pack && pack.list && pack.list.length > 1);
+}
+
+function ebupotToastAwal(pack) {
+  if (ebupotToastDuaMasa(pack)) {
+    toast('2 file: masa THR dan masa gaji. Di iPhone, Bagikan biasanya hanya untuk file pertama.');
+    return;
+  }
+  var firstWarn = '';
+  (pack.list || []).forEach(function (b) {
+    if (!firstWarn && b.warnings && b.warnings[0]) firstWarn = b.warnings[0];
+  });
+  if (firstWarn) toast('Perhatian: ' + firstWarn);
+}
+
 function exportExcelEbupotBulanan() {
   var pack = ebupotDaftarBuiltMasa();
   if (!pack.ok) {
     toast(pack.error || 'Gagal menyiapkan data');
     return;
   }
-  var firstWarn = '';
-  pack.list.forEach(function (b) {
-    if (!firstWarn && b.warnings && b.warnings[0]) firstWarn = b.warnings[0];
-  });
-  if (firstWarn) toast('Perhatian: ' + firstWarn);
+  ebupotToastAwal(pack);
+  var quiet = ebupotToastDuaMasa(pack);
   ebupotEnsureXlsx(function () {
     pack.list.forEach(function (built, idx) {
       setTimeout(function () {
         try {
-          ebupotWriteExcelBuilt(built);
+          ebupotWriteExcelBuilt(built, { quiet: quiet });
         } catch (e) {
           toast('Gagal export: ' + (e.message || e));
         }
@@ -632,7 +645,8 @@ function exportExcelEbupotBulanan() {
   });
 }
 
-function ebupotWriteExcelBuilt(built) {
+function ebupotWriteExcelBuilt(built, opts) {
+  opts = opts || {};
   try {
       var wb = XLSX.utils.book_new();
       var panduan = [
@@ -732,15 +746,17 @@ function ebupotWriteExcelBuilt(built) {
         '.xlsx';
       if (typeof sigajiWriteXlsx === 'function') sigajiWriteXlsx(wb, fn);
       else XLSX.writeFile(wb, fn);
-      toast(
-        'Excel e-Bupot diunduh (' +
-          built.masa.label +
-          ' · ' +
-          built.rows.length +
-          ' karyawan · PPh ' +
-          fmt(built.totalPph) +
-          ')'
-      );
+      if (!opts.quiet) {
+        toast(
+          'Excel e-Bupot diunduh (' +
+            built.masa.label +
+            ' · ' +
+            built.rows.length +
+            ' karyawan · PPh ' +
+            fmt(built.totalPph) +
+            ')'
+        );
+      }
     } catch (e) {
       toast('Gagal export: ' + (e.message || e));
     }
@@ -865,11 +881,7 @@ function exportXmlEbupotCoretax() {
     toast(pack.error || 'Gagal menyiapkan data');
     return;
   }
-  var firstWarn = '';
-  pack.list.forEach(function (b) {
-    if (!firstWarn && b.warnings && b.warnings[0]) firstWarn = b.warnings[0];
-  });
-  if (firstWarn) toast('Perhatian: ' + firstWarn);
+  if (!ebupotToastDuaMasa(pack)) ebupotToastAwal(pack);
   if (!pack.list[0].npwpPemotong || pack.list[0].npwpPemotong.length < 15) {
     toast('NPWP perusahaan wajib diisi (Master → Profil Perusahaan)');
     return;
@@ -942,7 +954,7 @@ function exportXmlEbupotCoretax() {
   }
 
   var msg = 'XML Coretax diunduh';
-  if (pack.list.length > 1) msg += ' (' + pack.list.length + ' masa pajak)';
+  if (pack.list.length > 1) msg += ' — 2 file: masa THR dan masa gaji';
   if (tkuMax > 1) msg += ' (' + tkuMax + ' TKU terpisah)';
   if (bpmpTotal) msg += ' · BPMP ' + bpmpTotal + ' tetap (bukan masa terakhir)';
   if (bpa1Total) msg += ' · BPA1 ' + bpa1Total + ' rekonsiliasi Des/resign';
@@ -956,6 +968,11 @@ function exportCsvEbupotBulanan() {
   if (!pack.ok) {
     toast(pack.error || 'Gagal menyiapkan data');
     return;
+  }
+  if (ebupotToastDuaMasa(pack)) {
+    toast('2 file: masa THR dan masa gaji. Di iPhone, Bagikan biasanya hanya untuk file pertama.');
+  } else {
+    toast('CSV e-Bupot diunduh — untuk arsip/referensi (Coretax butuh XML via template DJP)');
   }
   pack.list.forEach(function (built, idx) {
     setTimeout(function () {
@@ -984,7 +1001,6 @@ function exportCsvEbupotBulanan() {
       }
     }, idx * 400);
   });
-  toast('CSV e-Bupot diunduh — untuk arsip/referensi (Coretax butuh XML via template DJP)');
 }
 
 if (typeof window !== 'undefined') {
