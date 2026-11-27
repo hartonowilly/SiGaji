@@ -277,7 +277,11 @@ function karBukaKartu(nik){
   var next=prev===nik?'':nik;
   if(!next&&prev&&typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('card'))return;
   window.__sigajiKarOpenNik=next;
-  if(next&&next!==prev&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'card',kind:'kar',nik:next});
+  if(next&&next!==prev){
+    var stKar={sigaji:'card',kind:'kar',nik:next};
+    if(prev&&typeof sigajiHistReplace==='function'&&window.history&&window.history.state&&window.history.state.sigaji==='card')sigajiHistReplace(stKar);
+    else if(typeof sigajiHistPush==='function')sigajiHistPush(stKar);
+  }
   var box=document.getElementById('kar-mobile-list');
   if(!box)return;
   var cards=box.querySelectorAll('.hp-person-card');

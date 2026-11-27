@@ -401,7 +401,11 @@ function pgBukaKartu(nik){
   var next=prev===nik?'':nik;
   if(!next&&prev&&typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('card'))return;
   window.__sigajiPgOpenNik=next;
-  if(next&&next!==prev&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'card',kind:'gaji',nik:next});
+  if(next&&next!==prev){
+    var stGaji={sigaji:'card',kind:'gaji',nik:next};
+    if(prev&&typeof sigajiHistReplace==='function'&&window.history&&window.history.state&&window.history.state.sigaji==='card')sigajiHistReplace(stGaji);
+    else if(typeof sigajiHistPush==='function')sigajiHistPush(stGaji);
+  }
   var box=document.getElementById('pg-mobile-wrap');
   if(!box)return;
   var cards=box.querySelectorAll('.hp-person-card');
