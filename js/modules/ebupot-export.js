@@ -68,6 +68,12 @@ function ebupotMasaFromIso(iso) {
   };
 }
 
+function ebupotMasaFromYyyymm(yyyymm) {
+  var s = String(yyyymm || '');
+  if (!/^\d{6}$/.test(s)) return { yyyymm: '', label: '', tahun: '', bulan: '' };
+  return ebupotMasaFromIso(s.slice(0, 4) + '-' + s.slice(4, 6) + '-01');
+}
+
 function ebupotMasaFromPeriode(p) {
   return ebupotMasaFromIso((p && (p.bayar || p.end || p.start)) || '');
 }
@@ -177,11 +183,28 @@ function ebupotCounterpartTin(k) {
   return ebupotKarKtpNik16(k);
 }
 
-function ebupotWithholdingDateIso(periode) {
+function ebupotWithholdingDateIso(periode, yyyymm) {
+  var thrM = ebupotMasaThrFromPeriode(periode);
+  var gajiM = ebupotMasaFromPeriode(periode);
   var ref = (periode && (periode.bayar || periode.end || periode.start)) || '';
+  if (yyyymm && thrM.yyyymm === yyyymm && gajiM.yyyymm !== yyyymm && periode && periode.thr_bayar) {
+    ref = periode.thr_bayar;
+  }
   var d = new Date(String(ref).trim() + 'T12:00:00');
   if (isNaN(d.getTime())) d = new Date();
   return d.toISOString().split('T')[0];
+}
+
+/** THR dibayar di bulan yang tidak punya periode gaji (bulan pertama pemakaian). */
+function ebupotThrYatim(periode) {
+  var thr = ebupotMasaThrFromPeriode(periode);
+  if (!thr.yyyymm) return null;
+  if (ebupotMasaFromPeriode(periode).yyyymm === thr.yyyymm) return null;
+  var list = typeof periodes !== 'undefined' && periodes ? periodes : [];
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && ebupotMasaFromPeriode(list[i]).yyyymm === thr.yyyymm) return null;
+  }
+  return thr;
 }
 
 function ebupotXmlEscape(s) {
@@ -218,12 +241,18 @@ function ebupotKarTipe(k) {
     : 'tetap';
 }
 
-function ebupotBuildRows(periode) {
+function ebupotBuildRows(periode, opts) {
+  opts = opts || {};
   periode = periode || (typeof PA === 'function' ? PA() : null);
   if (!periode || !periode.nama) {
     return { ok: false, error: 'Periode gaji aktif tidak ditemukan' };
   }
-  var masa = ebupotMasaFromPeriode(periode);
+  var masa = opts.masaYyyymm
+    ? ebupotMasaFromYyyymm(opts.masaYyyymm)
+    : ebupotMasaFromPeriode(periode);
+  if (!masa.yyyymm) {
+    return { ok: false, error: 'Masa pajak tidak valid' };
+  }
   var periodesMasa = [];
   var seenPer = {};
   function pushPerMasa(p) {
@@ -399,8 +428,11 @@ function ebupotBuildRows(periode) {
       fasilitas: 'N/A',
       thrBruto: thrSum,
       periodeGaji: periode.nama,
-      tglBayar: periode.bayar || '',
-      withholdingDate: ebupotWithholdingDateIso(periode),
+      tglBayar:
+        masa.yyyymm === ebupotMasaThrFromPeriode(periode).yyyymm && periode.thr_bayar
+          ? periode.thr_bayar
+          : periode.bayar || '',
+      withholdingDate: ebupotWithholdingDateIso(periode, masa.yyyymm),
       metode: g.reconciliation ? 'Rekonsiliasi Pasal 17 (BPA1)' : 'TER PMK 168',
     });
     if (g.phk && g.phk.mode === 'phk' && Math.round(g.phk.bruto || 0) > 0) {
@@ -448,8 +480,11 @@ function ebupotBuildRows(periode) {
         fasilitas: 'N/A',
         thrBruto: 0,
         periodeGaji: periode.nama,
-        tglBayar: periode.bayar || '',
-        withholdingDate: ebupotWithholdingDateIso(periode),
+        tglBayar:
+          masa.yyyymm === ebupotMasaThrFromPeriode(periode).yyyymm && periode.thr_bayar
+            ? periode.thr_bayar
+            : periode.bayar || '',
+        withholdingDate: ebupotWithholdingDateIso(periode, masa.yyyymm),
         metode: 'PPh final pesangon PP 68/2009',
       });
       totalBruto += brutoPsg;
@@ -554,15 +589,51 @@ function ebupotRowToArray(r) {
   ];
 }
 
+function ebupotDaftarBuiltMasa(periode) {
+  periode = periode || (typeof PA === 'function' ? PA() : null);
+  if (!periode || !periode.nama) {
+    return { ok: false, error: 'Periode gaji aktif tidak ditemukan', list: [] };
+  }
+  var list = [];
+  var yatim = ebupotThrYatim(periode);
+  if (yatim && yatim.yyyymm) {
+    var thrB = ebupotBuildRows(periode, { masaYyyymm: yatim.yyyymm });
+    if (thrB.ok && thrB.rows && thrB.rows.length) list.push(thrB);
+  }
+  var gajiB = ebupotBuildRows(periode);
+  if (gajiB.ok) list.push(gajiB);
+  if (!list.length) {
+    return { ok: false, error: (gajiB && gajiB.error) || 'Tidak ada data e-Bupot', list: [] };
+  }
+  return { ok: true, list: list };
+}
+
 function exportExcelEbupotBulanan() {
-  var built = ebupotBuildRows();
-  if (!built.ok) {
-    toast(built.error || 'Gagal menyiapkan data');
+  var pack = ebupotDaftarBuiltMasa();
+  if (!pack.ok) {
+    toast(pack.error || 'Gagal menyiapkan data');
     return;
   }
-  if (built.warnings.length) toast('Perhatian: ' + built.warnings[0]);
+  var firstWarn = '';
+  pack.list.forEach(function (b) {
+    if (!firstWarn && b.warnings && b.warnings[0]) firstWarn = b.warnings[0];
+  });
+  if (firstWarn) toast('Perhatian: ' + firstWarn);
   ebupotEnsureXlsx(function () {
-    try {
+    pack.list.forEach(function (built, idx) {
+      setTimeout(function () {
+        try {
+          ebupotWriteExcelBuilt(built);
+        } catch (e) {
+          toast('Gagal export: ' + (e.message || e));
+        }
+      }, idx * 400);
+    });
+  });
+}
+
+function ebupotWriteExcelBuilt(built) {
+  try {
       var wb = XLSX.utils.book_new();
       var panduan = [
         ['PANDUAN — Export e-Bupot bulanan SiGaji → Coretax'],
@@ -663,6 +734,8 @@ function exportExcelEbupotBulanan() {
       else XLSX.writeFile(wb, fn);
       toast(
         'Excel e-Bupot diunduh (' +
+          built.masa.label +
+          ' · ' +
           built.rows.length +
           ' karyawan · PPh ' +
           fmt(built.totalPph) +
@@ -671,7 +744,6 @@ function exportExcelEbupotBulanan() {
     } catch (e) {
       toast('Gagal export: ' + (e.message || e));
     }
-  });
 }
 
 function ebupotBuildMmPayrollXml(built) {
@@ -788,71 +860,80 @@ function ebupotBuildBp21Xml(built) {
 }
 
 function exportXmlEbupotCoretax() {
-  var built = ebupotBuildRows();
-  if (!built.ok) {
-    toast(built.error || 'Gagal menyiapkan data');
+  var pack = ebupotDaftarBuiltMasa();
+  if (!pack.ok) {
+    toast(pack.error || 'Gagal menyiapkan data');
     return;
   }
-  if (built.warnings.length) toast('Perhatian: ' + built.warnings[0]);
-  if (!built.npwpPemotong || built.npwpPemotong.length < 15) {
+  var firstWarn = '';
+  pack.list.forEach(function (b) {
+    if (!firstWarn && b.warnings && b.warnings[0]) firstWarn = b.warnings[0];
+  });
+  if (firstWarn) toast('Perhatian: ' + firstWarn);
+  if (!pack.list[0].npwpPemotong || pack.list[0].npwpPemotong.length < 15) {
     toast('NPWP perusahaan wajib diisi (Master → Profil Perusahaan)');
     return;
   }
 
-  var groups = ebupotGroupRowsByTku(built.rows);
-  var tkuKeys = Object.keys(groups);
-  var slug = String(built.periode.nama).replace(/[^\w\d]+/g, '_');
   var downloaded = 0;
   var bpmpTotal = 0;
   var bp21Total = 0;
   var bpa1Total = 0;
   var delay = 0;
+  var tkuMax = 0;
 
-  tkuKeys.forEach(function (tkuKey) {
-    var subset = { rows: groups[tkuKey], npwpPemotong: built.npwpPemotong, periode: built.periode, masa: built.masa };
-    var suf = ebupotTkuFileSuffix(groups[tkuKey]);
-    var bpmp = ebupotBuildMmPayrollXml(subset);
-    var bpa1 = ebupotBuildBpa1Xml(subset);
-    var bp21 = ebupotBuildBp21Xml(subset);
-    if (bpmp.ok) {
-      (function (xml, cnt, d) {
-        setTimeout(function () {
-          ebupotDownloadText(
-            'BPMP_SiGaji_' + built.masa.yyyymm + '_' + slug + '_TKU' + suf + '.xml',
-            xml
-          );
-        }, d);
-      })(bpmp.xml, bpmp.count, delay);
-      delay += 350;
-      downloaded++;
-      bpmpTotal += bpmp.count;
-    }
-    if (bpa1.ok) {
-      (function (xml, cnt, d) {
-        setTimeout(function () {
-          ebupotDownloadText(
-            'BPA1_SiGaji_' + built.masa.yyyymm + '_' + slug + '_TKU' + suf + '.xml',
-            xml
-          );
-        }, d);
-      })(bpa1.xml, bpa1.count, delay);
-      delay += 350;
-      downloaded++;
-      bpa1Total += bpa1.count;
-    }
-    if (bp21.ok) {
-      (function (xml, cnt, d) {
-        setTimeout(function () {
-          ebupotDownloadText(
-            'BP21_SiGaji_' + built.masa.yyyymm + '_' + slug + '_TKU' + suf + '.xml',
-            xml
-          );
-        }, d);
-      })(bp21.xml, bp21.count, delay);
-      delay += 350;
-      downloaded++;
-      bp21Total += bp21.count;
-    }
+  pack.list.forEach(function (built) {
+    var groups = ebupotGroupRowsByTku(built.rows);
+    var tkuKeys = Object.keys(groups);
+    var slug = String(built.periode.nama).replace(/[^\w\d]+/g, '_');
+    if (built.tkuCount > tkuMax) tkuMax = built.tkuCount;
+
+    tkuKeys.forEach(function (tkuKey) {
+      var subset = { rows: groups[tkuKey], npwpPemotong: built.npwpPemotong, periode: built.periode, masa: built.masa };
+      var suf = ebupotTkuFileSuffix(groups[tkuKey]);
+      var bpmp = ebupotBuildMmPayrollXml(subset);
+      var bpa1 = ebupotBuildBpa1Xml(subset);
+      var bp21 = ebupotBuildBp21Xml(subset);
+      if (bpmp.ok) {
+        (function (xml, yyyymm, d) {
+          setTimeout(function () {
+            ebupotDownloadText(
+              'BPMP_SiGaji_' + yyyymm + '_' + slug + '_TKU' + suf + '.xml',
+              xml
+            );
+          }, d);
+        })(bpmp.xml, built.masa.yyyymm, delay);
+        delay += 350;
+        downloaded++;
+        bpmpTotal += bpmp.count;
+      }
+      if (bpa1.ok) {
+        (function (xml, yyyymm, d) {
+          setTimeout(function () {
+            ebupotDownloadText(
+              'BPA1_SiGaji_' + yyyymm + '_' + slug + '_TKU' + suf + '.xml',
+              xml
+            );
+          }, d);
+        })(bpa1.xml, built.masa.yyyymm, delay);
+        delay += 350;
+        downloaded++;
+        bpa1Total += bpa1.count;
+      }
+      if (bp21.ok) {
+        (function (xml, yyyymm, d) {
+          setTimeout(function () {
+            ebupotDownloadText(
+              'BP21_SiGaji_' + yyyymm + '_' + slug + '_TKU' + suf + '.xml',
+              xml
+            );
+          }, d);
+        })(bp21.xml, built.masa.yyyymm, delay);
+        delay += 350;
+        downloaded++;
+        bp21Total += bp21.count;
+      }
+    });
   });
 
   if (!downloaded) {
@@ -861,7 +942,8 @@ function exportXmlEbupotCoretax() {
   }
 
   var msg = 'XML Coretax diunduh';
-  if (built.tkuCount > 1) msg += ' (' + built.tkuCount + ' TKU terpisah)';
+  if (pack.list.length > 1) msg += ' (' + pack.list.length + ' masa pajak)';
+  if (tkuMax > 1) msg += ' (' + tkuMax + ' TKU terpisah)';
   if (bpmpTotal) msg += ' · BPMP ' + bpmpTotal + ' tetap (bukan masa terakhir)';
   if (bpa1Total) msg += ' · BPA1 ' + bpa1Total + ' rekonsiliasi Des/resign';
   if (bp21Total) msg += ' · BP21 ' + bp21Total + ' tidak tetap/pesangon';
@@ -870,34 +952,38 @@ function exportXmlEbupotCoretax() {
 }
 
 function exportCsvEbupotBulanan() {
-  var built = ebupotBuildRows();
-  if (!built.ok) {
-    toast(built.error || 'Gagal menyiapkan data');
+  var pack = ebupotDaftarBuiltMasa();
+  if (!pack.ok) {
+    toast(pack.error || 'Gagal menyiapkan data');
     return;
   }
-  var hdr = ebupotDataHeaders();
-  var lines = [hdr.map(function (h) {
-    return '"' + String(h).replace(/"/g, '""') + '"';
-  }).join(',')];
-  built.rows.forEach(function (r) {
-    lines.push(
-      ebupotRowToArray(r)
-        .map(function (v) {
-          return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-        })
-        .join(',')
-    );
+  pack.list.forEach(function (built, idx) {
+    setTimeout(function () {
+      var hdr = ebupotDataHeaders();
+      var lines = [hdr.map(function (h) {
+        return '"' + String(h).replace(/"/g, '""') + '"';
+      }).join(',')];
+      built.rows.forEach(function (r) {
+        lines.push(
+          ebupotRowToArray(r)
+            .map(function (v) {
+              return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+            })
+            .join(',')
+        );
+      });
+      var blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      var csvFn =
+        'eBupot_SiGaji_' + built.masa.yyyymm + '_' + built.periode.nama.replace(/[^\w\d]+/g, '_') + '.csv';
+      if (typeof sigajiSaveFile === 'function') sigajiSaveFile(blob, csvFn, 'text/csv;charset=utf-8');
+      else {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = csvFn;
+        a.click();
+      }
+    }, idx * 400);
   });
-  var blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-  var csvFn =
-    'eBupot_SiGaji_' + built.masa.yyyymm + '_' + built.periode.nama.replace(/[^\w\d]+/g, '_') + '.csv';
-  if (typeof sigajiSaveFile === 'function') sigajiSaveFile(blob, csvFn, 'text/csv;charset=utf-8');
-  else {
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = csvFn;
-    a.click();
-  }
   toast('CSV e-Bupot diunduh — untuk arsip/referensi (Coretax butuh XML via template DJP)');
 }
 
@@ -905,6 +991,10 @@ if (typeof window !== 'undefined') {
   window.exportExcelEbupotBulanan = exportExcelEbupotBulanan;
   window.exportCsvEbupotBulanan = exportCsvEbupotBulanan;
   window.exportXmlEbupotCoretax = exportXmlEbupotCoretax;
+  window.ebupotBuildRows = ebupotBuildRows;
+  window.ebupotDaftarBuiltMasa = ebupotDaftarBuiltMasa;
+  window.ebupotThrYatim = ebupotThrYatim;
+  window.ebupotMasaFromYyyymm = ebupotMasaFromYyyymm;
   window.ebupotNpwp16 = ebupotNpwp16;
   window.ebupotKodeObjek = ebupotKodeObjek;
   window.ebupotBuildMmPayrollXml = ebupotBuildMmPayrollXml;

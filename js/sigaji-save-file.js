@@ -28,7 +28,8 @@ function sigajiSaveFile(data, filename, mime) {
     try {
       var file = new File([blob], filename, { type: blob.type || mime || 'application/octet-stream' });
       if (navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: filename }).catch(function () {
+        return navigator.share({ files: [file], title: filename }).catch(function (err) {
+          if (err && err.name === 'AbortError') return;
           sigajiSaveFileFallback(blob, filename);
         });
       }

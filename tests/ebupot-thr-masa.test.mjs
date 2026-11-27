@@ -67,4 +67,23 @@ assertEq('sama bulan: THR ikut gaji', px.ebupotMasaThrFromPeriode({
   thr_aktif: true, thr_bayar: '2027-04-05', bayar: '2027-04-05',
 }).yyyymm, '202704');
 
+const firstOnly = [
+  {
+    id: 1, nama: 'Maret 2027', start: '2027-03-01', end: '2027-03-31',
+    bayar: '2027-04-05', status: 'aktif', thr_aktif: true,
+    thr_nama: 'Lebaran', thr_bayar: '2027-03-03',
+  },
+];
+const px0 = loadEbupotExport({ periodes: firstOnly, karyawan: [kar] });
+const yatim = px0.ebupotThrYatim(firstOnly[0]);
+assertEq('bulan pertama: THR yatim Maret', yatim && yatim.yyyymm, '202703');
+const pack0 = px0.ebupotDaftarBuiltMasa(firstOnly[0]);
+assert('bulan pertama: dua masa diekspor', pack0.ok && pack0.list.length === 2);
+assertEq('file pertama masa THR Maret', pack0.list[0].masa.yyyymm, '202703');
+assert('file Maret memuat THR', pack0.list[0].rows[0].thrBruto > 0);
+assertEq('file kedua masa gaji April', pack0.list[1].masa.yyyymm, '202704');
+assertEq('file April tanpa THR', pack0.list[1].rows[0].thrBruto, 0);
+const marOnly = px0.ebupotBuildRows(firstOnly[0], { masaYyyymm: '202703' });
+assert('buildRows masa 202703 ok', marOnly.ok && marOnly.rows[0].thrBruto > 0);
+
 console.log('ebupot-thr-masa.test.mjs: all passed');

@@ -41,15 +41,34 @@
     } catch (e2) { /* ignore */ }
   };
 
-  w.sigajiHistCloseTopLayer = function () {
-    var mbd = document.querySelector && document.querySelector('.mbd.show');
-    if (mbd && mbd.id) {
-      mbd.classList.remove('show');
+  w.sigajiHistBackIf = function (kind) {
+    if (pop || !enabled() || !w.history.state) return false;
+    if (w.history.state.sigaji === kind) {
+      w.history.back();
+      return true;
+    }
+    return false;
+  };
+
+  function closeMbd(el) {
+    if (!el) return;
+    if (el.id === 'ab-status-sheet' && typeof w.abCloseStatusSheet === 'function') w.abCloseStatusSheet();
+    else if (el.id === 'ab-confirm-sheet' && typeof w.abCloseConfirmSheet === 'function') w.abCloseConfirmSheet();
+    else el.classList.remove('show');
+  }
+
+  w.sigajiHistCloseTopLayer = function (landed) {
+    var keepId = landed && landed.sigaji === 'modal' ? landed.id : '';
+    var mbds = document.querySelectorAll ? document.querySelectorAll('.mbd.show') : [];
+    var i;
+    for (i = mbds.length - 1; i >= 0; i--) {
+      if (keepId && mbds[i].id === keepId) break;
+      closeMbd(mbds[i]);
       return true;
     }
     var ov = document.getElementById('panel-overlay');
     if (ov && ov.classList.contains('show') && typeof w.closeAnyPanel === 'function') {
-      w.closeAnyPanel();
+      w.closeAnyPanel(true);
       return true;
     }
     if (w.__sigajiPgOpenNik && typeof w.pgBukaKartu === 'function') {
@@ -66,7 +85,7 @@
   w.addEventListener('popstate', function (ev) {
     pop = true;
     try {
-      w.sigajiHistCloseTopLayer();
+      w.sigajiHistCloseTopLayer(ev.state || {});
       var st = ev.state || {};
       var pg = st.pg || '';
       if (!pg) {

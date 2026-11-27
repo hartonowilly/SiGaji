@@ -337,13 +337,19 @@ function abBolehUbahTanggal(nik,date){
 }
 function abCloseStatusSheet(){
   var m=document.getElementById('ab-status-sheet');
-  if(m)m.remove();
-  if(document.body)document.body.style.overflow='';
+  if(!m){
+    if(document.body&&!document.getElementById('ab-confirm-sheet'))document.body.style.overflow='';
+    return;
+  }
+  if(typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('absen-sheet'))return;
+  m.remove();
+  if(document.body&&!document.getElementById('ab-confirm-sheet'))document.body.style.overflow='';
 }
 function abBukaStatusSheet(nik,date){
   if(!abBolehUbahTanggal(nik,date))return;
   window.__sigajiAbTapDate=date;
-  abCloseStatusSheet();
+  var old=document.getElementById('ab-status-sheet');
+  if(old)old.remove();
   if(!absensi[nik])absensi[nik]={};
   var cur=absensi[nik][date]||'hadir';
   var nama='';
@@ -368,6 +374,7 @@ function abBukaStatusSheet(nik,date){
   document.body.appendChild(wrap);
   document.body.style.overflow='hidden';
   wrap.addEventListener('click',function(ev){if(ev.target===wrap)abCloseStatusSheet();});
+  if(typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'absen-sheet'});
 }
 function abSetStatus(nik,date,next,opts){
   opts=opts||{};
@@ -428,12 +435,19 @@ function abStatusTersimpan(nik,date){
 }
 function abCloseConfirmSheet(){
   var m=document.getElementById('ab-confirm-sheet');
-  if(m)m.remove();
+  if(!m){
+    window.__sigajiAbConfirmOk=null;
+    if(document.body&&!document.getElementById('ab-status-sheet'))document.body.style.overflow='';
+    return;
+  }
+  if(typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('absen-sheet'))return;
+  m.remove();
   window.__sigajiAbConfirmOk=null;
   if(document.body&&!document.getElementById('ab-status-sheet'))document.body.style.overflow='';
 }
 function abConfirmSheet(pesan,onOk){
-  abCloseConfirmSheet();
+  var old=document.getElementById('ab-confirm-sheet');
+  if(old)old.remove();
   window.__sigajiAbConfirmOk=onOk;
   var wrap=document.createElement('div');
   wrap.id='ab-confirm-sheet';
@@ -449,10 +463,15 @@ function abConfirmSheet(pesan,onOk){
   document.body.appendChild(wrap);
   document.body.style.overflow='hidden';
   wrap.addEventListener('click',function(ev){if(ev.target===wrap)abCloseConfirmSheet();});
+  if(typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'absen-sheet'});
 }
 function abConfirmSheetOk(){
   var fn=window.__sigajiAbConfirmOk;
-  abCloseConfirmSheet();
+  var m=document.getElementById('ab-confirm-sheet');
+  if(m)m.remove();
+  window.__sigajiAbConfirmOk=null;
+  if(document.body&&!document.getElementById('ab-status-sheet'))document.body.style.overflow='';
+  if(typeof sigajiHistBackIf==='function')sigajiHistBackIf('absen-sheet');
   if(typeof fn==='function')fn();
 }
 function abIsiSemuaHadir(nik){
