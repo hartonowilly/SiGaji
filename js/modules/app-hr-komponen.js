@@ -126,7 +126,10 @@ function openPanel(nik){
   updatePTKPVal();
   if(typeof applyPtkpFieldState==='function')applyPtkpFieldState();
   sigajiCloseNavDrawer();
+  var _spEl=document.getElementById('slide-panel');
+  var _spWas=_spEl&&_spEl.classList.contains('show');
   document.getElementById('slide-panel').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  if(!_spWas&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'panel',kind:'kar'});
   document.body.classList.add('sigaji-kar-panel-open');document.body.classList.remove('sigaji-payroll-panel-open');
   try{
     if(typeof sigajiApplyPanelDockForViewport==='function')sigajiApplyPanelDockForViewport();
@@ -300,7 +303,10 @@ function openPayrollPanel(nik){
   else{const nl=document.getElementById('natura-list'),nt=document.getElementById('natura-total');if(nl)nl.innerHTML='';if(nt)nt.innerHTML='';}
   if(canAccessPayrollSub('pphret'))renderPPhRetPanel(kp);else{const el=document.getElementById('pphret-preview');if(el)el.innerHTML='';}
   sigajiCloseNavDrawer();
+  var _ppEl=document.getElementById('slide-panel-payroll');
+  var _ppWas=_ppEl&&_ppEl.classList.contains('show');
   document.getElementById('slide-panel-payroll').classList.add('show');document.getElementById('panel-overlay').classList.add('show');
+  if(!_ppWas&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'panel',kind:'payroll'});
   document.body.classList.add('sigaji-payroll-panel-open');document.body.classList.remove('sigaji-kar-panel-open');
   try{
     if(typeof sigajiApplyPanelDockForViewport==='function')sigajiApplyPanelDockForViewport();

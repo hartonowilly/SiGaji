@@ -273,8 +273,10 @@ function karRowHtml(k,no){
   return`<tr><td class="text-center text-muted fw-700 sticky-no">${no}</td><td class="sticky-name"><div class="fl gap2 items-center"><div class="ka">${ini(k.nama)}</div><div><div class="knl"${sigajiDataAction('open-profile',{nik:k.nik})}>${escapeHtml(k.nama)} &#8599;${resignBadge}</div><div class="font-10 text-muted font-mono">${subLine}</div></div></div></td><td><span class="bdg ${tipeCls}">${escapeHtml(tipeLbl)}</span></td><td><span class="bdg ${siklusCls}">${escapeHtml(siklusLbl)}</span></td>${cabCol}<td>${escapeHtml(k.dept)}</td><td>${escapeHtml(k.jabatan)}</td><td><span class="bdg ${stCls}">${escapeHtml(k.status)}</span></td><td><span class="bdg b-info">${escapeHtml(k.ptkp)}</span></td><td>${cutiCell}</td><td><div class="fl gap1">${aksi}</div></td></tr>`;
 }
 function karBukaKartu(nik){
-  var next=window.__sigajiKarOpenNik===nik?'':nik;
+  var prev=window.__sigajiKarOpenNik;
+  var next=prev===nik?'':nik;
   window.__sigajiKarOpenNik=next;
+  if(next&&next!==prev&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'card',kind:'kar',nik:next});
   var box=document.getElementById('kar-mobile-list');
   if(!box)return;
   var cards=box.querySelectorAll('.hp-person-card');

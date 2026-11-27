@@ -397,8 +397,10 @@ function renderPenggajianBody(skipTunjVar,gajiByNik){
   }
 }
 function pgBukaKartu(nik){
-  var next=window.__sigajiPgOpenNik===nik?'':nik;
+  var prev=window.__sigajiPgOpenNik;
+  var next=prev===nik?'':nik;
   window.__sigajiPgOpenNik=next;
+  if(next&&next!==prev&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'card',kind:'gaji',nik:next});
   var box=document.getElementById('pg-mobile-wrap');
   if(!box)return;
   var cards=box.querySelectorAll('.hp-person-card');
