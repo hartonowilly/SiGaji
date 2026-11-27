@@ -276,7 +276,10 @@ function exportCSV(){
   var list=karyawanListPeriode(PA());
   list.forEach(function(k,i){const g=hitungGaji(k);rows.push([i+1,k.nama,k.dept,sigajiRp(k.gapok),Math.round(g.grossPPh),Math.round(g.thrBruto),Math.round(g.brutoTH),Math.round(g.bpjs.kes_kar+g.bpjs.jht_kar+g.bpjs.jp_kar),g.pph,g.pphRet,Math.round(g.neto)]);});
   const csv=rows.map(function(r){return r.map(function(v){return '"'+v+'"';}).join(',');}).join('\n');
-  const b=new Blob(['\uFEFF'+csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Rekap_SiGaji9.csv';a.click();toast('CSV diunduh');
+  const b=new Blob(['\uFEFF'+csv],{type:'text/csv'});
+  if(typeof sigajiSaveFile==='function')sigajiSaveFile(b,'Rekap_SiGaji9.csv','text/csv');
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Rekap_SiGaji9.csv';a.click();}
+  toast('CSV diunduh');
 }
 function tglIndoLaporan(iso){
   if(!iso)return'';
@@ -339,7 +342,7 @@ function exportExcelDaftarRekening(){
       xlsxSetNumFmtRange(ws,3,4+n,4+n,'#,##0');
       XLSX.utils.book_append_sheet(wb,ws,'Daftar Rekening');
       var fn='Daftar_Rekening_'+pNama.replace(/[^\w\d]+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
-      XLSX.writeFile(wb,fn);
+      if(typeof sigajiWriteXlsx==='function')sigajiWriteXlsx(wb,fn);else XLSX.writeFile(wb,fn);
       toast('Excel daftar rekening diunduh');
     }catch(e){toast('Gagal: '+e.message);}
   });
@@ -400,7 +403,7 @@ function exportExcelBPJS(){
       }
       XLSX.utils.book_append_sheet(wb,ws,'BPJS');
       var fn='Rekap_BPJS_'+pNama.replace(/[^\w\d]+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
-      XLSX.writeFile(wb,fn);
+      if(typeof sigajiWriteXlsx==='function')sigajiWriteXlsx(wb,fn);else XLSX.writeFile(wb,fn);
       toast('Excel BPJS diunduh');
     }catch(e){toast('Gagal: '+e.message);}
   });
@@ -562,7 +565,7 @@ function exportExcelRekonResign(){
       });
       if(!wb.SheetNames.length){toast('Tidak ada data periode untuk karyawan berhenti');return;}
       var fn='Rekon_Resign_'+exportThn+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
-      XLSX.writeFile(wb,fn);
+      if(typeof sigajiWriteXlsx==='function')sigajiWriteXlsx(wb,fn);else XLSX.writeFile(wb,fn);
       toast('Excel rekonsiliasi resign diunduh ('+wb.SheetNames.length+' karyawan)');
     }catch(e){toast('Gagal: '+e.message);}
   });
@@ -680,7 +683,7 @@ function exportExcelKertasKerjaPPh(){
       }
       XLSX.utils.book_append_sheet(wb,ws,'Kertas Kerja PPh');
       var fn='Kertas_Kerja_PPh_'+pNama.replace(/[^\w\d]+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.xlsx';
-      XLSX.writeFile(wb,fn);
+      if(typeof sigajiWriteXlsx==='function')sigajiWriteXlsx(wb,fn);else XLSX.writeFile(wb,fn);
       toast('Excel kertas kerja diunduh');
     }catch(e){toast('Gagal: '+e.message);}
   });

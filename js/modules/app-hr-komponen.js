@@ -595,7 +595,7 @@ function loadBPJSPanel(k){
     const nomVal=ok?(isMn?bm[c.key]:autoV):0;
     const nomEl='<input type="text" class="bi inp-rp '+(isMn?'manual':'')+'" id="b-'+c.key+'-v" value="'+formatRpInputNum(nomVal)+'" data-rp="1" '+(!isMn||!ok?'readonly':'')+' data-nik="'+k.nik+'" data-key="'+c.key+'" data-sigaji-action="call-value" data-fn="onBMChange2" data-arg="$this" data-sigaji-live="1">';
     const modeEl=ok?('<button class="tm '+(isMn?'manual':'auto')+'" id="tm-'+c.key+'"'+sigajiDataAction('toggle-manual',{key:c.key})+'>'+(isMn?'Manual':'Auto')+'</button>'):'<span class="bdg b-gray font-10">Off</span>';
-    return '<div class="bpjs-row '+(ok?'':'off')+'">'+chk+'<div class="font-11 fw-600">'+lblTxt+'</div><div><input class="bi font-11" value="'+tarifTxt+'" readonly></div>'+nomEl+modeEl+'</div>';
+    return '<div class="bpjs-row '+(ok?'':'off')+'">'+chk+'<div class="font-11 fw-600">'+lblTxt+'</div><div><input class="bi" value="'+tarifTxt+'" readonly></div>'+nomEl+modeEl+'</div>';
   };
   document.getElementById('bpjs-kes-rows').innerHTML=KOMP.filter(function(c){return c.sec==='kes';}).map(mkRow).join('');
   document.getElementById('bpjs-tk-rows').innerHTML=KOMP.filter(function(c){return c.sec==='tk';}).map(mkRow).join('');

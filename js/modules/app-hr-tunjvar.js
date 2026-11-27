@@ -237,7 +237,8 @@ function exportTunjVarExcelTemplate() {
       '_' +
       new Date().toISOString().split('T')[0] +
       '.xlsx';
-    XLSX.writeFile(wb, fn);
+    if (typeof sigajiWriteXlsx === 'function') sigajiWriteXlsx(wb, fn);
+    else XLSX.writeFile(wb, fn);
     toast('Template diunduh — isi kolom nilai lalu Import Excel');
   });
 }

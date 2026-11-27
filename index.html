@@ -9,30 +9,31 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SiGaji">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="/icons/pwa/sigaji-180.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.59">
-<link rel="stylesheet" href="/css/styles.css?v=11.7.59">
-<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-tema-siang.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.59">
-<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.59">
+<link rel="stylesheet" href="/css/sigaji-tokens.css?v=11.7.60">
+<link rel="stylesheet" href="/css/styles.css?v=11.7.60">
+<link rel="stylesheet" href="/css/ui-refresh.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-utilities.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-ui-enhance.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-table.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-components.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-tema-kertas.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-tema-siang.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-print.css?v=11.7.60">
+<link rel="stylesheet" href="/css/sigaji-mobile-web.css?v=11.7.60">
 <style>
+html,body{background:#0c1929;}
 html[data-sigaji-resume-pending="1"] #login{display:none!important}
 </style>
-<script src="/js/modules/app-api-shim.js?v=11.7.59"></script>
+<script src="/js/modules/app-api-shim.js?v=11.7.60"></script>
 </head>
 <body>
-<script src="/js/modules/app-boot-resume.js?v=11.7.59"></script>
+<script src="/js/modules/app-boot-resume.js?v=11.7.60"></script>
 <!-- LOGIN -->
 <div id="login">
 <div class="login-bg-deco" aria-hidden="true"></div>
@@ -59,11 +60,11 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
   <div id="file-protocol-hint" class="login-file-hint u-hidden">
     <strong>Jangan buka lewat file:///</strong> — gunakan alamat situs (mis. <code>https://www.cemerlang.online</code>) atau server lokal (<code>start-sigaji.cmd</code> → <code>http://localhost:3333</code>). SiGaji hanya mode <strong>online</strong> (login email Supabase).
   </div>
-  <div id="sigaji-pwa-banner" class="sigaji-pwa-banner" hidden>
-    <p id="sigaji-pwa-ios" hidden>Di iPhone: Safari → tombol Bagikan → <strong>Add to Home Screen</strong>.</p>
-    <p id="sigaji-pwa-other">Pasang ke layar utama HP: menu browser → <strong>Tambahkan ke layar utama</strong>.</p>
+  <div class="sigaji-pwa-banner" hidden>
+    <p class="sigaji-pwa-ios" hidden>Di iPhone: Safari → <strong>Bagikan</strong> (kotak panah; kadang di menu <strong>…</strong>) → <strong>Tambah ke Layar Utama</strong>. Setelah dipasang, login ulang sekali — Safari dan ikon layar utama datanya terpisah.</p>
+    <p class="sigaji-pwa-other">Pasang ke layar utama HP: menu browser → <strong>Tambahkan ke layar utama</strong>.</p>
     <div class="sigaji-pwa-actions">
-      <button type="button" class="btn btn-p btn-sm" id="sigaji-pwa-pasang" hidden data-sigaji-pwa="pasang">Pasang aplikasi</button>
+      <button type="button" class="btn btn-p btn-sm" hidden data-sigaji-pwa="pasang">Pasang aplikasi</button>
       <button type="button" class="btn btn-out btn-sm" data-sigaji-pwa="tutup">Nanti</button>
     </div>
   </div>
@@ -99,6 +100,7 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <span class="sigaji-build-chip" id="sigaji-build-chip" title="Versi deploy (SIGAJI_BUILD)"></span>
     <span class="sync-status" id="sync-status" aria-live="polite"></span>
     <span class="save-ind" id="save-ind"></span>
+    <button type="button" class="btn btn-xs btn-out sigaji-pwa-reload" data-sigaji-action="invoke" data-fn="sigajiReloadApp" title="Muat ulang halaman">Muat ulang</button>
   </div>
   <div class="tl topbar-theme-wrap fl gap1 items-center">
     <select id="ui-pref-density" class="toolbar-select ui-pref-sel" title="Kepadatan: Longgar = lebih lapang; Rapat = lebih banyak baris di layar" data-sigaji-action="pref" data-key="density">
@@ -117,6 +119,14 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
     <div class="av" id="uav">A</div>
     <div><div class="uname" id="uname">-</div><span class="rbadge" id="urbadge">-</span></div>
     <button class="btn btn-sm btn-out topbar-logout" data-sigaji-action="invoke" data-fn="doLogout">Keluar</button>
+  </div>
+</div>
+<div class="sigaji-pwa-banner sigaji-pwa-banner-app" hidden>
+  <p class="sigaji-pwa-ios" hidden>Di iPhone: Safari → <strong>Bagikan</strong> (kotak panah; kadang di menu <strong>…</strong>) → <strong>Tambah ke Layar Utama</strong>. Setelah dipasang, login ulang sekali.</p>
+  <p class="sigaji-pwa-other">Pasang ke layar utama: menu browser → <strong>Tambahkan ke layar utama</strong>.</p>
+  <div class="sigaji-pwa-actions">
+    <button type="button" class="btn btn-p btn-xs" hidden data-sigaji-pwa="pasang">Pasang</button>
+    <button type="button" class="btn btn-out btn-xs" data-sigaji-pwa="tutup">Nanti</button>
   </div>
 </div>
 <div class="nav-backdrop" id="nav-backdrop" aria-hidden="true"></div>
@@ -1808,59 +1818,60 @@ html[data-sigaji-resume-pending="1"] #login{display:none!important}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<script src="/js/constants.js?v=11.7.59"></script>
-<script src="/js/pajak-aturan.js?v=11.7.59"></script>
-<script src="/js/sigaji-icons.js?v=11.7.59"></script>
-<script src="/js/sigaji-ui.js?v=11.7.59"></script>
-<script src="/js/sigaji-dom.js?v=11.7.59"></script>
-<script src="/js/sigaji-api.js?v=11.7.59"></script>
-<script src="/js/karyawan-tipe.js?v=11.7.59"></script>
-<script src="/js/siklus-bayar.js?v=11.7.59"></script>
-<script src="/js/storage-idb.js?v=11.7.59"></script>
-<script src="/js/storage.js?v=11.7.59"></script>
-<script src="/js/ptkp.js?v=11.7.59"></script>
-<script src="/js/modules/app-globals.js?v=11.7.59"></script>
-<script src="/js/modules/app-core.js?v=11.7.59"></script>
-<script src="/js/modules/app-access.js?v=11.7.59"></script>
-<script src="/js/modules/app-auth.js?v=11.7.59"></script>
-<script src="/js/modules/app-sys.js?v=11.7.59"></script>
-<script src="/js/modules/app-hr.js?v=11.7.59"></script>
-<script src="/js/modules/app-hr-komponen.js?v=11.7.59"></script>
-<script src="/js/modules/app-hr-gaji-tpl.js?v=11.7.59"></script>
-<script src="/js/modules/app-hr-payroll.js?v=11.7.59"></script>
-<script src="/js/modules/app-hr-tunjvar.js?v=11.7.59"></script>
-<script src="/js/modules/app-slip.js?v=11.7.59"></script>
-<script src="/js/modules/app-reports.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-converter-bank.js?v=11.7.59"></script>
-<script src="/js/modules/ebupot-export.js?v=11.7.59"></script>
-<script src="/js/modules/bpjs-export.js?v=11.7.59"></script>
-<script src="/js/modules/app-absensi.js?v=11.7.59"></script>
-<script src="/js/modules/app-mobile.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-features-v2.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-product-v3.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-dash-brief.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.59"></script>
-<script src="/js/periode-pola.js?v=11.7.59"></script>
-<script src="/js/modules/app-master.js?v=11.7.59"></script>
-<script src="/js/modules/app-migrasi-pph.js?v=11.7.59"></script>
-<script src="/js/pwa-history.js?v=11.7.59"></script>
-<script src="/js/modules/app-shell.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-ui-polish.js?v=11.7.59"></script>
-<script src="/js/modules/sigaji-cabang.js?v=11.7.59"></script>
-<script src="/js/pesangon.js?v=11.7.59"></script>
-<script src="/js/payroll-worker-host.js?v=11.7.59"></script>
-<script src="/js/config.js?v=11.7.59"></script>
+<script src="/js/sigaji-save-file.js?v=11.7.60"></script>
+<script src="/js/constants.js?v=11.7.60"></script>
+<script src="/js/pajak-aturan.js?v=11.7.60"></script>
+<script src="/js/sigaji-icons.js?v=11.7.60"></script>
+<script src="/js/sigaji-ui.js?v=11.7.60"></script>
+<script src="/js/sigaji-dom.js?v=11.7.60"></script>
+<script src="/js/sigaji-api.js?v=11.7.60"></script>
+<script src="/js/karyawan-tipe.js?v=11.7.60"></script>
+<script src="/js/siklus-bayar.js?v=11.7.60"></script>
+<script src="/js/storage-idb.js?v=11.7.60"></script>
+<script src="/js/storage.js?v=11.7.60"></script>
+<script src="/js/ptkp.js?v=11.7.60"></script>
+<script src="/js/modules/app-globals.js?v=11.7.60"></script>
+<script src="/js/modules/app-core.js?v=11.7.60"></script>
+<script src="/js/modules/app-access.js?v=11.7.60"></script>
+<script src="/js/modules/app-auth.js?v=11.7.60"></script>
+<script src="/js/modules/app-sys.js?v=11.7.60"></script>
+<script src="/js/modules/app-hr.js?v=11.7.60"></script>
+<script src="/js/modules/app-hr-komponen.js?v=11.7.60"></script>
+<script src="/js/modules/app-hr-gaji-tpl.js?v=11.7.60"></script>
+<script src="/js/modules/app-hr-payroll.js?v=11.7.60"></script>
+<script src="/js/modules/app-hr-tunjvar.js?v=11.7.60"></script>
+<script src="/js/modules/app-slip.js?v=11.7.60"></script>
+<script src="/js/modules/app-reports.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-converter-bank.js?v=11.7.60"></script>
+<script src="/js/modules/ebupot-export.js?v=11.7.60"></script>
+<script src="/js/modules/bpjs-export.js?v=11.7.60"></script>
+<script src="/js/modules/app-absensi.js?v=11.7.60"></script>
+<script src="/js/modules/app-mobile.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-hrd-ux.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-payroll-insights.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-features-v2.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-product-v3.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-dash-brief.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-sim-thr-pesangon.js?v=11.7.60"></script>
+<script src="/js/periode-pola.js?v=11.7.60"></script>
+<script src="/js/modules/app-master.js?v=11.7.60"></script>
+<script src="/js/modules/app-migrasi-pph.js?v=11.7.60"></script>
+<script src="/js/pwa-history.js?v=11.7.60"></script>
+<script src="/js/modules/app-shell.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-ui-polish.js?v=11.7.60"></script>
+<script src="/js/modules/sigaji-cabang.js?v=11.7.60"></script>
+<script src="/js/pesangon.js?v=11.7.60"></script>
+<script src="/js/payroll-worker-host.js?v=11.7.60"></script>
+<script src="/js/config.js?v=11.7.60"></script>
 <script src="/js/vendor/supabase.js?v=2.105.4"></script>
-<script src="/js/cloud-branding.js?v=11.7.59"></script>
-<script src="/js/cloud-roles.js?v=11.7.59"></script>
-<script src="/js/cloud-delta.js?v=11.7.59"></script>
-<script src="/js/outbox.js?v=11.7.59"></script>
-<script src="/js/cloud-tables.js?v=11.7.59"></script>
-<script src="/js/cloud-sync.js?v=11.7.59"></script>
-<script src="/js/modules/app-boot.js?v=11.7.59"></script>
-<script src="/js/sigaji-events.js?v=11.7.59"></script>
-<script src="/js/pwa-install.js?v=11.7.59"></script>
+<script src="/js/cloud-branding.js?v=11.7.60"></script>
+<script src="/js/cloud-roles.js?v=11.7.60"></script>
+<script src="/js/cloud-delta.js?v=11.7.60"></script>
+<script src="/js/outbox.js?v=11.7.60"></script>
+<script src="/js/cloud-tables.js?v=11.7.60"></script>
+<script src="/js/cloud-sync.js?v=11.7.60"></script>
+<script src="/js/modules/app-boot.js?v=11.7.60"></script>
+<script src="/js/sigaji-events.js?v=11.7.60"></script>
+<script src="/js/pwa-install.js?v=11.7.60"></script>
 </body>
 </html>

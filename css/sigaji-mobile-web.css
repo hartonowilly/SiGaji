@@ -200,7 +200,19 @@ html.sigaji-mobile-nav .topbar .btn-xs {
 .sigaji-pwa-banner:not([hidden]) {
   display: none;
 }
+.sigaji-pwa-reload {
+  display: none;
+}
+.sigaji-pwa-banner-app {
+  margin: 0;
+  border-radius: 0;
+}
 @media (max-width: 900px) {
+  .sigaji-pwa-reload {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+  }
   .sigaji-pwa-banner:not([hidden]) {
     display: block;
     margin-top: 1rem;
@@ -212,6 +224,12 @@ html.sigaji-mobile-nav .topbar .btn-xs {
     font-size: 0.8rem;
     line-height: 1.45;
     text-align: left;
+  }
+  .sigaji-pwa-banner-app:not([hidden]) {
+    margin-top: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
   }
   .sigaji-pwa-banner p {
     margin: 0 0 0.55rem;

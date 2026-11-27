@@ -149,7 +149,8 @@ function exportMigrasiPphTemplate(){
       ['Status: Aktif atau Resign (opsional).']
     ]);
     XLSX.utils.book_append_sheet(wb,note,'Petunjuk');
-    XLSX.writeFile(wb,'Migrasi_Saldo_PPh_'+thn+'.xlsx');
+    if(typeof sigajiWriteXlsx==='function')sigajiWriteXlsx(wb,'Migrasi_Saldo_PPh_'+thn+'.xlsx');
+    else XLSX.writeFile(wb,'Migrasi_Saldo_PPh_'+thn+'.xlsx');
     toast('Template migrasi diunduh');
   });
 }
