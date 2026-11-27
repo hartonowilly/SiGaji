@@ -275,6 +275,7 @@ function karRowHtml(k,no){
 function karBukaKartu(nik){
   var prev=window.__sigajiKarOpenNik;
   var next=prev===nik?'':nik;
+  if(!next&&prev&&typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('card'))return;
   window.__sigajiKarOpenNik=next;
   if(next&&next!==prev&&typeof sigajiHistPush==='function')sigajiHistPush({sigaji:'card',kind:'kar',nik:next});
   var box=document.getElementById('kar-mobile-list');

@@ -362,8 +362,16 @@ async function mobLocUseMyPosition(){
   if(!navigator.geolocation){toast('Browser tidak mendukung GPS');return;}
   var stand=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
   if(stand){
-    var ok=window.confirm('Aplikasi layar utama di iPhone sering meminta izin lokasi lagi setiap kali dibuka. Izinkan lokasi untuk menempatkan titik di peta?');
-    if(!ok)return;
+    try{
+      if(sessionStorage.getItem('sigaji_gps_hint_admin')!=='1'){
+        sessionStorage.setItem('sigaji_gps_hint_admin','1');
+        var ok=window.confirm('Aplikasi di layar utama kadang meminta izin lokasi lagi setiap kali dibuka. Izinkan lokasi untuk menempatkan titik di peta?');
+        if(!ok)return;
+      }
+    }catch(eGps){
+      var ok2=window.confirm('Izinkan lokasi untuk menempatkan titik di peta?');
+      if(!ok2)return;
+    }
   }
   toast('Mengambil lokasi…');
   navigator.geolocation.getCurrentPosition(function(pos){

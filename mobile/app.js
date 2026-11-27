@@ -294,7 +294,7 @@
       var stand = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
       if (stand && !sessionStorage.getItem('sigaji_gps_hint')) {
         sessionStorage.setItem('sigaji_gps_hint', '1');
-        var ok = window.confirm('iOS sering meminta izin lokasi lagi setiap kali aplikasi layar utama dibuka. Izinkan lokasi untuk absen?');
+        var ok = window.confirm('Aplikasi di layar utama kadang meminta izin lokasi lagi setiap kali dibuka. Izinkan lokasi untuk absen?');
         if (!ok) {
           reject(new Error('Izin lokasi dibatalkan'));
           return;

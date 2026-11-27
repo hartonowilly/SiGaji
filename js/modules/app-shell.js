@@ -386,7 +386,7 @@ function showPg(pg){
   if(pg==='pph'){showPg('laporan');setTimeout(function(){var t=document.querySelector('#pg-laporan .tab[data-laptab="pph"]');if(t)switchLaporanTab(t,'lap-tab-pph');},80);return;}
   if(pg==='sysstatus'){showPg('backup');setTimeout(function(){switchBackupTab(null,'bk-ringkas');},50);return;}
   if(!canAccess(pg)){toast('Tidak punya akses ke modul ini');return;}
-  try{if(typeof closeAnyPanel==='function')closeAnyPanel();}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
+  try{if(typeof closeAnyPanel==='function')closeAnyPanel(true);}catch(e){sigajiCatchWarn("js/modules/app-shell.js",e);}
   sigajiCloseNavDrawer();
   var el=document.getElementById('pg-'+pg);
   var sudahAktif=!!(el&&el.classList.contains('active'));

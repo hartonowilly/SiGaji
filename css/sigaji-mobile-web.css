@@ -57,7 +57,8 @@ html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar {
   flex-wrap: nowrap;
   align-items: center;
   gap: 0.4rem;
-  padding-bottom: max(0.4rem, env(safe-area-inset-top));
+  padding-top: max(0.4rem, env(safe-area-inset-top, 0px));
+  padding-bottom: 0.4rem;
   min-height: 48px;
 }
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .nav-drawer-btn {
@@ -111,7 +112,6 @@ html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap {
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on #ui-pref-density,
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on #ui-pref-theme,
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap .btn-xs,
-html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-logout,
 html.sigaji-mobile-nav body.sigaji-mobile-bottom-nav-on .topbar-theme-wrap .av + div {
   display: none !important;
 }
@@ -182,10 +182,16 @@ html.sigaji-mobile-nav .notif-btn {
   flex-shrink: 0;
 }
 html.sigaji-mobile-nav .topbar-logout {
+  display: inline-flex;
   flex-shrink: 0;
   min-height: 36px;
   padding: 6px 10px;
   font-size: 11px;
+}
+html.sigaji-mobile-nav .bi {
+  font-size: 16px;
+  min-height: 44px;
+  padding: 8px 10px;
 }
 html.sigaji-mobile-nav .topbar .btn-xs {
   min-width: 36px;

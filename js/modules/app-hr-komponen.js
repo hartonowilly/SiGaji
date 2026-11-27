@@ -91,7 +91,7 @@ function openNewKar(tipe){
 // ── SLIDE PANEL KARYAWAN (profil SDM) ──────────
 function openPanel(nik){
   if(!canAccessModule('karyawan')){toast('Tidak punya akses modul Master Karyawan');return;}
-  closePayrollPanel();
+  closePayrollPanel(true);
   const k=karyawan.find(x=>x.nik===nik);if(!k)return;cpNik=nik;
   document.getElementById('sp-nik').textContent=k.nik;document.getElementById('sp-name').textContent=k.nama;document.getElementById('sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;document.getElementById('sp-saved-lbl').textContent='ID: '+k.nik;
   const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v??'';};
@@ -229,7 +229,8 @@ if(typeof window!=='undefined'){
   window.tgPutusTautan=tgPutusTautan;
   window.refreshTelegramModalStatus=refreshTelegramModalStatus;
 }
-function closePanel(){
+function closePanel(force){
+  if(!force&&typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('panel'))return;
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel').classList.remove('show');
   document.body.classList.remove('sigaji-kar-panel-open');
@@ -242,7 +243,11 @@ function closePanel(){
   }catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
   cpNik=null;
 }
-function closeAnyPanel(){closePanel();closePayrollPanel();}
+function closeAnyPanel(force){
+  if(!force&&typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('panel'))return;
+  closePanel(true);
+  closePayrollPanel(true);
+}
 // ── SLIDE PANEL KOMPONEN GAJI ────────────────────
 const PAYROLL_SP_TABS=[['sp-gaji','gaji'],['sp-bpjs','bpjs'],['sp-natura','natura'],['sp-pphret','pphret'],['sp-ring','ring']];
 function applyPayrollSpTabSimpleUi(){
@@ -281,7 +286,7 @@ function applyPayrollSlideTabsVisibility(){
 }
 function openPayrollPanel(nik){
   if(!canAccessModule('kompgaji')){toast('Tidak punya akses modul Komponen Gaji');return;}
-  closePanel();
+  closePanel(true);
   const k=karyawan.find(x=>x.nik===nik);if(!k)return;cpNik=nik;
   spPayrollView='periode';
   document.getElementById('kg-sp-nik').textContent=k.nik;document.getElementById('kg-sp-name').textContent=k.nama;document.getElementById('kg-sp-sub').textContent=k.jabatan+' \u2014 '+k.dept;document.getElementById('kg-sp-saved-lbl').textContent='ID: '+k.nik;
@@ -313,13 +318,14 @@ function openPayrollPanel(nik){
     else if(typeof sigajiSetPanelDock==='function')sigajiSetPanelDock(window.matchMedia('(min-width:1200px)').matches);
   }catch(eDock){sigajiCatchWarn("js/modules/app-hr.js",eDock);}
   if(typeof bindPayrollSpTabsOnce==='function')bindPayrollSpTabsOnce();
-  if(!applyPayrollSlideTabsVisibility()){closePayrollPanel();return;}
+  if(!applyPayrollSlideTabsVisibility()){closePayrollPanel(true);return;}
   setSpPayrollView('periode');
   syncPphReturnFieldState();
   updateGajiSummary();
   bindPayrollRpInputs();
 }
-function closePayrollPanel(){
+function closePayrollPanel(force){
+  if(!force&&typeof sigajiHistBackIf==='function'&&sigajiHistBackIf('panel'))return;
   sigajiCloseNavDrawer();
   document.getElementById('slide-panel-payroll').classList.remove('show');
   document.body.classList.remove('sigaji-payroll-panel-open');
