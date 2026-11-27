@@ -31,6 +31,7 @@ const suites = [
   'absensi-mobile-card.test.mjs',
   'absensi-kemarin.test.mjs',
   'hp-cards.test.mjs',
+  'pwa-install.test.mjs',
   'periode-berikutnya.test.mjs',
   'cari-orang.test.mjs',
   'payroll-komponen-diff.test.mjs',

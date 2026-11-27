@@ -17,3 +17,14 @@
 
 /api/*
   Cache-Control: no-store
+
+/sw.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
+
+/mobile/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache

@@ -1,17 +1,37 @@
 {
+  "id": "/mobile/",
   "name": "SiGaji Absen",
-  "short_name": "SiGaji",
-  "description": "Check-in GPS + pengajuan cuti SiGaji",
+  "short_name": "Absen",
+  "description": "Check-in GPS dan pengajuan cuti SiGaji",
   "start_url": "/mobile/",
+  "scope": "/mobile/",
   "display": "standalone",
   "background_color": "#0c1929",
   "theme_color": "#1a56a0",
   "orientation": "portrait",
+  "lang": "id",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64",
-      "type": "image/x-icon"
+      "src": "/icons/pwa/sigaji-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/pwa/sigaji-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/pwa/sigaji-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/pwa/sigaji-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

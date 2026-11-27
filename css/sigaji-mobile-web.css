@@ -193,6 +193,41 @@ html.sigaji-mobile-nav .topbar .btn-xs {
   padding: 6px 8px;
 }
 
+/* ── PWA pasang ke layar utama ── */
+.sigaji-pwa-banner {
+  display: none;
+}
+.sigaji-pwa-banner:not([hidden]) {
+  display: none;
+}
+@media (max-width: 900px) {
+  .sigaji-pwa-banner:not([hidden]) {
+    display: block;
+    margin-top: 1rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 12px;
+    background: #eef4fb;
+    border: 1px solid #c5d9f5;
+    color: #1e3a5f;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+  .sigaji-pwa-banner p {
+    margin: 0 0 0.55rem;
+  }
+  .sigaji-pwa-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+}
+@media (display-mode: standalone) {
+  .sigaji-pwa-banner {
+    display: none !important;
+  }
+}
+
 /* ── Login ── */
 @media (max-width: 900px) {
   #login {
